@@ -440,11 +440,15 @@ function omple(select, opcions, triada) {
 
 let DADES = null;
 
+// L'enllaç d'una fitxa porta les hores triades (urlFitxa): la primera vegada
+// es fan servir, si encara hi són.
+const HORES_ENLLAC = new URLSearchParams(location.search);
+
 function pintaSelectors(hores, ara) {
   const surto = $('surto');
   const torno = $('torno');
-  const abansSurto = surto.value;
-  const abansTorno = torno.value;
+  const abansSurto = surto.value || HORES_ENLLAC.get('surto') || '';
+  const abansTorno = torno.value || HORES_ENLLAC.get('torno') || '';
   omple(surto, hores.slice(0, -1).map((f, i) => [f.hora, i === 0 ? T('Ara') : etiquetaHora(f, ara)]), abansSurto);
   const i = Math.max(0, hores.findIndex((f) => f.hora === surto.value));
   const per = Math.min(i + TORNADA_PER_DEFECTE_H, hores.length - 1);
@@ -594,14 +598,22 @@ function pintaSortida() {
   const transit = dades.transit && dades.transit.incidencies;
   const llista = element('ul', 'mitjans');
   const fora = amagats();
+  FITXES.clear();
   for (const [clau, nom, icon] of MITJANS) {
-    if (fora.has(clau)) continue;
     const v = avalua(clau, tram, trens, i > 0, transit, { hores, ara: dades.ara_casa, pluja_ara: dades.pluja_ara, radar: dades.radar });
     const li = element('li', 'mitja ' + v.nivell);
+    li.dataset.mitja = clau;
     const cap = element('p', 'mitja-cap');
-    const titol = element('span', 'mitja-nom');
+    // El títol obre la fitxa en gran (ADR 0119).
+    const titol = element('button', 'mitja-nom mitja-obre');
+    titol.type = 'button';
+    titol.title = T('Obre la fitxa sencera');
+    titol.setAttribute('aria-haspopup', 'dialog');
     titol.append(icona(icon), TD(nom));
-    cap.append(titol, ' ', element('span', 'mitja-nivell', TD(v.etiqueta || TEXT_NIVELL[v.nivell])));
+    titol.addEventListener('click', () => obreFitxa(clau));
+    const etiqueta = TD(v.etiqueta || TEXT_NIVELL[v.nivell]);
+    FITXES.set(clau, { li, nom: TD(nom), icon, nivell: v.nivell, etiqueta });
+    cap.append(titol, ' ', element('span', 'mitja-nivell', etiqueta), botoCompartirFitxa(clau, 'compartir-mitja'));
     const plujaViatge = clau === 'moto' || clau === 'bici' ? mullaRodes : mulla;
     const r = roba(clau, tram, v.nivell !== 'be' && [tram[0], tram[tram.length - 1]].some(plujaViatge));
     if (clau === 'public') {
@@ -628,7 +640,7 @@ function pintaSortida() {
           blocTransit(dades.transit)));
       }
     }
-    llista.append(li);
+    if (!fora.has(clau)) llista.append(li);
   }
   const parts = llista.children.length ? [llista]
     : [element('p', 'nota', T('Tria a dalt els mitjans que vols veure.'))];
@@ -639,18 +651,144 @@ function pintaSortida() {
     parts.push(ul);
   }
   cont.replaceChildren(...parts);
+  // Si hi ha una fitxa oberta en gran, amb les dades noves.
+  const oberta = document.querySelector('dialog.vista-mitja');
+  if (oberta) obreFitxa(oberta.dataset.mitja);
 }
 
-// Plec d'una fitxa. Es recorda quins estan oberts mentre no es recarrega la
-// pàgina: canviar l'hora o els mitjans torna a pintar les fitxes.
-const PLECS_OBERTS = new Set();
+// Plec d'una fitxa (trens, trànsit): a la fitxa, només el títol, que l'obre en
+// gran amb tot desplegat (ADR 0119). Abans es desplegava a la graella i la
+// fitxa passava a ocupar tota l'amplada; ara hi ha una sola manera de veure-ho.
 function plec(clau, titol, peces) {
-  const d = element('details', 'mitja-plec');
+  const d = element('div', 'mitja-plec');
   d.id = clau;
-  d.open = PLECS_OBERTS.has(clau);
-  d.addEventListener('toggle', () => (d.open ? PLECS_OBERTS.add(clau) : PLECS_OBERTS.delete(clau)));
-  d.append(element('summary', null, titol), ...peces);
+  const b = element('button', 'mitja-mes', titol);
+  b.type = 'button';
+  b.setAttribute('aria-haspopup', 'dialog');
+  b.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>');
+  b.addEventListener('click', () => obreFitxa(b.closest('[data-mitja]').dataset.mitja, clau));
+  const cos = element('div', 'mitja-plec-cos');
+  cos.hidden = true;
+  cos.append(...peces);
+  d.append(b, cos);
   return d;
+}
+
+// --- Cada fitxa en gran, amb el seu enllaç (Juanjo, 22-10-2026: «quiero que
+// se pueda compartir cada tarjeta. haciendo clic el titulo de la tarjeta se
+// abre en un modal con todo desplegado»; ADR 0119). Es fan totes, també les
+// dels mitjans amagats, perquè un enllaç compartit les pugui obrir.
+const FITXES = new Map();
+
+// L'adreça de la fitxa (sortir.html#moto), amb l'hora de sortir i de tornar si
+// no són les de sempre (ara i tres hores després), perquè qui l'obri vegi el
+// mateix trajecte.
+function urlFitxa(clau) {
+  const url = new URL(location.href);
+  const hores = DADES.hores;
+  const surto = $('surto').value;
+  const i = hores.findIndex((f) => f.hora === surto);
+  const per = hores[Math.min(Math.max(i, 0) + TORNADA_PER_DEFECTE_H, hores.length - 1)].hora;
+  if (i > 0) url.searchParams.set('surto', surto); else url.searchParams.delete('surto');
+  if ($('torno').value !== per) url.searchParams.set('torno', $('torno').value); else url.searchParams.delete('torno');
+  url.hash = clau;
+  return url.href;
+}
+
+// Les hores del trajecte, com als selectors. En el missatge compartit, «Ara»
+// seria l'hora en què es llegeix: hi va l'hora de debò.
+function horesFitxa(perCompartir) {
+  const surto = $('surto').selectedOptions[0];
+  const torno = $('torno').selectedOptions[0];
+  const sortida = perCompartir && surto.index === 0 ? horaCurta(new Date()) : surto.textContent;
+  return T`Surto: ${sortida} · Torno: ${torno.textContent}`;
+}
+
+// El missatge sencer: el mitjà, el consell, les hores, el motiu i la roba.
+function textFitxa(f) {
+  const linies = [...f.li.querySelectorAll(':scope > .mitja-motiu, :scope > .mitja-roba')].map((p) => p.textContent);
+  return [`${f.nom}: ${f.etiqueta}. ${horesFitxa(true)}.`, ...linies].join('\n');
+}
+
+function botoCompartirFitxa(clau, classe) {
+  const nom = FITXES.get(clau).nom;
+  const b = element('button', classe);
+  b.type = 'button';
+  b.title = T`Comparteix la fitxa «${nom}»`;
+  b.setAttribute('aria-label', b.title);
+  b.append(icona('i-share-2'));
+  b.addEventListener('click', () => {
+    const f = FITXES.get(clau);
+    if (f) comparteix(urlFitxa(clau), T`Si surts: ${f.nom}`, textFitxa(f));
+  });
+  return b;
+}
+
+// La fitxa en gran: a dalt, el mitjà, compartir i la X, com la gràfica; a sota,
+// les hores i el consell, i els plecs desplegats. Si ja n'hi ha una d'oberta,
+// es canvia el que hi ha a dins.
+function obreFitxa(clau, seccio) {
+  const f = FITXES.get(clau);
+  if (!f) return;
+  let dlg = document.querySelector('dialog.vista-mitja');
+  const nova = !dlg;
+  if (nova) {
+    dlg = element('dialog');
+    dlg.setAttribute('aria-labelledby', 'vm-titol');
+    // Un toc fora de la finestra la tanca, com Esc.
+    dlg.addEventListener('click', (e) => {
+      if (e.target !== dlg) return;
+      const r = dlg.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dlg.close();
+    });
+    dlg.addEventListener('close', () => {
+      dlg.remove();
+      if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    });
+    document.body.append(dlg);
+  }
+  dlg.className = `vista-mitja ${f.nivell}`;
+  dlg.dataset.mitja = clau;
+  const cap = element('div', 'vg-cap');
+  const titol = element('h2', 'mitja-nom');
+  titol.id = 'vm-titol';
+  titol.append(icona(f.icon), f.nom);
+  // Tancar: la X de sempre, a dalt a la dreta (icona «x» de Lucide).
+  const tanca = element('button', 'boto-icona');
+  tanca.type = 'button';
+  tanca.title = T('Tanca');
+  tanca.setAttribute('aria-label', T('Tanca'));
+  tanca.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  tanca.addEventListener('click', () => dlg.close());
+  const accions = element('div', 'vg-accions');
+  accions.append(botoCompartirFitxa(clau, 'boto-icona'), tanca);
+  cap.append(titol, accions);
+  const estat = element('p', 'mitja-cap vm-estat');
+  estat.append(element('span', 'vm-hores', horesFitxa(false)), element('span', 'mitja-nivell', f.etiqueta));
+  // El contingut de la fitxa, sense el títol, i els plecs oberts, amb el seu
+  // títol a sobre. Sense els id, que ja són a la pàgina.
+  const cos = [...f.li.cloneNode(true).children].filter((c) => !c.classList.contains('mitja-cap'));
+  for (const el of cos) {
+    for (const p of [el, ...el.querySelectorAll('.mitja-plec')].filter((x) => x.classList.contains('mitja-plec'))) {
+      const boto = p.querySelector(':scope > .mitja-mes');
+      p.dataset.plec = p.id;
+      p.removeAttribute('id');
+      p.querySelector(':scope > .mitja-plec-cos').hidden = false;
+      boto.replaceWith(element('h3', null, boto.textContent));
+    }
+    for (const x of el.querySelectorAll('[id]')) x.removeAttribute('id');
+  }
+  dlg.replaceChildren(cap, estat, ...cos);
+  if (nova) {
+    dlg.showModal();
+    tanca.focus();
+  }
+  if (location.hash !== `#${clau}`) history.replaceState(null, '', `${location.pathname}${location.search}#${clau}`);
+  const desti = seccio && dlg.querySelector(`[data-plec="${CSS.escape(seccio)}"]`);
+  if (desti) {
+    desti.scrollIntoView({ block: 'start' });
+    assenyala(desti);
+  }
 }
 
 // Les franges que encara no han acabat: la primera és «Ara». Sense això, amb
@@ -706,17 +844,30 @@ function pinta(dades) {
   posaVersio(dades.versio);
 }
 
-// Un enllaç a un plec (els avisos dels trens porten a «sortir.html#trens»):
-// s'obre i s'hi va, només la primera vegada que es pinta.
+// L'enllaç d'una fitxa (sortir.html#moto) l'obre en gran; el d'un plec (els
+// avisos dels trens porten a «sortir.html#trens»), la seva fitxa, amb el plec
+// destacat. Només la primera vegada que es pinta, i quan canvia l'adreça.
 let enllacFet = false;
 function obreDelEnllac() {
   if (enllacFet) return;
   enllacFet = true;
-  const desti = location.hash && document.getElementById(location.hash.slice(1));
-  if (!desti || desti.tagName !== 'DETAILS') return;
-  desti.open = true;
-  assenyala(desti);
+  vesAlEnllac(location.hash.slice(1));
 }
+
+function vesAlEnllac(id) {
+  if (!id) return;
+  if (FITXES.has(id)) {
+    obreFitxa(id);
+    return;
+  }
+  for (const [clau, f] of FITXES) {
+    if (f.li.querySelector(`#${CSS.escape(id)}`)) {
+      obreFitxa(clau, id);
+      return;
+    }
+  }
+}
+addEventListener('hashchange', () => vesAlEnllac(location.hash.slice(1)));
 
 pintaTriats();
 $('surto').addEventListener('change', () => {

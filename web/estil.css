@@ -893,11 +893,42 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 /* Trens i trànsit dins de la fitxa del mitjà, plegats (ADR 0029 i 0052). Obert,
    la fitxa ocupa tota l'amplada per llegir-los bé. */
 .mitja-plec { margin-top: .4rem; font-size: .9rem; scroll-margin-top: 1rem; }
-.mitja-plec > summary { cursor: pointer; color: var(--enllac); }
 .mitja-plec .llista-trens { margin-top: .5rem; }
 .mitja-plec .tren { padding: .45rem .65rem; background: var(--fons); }
 .mitja-plec .nota { margin-top: .5rem; }
-.mitja:has(> .mitja-plec[open]) { grid-column: 1 / -1; }
+/* El títol de la fitxa i el dels plecs obren la fitxa en gran; el botó de
+   compartir en dona l'enllaç (sortir.js, obreFitxa; ADR 0119). */
+.mitja > .mitja-cap { align-items: center; }
+.mitja-obre, .mitja-mes { padding: 0; border: none; background: none; font: inherit; text-align: left; cursor: pointer; }
+.mitja-obre { color: inherit; font-weight: 600; }
+.mitja-obre:hover { text-decoration: underline; }
+.mitja-mes { display: inline-flex; align-items: center; gap: .15rem; color: var(--enllac); }
+.mitja-mes svg { flex: none; width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; }
+.compartir-mitja { flex: none; width: 2rem; height: 2rem; padding: .35rem; border: 1px solid var(--vora);
+  border-radius: 50%; background: var(--fons); color: var(--enllac); cursor: pointer; }
+.compartir-mitja svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; }
+.mitja-obre:focus-visible, .mitja-mes:focus-visible, .compartir-mitja:focus-visible { outline: 2px solid var(--enllac); outline-offset: 2px; }
+/* La fitxa en gran: a sobre de la pàgina, amb marge al voltant i la franja del
+   color del consell, com a la fitxa. */
+.vista-mitja { --color: var(--verd); width: min(100vw - 2rem, 40rem); max-width: none; max-height: calc(100vh - 2rem);
+  margin: auto; padding: .8rem 1rem 1rem; border: 1px solid var(--vora); border-left: .35rem solid var(--color);
+  border-radius: .75rem; background: var(--superficie); color: var(--text); overflow: auto; }
+.vista-mitja.compte { --color: var(--compte); }
+.vista-mitja.no { --color: var(--vermell); }
+.vista-mitja.neutre { --color: var(--suau); }
+.vista-mitja::backdrop { background: rgb(0 0 0 / .6); }
+.vista-mitja p { margin: 0; }
+.vista-mitja h2 svg { width: 1.3rem; height: 1.3rem; }
+.vista-mitja .vm-estat { margin: .5rem 0 .4rem; }
+.vm-hores { color: var(--suau); font-size: .9rem; }
+.vista-mitja .mitja-roba { margin-top: .35rem !important; }
+.vista-mitja .mitja-plec { margin-top: .9rem; font-size: .95rem; }
+.vista-mitja .mitja-plec h3 { margin: 0; font-size: 1rem; }
+@media (max-width: 30rem) {
+  .vista-mitja { width: calc(100vw - 1rem); max-height: calc(100vh - 1rem); padding: .6rem .7rem .8rem; }
+}
 .tren .transit-detall { margin-top: .3rem; }
 
 /* El text dels avisos de l'AEMET, citat tal com el publica (ADR 0033). */
