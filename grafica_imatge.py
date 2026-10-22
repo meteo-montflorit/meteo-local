@@ -78,7 +78,9 @@ def credits(dades, idioma):
 def pagina(dades, dia, idioma):
     """La página que dibuja solo la gráfica, con todo dentro: también los
     iconos del cielo, que son símbolos de la página de la web (casa.html)."""
-    llegeix = lambda *r: open(os.path.join(*r), encoding="utf-8").read()
+    def llegeix(*r):
+        with open(os.path.join(*r), encoding="utf-8") as f:
+            return f.read()
     icones = re.search(r'<svg width="0" height="0".*?</svg>', llegeix(WEB, "casa.html"), re.S).group(0)
     # Nada de «</script>» dentro de los datos: cerraría la etiqueta.
     json_dades = json.dumps(dades, ensure_ascii=False).replace("</", "<\\/")

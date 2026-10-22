@@ -570,8 +570,9 @@ def fes(carpeta, ultims=None, avui=None, registre=None):
     comp = comparacio(dies, emes, O.registre(registre or A.REGISTRE))
     os.makedirs(carpeta, exist_ok=True)
     noms = ["historial.json"]
-    escriu = lambda nom, dades: json.dump(dades, open(os.path.join(carpeta, nom), "w", encoding="utf-8"),
-                                          ensure_ascii=False, separators=(",", ":"))
+    def escriu(nom, dades):
+        with open(os.path.join(carpeta, nom), "w", encoding="utf-8") as f:
+            json.dump(dades, f, ensure_ascii=False, separators=(",", ":"))
     i = index(dies, avui, comp)
     i["aprenentatge"] = aprenentatge()
     escriu("historial.json", i)

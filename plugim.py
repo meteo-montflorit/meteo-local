@@ -67,7 +67,8 @@ def _pregunta(ara, casa_json):
     ara = ara or dt.datetime.now(P.ZONA)
     if ara.hour not in HORES_PREGUNTA:
         return None
-    casa = json.load(open(casa_json, encoding="utf-8"))
+    with open(casa_json, encoding="utf-8") as f:
+        casa = json.load(f)
     if not (casa.get("pluja_ara") or {}).get("plugim"):
         return None
     ultima = CF.files(PREGUNTES)[-1:]
@@ -78,7 +79,9 @@ def _pregunta(ara, casa_json):
             f"(Meteocat, {px.get('meteocat')} puntos; RainViewer, {px.get('rainviewer')}, a 3 km o menos) "
             "y ninguna estación la mide. Con tu respuesta se comprueba si el radar acierta la llovizna.")
     teclat = {"inline_keyboard": [[{"text": t, "callback_data": f"plugim:{k}"} for k, t in RESPOSTES.items()]]}
-    r, cfg = telegram("sendMessage", chat_id=json.load(open(CONFIG_BOT))["chat_id"], text=CF.capcalera(text), reply_markup=teclat)
+    with open(CONFIG_BOT, encoding="utf-8") as f:
+        chat_id = json.load(f)["chat_id"]
+    r, cfg = telegram("sendMessage", chat_id=chat_id, text=CF.capcalera(text), reply_markup=teclat)
     CF.afegeix(PREGUNTES, ["t", "missatge"] + CAMPS,
                {"t": ara.isoformat(timespec="minutes"), "missatge": r["message_id"], **{k: px.get(k) for k in CAMPS}})
     return r["message_id"]

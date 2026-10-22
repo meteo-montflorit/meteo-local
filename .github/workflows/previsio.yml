@@ -1,12 +1,16 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# En cada cambio de main: revisa el código (Ruff y ESLint), pasa las pruebas
-# y mide qué parte del programa recorren (ADR 0112). No publica: la web la publica
+# En cada cambio de main y en cada pull request: revisa el código (Ruff y
+# ESLint), pasa las pruebas y mide qué parte del programa recorren (ADR 0112;
+# en las pull requests, ADR 0119). No publica: la web la publica
 # solo el NAS (nas/), que tiene el estado y los registros. El NAS detecta los
 # cambios de main en menos de un minuto (ADR 0005).
 name: Proves
 
 on:
   push:
+    branches: [main]
+  # Las propuestas de otros se comprueban antes de aceptarlas (ADR 0119).
+  pull_request:
     branches: [main]
   workflow_dispatch:
 

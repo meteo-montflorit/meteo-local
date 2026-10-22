@@ -86,7 +86,10 @@ def observada(metars, humitat):
 def resum():
     def llegeix(nom):
         ruta = os.path.join(REGISTRE, nom)
-        return list(csv.DictReader(open(ruta, encoding="utf-8"))) if os.path.exists(ruta) else []
+        if not os.path.exists(ruta):
+            return []
+        with open(ruta, encoding="utf-8") as f:
+            return list(csv.DictReader(f))
     obs = {r["fins"]: r["metars"] for r in llegeix("nuvols-sabadell.csv")}
     casa = {r["fins"]: r for r in llegeix("estacio-casa.csv")}
     # Para cada hora, la previsión de ICON más reciente con 1 a 6 h de antelación.
@@ -156,7 +159,8 @@ def _pregunta(ara, casa_json):
     ara = ara or dt.datetime.now(P.ZONA)
     if ara.hour not in HORES_PREGUNTA:
         return None
-    c = (json.load(open(casa_json, encoding="utf-8")).get("ara_casa") or {})
+    with open(casa_json, encoding="utf-8") as f:
+        c = json.load(f).get("ara_casa") or {}
     hum = c.get("humitat_estacio", c.get("humitat"))
     if hum is None or hum < HUMITAT_PREGUNTA or c.get("plou"):
         return None
@@ -173,7 +177,9 @@ def _pregunta(ara, casa_json):
     text = (f"¿Hay niebla junto a la riera ahora? La estación de casa marca un {round(hum)} % de humedad "
             f"y no llueve.{sabadell} Con tu respuesta se comprueba si la previsión acierta la niebla.")
     teclat = {"inline_keyboard": [[{"text": t, "callback_data": f"boira:{k}"} for k, t in RESPOSTES.items()]]}
-    r, cfg = telegram("sendMessage", chat_id=json.load(open(CONFIG_BOT))["chat_id"], text=CF.capcalera(text), reply_markup=teclat)
+    with open(CONFIG_BOT, encoding="utf-8") as f:
+        chat_id = json.load(f)["chat_id"]
+    r, cfg = telegram("sendMessage", chat_id=chat_id, text=CF.capcalera(text), reply_markup=teclat)
     CF.afegeix(PREGUNTES, ["t", "missatge", "humitat", "sabadell"],
              {"t": ara.isoformat(timespec="minutes"), "missatge": r["message_id"], "humitat": hum,
               "sabadell": int(bool(sabadell))})

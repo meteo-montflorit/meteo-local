@@ -20,7 +20,8 @@ CONFIG_BOT = os.path.expanduser("~/.config/avisar-juanjo/config.json")
 
 
 def telegram(metode, config=None, **params):
-    c = json.load(open(config or CONFIG_BOT, encoding="utf-8"))
+    with open(config or CONFIG_BOT, encoding="utf-8") as f:
+        c = json.load(f)
     dades = urllib.parse.urlencode({k: json.dumps(v) if isinstance(v, (dict, list)) else v
                                     for k, v in params.items()}).encode()
     with urllib.request.urlopen(f"https://api.telegram.org/bot{c['token']}/{metode}", dades, timeout=30) as r:
