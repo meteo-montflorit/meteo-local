@@ -226,9 +226,13 @@ function avisosFonts(dades, fonts) {
 
 function pintaHorari(dades, fonts = FONTS_TEMPS) {
   const ara = new Date();
-  const generat = new Date(dades.generat);
+  const generat = horaDades(dades);
   const hores = horesActualitzacio(dades.horari);
-  const propera = properaPendent(dades, ara);
+  // La propera, quan la pàgina tornarà a llegir les dades: l'hora prevista i
+  // el marge que deixa perquè s'hagin publicat (Juanjo, 22-10-2026: amb l'hora
+  // prevista, «la gente se queda mirando la hora y ve que no pasa»).
+  const pendent = properaPendent(dades, ara);
+  const propera = pendent && new Date(pendent.getTime() + ESPERA_PUBLICACIO_MIN * 60000);
   const darreraPrevista = hores.filter((t) => t <= ara).pop();
   // L'hora d'actualització, destacada, al capdamunt de la pàgina (Juanjo, 09-10-2026:
   // «visible nada más abrir»).
@@ -245,9 +249,9 @@ function pintaHorari(dades, fonts = FONTS_TEMPS) {
   // Calculades fora de casa perquè el servidor habitual no publica (ADR 0032).
   if (dades.reserva) linia.append(' ', element('span', 'reserva', T('Dades del servidor de reserva.')));
   const avisos = [];
-  if (darreraPrevista && generat < darreraPrevista - 5 * 60000
+  if (darreraPrevista && new Date(dades.generat) < darreraPrevista - 5 * 60000
       && ara - darreraPrevista > MARGE_RETARD_MIN * 60000) {
-    avisos.push(T`L’actualització de les ${horaCurta(darreraPrevista)} no s’ha fet: les dades són de les ${horaCurta(generat)}.`);
+    avisos.push(T`L’actualització de les ${horaCurta(new Date(darreraPrevista.getTime() + ESPERA_PUBLICACIO_MIN * 60000))} no s’ha fet: les dades són de les ${horaCurta(generat)}.`);
   }
   avisos.push(...avisosFonts(dades, fonts));
   $('avis-dades').textContent = avisos.join(' ');
@@ -307,9 +311,25 @@ function baixa(url) {
   return fetch(`${url}?t=${Date.now()}`, { cache: 'no-store', signal: control.signal })
     .then((r) => {
       if (!r.ok) throw new Error(r.status);
-      return r.json();
+      // L'hora en què el fitxer va arribar al servidor (Last-Modified), per
+      // dir quan s'han actualitzat de veritat les dades (horaDades).
+      const publicat = r.headers && r.headers.get('Last-Modified');
+      return r.json().then((d) => {
+        if (publicat && d && typeof d === 'object' && !Array.isArray(d)) d.publicat_servidor = new Date(publicat).toISOString();
+        return d;
+      });
     })
     .finally(() => clearTimeout(temps));
+}
+
+// L'hora real de les dades: quan van arribar al servidor, que és uns segons o
+// un minut després de calcular-les (Juanjo, 22-10-2026: «la primera puede ser
+// la hora real de carga de datos»). Sense la capçalera, o si no quadra (més
+// d'hora que el càlcul o mitja hora més tard), la del càlcul.
+function horaDades(dades) {
+  const generat = new Date(dades.generat);
+  const publicat = dades.publicat_servidor && new Date(dades.publicat_servidor);
+  return publicat && publicat >= generat && publicat - generat < 30 * 60000 ? publicat : generat;
 }
 
 // Si les dades d'IONOS van per darrere: tenen més de DADES_RESERVA_MIN o, si

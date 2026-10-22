@@ -25,8 +25,16 @@ actualizarse y enlace al tiempo en casa.
   aunque ya haya pasado y se esté publicando, mientras no lleve más de
   `MARGE_RETARD_MIN` de retraso. Contada desde el reloj, una página abierta a
   las 13:31 con datos de las 13:15 decía «propera: 13:45» y no leía la de las
-  13:30 hasta las 13:47. La misma hora sale en «Actualitzat a les… ·
-  propera…».
+  13:30 hasta las 13:47.
+- **Las horas de «Actualitzat a les… · propera…» son las reales** (desde la
+  3.185.0; Juanjo, 22-10-2026: «la gente se queda mirando la hora y ve que no
+  pasa»). La primera, la hora en que los datos llegaron al servidor (la
+  cabecera `Last-Modified` del JSON, `horaDades`), unos segundos o un minuto
+  después de calcularlos; sin la cabecera, o si no cuadra, la del cálculo
+  (`generat`). La segunda, la hora en que la página volverá a leer los datos:
+  la prevista más `ESPERA_PUBLICACIO_MIN`. Hasta entonces decía la hora
+  prevista del cálculo (las 11:45), y los datos nuevos no se veían hasta las
+  11:47. El 22-10-2026, los de las 11:45 llegaron a IONOS a las 11:45:39.
 - **Trayecto solo en franja** (`franjaActiva` en `web/app.js`): de 5:00 a
   7:30 y de 13:00 a 15:30, más el desfase y la espera de publicación. Fuera de
   ellas, o con datos anteriores al inicio de la franja, la página dice

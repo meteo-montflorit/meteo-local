@@ -282,6 +282,17 @@ class Web(unittest.TestCase):
         self.assertEqual(frase([14, 15, 14, 13, 12, 12], [6.5] * 10, vent=20),
                          "Aquesta tarda, fresc i serè; aquesta nit, amb molt de fred i serè.")
 
+    def test_l_hora_de_les_dades_es_la_d_arribada_al_servidor(self):
+        # Juanjo, 22-10-2026: «la primera puede ser la hora real de carga de datos».
+        ara = "2026-10-22T11:50:00+02:00"
+        hora = lambda d: self.avalua(ara, f"horaDades({json.dumps(d)}).toISOString()")  # noqa: E731
+        self.assertEqual(hora({"generat": "2026-10-22T11:45+02:00", "publicat_servidor": "2026-10-22T09:46:39.000Z"}),
+                         "2026-10-22T09:46:39.000Z")
+        # Sense la capçalera, o si no quadra, la del càlcul.
+        self.assertEqual(hora({"generat": "2026-10-22T11:45+02:00"}), "2026-10-22T09:45:00.000Z")
+        self.assertEqual(hora({"generat": "2026-10-22T11:45+02:00", "publicat_servidor": "2026-10-22T10:46:00.000Z"}),
+                         "2026-10-22T09:45:00.000Z")
+
     def test_el_fons_i_el_dibuix_d_ara_segons_el_cel(self):
         # Juanjo, 22-10-2026 (ADR 0121): el fons i el dibuix, del cel del primer
         # tram; de nit, a l'alba i a la posta, segons l'altura del sol; si plou, la pluja.
