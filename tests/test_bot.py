@@ -627,11 +627,46 @@ class Consultes(unittest.TestCase):
             B.atén(api, subs, missatge)
         return api.enviats[-1][1]["text"]
 
+    def test_busos(self):
+        """/busos (ADR 0120): com «Consultes › Busos» de la web."""
+        subs = {"7": {"idioma": "ca", "avisos": [], "resum": None}}
+        ara_n = ARA.astimezone(B.ZONA).replace(tzinfo=None)
+        h = lambda minuts: (ara_n + dt.timedelta(minutes=minuts)).isoformat(timespec="minutes")  # noqa: E731
+        d = json.load(open(os.path.join(self.dir.name, "montflorit.json")))
+        d["busos"] = {"temps_real_de": h(-2), "incidencies": [
+            {"linies": ["CV1"], "titol": {"ca": "Desviament <provisional>", "es": "Desvío"}, "url": {"ca": "https://amb/a"},
+             "inici": h(-3000), "fi": (ara_n + dt.timedelta(days=1)).replace(hour=23, minute=59).isoformat(timespec="minutes")},
+            {"linies": ["CV1"], "titol": {"ca": "Ja acabada"}, "url": {}, "inici": h(-300), "fi": h(-10)}],
+            "linies": [{"linia": "CV1", "nom": "Canaletes – Flor de Maig", "horari": "https://amb/cv1.pdf", "sentits": [
+                {"cap_a": "Flor de Maig", "parades": [{"parada": "Pl. de les Banderes", "hores": [h(-5), h(10), h(40), h(70)]}]},
+                {"cap_a": "Canaletes", "parades": [{"parada": "Canaletes", "hores": [h(60 * 30)]}]}]}]}
+        json.dump(d, open(os.path.join(self.dir.name, "montflorit.json"), "w"))
+        t = self.ordre("/busos", subs)
+        self.assertTrue(t.startswith("<b>Busos de Montflorit</b>\n\n<b>CV1</b> Canaletes – Flor de Maig\n"))
+        # Les dues hores següents de les 2 hores vinents; la que ja ha passat, no.
+        hm = lambda minuts: f"{(ara_n + dt.timedelta(minutes=minuts)).hour}:{(ara_n + dt.timedelta(minutes=minuts)).minute:02d}"  # noqa: E731
+        self.assertIn(f"• Pl. de les Banderes: {hm(10)} i {hm(40)}\n", t)
+        # Sense cap en 2 hores: la propera, amb el dia si no és avui.
+        dema = ara_n + dt.timedelta(minutes=60 * 30)
+        self.assertIn(f"• Canaletes: {B.DIES['ca'][dema.weekday()]} {dema.day} a les {hm(60 * 30)}", t)
+        self.assertIn('⚠️ <a href="https://amb/a">Desviament &lt;provisional&gt;</a>, fins al ', t)
+        self.assertNotIn("Ja acabada", t)
+        self.assertIn("Horari complet (PDF)", t)
+        self.assertIn(f"amb dades de l'AMB de les {(ara_n - dt.timedelta(minutes=2)):%H:%M}.", t)
+        subs["7"]["idioma"] = "es"
+        t = self.ordre("/busos", subs)
+        self.assertIn(f"• Pl. de les Banderes: {hm(10)} y {hm(40)}\n", t)
+        self.assertIn("→ Hacia Canaletes", t)
+        # Sense dades dels busos.
+        d["busos"] = None
+        json.dump(d, open(os.path.join(self.dir.name, "montflorit.json"), "w"))
+        self.assertIn("Ahora no hay datos de los autobuses.", self.ordre("/busos", subs))
+
     def test_les_consultes_no_toquen_ningu(self):
         subs = {"1": {"idioma": "ca", "avisos": ["riera"], "resum": "7", "alta": "x"},
                 "7": {"idioma": "es", "avisos": ["perill", "pluja"], "resum": "20", "alta": "y"}}
         abans = json.dumps(subs, sort_keys=True)
-        for o in ("/dema", "/radar", "/trens", "/avisos_actius", "/ara", "/resum", "/ajuda", "/xyz"):
+        for o in ("/dema", "/radar", "/trens", "/busos", "/avisos_actius", "/ara", "/resum", "/ajuda", "/xyz"):
             self.ordre(o, subs, chat=7, idioma="es")
         self.assertEqual(json.dumps(subs, sort_keys=True), abans)
 

@@ -35,21 +35,21 @@ NOM = "Bot Temps a Montflorit"
 TEXTOS = {
     "ca": ([("avisos", "Tria quins avisos reps"), ("avui", "La previsió d'avui"), ("dema", "La previsió de demà"),
             ("ara", "El temps ara"), ("radar", "El radar ara"), ("sol", "El sol i l'índex UV"),
-            ("aire", "La qualitat de l'aire"), ("pollen", "El pol·len de la setmana"), ("trens", "Els trens de Cerdanyola"),
+            ("aire", "La qualitat de l'aire"), ("pollen", "El pol·len de la setmana"), ("trens", "Els trens de Cerdanyola"), ("busos", "Els busos del barri"),
             ("transit", "El trànsit a menys de 5 km"), ("llum", "Talls de llum al barri"),
             ("avisos_actius", "Avisos oficials vigents"), ("baixa", "Dona't de baixa")],
            "Bot personal: tu tries quins avisos del temps a Montflorit (Cerdanyola del Vallès) vols rebre: "
            "riera de Sant Cugat (en proves), perill per pluja o vent, pluja a punt de començar, talls de llum del barri i la previsió diària; "
-           "i li pots preguntar pel sol, l'aire, el pol·len, els trens, el trànsit i els talls de llum. Orientatiu, no oficial. Si no vols triar res, hi ha el Canal Temps a Montflorit: @TempsMontflorit.",
+           "i li pots preguntar pel sol, l'aire, el pol·len, els trens, els busos, el trànsit i els talls de llum. Orientatiu, no oficial. Si no vols triar res, hi ha el Canal Temps a Montflorit: @TempsMontflorit.",
            "Bot personal: tria quins avisos del temps a Montflorit vols rebre."),
     "es": ([("avisos", "Elige qué avisos recibes"), ("avui", "La previsión de hoy"), ("dema", "La previsión de mañana"),
             ("ara", "El tiempo ahora"), ("radar", "El radar ahora"), ("sol", "El sol y el índice UV"),
-            ("aire", "La calidad del aire"), ("pollen", "El polen de la semana"), ("trens", "Los trenes de Cerdanyola"),
+            ("aire", "La calidad del aire"), ("pollen", "El polen de la semana"), ("trens", "Los trenes de Cerdanyola"), ("busos", "Los autobuses del barrio"),
             ("transit", "El tráfico a menos de 5 km"), ("llum", "Cortes de luz en el barrio"),
             ("avisos_actius", "Avisos oficiales vigentes"), ("baixa", "Darse de baja")],
            "Bot personal: tú eliges qué avisos del tiempo en Montflorit (Cerdanyola del Vallès) quieres recibir: "
            "riera de Sant Cugat (en pruebas), peligro por lluvia o viento, lluvia a punto de empezar, cortes de luz del barrio y la previsión "
-           "diaria; y le puedes preguntar por el sol, el aire, el polen, los trenes, el tráfico y los cortes de luz. Orientativo, no oficial. Si no quieres elegir nada, está el Canal Temps a Montflorit: @TempsMontflorit.",
+           "diaria; y le puedes preguntar por el sol, el aire, el polen, los trenes, los autobuses, el tráfico y los cortes de luz. Orientativo, no oficial. Si no quieres elegir nada, está el Canal Temps a Montflorit: @TempsMontflorit.",
            "Bot personal: elige qué avisos del tiempo en Montflorit quieres recibir."),
 }
 for idioma, (ordres, descripcio, curta) in TEXTOS.items():

@@ -62,8 +62,12 @@ tres días, que desaparece al abrir cada una, y no en «Si surts».
 - Una fuente más que puede fallar: si falla, la consulta dice «Ara aquesta
   consulta no està disponible» y el error va al registro (`errors` de
   `casa.json`), como las demás.
-- El bot de Telegram no tiene una orden para los autobuses: «Consultes ›
-  Busos» es la única consulta que no sale de un texto del bot (ADR 0054).
+- El bot de Telegram responde a **/busos** (desde la 3.182.0, a petición
+  de Juanjo el mismo 22-10-2026) con lo mismo que la web: cada línea con sus
+  incidencias, cada sentido con sus paradas y las dos próximas horas, el
+  horario en PDF y la hora de los datos (`bot.text_busos_bot`). En la web,
+  «Consultes › Busos» se sigue dibujando con los datos, no con ese texto,
+  para poder plegar las líneas.
 - El muestreo de `calibracio/mostreig_busos.py` sigue en marcha en el NAS.
 
 ## Evidencia

@@ -86,7 +86,7 @@ T = {
         "nit": "A les 21 h, la previsió de demà",
         "baixa": "Fet: s'han esborrat les teves dades i ja no rebràs res. Amb /start pots tornar-hi.",
         "ajuda": ("/avisos tria què reps · /avui la previsió d'avui · /dema la de demà · /ara el temps ara · "
-                  "/radar el radar ara · /sol el sol · /aire la qualitat de l'aire · /pollen el pol·len · /trens els trens · "
+                  "/radar el radar ara · /sol el sol · /aire la qualitat de l'aire · /pollen el pol·len · /trens els trens · /busos els busos · "
                   "/transit el trànsit · /llum els talls de llum · /avisos_actius els avisos oficials · "
                   "/baixa deixa de rebre'n i esborra les teves dades"),
         "velles": "Les dades de Temps a Montflorit no s'actualitzen des de les {}: ara no puc donar la previsió.",
@@ -113,7 +113,7 @@ T = {
         "nit": "A las 21 h, la previsión de mañana",
         "baixa": "Hecho: se han borrado tus datos y ya no recibirás nada. Con /start puedes volver.",
         "ajuda": ("/avisos elige qué recibes · /avui la previsión de hoy · /dema la de mañana · /ara el tiempo ahora · "
-                  "/radar el radar ahora · /sol el sol · /aire la calidad del aire · /pollen el polen · /trens los trenes · "
+                  "/radar el radar ahora · /sol el sol · /aire la calidad del aire · /pollen el polen · /trens los trenes · /busos los autobuses · "
                   "/transit el tráfico · /llum los cortes de luz · /avisos_actius los avisos oficiales · "
                   "/baixa deja de recibir y borra tus datos"),
         "velles": "Los datos de Temps a Montflorit no se actualizan desde las {}: ahora no puedo dar la previsión.",
@@ -1110,6 +1110,85 @@ def text_trens_bot(dades, idioma, moment):
     return f"<b>{cap}</b>\n" + "\n".join(files)
 
 
+# --- Busos (ADR 0120) -----------------------------------------------------------------
+# Com «Consultes › Busos» de la web (web/comu.js, blocBusos): cada línia amb les
+# seves incidències i, de cada sentit, les parades del barri amb les dues
+# hores de pas següents de les 2 hores vinents o, si no n'hi ha, la propera.
+# Els avisos de l'AMB, tal com els publica, en català o en castellà.
+
+def _hora_bus(h):
+    return f"{h.hour}:{h.minute:02d}"
+
+
+def _dia_bus(d, idioma):
+    return f"{DIES[idioma][d.weekday()]} {d.day}"
+
+
+def hores_parada(hores, des, idioma):
+    futures = [h for h in (dt.datetime.fromisoformat(x) for x in hores) if h >= des]
+    properes = [h for h in futures if h <= des + dt.timedelta(hours=2)][:2]
+    if properes:
+        return (" y " if idioma == "es" else " i ").join(_hora_bus(h) for h in properes)
+    if not futures:
+        return "—"
+    d = futures[0]
+    if d.date() == des.date():
+        return _hora_bus(d)
+    return f"{_dia_bus(d, idioma)} a las {_hora_bus(d)}" if idioma == "es" else f"{_dia_bus(d, idioma)} a les {_hora_bus(d)}"
+
+
+def linia_incidencia_bus(inc, des, idioma):
+    es = idioma == "es"
+    titol = (inc.get("titol") or {}).get(idioma) or (inc.get("titol") or {}).get("ca") or ""
+    url = (inc.get("url") or {}).get(idioma) or (inc.get("url") or {}).get("ca")
+    text = enllac(url, titol) if url else html.escape(titol, quote=False)
+    inici = inc.get("inici") and dt.datetime.fromisoformat(inc["inici"])
+    fi = inc.get("fi") and dt.datetime.fromisoformat(inc["fi"])
+    if inici and inici > des:
+        quan = (f", a partir de las {_hora_bus(inici)}" if es else f", a partir de les {_hora_bus(inici)}") \
+            if inici.date() == des.date() else \
+            (f", a partir del {_dia_bus(inici, idioma)} a las {_hora_bus(inici)}" if es
+             else f", a partir del {_dia_bus(inici, idioma)} a les {_hora_bus(inici)}")
+    elif fi:
+        quan = (f", hasta las {_hora_bus(fi)}" if es else f", fins a les {_hora_bus(fi)}") if fi.date() == des.date() \
+            else (f", hasta el {_dia_bus(fi, idioma)}" if es else f", fins al {_dia_bus(fi, idioma)}")
+    else:
+        quan = ""
+    return f"⚠️ {text}{quan}."
+
+
+def text_busos_bot(dades, idioma, moment):
+    vell = dades_velles(dades, idioma, moment)
+    if vell:
+        return vell
+    es = idioma == "es"
+    busos = dades.get("busos") or {}
+    if not busos.get("linies"):
+        return "Ahora no hay datos de los autobuses." if es else "Ara no hi ha dades dels busos."
+    des = moment.astimezone(ZONA).replace(tzinfo=None)
+    blocs = ["<b>Autobuses de Montflorit</b>" if es else "<b>Busos de Montflorit</b>"]
+    for l in busos["linies"]:
+        files = [f"<b>{html.escape(l['linia'])}</b> {html.escape(l.get('nom', ''))}"]
+        for inc in busos.get("incidencies") or []:
+            fi = inc.get("fi") and dt.datetime.fromisoformat(inc["fi"])
+            if l["linia"] in inc.get("linies", []) and not (fi and fi < des):
+                files.append(linia_incidencia_bus(inc, des, idioma))
+        for s in l.get("sentits") or []:
+            files.append(("→ Hacia " if es else "→ Cap a ") + html.escape(s["cap_a"]))
+            files += [f"• {html.escape(p['parada'])}: {hores_parada(p['hores'], des, idioma)}" for p in s["parades"]]
+        if l.get("horari"):
+            files.append(enllac(l["horari"], "Horario completo (PDF)" if es else "Horari complet (PDF)"))
+        blocs.append("\n".join(files))
+    if busos.get("temps_real_de"):
+        h = dt.datetime.fromisoformat(busos["temps_real_de"]).strftime("%H:%M")
+        peu = (f"<i>Hora de llegada estimada, con datos del AMB de las {h}.</i>" if es
+               else f"<i>Hora d'arribada estimada, amb dades de l'AMB de les {h}.</i>")
+    else:
+        peu = ("<i>Horas del horario del AMB: ahora no llegan las del tiempo real.</i>" if es
+               else "<i>Hores de l'horari de l'AMB: ara no arriben les del temps real.</i>")
+    return "\n\n".join(blocs + [peu])
+
+
 TRANSIT = "https://transit.gencat.cat/{}/informacio-viaria/estat-transit/"
 
 
@@ -1650,7 +1729,7 @@ def linies_riscos(riscos, idioma, moment):
 # no existeix compta com «altres», sense guardar què s'ha escrit.
 
 COMPTADOR = os.path.join(BASE, "comptador.json")
-ORDRES = ("/start", "/avisos", "/menu", "/avui", "/resum", "/dema", "/ara", "/radar", "/sol", "/aire", "/pollen", "/trens",
+ORDRES = ("/start", "/avisos", "/menu", "/avui", "/resum", "/dema", "/ara", "/radar", "/sol", "/aire", "/pollen", "/trens", "/busos",
           "/transit", "/llum", "/avisos_actius", "/baixa")
 COMPTADOR_DIES = 400
 
@@ -1803,7 +1882,7 @@ def canvi_canal(api, cm):
     avisa_juanjo(f"Temps a Montflorit: {que}.{total}")
 
 
-CONSULTES = ("/dema", "/trens", "/transit", "/llum", "/radar", "/sol", "/aire", "/pollen", "/avisos_actius")
+CONSULTES = ("/dema", "/trens", "/busos", "/transit", "/llum", "/radar", "/sol", "/aire", "/pollen", "/avisos_actius")
 
 
 def atén(api, subs, update, estat=None):
@@ -1866,7 +1945,7 @@ def atén(api, subs, update, estat=None):
                     imatge_resum(sub["idioma"], moment, dema=True))
     elif ordre in CONSULTES:
         dades = llegeix(os.path.join(DADES, "montflorit.json"), {})
-        funcio = {"/trens": text_trens_bot, "/transit": text_transit_bot, "/llum": text_llum_bot,
+        funcio = {"/trens": text_trens_bot, "/busos": text_busos_bot, "/transit": text_transit_bot, "/llum": text_llum_bot,
                   "/radar": text_radar_bot,
                   "/sol": text_sol_bot, "/aire": text_aire_bot, "/pollen": text_pollen_bot,
                   "/avisos_actius": text_avisos_actius}[ordre]

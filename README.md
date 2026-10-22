@@ -70,8 +70,8 @@ ADR 0048): riera de Sant Cugat, peligro, lluvia en unos minutos y la
 previsión del día, lo que elija cada uno. También por Telegram: el «Bot Temps a Montflorit»
 ([@TempsMontfloritBot](https://t.me/TempsMontfloritBot)), donde cada uno elige
 riera de Sant Cugat, peligro, lluvia en unos minutos y la previsión del día,
-y al que se puede preguntar por los trenes (/trens) y el tráfico (/transit)
-(ADR 0053), y el «Canal Temps a Montflorit»
+y al que se puede preguntar por los trenes (/trens), los autobuses (/busos,
+ADR 0120) y el tráfico (/transit) (ADR 0053), y el «Canal Temps a Montflorit»
 ([@TempsMontflorit](https://t.me/TempsMontflorit)), informativo, con la
 riera, el peligro, los avisos oficiales nuevos de Meteocat y Protección Civil (los de
 AEMET, para lo que Meteocat no avisa: ADR 0093) y la
