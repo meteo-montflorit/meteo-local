@@ -120,5 +120,6 @@
 | [0116](0116-nubes-y-presion-en-la-grafica.md) | Las nubes y la presión en la gráfica, la presión llevada a la estación | aceptado |
 | [0117](0117-vista-previa-al-compartir.md) | La vista previa al compartir un enlace (Open Graph) | aceptado |
 | [0118](0118-portada-mas-sencilla.md) | Una portada más sencilla: la conclusión arriba | aceptado |
+| [0120](0120-autobuses-del-barrio.md) | Los autobuses del barrio: horas de paso e incidencias del AMB | aceptado |
 
 Plantilla: [0000-plantilla.md](0000-plantilla.md). Para crear uno: `nuevo-adr "Título"`.

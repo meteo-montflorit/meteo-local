@@ -480,6 +480,8 @@ var IDIOMA = {
     "Mapa del recorregut (PDF)": "Mapa del recorrido (PDF)",
     "Horari complet (PDF)": "Horario completo (PDF)",
     "Hora d’arribada estimada, amb dades de l’AMB de les {0}.": "Hora de llegada estimada, con datos del AMB de las {0}.",
+    "Hores de l’horari de l’AMB: ara no arriben les del temps real.": "Horas del horario del AMB: ahora no llegan las del tiempo real.",
+    "Amb incidències": "Con incidencias",
     "{0} a les {1}": "{0} a las {1}",
     ", a partir de les {0}.": ", a partir de las {0}.",
     ", a partir del {0} a les {1}.": ", a partir del {0} a las {1}.",

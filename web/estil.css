@@ -316,7 +316,7 @@ h1 { margin: 0; font-size: 1.6rem; line-height: 1.2; }
 .barra { margin: .8rem 0 0; }
 .barra .pagines { margin: 0; }
 /* «Avisos al mòbil», la campana de la botonera; a la seva pàgina, marcada. */
-.boto-avisos, .pagines a.amb-nou { position: relative; }
+.boto-avisos, .pagines a.amb-nou, .consulta-opcio.amb-nou { position: relative; }
 /* Situació de perill nova a la pestanya «Perill» (comu.js, ADR 0071). */
 .punt-perill, .punt-riera { display: inline-block; width: .6rem; height: .6rem; margin-left: .35rem; border-radius: 50%;
   background: var(--vermell); box-shadow: 0 0 0 2px var(--fons); vertical-align: middle; }

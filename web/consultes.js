@@ -23,6 +23,24 @@ const OPCIONS = [
   ['llum', () => T('Llum'), 'i-zap-off', () => T('Els talls de llum a prop del barri, segons e-distribució.')],
 ];
 const CLAU_TRIADA = 'meteo.consultes';
+// «Nou!» damunt d'una opció nova fins que s'obre (ho recorda el navegador) o
+// fins a la data, com les pestanyes (comu.js, marcaNovetats).
+const NOVETATS_OPCIONS = { busos: { clau: 'meteo.busos-vist', fins: FI_NOU_BUSOS } };
+
+function opcioNova(clau, ara = new Date()) {
+  const n = NOVETATS_OPCIONS[clau];
+  if (!n || ara >= n.fins) return false;
+  try { return localStorage.getItem(n.clau) !== '1'; } catch (_) { return true; }
+}
+
+function opcioVista(clau) {
+  const n = NOVETATS_OPCIONS[clau];
+  if (!n) return;
+  try { localStorage.setItem(n.clau, '1'); } catch (_) {}
+  const etiqueta = document.querySelector(`#opcions input[value="${clau}"]`)?.parentElement;
+  etiqueta?.classList.remove('amb-nou');
+  etiqueta?.querySelector('.xip-nou')?.remove();
+}
 let DADES = null;
 
 // La triada: la de l'adreça (consultes.html#transit), la de l'última vegada en
@@ -40,6 +58,7 @@ let triada = triadaInicial();
 
 function tria(clau) {
   triada = clau;
+  opcioVista(clau);
   try { localStorage.setItem(CLAU_TRIADA, clau); } catch (_) {}
   history.replaceState(null, '', '#' + clau);
   pintaConsulta();
@@ -57,6 +76,10 @@ function pintaOpcions() {
     boto.checked = clau === triada;
     boto.addEventListener('change', () => tria(clau));
     etiqueta.append(boto, icona(icon), element('span', null, nom()));
+    if (clau !== triada && opcioNova(clau)) {
+      etiqueta.classList.add('amb-nou');
+      etiqueta.append(element('span', 'xip-nou', T('Nou!')));
+    }
     caixa.append(etiqueta);
   }
 }
@@ -547,10 +570,12 @@ function repintaAvisos() {
 }
 
 pintaOpcions();
+opcioVista(triada);
 window.addEventListener('hashchange', () => {
   const clau = location.hash.slice(1);
   if (clau === triada || !OPCIONS.some(([c]) => c === clau)) return;
   triada = clau;
+  opcioVista(clau);
   for (const r of document.querySelectorAll('#opcions input')) r.checked = r.value === clau;
   pintaConsulta();
   assenyala($('consulta'));

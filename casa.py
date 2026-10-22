@@ -48,6 +48,7 @@ import llum as LL
 import sol_estacio as SE
 import transit as TT
 import trens as TR
+import busos as BU
 import wunderground as WU
 
 HORAS = 24
@@ -971,6 +972,13 @@ def recoger(anterior=None):
     except Exception as ex:
         salida["trens"] = None
         salida["errors"].append(f"trens: {ex}")
+    # Los autobuses del barrio, para «Consultes» y «Si surts» (ADR 0120).
+    try:
+        salida["busos"] = BU.calcula(P.AHORA)
+        salida["errors"] += [f"busos: {e}" for e in salida["busos"].pop("errors", [])]
+    except Exception as ex:
+        salida["busos"] = None
+        salida["errors"].append(f"busos: {ex}")
     # Incidencias de tráfico de cerca, para el coche y la moto (ADR 0052).
     try:
         salida["transit"] = TT.calcula(P.AHORA)

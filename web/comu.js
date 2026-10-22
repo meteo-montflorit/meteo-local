@@ -1252,9 +1252,10 @@ function blocBusos(busos, des) {
     targeta.append(enllacos);
     parts.push(targeta);
   }
-  if (busos.temps_real_de) {
-    parts.push(element('p', 'bus-nota', T`Hora d’arribada estimada, amb dades de l’AMB de les ${horaCurta(busos.temps_real_de)}.`));
-  }
+  // Sense el temps real, les hores són les de l'horari: es diu (busos.py).
+  parts.push(element('p', 'bus-nota', busos.temps_real_de
+    ? T`Hora d’arribada estimada, amb dades de l’AMB de les ${horaCurta(busos.temps_real_de)}.`
+    : T('Hores de l’horari de l’AMB: ara no arriben les del temps real.')));
   return parts;
 }
 
@@ -1690,11 +1691,15 @@ function pintaResum(text) {
 // navegador) i, per a tothom, una setmana després de publicar-la. El «Nou:»
 // del començament de la pàgina, igual (Juanjo, 08-10-2026). La campana
 // d'«Avisos al mòbil» (ADR 0048) i la pestanya «Perill» (ADR 0071; Juanjo,
-// 11-10-2026: «con las mismas reglas»).
+// 11-10-2026: «con las mismas reglas»). La pestanya «Consultes», pels busos
+// (ADR 0120), tres dies, com l'opció «Busos» de dins (consultes.js; Juanjo,
+// 22-10-2026: «al abrir cada uno de ellos desaparece la etiqueta»).
+const FI_NOU_BUSOS = new Date('2026-10-25T10:00:00+01:00');
 const NOVETATS = [
   { pagina: 'avisos.html', boto: '.boto-avisos', clau: 'meteo.avisos-vist', fins: new Date('2026-10-16T00:00:00+02:00') },
   { pagina: 'perill.html', boto: '.pagines a[href$="perill.html"]', clau: 'meteo.perill-vist',
     fins: new Date('2026-10-19T00:00:00+02:00') },
+  { pagina: 'consultes.html', boto: '.pagines a[href$="consultes.html"]', clau: 'meteo.consultes-vist', fins: FI_NOU_BUSOS },
 ];
 
 function marcaNovetats(ara = new Date()) {

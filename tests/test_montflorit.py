@@ -222,9 +222,12 @@ class Web(unittest.TestCase):
         # No queda catalán en lo que se lee.
         for nom, html in (("es/index.html", index), ("es/fonts.html", fonts)):
             M.comprova(nom, html, M.PROHIBIDES_FONTS if "fonts" in nom else M.PROHIBIDES)
-            visible = M.text_visible(html).lower()
+            # En minúscula o amb majúscula inicial: «AMB» (l'Àrea Metropolitana,
+            # ADR 0120) és una sigla, no la preposició.
+            # Sense les adreces, que no es llegeixen (www.amb.cat).
+            visible = re.sub(r"https?://\S+", "", M.text_visible(html))
             for paraula in ("pluja", "avui", "temps", "amb", "dels", "és", "hores"):
-                self.assertIsNone(re.search(rf"\b{paraula}\b", visible), f"{nom}: «{paraula}»")
+                self.assertIsNone(re.search(rf"\b({paraula}|{paraula.capitalize()})\b", visible), f"{nom}: «{paraula}»")
 
     def test_un_text_nou_sense_traduir_falla(self):
         with self.assertRaises(ValueError):

@@ -44,8 +44,8 @@ y en [castellano](https://meteo-montflorit.github.io/es/). Tiene cuatro páginas
 - **Si surts**: para quien sale a una hora y vuelve a otra, cómo irá cada
   medio (a pie, bici o patinete, moto, coche y transporte público), qué ropa
   ponerse, consejos (lluvia, sol, noche, calor), si circulan los trenes que
-  paran en Cerdanyola (ADR 0029) y las incidencias de tráfico de cerca (ADR
-  0052). Arriba, una línea con los medios que van bien y una por cada uno de
+  paran en Cerdanyola (ADR 0029), las incidencias de los autobuses del barrio
+  (ADR 0120) y las de tráfico de cerca (ADR 0052). Arriba, una línea con los medios que van bien y una por cada uno de
   los demás (ADR 0074). Cada persona elige qué medios ve.
 - **Consultes**: lo mismo que el bot, eligiendo qué ver: hoy, mañana, el sol,
   la calidad del aire, el polen, los trenes, los autobuses, el tráfico o los cortes de luz del
@@ -155,6 +155,9 @@ Fuentes de la previsión:
    responde, los de Renfe), la posición en tiempo real de Renfe (R4, R7 y R8)
    y de FGC (S2), para «Si surts» (`trens.py`, ADR 0029), con el horario de
    cada línea en Cerdanyola sacado de sus GTFS (ADR 0038).
+   **Autobuses**: el horario, las horas de paso en tiempo real y los avisos del
+   AMB para las líneas CV1, CV4 y CV5 en las paradas del barrio, para
+   «Consultes» y «Si surts» (`busos.py`, ADR 0120; CC BY 4.0).
 6. **Tráfico**: las incidencias del Servei Català de Trànsit a 5 km o menos
    (retenciones, accidentes, averías y obras que desvían o cortan la vía), de
    los datos abiertos de la Generalitat (`transit.py`, ADR 0052).
@@ -199,6 +202,7 @@ Umbrales y lugares, en `config.py`. El porqué, en los ADR.
 | `RESTAURAR.md` | Cómo volver a montarlo todo en otro NAS o en otro hosting, con las claves y el registro de la copia privada (ADR 0044 y 0045) |
 | `sol_estacio.py` | Detecta el sol directo sobre el termómetro de la estación de casa y estima la temperatura y la humedad con las vecinas (ADR 0081) |
 | `trens.py` | Estado de las líneas de tren de Cerdanyola con los avisos de Rodalies y los datos en tiempo real de Renfe y FGC (ADR 0029 y 0078) |
+| `busos.py` | Las líneas de autobús del barrio (CV1, CV4 y CV5): horas de paso por cada parada, con el horario del AMB corregido con su tiempo real, y sus avisos (ADR 0120) |
 | `transit.py` | Incidencias de tráfico de cerca, del Servei Català de Trànsit (ADR 0052) |
 | `pollen.py` | Polen y esporas de la semana en Bellaterra, del Punt d'Informació Aerobiològica (ADR 0054) |
 | `aire.py` | Calidad del aire ahora y lo peor de hoy, del modelo CAMS por Open-Meteo (ADR 0054) |
@@ -227,6 +231,7 @@ python3 casa.py --json /tmp/casa.json          # los datos, con red
 python3 montflorit.py web /tmp/web             # la web pública
 python3 montflorit.py dades /tmp/casa.json /tmp/web/montflorit.json
 python3 trens.py                               # el estado de los trenes
+python3 busos.py                               # los autobuses del barrio
 python3 transit.py                             # las incidencias de tráfico de cerca
 python3 pollen.py                              # el polen de la semana en Bellaterra
 python3 aire.py                                # la calidad del aire
