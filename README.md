@@ -137,9 +137,8 @@ Fuentes de la previsión:
    el de Sant Cugat, por medias horas: el anemómetro de la particular no
    funciona bien (ADR 0037). Además se estima con las vecinas que lo siguen
    bien, llevadas a 10 m con un factor que se aprende cada día; está en
-   prueba y la página no lo muestra hasta que se decida (ADR 0064). La estación de Montflorit de meteocerdanyola.com
-   se usó del 05-10-2026 al 09-10-2026 (ADR 0004 y 0058). Las nubes, del
-   METAR del aeropuerto de Sabadell, cada media hora, para el cielo de la hora
+   prueba y la página no lo muestra hasta que se decida (ADR 0064). Las nubes,
+   del METAR del aeropuerto de Sabadell, cada media hora, para el cielo de la hora
    en curso y para elegir qué mezcla de modelos acierta más (ADR 0088).
 2. **Radar** de RainViewer o de Meteocat: una comparación diaria decide cuál
    acierta más, y se usa la imagen de esa salvo que sea más vieja que la de
