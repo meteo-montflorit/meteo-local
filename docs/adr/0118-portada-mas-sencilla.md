@@ -30,6 +30,26 @@ con una simulación de avisos. Juanjo: «me gusta, publica la portada nueva».
   los modelos no ven lluvia pero hay aviso de lluvia o tempestades en 24
   horas (`casa.avisDePluja`), lo dice: «Els models no hi veuen pluja, però
   hi ha avís: mira'l a dalt.» (ADR 0101: lo oficial manda).
+- **Cómo se nota cada tramo, en la misma frase** (desde la 3.179.0): «Aquesta
+  nit, fred i molt ennuvolat; aquest matí, encara fred i cobert.». Palabras
+  de la calle, sin cifras (Juanjo, 22-10-2026: «algo que haga referencia a
+  si hace frío o calor o heladas… no quiero datos»), con siete niveles que
+  fijó Juanjo como orientativos, no una clasificación oficial: fred intens
+  (bajo 0 °C), molt fred (0–5), fred (6–11), fresc (12–17),
+  temperatura agradable (18–25; «agradable» solo no se entendía, Juanjo),
+  calor (26–32) y molta calor (33 o más). Se mide la temperatura
+  que se nota (`esNota`, el índice de Environment Canada que ya usaban la
+  ropa y «Si surts», ahora en `comu.js`), redondeada: la mínima por la noche
+  y por la mañana y la máxima por la tarde (`casa.sensacioTram`). Si los dos
+  tramos coinciden, el segundo dice «encara»; con el mismo cielo y la misma
+  sensación, una sola frase. La leyenda de la tabla («Fred, fresc, calor…»)
+  da los intervalos y dice que son orientativos. Sin «glaçada»: tiene un
+  significado meteorológico propio y ya sale como fenómeno en los tramos.
+  La sensación va delante del cielo: «molt ennuvolat i fred» se leía «molt
+  fred» (Juanjo, 22-10-2026). La frase gana dos o tres palabras: a 412 px y en el ordenador cabe igual;
+  a 360 px puede pasar a tres líneas (la tarjeta, de 302 a 327 px con los
+  datos del 22-10-2026), y la gráfica sigue entera en una pantalla de
+  360 × 800.
 - **La riera, debajo de «Ara», solo cuando anuncia algo** (`casa.estatPortada`):
   si llueve en la cuenca o hay riesgo, con el título y el color de la página
   «Riera» (`comu.titolRiera`, `COLOR_NIVELL`, que pasan de `riera.js` a
@@ -60,6 +80,8 @@ con una simulación de avisos. Juanjo: «me gusta, publica la portada nueva».
 - **Figtree desde Google Fonts**: cada visita avisaría a Google.
 - **La temperatura máxima y mínima en «Ara»**, como en la maqueta: ya las
   dicen los tramos justo debajo.
+- **Una línea con la mínima, la máxima y la comparación con ayer** bajo la
+  frase (probada el 22-10-2026): Juanjo quería palabras, no datos.
 
 ## Consecuencias
 

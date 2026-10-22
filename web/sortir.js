@@ -166,14 +166,6 @@ function hora(f) {
   return new Date(f.hora).getHours();
 }
 
-// Temperatura que es nota a la velocitat del mitjà (índex d'Environment
-// Canada, el de la roba del trajecte): només amb 10 °C o menys i en marxa.
-function esNota(t, kmh) {
-  if (t > 10 || kmh < 5) return t;
-  const v = kmh ** 0.16;
-  return 13.12 + 0.6215 * t - 11.37 * v + 0.3965 * t * v;
-}
-
 function graus(t) {
   return `${Math.round(t)} °C`;
 }

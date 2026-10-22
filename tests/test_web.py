@@ -240,16 +240,47 @@ class Web(unittest.TestCase):
         hores = [fila(h, 60) for h in range(15, 21)] + [fila(h, 90) for h in range(21, 31)] \
             + [fila(h, 90) for h in range(31, 38)]
         frase = self.avalua("2026-10-21T15:30:00+02:00", f"fraseCelAra({json.dumps(hores)}, new Date())")
-        self.assertEqual(frase, "Aquesta tarda, mig ennuvolat; aquesta nit, cobert.")
+        self.assertEqual(frase, "Aquesta tarda, fresc i mig ennuvolat; aquesta nit, encara fresc i cobert.")
         # A les 20:30 la tarda ja no és la que ve: la nit i demà al matí, amb el mateix cel.
         frase = self.avalua("2026-10-21T20:30:00+02:00", f"fraseCelAra({json.dumps(hores)}, new Date())")
-        self.assertEqual(frase, "Aquesta nit i demà al matí, cobert.")
+        self.assertEqual(frase, "Aquesta nit i demà al matí, fresc i cobert.")
         # Un avís de pluja en les 24 hores, encara que els models no en vegin.
         self.assertFalse(self.avalua("2026-10-21T15:30:00+02:00", f"avisDePluja({json.dumps(hores)}, new Date())"))
         hores[10] = fila(25, 90, avisos=("pluja",))
         self.assertTrue(self.avalua("2026-10-21T15:30:00+02:00", f"avisDePluja({json.dumps(hores)}, new Date())"))
         hores[10] = fila(25, 90, avisos=("vent",))
         self.assertFalse(self.avalua("2026-10-21T15:30:00+02:00", f"avisDePluja({json.dumps(hores)}, new Date())"))
+
+    def test_la_frase_de_dalt_diu_com_es_nota(self):
+        # Juanjo, 22-10-2026: si fa fred o calor, en paraules i sense xifres; els
+        # seus set nivells (fred intens sota 0, molt fred de 0 a 5, fred de 6 a 11,
+        # fresc de 12 a 17, agradable de 18 a 25, calor de 26 a 32, molta calor
+        # des de 33), amb la mínima a la nit i la màxima a la tarda.
+        def frase(tarda, nit, vent=0):
+            hores = [{"hora": f"2026-10-21T{h:02d}:00", "fins": f"2026-10-21T{h + 1:02d}:00", "probabilitat": 0,
+                      "pluja_mm": 0, "nuvols": 0, "vent": vent, "avisos": [], "temperatura": t}
+                     for h, t in zip(range(15, 21), tarda)]
+            hores += [{"hora": f"2026-10-{21 + (h >= 24)}T{h % 24:02d}:00",
+                       "fins": f"2026-10-{21 + (h + 1 >= 24)}T{(h + 1) % 24:02d}:00", "probabilitat": 0,
+                       "pluja_mm": 0, "nuvols": 0, "vent": vent, "avisos": [], "temperatura": t}
+                      for h, t in zip(range(21, 31), nit)]
+            return self.avalua("2026-10-21T15:30:00+02:00", f"fraseCelAra({json.dumps(hores)}, new Date())")
+        self.assertEqual(frase([20, 25.4, 22, 21, 20, 19], [17] * 10),
+                         "Aquesta tarda, temperatura agradable i serè; aquesta nit, fresc i serè.")
+        self.assertEqual(frase([24, 26, 25, 24, 23, 22], [22, 21, 20, 18.6, 20, 21, 22, 22, 22, 22]),
+                         "Aquesta tarda, amb calor i serè; aquesta nit, temperatura agradable i serè.")
+        self.assertEqual(frase([30, 33, 32, 31, 29, 28], [26] * 10),
+                         "Aquesta tarda, amb molta calor i serè; aquesta nit, amb calor i serè.")
+        self.assertEqual(frase([12, 16, 13, 12, 12, 12], [11, 9, 8, 7, 6, 6, 7, 8, 9, 10]),
+                         "Aquesta tarda, fresc i serè; aquesta nit, fred i serè.")
+        self.assertEqual(frase([8, 11, 10, 9, 8, 8], [5, 3, 1, 0.4, 1, 2, 3, 4, 5, 6]),
+                         "Aquesta tarda, fred i serè; aquesta nit, amb molt de fred i serè.")
+        self.assertEqual(frase([4, 5, 4, 3, 2, 1], [0, -1, -0.6, -2, -1, 0, 1, 2, 3, 4]),
+                         "Aquesta tarda, amb molt de fred i serè; aquesta nit, amb fred intens i serè.")
+        # Amb vent, el que es nota: 6,5 °C amb 20 km/h es noten com 3 °C. A la
+        # tarda, amb més de 10 °C, el vent no hi compta.
+        self.assertEqual(frase([14, 15, 14, 13, 12, 12], [6.5] * 10, vent=20),
+                         "Aquesta tarda, fresc i serè; aquesta nit, amb molt de fred i serè.")
 
     def test_la_riera_a_la_portada_nomes_si_anuncia_alguna_cosa(self):
         # Juanjo, 21-10-2026: «que solo aparezcan cuando anuncien algo».

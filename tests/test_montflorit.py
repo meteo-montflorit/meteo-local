@@ -312,7 +312,7 @@ class Castella(unittest.TestCase):
                              "probabilitat": 0, "pluja_mm": 0, "temperatura": 15, "nuvols": 90, "avisos": []}
                             for h in range(20, 38)])
         self.assertEqual(js(f"fraseCelAra({hores}, new Date('2026-10-21T20:30:00+02:00'))"),
-                         "Esta noche y mañana por la mañana, cubierto.")
+                         "Esta noche y mañana por la mañana, fresco y cubierto.")
         self.assertEqual(js("T('Els models no hi veuen pluja, però hi ha avís: mira’l a dalt.')"),
                          "Los modelos no ven lluvia, pero hay aviso: míralo arriba.")
         self.assertEqual(js("textResum({consultes: {es: {avui: '<b>Hoy</b>\\n⟦i-sun⟧ Ahora mismo: 20 °C.\\nSin lluvia prevista.'}}}, 'avui')"),

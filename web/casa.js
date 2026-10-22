@@ -281,6 +281,26 @@ function resumTram(t) {
 // sota: aquí només el cel.
 const QUAN_TRAM = { Matí: () => T('Aquest matí'), Tarda: () => T('Aquesta tarda'), Nit: () => T('Aquesta nit') };
 const QUAN_TRAM_DEMA = { Matí: () => T('Demà al matí'), Tarda: () => T('Demà a la tarda'), Nit: () => T('Demà a la nit') };
+
+// Com es nota el tram, en paraules del carrer i sense xifres (Juanjo,
+// 22-10-2026: «algo que haga referencia a si hace frío o calor o heladas…
+// no quiero datos»): set nivells orientatius, de Juanjo, no cap classificació
+// oficial. La temperatura que es nota (amb el vent quan fa fred),
+// arrodonida: la mínima a la nit i al matí, la màxima a la tarda.
+const SENSACIO = [[-1, 'fred intens'], [5, 'molt fred'], [11, 'fred'], [17, 'fresc'], [25, 'agradable'],
+  [32, 'calor'], [Infinity, 'molta calor']];
+const PARAULA_SENSACIO = {
+  'fred intens': () => T('amb fred intens'), 'molt fred': () => T('amb molt de fred'), fred: () => T('fred'),
+  fresc: () => T('fresc'), agradable: () => T('temperatura agradable'), calor: () => T('amb calor'),
+  'molta calor': () => T('amb molta calor'),
+};
+function sensacioTram(t) {
+  const notes = t.files.filter((f) => f.temperatura != null).map((f) => esNota(f.temperatura, f.vent || 0));
+  if (!notes.length) return null;
+  const v = Math.round(t.clau.endsWith('|Tarda') ? Math.max(...notes) : Math.min(...notes));
+  return SENSACIO.find(([fins]) => v <= fins)[1];
+}
+
 function fraseCelAra(hores, ara = new Date()) {
   let trams = resumTrams(hores, ara, null).filter((t) => t.cel);
   // El tram en curs, si només li queda una hora, ja no és el que ve.
@@ -291,14 +311,23 @@ function fraseCelAra(hores, ara = new Date()) {
     const nom = t.clau.split('|')[1];
     const quan = (t.files[0] && new Date(t.files[0].hora).toDateString() === dema.toDateString()
       && nom !== 'Nit' ? QUAN_TRAM_DEMA : QUAN_TRAM)[nom]();
-    return [quan, t.cel[0].toLowerCase()];
+    return [quan, t.cel[0].toLowerCase(), sensacioTram(t)];
   });
   if (!parts.length) return null;
   const minuscula = (s) => s.charAt(0).toLowerCase() + s.slice(1);
-  // El mateix cel als dos trams, en una sola frase: «Aquesta tarda i aquesta nit, ennuvolat.»
-  return parts.length === 2 && parts[0][1] === parts[1][1]
-    ? T`${parts[0][0]} i ${minuscula(parts[1][0])}, ${parts[0][1]}.`
-    : parts.map(([quan, cel], i) => T`${i ? minuscula(quan) : quan}, ${cel}`).join('; ') + '.';
+  // La sensació davant del cel: «fred i molt ennuvolat», no «molt ennuvolat i
+  // fred», que es llegiria «molt fred» (Juanjo, 22-10-2026).
+  const amb = (cel, text) => (text ? T`${text} i ${cel}` : cel);
+  // El mateix cel i la mateixa sensació als dos trams, en una sola frase:
+  // «Aquesta tarda i aquesta nit, fresc i ennuvolat.»
+  if (parts.length === 2 && parts[0][1] === parts[1][1] && parts[0][2] === parts[1][2]) {
+    return T`${parts[0][0]} i ${minuscula(parts[1][0])}, ${amb(parts[0][1], parts[0][2] && PARAULA_SENSACIO[parts[0][2]]())}.`;
+  }
+  // Si la sensació continua, «encara»: «…encara fresc i cobert».
+  return parts.map(([quan, cel, s], i) => {
+    const sensacio = i && s && s === parts[0][2] ? T`encara ${PARAULA_SENSACIO[s]()}` : s && PARAULA_SENSACIO[s]();
+    return T`${i ? minuscula(quan) : quan}, ${amb(cel, sensacio)}`;
+  }).join('; ') + '.';
 }
 
 // Si hi ha avís de pluja o tempestes en les 24 hores que venen: amb els
@@ -1180,6 +1209,8 @@ function taula(hores, mesurada, riscos, sol) {
     dt.append(icona('i-sunrise'), icona('i-sunset'));
     llista.append(dt, element('dd', null, T('L’hora en què surt i es pon el sol, a la fila de l’hora en què passa.')));
   }
+  // Les paraules de la frase de dalt d'«Ara» (sensacioTram), orientatives.
+  terme(T('Fred, fresc, calor…'), T('A la frase de dalt, com es nota cada tram, amb la temperatura que es nota (amb el vent, quan fa fred): la mínima a la nit i al matí i la màxima a la tarda. Fred intens, sota 0\u00a0°C; molt fred, de 0 a 5\u00a0°C; fred, de 6 a 11\u00a0°C; fresc, de 12 a 17\u00a0°C; temperatura agradable, de 18 a 25\u00a0°C; calor, de 26 a 32\u00a0°C, i molta calor, des de 33\u00a0°C. Són intervals orientatius, no una classificació oficial.'));
   terme(T('Prob.'), T('La probabilitat que plogui en aquella hora. Per sota del 10\u00a0%, no s’espera pluja; del 10 al 20\u00a0%, és poc probable, però pot caure algun ruixat; del 20 al 50\u00a0%, pot ploure: si surts, porta paraigua; del 50\u00a0% amunt, el més probable és que plogui. Per exemple, un 40\u00a0% vol dir que, de cada 10 vegades que la previsió dona un 40\u00a0% per a una hora, en 4 acaba plovent.'));
   terme(T('Pluja'), T('Els mil·límetres que caurien si plou.'));
   // La xifra de la capçalera de cada tram és la quantitat esperada (ADR 0103),

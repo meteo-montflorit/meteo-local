@@ -56,6 +56,15 @@ function coma(x, decimals = 1) {
   return Number(x).toFixed(decimals).replace('.', ',');
 }
 
+// Temperatura que es nota amb el vent (índex d'Environment Canada, el de la
+// roba del trajecte i el de bot.es_nota): només amb 10 °C o menys i vent. A
+// «Si surts», el vent és la velocitat del mitjà; a la portada, el previst.
+function esNota(t, kmh) {
+  if (t > 10 || kmh < 5) return t;
+  const v = kmh ** 0.16;
+  return 13.12 + 0.6215 * t - 11.37 * v + 0.3965 * t * v;
+}
+
 // Altura del sol (graus) a Cerdanyola en un moment donat, amb la fórmula
 // aproximada de la NOAA: n'hi ha prou per saber si és de dia o de nit.
 const CASA_COORD = [41.5, 2.1];
