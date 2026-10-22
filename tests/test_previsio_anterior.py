@@ -144,3 +144,13 @@ class SantCugatAlPreveure(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_nuvols_de_ara_sense_models(self):
+        # Sin modelos, las nubes bajas observadas no quitan las de encima que
+        # daba la previsión anterior (ADR 0088).
+        files = [dict(fila("2026-10-05T20:00"), nuvols=89), dict(fila("2026-10-05T21:00"), nuvols=60)]
+        antes = {"generat": "2026-10-05T19:27+02:00", "hores": files}
+        r = casa.previsio_anterior(guarda(antes), [], nuvols_ara=19)
+        self.assertEqual([f["nuvols"] for f in r["hores"]], [89, 60])
+        r = casa.previsio_anterior(guarda(antes), [], nuvols_ara=100)
+        self.assertEqual([f["nuvols"] for f in r["hores"]], [100, 60])

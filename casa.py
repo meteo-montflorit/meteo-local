@@ -548,8 +548,9 @@ def previsio(desde, h, e, avisos, model=None, casa=None, nc=None, planes=None, r
     horas después como mínimo, hasta las 21 h de mañana y acabando un tramo
     del día (FI_TRAMS). Open-Meteo da la lluvia acumulada en la hora anterior: el
     tramo de 10 a 11 se lee en la hora 11:00, y los demás valores también.
-    nuvols_ara: el cielo tapado que observa ahora el aeropuerto de Sabadell
-    (nuvols.ara), que manda en la hora en curso (ADR 0088)."""
+    nuvols_ara: las nubes bajas que observa ahora el aeropuerto de Sabadell
+    (nuvols.ara), que mandan en la hora en curso; las de encima, de los
+    modelos (nuvols.cel_ara, ADR 0088)."""
     prob = prob_ensemble(e)
     llueve_ahora = llueve_ahora_en(casa, veines)
     prever = al_prever(desde, h, casa, riera, veines)
@@ -626,7 +627,8 @@ def previsio(desde, h, e, avisos, model=None, casa=None, nc=None, planes=None, r
             "segons_radar": segun_radar and not plou_ara and not segun_estacion,
             "radar": radar,
             "avisos": avisos_mostrats(ini, fin, avisos),
-            "nuvols": nuvols_ara if n == 0 and nuvols_ara is not None else NV.mescla(NV.valors_hora(h, i)),
+            "nuvols": (NV.cel_ara(nuvols_ara, h, i) if n == 0 and nuvols_ara is not None
+                       else NV.mescla(NV.valors_hora(h, i))),
             "codi": valor("weather_code", i),
             "vent": vent_hora(h, i), "ratxa": ratxa_modelos(h, i),
             # La de cada model fi, perquè l'avís de vent fort digui quants la
@@ -693,8 +695,9 @@ def previsio_anterior(origen, avisos, casa=None, veines=None, nuvols_ara=None):
         f["plou_ara"] = n == 0 and llueve_ahora
         if f["plou_ara"]:
             f["probabilitat"], f["segons_estacio"] = 1.0, True
+        # Sin modelos, las nubes de encima son las de la previsión anterior.
         if n == 0 and nuvols_ara is not None:
-            f["nuvols"] = nuvols_ara
+            f["nuvols"] = max(nuvols_ara, f.get("nuvols") or 0)
     return {"hores": hores, "previsio_de": de, "aprenentatge": antes.get("aprenentatge")}
 
 
@@ -907,8 +910,9 @@ def recoger(anterior=None):
         salida["errors"].append(f"riera, previsió: {ex}")
     salida["horari"] = P.horario([C.HORARIO_CASA_AVISO if motivos else C.HORARIO_CASA],
                                  C.INTERVALO_CASA_MIN, motivos, (radar or {}).get("km_lluvia"))
-    # El cielo que se ve ahora desde el aeropuerto de Sabadell (ADR 0088). Si
-    # no se puede leer, el de la hora en curso es el de los modelos.
+    # Las nubes bajas que se ven ahora desde el aeropuerto de Sabadell (ADR
+    # 0088). Si no se puede leer, el cielo de la hora en curso es el de los
+    # modelos.
     metars = []
     try:
         metars = NV.llegeix(P.get)

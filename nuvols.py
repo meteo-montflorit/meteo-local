@@ -6,7 +6,8 @@ que observa el aeropuerto de Sabadell (ADR 0088).
 Hasta la 3.80 el cielo era el de un solo modelo, AROME, cuyas nubes saltan de
 una hora a otra (el 13-10-2026 dio «serè» con más de la mitad del cielo
 tapado). Ahora es la media ponderada de cuatro modelos (MODELS), y en la hora
-en curso manda lo observado si el aeropuerto ve capas de nubes.
+en curso manda lo observado en las nubes bajas, las que da el aeropuerto; las
+de encima siguen siendo las de los modelos (cel_ara).
 
 La observación es el METAR del aeropuerto de Sabadell (LELL, a unos 7 km),
 cada media hora, día y noche, leído del servicio público de la NOAA
@@ -118,12 +119,14 @@ def hores(obs):
 
 
 def ara(obs, ahora):
-    """El % de la última observación si es reciente y ve capas de nubes. Si
-    no ve ninguna (CAVOK y parecidos) no se usa: puede haber nubes altas."""
+    """Las nubes bajas que se ven ahora: el % de la última observación si es
+    reciente, también el 0 % si no ve capas (CAVOK y parecidos). El METAR solo
+    da las nubes que importan a los aviones, no las altas: las de encima las
+    ponen los modelos (cel_ara)."""
     if not obs:
         return None
     o = obs[-1]
-    if not o["capes"] or ahora - o["t"] > dt.timedelta(minutes=ARA_MAX_MIN):
+    if o["nuvols"] is None or ahora - o["t"] > dt.timedelta(minutes=ARA_MAX_MIN):
         return None
     return o["nuvols"]
 
@@ -192,6 +195,25 @@ def valors_hora(h, i, camp="cloud_cover"):
     """Las nubes de cada modelo para la hora i de la respuesta de Open-Meteo
     (camp: cloud_cover, todas; cloud_cover_low, las bajas)."""
     return {nom: (h.get(f"{camp}_{model}") or [None] * (i + 1))[i] for nom, model in MODELS.items()}
+
+
+def per_sobre(total, baixos):
+    """Lo que tapan las nubes de encima de las bajas en un modelo, con las
+    capas solapadas al azar: total = 1 - (1 - bajas)(1 - de encima). None si
+    falta un dato o las bajas lo tapan todo: entonces no se sabe."""
+    if total is None or baixos is None or baixos >= 99:
+        return None
+    return max(0.0, min(100.0, 100 * (1 - (1 - total / 100) / (1 - baixos / 100))))
+
+
+def cel_ara(baixos, h, i):
+    """El cielo de la hora en curso: lo que tapan las nubes bajas observadas
+    en Sabadell (ara) o lo que tapan las de encima según la mezcla de modelos,
+    lo que sea más. Contra el satélite (96 días), se equivoca 19,7 puntos de
+    cielo tapado, y el METAR solo, 24,1 (ADR 0088). Sin modelos, lo observado."""
+    tot, baix = valors_hora(h, i), valors_hora(h, i, "cloud_cover_low")
+    sobre = mescla({nom: per_sobre(tot[nom], baix[nom]) for nom in MODELS})
+    return baixos if sobre is None else max(baixos, sobre)
 
 
 # --- La comparación diaria ---------------------------------------------------------

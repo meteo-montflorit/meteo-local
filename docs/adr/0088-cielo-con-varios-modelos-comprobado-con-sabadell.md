@@ -34,9 +34,13 @@ observado.
   El cielo tapado es el de la capa que más tapa, en el punto medio de su
   intervalo: FEW 19 %, SCT 44 %, BKN 75 %, OVC 100 %. Si el servicio da un
   error, se reintenta una vez.
-- **En la hora en curso manda lo observado**, si el último METAR tiene 45
-  minutos o menos y da capas de nubes. Si no da capas (CAVOK, NSC, NCD), no
-  se usa: solo dice que no hay nubes por debajo de unos 1.500 m.
+- **En la hora en curso, lo observado manda en las nubes bajas** si el último
+  METAR tiene 45 minutos o menos, también si no da capas (CAVOK, NSC, NCD: 0 %
+  de nubes bajas). Las de encima, que el METAR no da, son las de la mezcla de
+  modelos, y el cielo es lo que tapen las unas o las otras, lo que sea más
+  (`nuvols.cel_ara`, desde la 3.189.0; ver el apartado del 22-10-2026). Sin
+  modelos, en la previsión de reserva, las de encima son las de la previsión
+  anterior.
 - **Se registra todo.** Lo observado, por horas, en `registre/nuvols-sabadell.csv`
   (el %, si había capas y los METAR). Lo que daba cada modelo, todas sus
   nubes y las bajas, va en el registro de la previsión (`nuvols_<modelo>` y
@@ -132,7 +136,7 @@ observado.
 
 - Sabadell está a unos 7 km; con niebla o nubes bajas
   locales el cielo puede ser otro en Montflorit.
-- El METAR no siempre recoge las nubes altas. Por eso, en las horas sin capas,
+- El METAR solo recoge las nubes que importan a los aviones, no las altas. Por eso, en las horas sin capas,
   la comparación no castiga las nubes medias y altas de los modelos, y el
   aprendizaje no puede saber si las hay de verdad.
 - El tanto por ciento observado es aproximado: la capa que más tapa, en el
@@ -181,3 +185,44 @@ en curso, a cambio de una fuente más que vigilar, sin servicio documentado.
 Se retoma si EUMETSAT publica la máscara de nubes de MTG con poco retraso:
 los programas del análisis están con el informe personal de Juanjo del
 19-10-2026 («Las nubes vistas desde el satélite»).
+
+
+## Corrección del 22-10-2026: el METAR solo ve las nubes bajas
+
+El 22-10-2026, a las 18:45, Juanjo veía el cielo medio nuboso, con nubes
+delgadas, y la tabla ponía sol en la hora en curso y nubes en todas las
+demás. Sabadell había dado «FEW035» (pocas nubes a unos 1.000 m, un 19 %)
+todo el día, y en la hora en curso mandaba eso. Pero el METAR da solo las
+nubes que importan a la aviación: las altas no salen nunca, y si hay
+alguna capa baja, el 19 % se tomaba como todo el cielo. Los modelos daban de
+un 70 a un 100 % de nubes medias y altas, y casi ninguna baja; la máscara de
+nubes del satélite (10 km alrededor de casa) veía tapado entre el 70 y el
+100 % del cielo de 14:30 a 19 h.
+
+**Medida** (repetible, fuera del repositorio, como la del 19-10-2026, con los
+datos del 18-07 al 22-10-2026: METAR de la Iowa Environmental Mesonet,
+previsión archivada de Open-Meteo, máscara de nubes de MSG en EUMETView y
+radiación de Sant Cugat - CAR de la XEMA). Las nubes de encima de cada
+modelo salen de sus nubes totales y bajas, con las capas solapadas al azar.
+Error medio de la hora en curso, en puntos de cielo tapado, contra el
+satélite (2.281 horas, 96 días):
+
+| Regla | Con capas (875 h) | Sin capas (1.406 h) | Todas |
+|---|---|---|---|
+| Hasta la 3.188: el METAR si da capas; si no, los modelos | 34,5 | 17,6 | 24,1 |
+| Bajas del METAR y de encima de los modelos, solapadas al azar | 27,4 | 15,9 | 20,3 |
+| **Lo que tapen las unas o las otras, lo que sea más** | **25,8** | **15,9** | **19,7** |
+
+La regla elegida gana a la anterior en el 100 % de los remuestreos por días
+(ADR 0105). Contra el sol tapado en Sant Cugat (de día, 874 horas) no hay
+diferencia segura (Brier 0,1400 frente a 0,1381; gana en el 39 % de los
+remuestreos): las nubes altas y delgadas tapan cielo sin tapar el sol, y lo
+que dice la tabla es qué parte del cielo tapan. La regla solapada al azar sí
+empeora contra el sol (0,1600, el 2 %): por eso no se usa.
+
+**El aprendizaje no cambia.** Se midió también comparar las horas con capas
+con las nubes bajas de cada modelo, en lugar de con todas. Los pesos que
+salen (ICON-EU 0,59) aciertan menos, en los días siguientes, contra el
+satélite (20,4 frente a 19,2; el 0 % de los remuestreos) y contra el sol
+tapado (Brier 0,1494 frente a 0,1399; el 1 %). Lo medido no lo respalda.
+

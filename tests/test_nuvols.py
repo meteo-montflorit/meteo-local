@@ -65,8 +65,33 @@ class Metar(unittest.TestCase):
         self.assertEqual(NV.ara(obs, t + dt.timedelta(minutes=40)), 75)
         self.assertIsNone(NV.ara(obs, t + dt.timedelta(minutes=50)))     # vieja
         cavok = NV.llegeix(lambda url: json.dumps([metar("14:30", [], "METAR LELL CAVOK")]))
-        self.assertIsNone(NV.ara(cavok, t))     # puede haber nubes altas
+        self.assertEqual(NV.ara(cavok, t), 0)   # sin nubes bajas; las altas, de los modelos
+        sense = NV.llegeix(lambda url: json.dumps([metar("14:30", [], "METAR LELL 9999 10/10")]))
+        self.assertIsNone(NV.ara(sense, t))     # no dice nada de las nubes
         self.assertIsNone(NV.ara([], t))
+
+    def test_cel_ara_amb_els_nuvols_de_sobre(self):
+        # 22-10-2026 a las 18 h: Sabadell, «FEW035» todo el día, y nubes altas
+        # que el METAR no da. Los modelos: AROME 87 % (bajas 0), ICON-EU 100
+        # (22), ECMWF 70 (0), GFS 100 (0). Sale «cobert», no «serè».
+        h = {"cloud_cover_meteofrance_seamless": [87], "cloud_cover_low_meteofrance_seamless": [0],
+             "cloud_cover_icon_eu": [100], "cloud_cover_low_icon_eu": [22],
+             "cloud_cover_ecmwf_ifs": [70], "cloud_cover_low_ecmwf_ifs": [0],
+             "cloud_cover_gfs_seamless": [100], "cloud_cover_low_gfs_seamless": [0]}
+        with mock.patch.object(NV, "PESOS", "/no/existeix.json"):
+            self.assertEqual(NV.cel_ara(19, h, 0), 89)
+            # Si las bajas observadas tapan más, mandan ellas.
+            self.assertEqual(NV.cel_ara(75, h, 0), 89)
+            self.assertEqual(NV.cel_ara(100, h, 0), 100)
+            # Sin las bajas de los modelos no se sabe qué hay encima: lo observado.
+            self.assertEqual(NV.cel_ara(19, {"cloud_cover_icon_eu": [100]}, 0), 19)
+
+    def test_per_sobre(self):
+        self.assertEqual(NV.per_sobre(100, 0), 100)
+        self.assertEqual(NV.per_sobre(60, 60), 0)
+        self.assertAlmostEqual(NV.per_sobre(80, 50), 60)
+        self.assertIsNone(NV.per_sobre(100, 100))       # las bajas lo tapan todo
+        self.assertIsNone(NV.per_sobre(None, 0))
 
 
 class Mescla(unittest.TestCase):
