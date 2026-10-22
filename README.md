@@ -48,7 +48,7 @@ y en [castellano](https://meteo-montflorit.github.io/es/). Tiene cuatro páginas
   0052). Arriba, una línea con los medios que van bien y una por cada uno de
   los demás (ADR 0074). Cada persona elige qué medios ve.
 - **Consultes**: lo mismo que el bot, eligiendo qué ver: hoy, mañana, el sol,
-  la calidad del aire, el polen, los trenes, el tráfico o los cortes de luz del
+  la calidad del aire, el polen, los trenes, los autobuses, el tráfico o los cortes de luz del
   barrio; sale solo lo elegido, con los mismos textos del bot (ADR 0054 y 0072).
   Cada corte de luz, con un mapa del punto y las calles probables (ADR 0077).
 
