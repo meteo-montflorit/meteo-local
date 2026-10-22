@@ -363,6 +363,29 @@ function celPortada(hores, plou, radarDades, ara = new Date()) {
   return { fons, dibuix };
 }
 
+// El cel que té ara la targeta, per tornar-lo a mirar cada minut a la vora de
+// la sortida i la posta del sol (de 8° sota l'horitzó a 8° sobre): així
+// l'alba, la posta i la nit canvien a la seva hora i no a la propera lectura
+// de les dades, fins a 15 minuts més tard (Juanjo, 22-10-2026). Fora d'aquí,
+// no cal: el cel només canvia amb les dades.
+let CEL_ARA = null;
+
+function posaCel(cel) {
+  const { sec, dibuix } = CEL_ARA;
+  sec.classList.remove(...[...sec.classList].filter((c) => c.startsWith('cel-')));
+  sec.classList.add(`cel-${cel.fons}`);
+  const src = `${ARREL}img/meteocons/${cel.dibuix}.svg`;
+  if (dibuix.getAttribute('src') !== src) dibuix.src = src;
+}
+
+if (typeof setInterval === 'function') {
+  setInterval(() => {
+    if (!CEL_ARA || !CEL_ARA.sec.isConnected || Math.abs(alturaSol(new Date())) > 8) return;
+    const cel = celPortada(CEL_ARA.hores, CEL_ARA.plou, CEL_ARA.radarDades);
+    if (cel) posaCel(cel);
+  }, 60000);
+}
+
 function titularAra(hores, radarDades, plou, ara = new Date()) {
   const frase = fraseCelAra(hores, ara);
   if (!frase) return null;
@@ -442,14 +465,14 @@ function blocAra(casa, radarDades, vent, veines, hores) {
   if (titular) sec.prepend(titular);
   const cel = hores && celPortada(hores, plou, radarDades);
   if (cel) {
-    sec.classList.add(`cel-${cel.fons}`);
     // Decoratiu: el cel ja el diu la frase.
     const dibuix = element('img', 'heroi-cel');
-    dibuix.src = `${ARREL}img/meteocons/${cel.dibuix}.svg`;
     dibuix.alt = '';
     dibuix.setAttribute('aria-hidden', 'true');
     fila.append(dibuix);
-  }
+    CEL_ARA = { sec, dibuix, hores, plou, radarDades };
+    posaCel(cel);
+  } else CEL_ARA = null;
   const intensitat = (casa.plou && casa.intensitat) || 0;
   const llista = element('ul', 'dades-ara');
   // Plugim que només veu el radar (els dos, estès a sobre del barri): el

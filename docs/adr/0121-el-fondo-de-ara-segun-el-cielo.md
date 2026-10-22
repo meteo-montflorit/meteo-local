@@ -26,6 +26,12 @@ realistas» en lugar de los iconos de líneas. Pidió publicarlo el mismo día.
 - **Momento**: según la altura del sol ahora (`alturaSol`): de noche por
   debajo de −6°; la salida o la puesta del sol entre −6° y +6° (el crepúsculo
   civil y la primera media hora larga de sol); de día, por encima.
+- **Cambia a su hora** (desde la 3.186.0; Juanjo, 22-10-2026): la tarjeta se
+  rehace con cada lectura de los datos, y además, mientras el sol está entre
+  8° bajo el horizonte y 8° sobre él, el fondo y el dibujo se vuelven a
+  decidir cada minuto (`posaCel`), sin descargar nada. Así el amanecer, la
+  puesta y la noche no llegan hasta 15 minutos tarde. El 22-10-2026, en
+  Montflorit: amanecer de 7:44 a 8:50 y puesta de 18:22 a 19:29.
 - **Fondo** (`web/estil.css`, clases `cel-…` de `.heroi`): un degradado y unos
   dibujos para cada caso. De día: cielo azul con resplandor de sol; poco
   nuboso, con nubes blancas; gris perla con nubes; gris plomo con nubes
