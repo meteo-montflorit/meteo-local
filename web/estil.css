@@ -854,6 +854,12 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .consells { margin: .9rem 0 0; padding-left: 1.2rem; }
 .consells li { margin: .2rem 0; }
 .seccio { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--suau); margin: 0; }
+.busos { display: grid; grid-template-columns: auto 1fr; gap: .1rem .8rem; margin: .2rem 0 0; font-size: .95rem; }
+.busos dt, .busos dd { margin: 0; }
+.busos dd { font-variant-numeric: tabular-nums; }
+.bus-tard { color: var(--compte); font-weight: 600; }
+.bus-nota { font-size: .8rem; color: var(--suau); margin-top: .15rem !important; }
+.bus-prova { font-size: .8rem; font-weight: 600; color: var(--compte); margin-top: .3rem !important; }
 .tren-avisos { margin-top: .3rem; font-size: .9rem; }
 .tren .tren-nota { margin-top: .3rem; font-size: .9rem; color: var(--suau); }
 .tren-avisos summary { cursor: pointer; color: var(--suau); }
