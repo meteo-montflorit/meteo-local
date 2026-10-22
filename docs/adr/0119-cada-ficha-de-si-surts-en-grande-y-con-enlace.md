@@ -29,9 +29,11 @@ movía las demás fichas. Solo la página entera tenía enlace para compartir.
   título lleva «›» en lugar del triángulo de desplegar.
 - **Cada ficha tiene su botón de compartir**, redondo y a la derecha del
   consejo, como las fichas de «Perill» (ADR 0076). Comparte con `comparteix`
-  (el menú del dispositivo o, si no hay, se copia solo) el mensaje entero: el
-  medio y el consejo, las horas (con la hora real en lugar de «Ara», que para
-  quien lo lee sería otra), el motivo y la ropa.
+  (el menú del dispositivo o, si no hay, se copia solo) **solo el enlace**,
+  que abre la ficha, sin su texto. Una primera versión compartía también el
+  medio, el consejo, las horas, el motivo y la ropa; Juanjo, al probarla: «el
+  enlace a la ficha, se abre la ficha. no incluyas la descripción … quiero
+  solo el enlace».
 - **El enlace de una ficha** es `sortir.html#moto` (`peu`, `bici`, `moto`,
   `cotxe`, `public`) y abre la ventana. Lleva la hora de salir y la de volver
   (`?surto=…&torno=…`) solo si no son las de siempre (ahora y tres horas
@@ -75,6 +77,6 @@ movía las demás fichas. Solo la página entera tenía enlace para compartir.
   públic» desde el título.
 - Con Playwright: `#trens` abre «Transport públic»; el enlace compartido de
   «Bici» con la vuelta a las 14:00 lleva `?torno=…#bici` y, abierto en otra
-  pestaña, muestra la ventana con las 14:00 elegidas; el texto compartido
-  lleva el consejo, las horas reales, el motivo y la ropa.
+  pestaña, muestra la ventana con las 14:00 elegidas; se comparte solo el
+  enlace, sin texto.
 - axe-core (WCAG 2.1 AA), con la ventana abierta y sin ella: sin fallos.

@@ -695,21 +695,14 @@ function urlFitxa(clau) {
   return url.href;
 }
 
-// Les hores del trajecte, com als selectors. En el missatge compartit, «Ara»
-// seria l'hora en què es llegeix: hi va l'hora de debò.
-function horesFitxa(perCompartir) {
-  const surto = $('surto').selectedOptions[0];
-  const torno = $('torno').selectedOptions[0];
-  const sortida = perCompartir && surto.index === 0 ? horaCurta(new Date()) : surto.textContent;
-  return T`Surto: ${sortida} · Torno: ${torno.textContent}`;
+// Les hores del trajecte, com als selectors.
+function horesFitxa() {
+  return T`Surto: ${$('surto').selectedOptions[0].textContent} · Torno: ${$('torno').selectedOptions[0].textContent}`;
 }
 
-// El missatge sencer: el mitjà, el consell, les hores, el motiu i la roba.
-function textFitxa(f) {
-  const linies = [...f.li.querySelectorAll(':scope > .mitja-motiu, :scope > .mitja-roba')].map((p) => p.textContent);
-  return [`${f.nom}: ${f.etiqueta}. ${horesFitxa(true)}.`, ...linies].join('\n');
-}
-
+// Es comparteix només l'enllaç, que obre la fitxa, sense el seu text (Juanjo,
+// 22-10-2026: «el enlace a la ficha, se abre la ficha. no incluyas la
+// descripción … quiero solo el enlace»).
 function botoCompartirFitxa(clau, classe) {
   const nom = FITXES.get(clau).nom;
   const b = element('button', classe);
@@ -719,7 +712,7 @@ function botoCompartirFitxa(clau, classe) {
   b.append(icona('i-share-2'));
   b.addEventListener('click', () => {
     const f = FITXES.get(clau);
-    if (f) comparteix(urlFitxa(clau), T`Si surts: ${f.nom}`, textFitxa(f));
+    if (f) comparteix(urlFitxa(clau), T`Si surts: ${f.nom}`);
   });
   return b;
 }
@@ -764,7 +757,7 @@ function obreFitxa(clau, seccio) {
   accions.append(botoCompartirFitxa(clau, 'boto-icona'), tanca);
   cap.append(titol, accions);
   const estat = element('p', 'mitja-cap vm-estat');
-  estat.append(element('span', 'vm-hores', horesFitxa(false)), element('span', 'mitja-nivell', f.etiqueta));
+  estat.append(element('span', 'vm-hores', horesFitxa()), element('span', 'mitja-nivell', f.etiqueta));
   // El contingut de la fitxa, sense el títol, i els plecs oberts, amb el seu
   // títol a sobre. Sense els id, que ja són a la pàgina.
   const cos = [...f.li.cloneNode(true).children].filter((c) => !c.classList.contains('mitja-cap'));
