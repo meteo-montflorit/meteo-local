@@ -1485,6 +1485,26 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 /* «Ara», destacat: la conclusió a dalt, la temperatura en gran i les dades en
    pastilles. El radar, a dins, en el seu requadre de sempre. */
 .targeta.ara.heroi { background: var(--heroi); color: #fff; border: 0; border-radius: 1.4rem; padding: 1.1rem 1.2rem; }
+/* El fons segons el cel de la frase (casa.js, celPortada): el del primer tram,
+   en degradat cap al del segon. Tots prou foscos perquè el text blanc i el
+   suau passin de 4,5:1. Al tema fosc, una mica més apagats. */
+.targeta.ara.heroi[class*="cel-"] { background: linear-gradient(105deg, var(--cel-a, var(--heroi)) 35%, var(--cel-b, var(--cel-a, var(--heroi)))); }
+.heroi.cel-sere { --cel-a: #1d5a96; } .heroi.cel2-sere { --cel-b: #1d5a96; }
+.heroi.cel-poc { --cel-a: #2b5d8f; } .heroi.cel2-poc { --cel-b: #2b5d8f; }
+.heroi.cel-nuvol { --cel-a: #3c5873; } .heroi.cel2-nuvol { --cel-b: #3c5873; }
+.heroi.cel-cobert { --cel-a: #4b5967; } .heroi.cel2-cobert { --cel-b: #4b5967; }
+.heroi.cel-boira { --cel-a: #535d68; } .heroi.cel2-boira { --cel-b: #535d68; }
+.heroi.cel-pluja { --cel-a: #2c4459; } .heroi.cel2-pluja { --cel-b: #2c4459; }
+.heroi.cel-tempesta { --cel-a: #3d3163; } .heroi.cel2-tempesta { --cel-b: #3d3163; }
+.heroi.cel-nit { --cel-a: var(--heroi); } .heroi.cel2-nit { --cel-b: var(--heroi); }
+:root[data-theme="dark"] .targeta.ara.heroi[class*="cel-"] { box-shadow: inset 0 0 0 100vmax rgb(0 0 0 / .18); }
+/* El dibuix del cel, gran, a la dreta de la temperatura: la icona de la
+   gràfica, en blanc translúcid i el sol groc. */
+.heroi-cel { margin-left: auto; flex: none; line-height: 0; }
+.heroi-cel svg { width: 6.5rem; height: 6.5rem; fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round;
+  --ic-sol: #ffd166; --ic-sol-fons: rgb(255 209 102 / .3); --ic-nuvol: rgb(255 255 255 / .92); --ic-nuvol-fons: rgb(255 255 255 / .16);
+  --ic-aigua: #9fd0ff; --ic-lluna: #fff1c1; --ic-lluna-fons: rgb(255 241 193 / .2); }
+@media (max-width: 40rem) { .heroi-cel svg { width: 5.2rem; height: 5.2rem; } }
 .heroi .titular { margin: 0 0 .8rem; }
 .heroi .titular-cel { margin: 0; font-size: 1.3rem; line-height: 1.3; font-weight: 700; }
 .heroi .titular .resum-linia { margin: .35rem 0 0; color: var(--heroi-suau); display: flex; gap: .4rem; align-items: flex-start; }

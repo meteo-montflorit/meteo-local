@@ -301,13 +301,19 @@ function sensacioTram(t) {
   return SENSACIO.find(([fins]) => v <= fins)[1];
 }
 
-function fraseCelAra(hores, ara = new Date()) {
+// Els dos trams de la frase de dalt: el tram en curs, si només li queda una
+// hora, ja no és el que ve.
+function tramsFrase(hores, ara = new Date()) {
   let trams = resumTrams(hores, ara, null).filter((t) => t.cel);
-  // El tram en curs, si només li queda una hora, ja no és el que ve.
   if (trams.length > 2 && trams[0].files.length <= 1) trams = trams.slice(1);
+  return trams.slice(0, 2);
+}
+
+function fraseCelAra(hores, ara = new Date()) {
+  const trams = tramsFrase(hores, ara);
   const dema = new Date(ara);
   dema.setDate(dema.getDate() + 1);
-  const parts = trams.slice(0, 2).map((t) => {
+  const parts = trams.map((t) => {
     const nom = t.clau.split('|')[1];
     const quan = (t.files[0] && new Date(t.files[0].hora).toDateString() === dema.toDateString()
       && nom !== 'Nit' ? QUAN_TRAM_DEMA : QUAN_TRAM)[nom]();
@@ -336,6 +342,30 @@ function avisDePluja(hores, ara = new Date()) {
   const fins = ara.getTime() + 24 * 3600e3;
   return (hores || []).some((f) => new Date(f.fins) > ara && new Date(f.hora).getTime() < fins
     && (f.avisos || []).some((a) => (a.tipus || []).some((t) => t === 'pluja' || t === 'tempestes')));
+}
+
+// El fons d'«Ara» i el dibuix gran, segons el cel que anuncia la frase (Juanjo,
+// 22-10-2026: «el fondo de esta ficha podría amoldarse a lo que anuncia?»,
+// «y algún sol o nubes dibujados?»): el color del primer tram, en degradat cap
+// al del segon, i la icona del primer, la de la gràfica. Si ara plou, la
+// pluja (o la tempesta) mana, com a la resta de la portada (ADR 0101). De
+// nit, sense pluja, el blau de nit de sempre.
+const FONS_CEL = { 'i-sun': 'sere', 'i-cloud-sun': 'poc', 'i-cloud': 'nuvol', 'i-cloudy': 'cobert', 'i-cloud-fog': 'boira' };
+
+function celPortada(hores, plou, radarDades, ara = new Date()) {
+  const trams = tramsFrase(hores, ara);
+  if (!trams.length) return null;
+  // «Molt ennuvolat» i «Cobert» tenen la mateixa icona: el fons els separa.
+  const fons = (t) => (t.clau.endsWith('|Nit') && t.cel[1] !== 'i-cloud-fog' ? 'nit'
+    : t.cel[0] === T('Molt ennuvolat') ? 'nuvol' : FONS_CEL[t.cel[1]] || 'nit');
+  const res = { fons: fons(trams[0]), fons2: fons(trams[trams.length - 1]), icona: trams[0].cel[1] };
+  const estat = radarDades && radarDades.pluja && radarDades.pluja.estat;
+  if (plou || estat === 'plou' || estat === 'radar_sobre') {
+    const f = (hores || []).find((h) => new Date(h.fins) > ara);
+    const tempesta = f && f.codi >= 95;
+    Object.assign(res, { fons: tempesta ? 'tempesta' : 'pluja', icona: tempesta ? 'i-cloud-lightning' : 'i-cloud-rain' });
+  }
+  return res;
 }
 
 function titularAra(hores, radarDades, plou, ara = new Date()) {
@@ -411,6 +441,15 @@ function blocAra(casa, radarDades, vent, veines, hores) {
   const plou = !!casa.plou || (veines || []).some((v) => v.plou && v.compta);
   const titular = hores && titularAra(hores, radarDades, plou);
   if (titular) sec.prepend(titular);
+  const cel = hores && celPortada(hores, plou, radarDades);
+  if (cel) {
+    sec.classList.add(`cel-${cel.fons}`, `cel2-${cel.fons2}`);
+    // Decoratiu: el cel ja el diu la frase.
+    const dibuix = element('span', 'heroi-cel');
+    dibuix.setAttribute('aria-hidden', 'true');
+    dibuix.append(icona(cel.icona));
+    fila.append(dibuix);
+  }
   const intensitat = (casa.plou && casa.intensitat) || 0;
   const llista = element('ul', 'dades-ara');
   // Plugim que només veu el radar (els dos, estès a sobre del barri): el
