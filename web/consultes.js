@@ -17,7 +17,7 @@ const OPCIONS = [
   ['aire', () => T('Aire'), 'i-factory', () => T('La qualitat de l’aire.')],
   ['pollen', () => T('Pol·len'), 'i-flower', () => T('El nivell de cada tipus de pol·len.')],
   ['trens', () => T('Trens'), 'i-train-front', () => T('L’estat de les línies de Rodalies i FGC de la zona.')],
-  ['busos', () => T('Busos'), 'i-bus', () => T('Els propers busos urbans a la parada del barri.')],
+  ['busos', () => T('Busos'), 'i-bus', () => T('Les línies de bus del barri: hores d’arribada a cada parada i incidències.')],
   ['transit', () => T('Trànsit'), 'i-traffic-cone', () => T('L’estat del trànsit a les carreteres de la zona.')],
   // Els talls de llum a prop, d'e-distribució (ADR 0072).
   ['llum', () => T('Llum'), 'i-zap-off', () => T('Els talls de llum a prop del barri, segons e-distribució.')],
@@ -301,8 +301,7 @@ function pintaConsulta() {
   else if (triada === 'trens' && DADES.trens && (DADES.trens.linies || []).length) {
     peces = [titol(T('Trens de Cerdanyola')), ...blocTrens(DADES.trens)];
   } else if (triada === 'busos' && DADES.busos) {
-    const busos = blocBusos(DADES.busos, new Date(), false);
-    if (busos) peces = [titol(T('Busos de Montflorit')), ...busos];
+    peces = [titol(T('Busos de Montflorit')), ...blocBusos(DADES.busos, new Date())];
   } else if (triada === 'transit' && DADES.transit) {
     peces = [titol(T('Trànsit a menys de 5\u00a0km de Montflorit')), ...blocTransit(DADES.transit)];
     if (!DADES.transit.incidencies.length) peces.splice(1, 0, element('p', null, T('Cap incidència a menys de 5\u00a0km de Montflorit.')));

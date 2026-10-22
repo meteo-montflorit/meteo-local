@@ -279,7 +279,8 @@ function avalua(mitja, tram, trens, futur, transit, entorn) {
 }
 
 // El transport públic, segons els trens de Cerdanyola: tots circulen, algun
-// té incidències o no en circula cap. Dels busos no hi ha dades en temps real.
+// té incidències o no en circula cap. Les incidències dels busos es llisten a
+// part i no canvien el nivell.
 function avaluaPublic(trens, futur) {
   const res = estatPublic(trens);
   // Les dades dels trens són les d'ara: si la sortida triada és més tard, es diu
@@ -611,8 +612,9 @@ function pintaSortida() {
       // Les incidències, dins de la fitxa i plegades: no cal anar a cap altre
       // lloc de la pàgina (Juanjo, 09-10-2026).
       if (trens && trens.length) li.append(plec('trens', T('Estat de cada línia'), blocTrens(dades.trens)));
-      const busos = dades.busos && blocBusos(dades.busos, i > 0 ? new Date(hores[i].hora) : ara, i > 0);
-      if (busos) li.append(element('p', 'seccio apartat', T('Busos')), ...busos);
+      if (dades.busos) {
+        li.append(element('p', 'seccio apartat', T('Busos')), ...liniesBusosSortida(dades.busos, i > 0 ? new Date(hores[i].hora) : ara));
+      }
       if (r) li.append(element('p', 'mitja-roba', T`Roba: ${r}`));
     } else {
       li.append(cap, element('p', 'mitja-motiu', v.motius.join(' ')));
