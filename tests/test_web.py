@@ -282,6 +282,26 @@ class Web(unittest.TestCase):
         self.assertEqual(frase([14, 15, 14, 13, 12, 12], [6.5] * 10, vent=20),
                          "Aquesta tarda, fresc i serè; aquesta nit, amb molt de fred i serè.")
 
+    def test_al_mati_tambe_com_es_nota_despres(self):
+        # Juanjo, 22-10-2026: la mínima del matí és la de l'alba, i si després
+        # escalfa fins a una altra paraula, també es diu.
+        def frase(nit, mati):
+            hores = [{"hora": f"2026-10-{21 + (h >= 24)}T{h % 24:02d}:00",
+                      "fins": f"2026-10-{21 + (h + 1 >= 24)}T{(h + 1) % 24:02d}:00", "probabilitat": 0,
+                      "pluja_mm": 0, "nuvols": 0, "vent": 0, "avisos": [], "temperatura": t}
+                     for h, t in zip(range(21, 38), nit + mati)]
+            return self.avalua("2026-10-21T21:30:00+02:00", f"fraseCelAra({json.dumps(hores)}, new Date())")
+        # El 6 d'octubre de 2026: de 16 °C a les 7 a 23 °C a les 13.
+        self.assertEqual(frase([19, 18, 17, 17, 17, 16, 16, 16, 16, 16], [16, 17, 18, 20, 22, 22, 23]),
+                         "Aquesta nit, fresc i serè; demà al matí, encara fresc i després agradable, i serè.")
+        self.assertEqual(frase([14] * 10, [8, 9, 12, 18, 24, 27, 28]),
+                         "Aquesta nit, fresc i serè; demà al matí, fred i després amb calor, i serè.")
+        # Sense canvi de paraula, com abans.
+        self.assertEqual(frase([16] * 10, [14, 15, 16, 16, 17, 17, 17]), "Aquesta nit i demà al matí, fresc i serè.")
+        # Un matí que es refreda no escalfa: la mínima, al final, i res més.
+        self.assertEqual(frase([22] * 10, [21, 20, 18, 16, 15, 14, 14]),
+                         "Aquesta nit, temperatura agradable i serè; demà al matí, fresc i serè.")
+
     def test_l_hora_de_les_dades_es_la_d_arribada_al_servidor(self):
         # Juanjo, 22-10-2026: «la primera puede ser la hora real de carga de datos».
         ara = "2026-10-22T11:50:00+02:00"

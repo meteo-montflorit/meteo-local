@@ -40,8 +40,20 @@ con una simulación de avisos. Juanjo: «me gusta, publica la portada nueva».
   calor (26–32) y molta calor (33 o más). Se mide la temperatura
   que se nota (`esNota`, el índice de Environment Canada que ya usaban la
   ropa y «Si surts», ahora en `comu.js`), redondeada: la mínima por la noche
-  y por la mañana y la máxima por la tarde (`casa.sensacioTram`). Si los dos
-  tramos coinciden, el segundo dice «encara»; con el mismo cielo y la misma
+  y por la mañana y la máxima por la tarde (`casa.sensacioTram`). Por la
+  mañana, si después sube hasta otra palabra, se dicen las dos: «fresc i
+  després agradable, i ennuvolat», con el cielo tras una coma para que no se
+  lea «agradable i ennuvolat» (Juanjo, 22-10-2026). La mínima de la mañana es
+  la del amanecer, la misma de la noche, y sin esto la subida de la mañana no
+  salía en ningún sitio: con «Aquesta nit… demà al matí…», que se lee la
+  víspera para decidir qué ponerse, las dos palabras salían de mínimas casi
+  iguales. En la previsión del 06-10-2026 la mañana iba de 16 °C a las 7 a
+  23 °C a las 13, y decía solo «fresc». Solo la mañana: el enfriamiento de la
+  tarde ya lo dice la noche, el tramo siguiente, y repetirlo dentro de cada
+  tramo alargaba frases que ya se entendían. Si la máxima llega antes que la
+  mínima (una mañana que se enfría), solo la mínima. Si los dos
+  tramos coinciden, el segundo dice «encara», también cuando la mañana empieza
+  como acaba la noche («encara fresc i després agradable»); con el mismo cielo y la misma
   sensación, una sola frase. La leyenda de la tabla («Fred, fresc, calor…»)
   da los intervalos y dice que son orientativos. Sin «glaçada»: tiene un
   significado meteorológico propio y ya sale como fenómeno en los tramos.
