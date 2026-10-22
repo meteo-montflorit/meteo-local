@@ -1,6 +1,6 @@
 # 119. Cada ficha de «Si surts», en grande y con su enlace
 
-Fecha: 2026-10-22 · Estado: propuesto (rama `proposta-compartir-targetes`)
+Fecha: 2026-10-22 · Estado: aceptado
 
 ## Contexto
 
@@ -63,9 +63,11 @@ movía las demás fichas. Solo la página entera tenía enlace para compartir.
 - Las fichas tienen dos botones nuevos cada una (el título y compartir); la
   ficha de «Transport públic» pone el consejo en una segunda línea, como ya
   hacía antes.
-- La rama de los autobuses (`proposta-busos`) cambia la misma parte de
-  `pintaSortida`: al juntarlas, sus apartados y su plegable entran solos en la
-  ventana, porque esta copia el contenido de la ficha.
+- Los autobuses (ADR 0120) cambiaron antes la misma parte de `pintaSortida`:
+  sus apartados («Trens» y «Busos») y el plegable de los trenes entran solos
+  en la ventana, porque esta copia el contenido de la ficha.
+- Juanjo pidió ponerla en producción el 22-10-2026, tras la 3.180.0; sale
+  en la 3.181.0.
 
 ## Validación
 

@@ -46,7 +46,8 @@ y en [castellano](https://meteo-montflorit.github.io/es/). Tiene cuatro páginas
   ponerse, consejos (lluvia, sol, noche, calor), si circulan los trenes que
   paran en Cerdanyola (ADR 0029), las incidencias de los autobuses del barrio
   (ADR 0120) y las de tráfico de cerca (ADR 0052). Arriba, una línea con los medios que van bien y una por cada uno de
-  los demás (ADR 0074). Cada persona elige qué medios ve.
+  los demás (ADR 0074). Cada persona elige qué medios ve. Cada ficha se abre en
+  grande al tocar su título y se comparte con su propio enlace (ADR 0119).
 - **Consultes**: lo mismo que el bot, eligiendo qué ver: hoy, mañana, el sol,
   la calidad del aire, el polen, los trenes, los autobuses, el tráfico o los cortes de luz del
   barrio; sale solo lo elegido, con los mismos textos del bot (ADR 0054 y 0072).
