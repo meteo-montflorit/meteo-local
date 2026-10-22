@@ -1475,9 +1475,9 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .g-mes-enlla-avis.taronja { --nivell: #fb923c; }
 .g-mes-enlla-avis.vermell { --nivell: #ef4444; }
 /* Quan arriba la pluja segons la previsió, a «Ara» (casa.js, liniaPlujaPrevista). */
-.pluja-prevista { display: flex; align-items: center; gap: .4rem; margin: .5rem 0 0; font-size: .95rem; }
-.pluja-prevista svg { width: 1.1rem; height: 1.1rem; flex: none; fill: none; stroke: var(--c-aigua); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.pluja-prevista.segura { font-weight: 600; }
+.pluja-prevista, .pluja-radar { display: flex; align-items: center; gap: .4rem; margin: .5rem 0 0; font-size: .95rem; }
+.pluja-prevista svg, .pluja-radar svg { width: 1.1rem; height: 1.1rem; flex: none; fill: none; stroke: var(--c-aigua); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pluja-prevista.segura, .pluja-radar { font-weight: 600; }
 
 /* --- La portada nova (ADR 0118) --- */
 :root { --heroi: #1e3a5f; --heroi-suau: #c9d8ee; }
@@ -1494,7 +1494,6 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .heroi[class*="cel-"] .veredicte { color: var(--t); }
 .heroi[class*="cel-"] .dades-ara li { background: var(--xip); }
 .heroi[class*="cel-"] a { color: var(--t); }
-.heroi[class*="cel-"] .radar-ara a { color: var(--enllac); }
 .heroi:is(.cel-sere, .cel-poc, .cel-nuvol, .cel-boira, .cel-albasere, .cel-albapoc, .cel-albanuvol) { --xip: rgb(255 255 255 / .38); }
 .heroi.cel-sere { --f: radial-gradient(circle at 90% 35%, rgb(255 240 180 / .95) 0, rgb(255 225 140 / .45) 14%, rgb(255 225 140 / 0) 38%), linear-gradient(165deg, #3d9be9 0%, #86c5f5 65%, #cfe8fb 100%); --t: #0d2340; --s: #17324f; }
 .heroi.cel-poc { --f: radial-gradient(circle at 90% 35%, rgb(255 240 180 / .7) 0, rgb(255 225 140 / 0) 30%), url("img/cel/nuvols-poc.svg") center / cover, linear-gradient(165deg, #6fb0e8, #cfe2f2); --t: #0d2340; --s: #1f3a57; }
@@ -1535,8 +1534,6 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
   --ic-nuvol-fons: none; --ic-aigua: currentColor; --ic-aigua-fons: none; }
 .heroi .ara-menys { color: var(--heroi-suau); }
 .heroi a { color: #fff; }
-.heroi .radar-ara { color: var(--text); background: var(--superficie); border-radius: .9rem; }
-.heroi .radar-ara a { color: var(--enllac); }
 @media (max-width: 30rem) {
   .targeta.ara.heroi { padding: 1rem; }
   .heroi .titular-cel { font-size: 1.2rem; }

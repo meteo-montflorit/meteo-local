@@ -18,15 +18,22 @@ con una simulación de avisos. Juanjo: «me gusta, publica la portada nueva».
 
 - **«Ara», destacada** (`.targeta.ara.heroi`): una tarjeta azul oscura con
   la conclusión arriba, la temperatura en grande con la parte alta al lado
-  (sin el termómetro, para que quepa) y los datos en pastillas. El radar
-  sigue dentro, en su recuadro.
+  (sin el termómetro, para que quepa) y los datos en pastillas. El
+  recuadro del radar, desde la 3.188.0, va debajo de la gráfica (Juanjo,
+  22-10-2026: «prefiero que salga bajo la gráfica»): dentro de la tarjeta
+  empujaba la gráfica hacia abajo justo cuando llueve. En la tarjeta queda su
+  conclusión, en una línea (`resum-linia pluja-radar`), para que la lluvia
+  que llega se vea al abrir: en un móvil de 360 × 800 el recuadro queda
+  fuera de la primera pantalla. La frase se repite como título del
+  recuadro; se aceptó al verlo con lluvia simulada.
 - **La conclusión la escribe el programa** (`casa.fraseCelAra`): el cel de
   los dos tramos que vienen, con las mismas piezas de la tabla
   (`resumTrams`); si el tramo en curso solo tiene una hora, empieza por el
   siguiente; con el mismo cielo, una sola frase («Aquesta tarda i aquesta
   nit, ennuvolat.»). Debajo, la línea de lluvia de siempre
   (`liniaPlujaPrevista`, con su cuenta atrás) o «Sense pluja prevista.». Si
-  llueve o el radar ve lluvia, solo el cielo: la lluvia la dice el radar. Si
+  llueve o el radar ve lluvia, en lugar de esa línea, la conclusión del
+  radar («Pluja d’aquí a 24 minuts (cap a les 17:44).»). Si
   los modelos no ven lluvia pero hay aviso de lluvia o tempestades en 24
   horas (`casa.avisDePluja`), lo dice: «Els models no hi veuen pluja, però
   hi ha avís: mira'l a dalt.» (ADR 0101: lo oficial manda).

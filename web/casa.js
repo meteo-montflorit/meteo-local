@@ -261,8 +261,8 @@ function resumTram(t) {
 // La conclusió, a dalt de tot d'«Ara» (portada nova, ADR 0118): el cel dels
 // dos trams que venen i la pluja de les 24 hores, amb les mateixes peces de la
 // taula (resumTrams) i de la línia de pluja (liniaPlujaPrevista), perquè no
-// digui res diferent. Si plou o el radar en veu, la pluja la diu el radar, a
-// sota: aquí només el cel.
+// digui res diferent. Si plou o el radar en veu, la pluja la diu el radar:
+// aquí, la seva conclusió, i el requadre, sota la gràfica.
 const QUAN_TRAM = { Matí: () => T('Aquest matí'), Tarda: () => T('Aquesta tarda'), Nit: () => T('Aquesta nit') };
 const QUAN_TRAM_DEMA = { Matí: () => T('Demà al matí'), Tarda: () => T('Demà a la tarda'), Nit: () => T('Demà a la nit') };
 
@@ -421,6 +421,18 @@ function titularAra(hores, radarDades, plou, ara = new Date()) {
   if (!radarDiu) {
     div.append(liniaPlujaPrevista(hores, ara) || element('p', 'resum-linia', avisDePluja(hores, ara)
       ? T('Els models no hi veuen pluja, però hi ha avís: mira’l a dalt.') : T('Sense pluja prevista.')));
+    return div;
+  }
+  // El requadre del radar va sota la gràfica (Juanjo, 22-10-2026: «prefiero
+  // que salga bajo la gráfica»): aquí, només el que diu, perquè la pluja que
+  // arriba es vegi en obrir la pàgina.
+  const t = textRadar(radarDades, plou);
+  if (t) {
+    const p = element('p', 'resum-linia pluja-radar');
+    const text = element('span');
+    text.append(...(Array.isArray(t[1]) ? t[1] : [t[1]]), '.');
+    p.append(icona('i-cloud-rain'), text);
+    div.append(p);
   }
   return div;
 }
@@ -523,8 +535,8 @@ function blocAra(casa, radarDades, vent, veines, hores) {
   // Sense la línia de la humitat i la pressió, perquè la targeta no creixi
   // amb la part alta a sota de la temperatura (Juanjo, 22-10-2026: «podemos
   // prescindir de la humedad y presión»). Es poden veure a la gràfica.
-  const radar = blocRadar(radarDades, plou, hores);
-  if (radar) sec.append(radar);
+  // El radar, a part: va sota la gràfica (titularAra).
+  sec._radar = blocRadar(radarDades, plou, hores);
   return sec;
 }
 
@@ -1406,6 +1418,9 @@ function pinta(dades) {
   const previsio = dades.hores && taula(dades.hores, dades.temperatura_mesurada, dades.riscos, dades.sol);
   // La gràfica, just després d'«Ara» (19-10-2026); el detall del dia, després.
   if (previsio && previsio._grafica) cont.append(previsio._grafica);
+  // El radar, sota la gràfica (Juanjo, 22-10-2026); la frase d'«Ara» ja en diu
+  // la conclusió.
+  if (ara && ara._radar) cont.append(ara._radar);
   // El resum d'avui i el de demà, en text, ja no hi són (portada nova, ADR
   // 0118): ho diuen la frase de dalt d'«Ara» i els trams. Sense dades d'ara,
   // el resum d'avui, com sempre.

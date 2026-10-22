@@ -282,6 +282,23 @@ class Web(unittest.TestCase):
         self.assertEqual(frase([14, 15, 14, 13, 12, 12], [6.5] * 10, vent=20),
                          "Aquesta tarda, fresc i serè; aquesta nit, amb molt de fred i serè.")
 
+    def test_el_radar_va_sota_la_grafica(self):
+        # Juanjo, 22-10-2026: «prefiero que salga bajo la gráfica». A «Ara» en
+        # queda la conclusió, perquè la pluja que arriba es vegi en obrir.
+        dom = ("const nou = (t) => ({ tag: t, fills: [], className: '', setAttribute() {}, addEventListener() {},"
+               " classList: Object.assign([], { add() {}, remove() {} }), dataset: {}, style: { setProperty() {} },"
+               " append(...c) { this.fills.push(...c); }, prepend(...c) { this.fills.unshift(...c); },"
+               " get textContent() { return this.fills.map((f) => (typeof f === 'string' ? f : f.textContent)).join(''); },"
+               " set textContent(v) { this.fills = [v]; } });"
+               "document.createElement = nou; document.createElementNS = (ns, t) => nou(t);")
+        hores = [{"hora": f"2026-10-21T{h:02d}:00", "fins": f"2026-10-21T{h + 1:02d}:00", "probabilitat": 0,
+                  "pluja_mm": 0, "nuvols": 90, "avisos": [], "temperatura": 15} for h in range(15, 24)]
+        radar = {"arriba": "2026-10-21T15:55:00+02:00", "hora": "2026-10-21T15:20:00+02:00", "pluja": {"estat": "arriba"}}
+        linies = self.avalua("2026-10-21T15:30:00+02:00",
+                             dom + f"titularAra({json.dumps(hores)}, {json.dumps(radar)}, false).fills"
+                             ".map((f) => [f.className, f.textContent])")
+        self.assertEqual(linies[1], ["resum-linia pluja-radar", "Pluja d’aquí a 25 minuts (cap a les\u00a015:55)."])
+
     def test_al_mati_tambe_com_es_nota_despres(self):
         # Juanjo, 22-10-2026: la mínima del matí és la de l'alba, i si després
         # escalfa fins a una altra paraula, també es diu.

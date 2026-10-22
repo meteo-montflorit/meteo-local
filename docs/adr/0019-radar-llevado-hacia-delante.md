@@ -159,7 +159,8 @@ Meteocat parado y en marcha, `probar-web` y axe-core.
 Juanjo: «cuando haya previsión de lluvia puedes añadir donde corresponda que
 empezará a llover en x horas o minutos (se actualizará en tiempo real) y la
 hora prevista?», y «luego está la previsión de los 15 minutos, eso también
-debe salir». Desde la 3.116.0, en «Ara» de la portada:
+debe salir». Desde la 3.116.0, en «Ara» de la portada (desde la 3.188.0, el
+recuadro va debajo de la gráfica y en «Ara» queda su primera línea; ADR 0118):
 
 1. Si llueve, como antes: «Pluja a sobre · pararia cap a les…».
 2. Si el radar la ve llegar (hasta unas 2 horas, también la del aviso de los
