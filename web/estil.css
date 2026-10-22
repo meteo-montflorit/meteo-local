@@ -858,9 +858,10 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
    ratlla: en una pantalla ampla, a l'altra punta, no es veia quina era de quina.
    La columna dels noms fa el mateix a totes les taules, perquè les hores
    quedin una sota l'altra; al mòbil s'estreny i el nom passa a dues ratlles. */
-.busos { display: grid; grid-template-columns: minmax(0, 15rem) minmax(7.5rem, max-content); justify-content: start; margin: .1rem 0 0; font-size: .95rem; }
+.busos { display: grid; grid-template-columns: minmax(0, 15rem) max-content; justify-content: start; margin: .1rem 0 0; font-size: .95rem; }
 .busos dt, .busos dd { margin: 0; padding: .2rem 0; border-bottom: 1px solid var(--vora); }
 .busos dt { padding-right: 1rem; }
+@media (min-width: 40rem) { .busos { grid-template-columns: 15rem minmax(7.5rem, max-content); } }
 .busos dd { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bus-linia { margin: 1rem 0 0; display: flex; align-items: center; gap: .4rem; font-weight: 600; }
 .bus-sentit { margin: .4rem 0 0; font-size: .9rem; color: var(--suau); }
