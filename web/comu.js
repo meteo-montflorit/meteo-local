@@ -1221,11 +1221,24 @@ function horesParada(hores, des) {
 function blocBusos(busos, des) {
   const parts = [];
   if (busos.prova) parts.push(element('p', 'bus-prova', busos.prova));
+  // Cada línia, plegada: es mira la que interessa (Juanjo, 22-10-2026). Si
+  // té incidències, el títol ho avisa amb la icona.
   for (const l of busos.linies || []) {
-    const targeta = element('section', 'bus-targeta');
+    const targeta = element('details', 'bus-targeta');
+    const resum = element('summary');
     const cap = element('h2', 'bus-linia');
     cap.append(element('span', 'bus-xip', l.linia), ' ', l.nom);
-    targeta.append(cap, ...incidenciesBusos(busos, des, l.linia).map((inc) => liniaIncidenciaBus(inc, des, false)));
+    const incidencies = incidenciesBusos(busos, des, l.linia);
+    if (incidencies.length) {
+      const avis = element('span', 'bus-avis');
+      avis.append(icona('i-triangle-alert'));
+      avis.title = T('Amb incidències');
+      avis.setAttribute('role', 'img');
+      avis.setAttribute('aria-label', avis.title);
+      cap.append(avis);
+    }
+    resum.append(cap);
+    targeta.append(resum, ...incidencies.map((inc) => liniaIncidenciaBus(inc, des, false)));
     for (const s of l.sentits) {
       targeta.append(element('h3', 'bus-sentit', T`Cap a ${s.cap_a}`));
       const taula = element('dl', 'busos');

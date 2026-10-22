@@ -861,6 +861,15 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
    muy junto»). La columna dels noms fa el mateix a totes les taules,
    perquè les hores quedin una sota l'altra; al mòbil s'estreny. */
 .bus-targeta { margin: .9rem 0 0; padding: .8rem .9rem .7rem; background: var(--superficie); border: 1px solid var(--vora); border-radius: .6rem; }
+/* Plegades (Juanjo, 22-10-2026): el títol fa de botó, amb el triangle de
+   sempre davant; oberta, el títol se separa de la resta. */
+.bus-targeta > summary { cursor: pointer; display: flex; align-items: center; gap: .4rem; }
+.bus-targeta > summary::before { content: "▸"; color: var(--suau); }
+.bus-targeta[open] > summary::before { content: "▾"; }
+.bus-targeta > summary::-webkit-details-marker { display: none; }
+.bus-targeta > summary { list-style: none; }
+.bus-targeta[open] > summary { padding-bottom: .5rem; border-bottom: 1px solid var(--vora); }
+.bus-avis svg { display: block; width: 1.1rem; height: 1.1rem; fill: none; stroke: var(--compte); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .bus-linia { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin: 0; font-size: 1.05rem; }
 .bus-xip { padding: .05rem .45rem; border-radius: .3rem; background: #ffaa00; color: #343434; font-weight: 700; }
 .bus-sentit { margin: .9rem 0 .2rem; font-size: .95rem; font-weight: 600; }
