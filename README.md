@@ -12,7 +12,7 @@ y en [castellano](https://meteo-montflorit.github.io/es/). Tiene cuatro páginas
   y la presión, de una estación particular junto a la riera, en el carrer
   Canaletes; la lluvia y la humedad, por consenso de esa y de las vecinas de
   Weather Underground, ADR 0085; cuánto más hace en la parte alta, ahora y en
-  cada tramo de la previsión, ADR 0087) y la de Montflorit, el resumen del día (el de «Consultes › Avui», sin la ropa; desde las 18 h,
+  cada tramo de la previsión, ADR 0087; la tarjeta de arriba, con el fondo y un dibujo del cielo que anuncia, de día, de noche o al salir y ponerse el sol, ADR 0121) y la de Montflorit, el resumen del día (el de «Consultes › Avui», sin la ropa; desde las 18 h,
   también el de mañana; ADR 0074) y la previsión hora a hora, de 24 horas como mínimo y hasta
   las 21 h de mañana, plegada por mañana, tarde y noche
   con el resumen de cada una (probabilidad de lluvia, temperaturas y

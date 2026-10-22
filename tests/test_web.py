@@ -282,6 +282,31 @@ class Web(unittest.TestCase):
         self.assertEqual(frase([14, 15, 14, 13, 12, 12], [6.5] * 10, vent=20),
                          "Aquesta tarda, fresc i serè; aquesta nit, amb molt de fred i serè.")
 
+    def test_el_fons_i_el_dibuix_d_ara_segons_el_cel(self):
+        # Juanjo, 22-10-2026 (ADR 0121): el fons i el dibuix, del cel del primer
+        # tram; de nit, a l'alba i a la posta, segons l'altura del sol; si plou, la pluja.
+        def cel(ara, nuvols, plou=False, codi=3, boira=False):
+            hores = [{"hora": f"2026-10-{21 + (h >= 24)}T{h % 24:02d}:00",
+                      "fins": f"2026-10-{21 + (h + 1 >= 24)}T{(h + 1) % 24:02d}:00", "probabilitat": 0, "pluja_mm": 0,
+                      "nuvols": nuvols, "vent": 0, "avisos": [], "temperatura": 15, "codi": 45 if boira else codi}
+                     for h in range(6, 34)]
+            return self.avalua(ara, f"celPortada({json.dumps(hores)}, {json.dumps(plou)}, null, new Date())")
+        mati, tarda, nit = "2026-10-21T10:30:00+02:00", "2026-10-21T15:30:00+02:00", "2026-10-21T23:30:00+02:00"
+        self.assertEqual(cel(tarda, 5), {"fons": "sere", "dibuix": "clear-day"})
+        self.assertEqual(cel(tarda, 30), {"fons": "poc", "dibuix": "partly-cloudy-day"})
+        self.assertEqual(cel(tarda, 75), {"fons": "nuvol", "dibuix": "cloudy"})
+        self.assertEqual(cel(tarda, 95), {"fons": "cobert", "dibuix": "overcast"})
+        self.assertEqual(cel(mati, 95, boira=True), {"fons": "boira", "dibuix": "fog"})
+        self.assertEqual(cel(tarda, 95, plou=True), {"fons": "pluja", "dibuix": "rain"})
+        self.assertEqual(cel(tarda, 95, plou=True, codi=95), {"fons": "tempesta", "dibuix": "thunderstorms-rain"})
+        self.assertEqual(cel(nit, 5), {"fons": "nit", "dibuix": "starry-night"})
+        self.assertEqual(cel(nit, 30), {"fons": "nitnuvol", "dibuix": "partly-cloudy-night"})
+        self.assertEqual(cel(nit, 95), {"fons": "nitcobert", "dibuix": "overcast-night"})
+        # El 21-10-2026 el sol es pon a Montflorit cap a les 18:50 i surt cap a les 8:10.
+        self.assertEqual(cel("2026-10-21T18:45:00+02:00", 5), {"fons": "albasere", "dibuix": "sunset"})
+        self.assertEqual(cel("2026-10-21T08:10:00+02:00", 5), {"fons": "albasere", "dibuix": "sunrise"})
+        self.assertEqual(cel("2026-10-21T18:45:00+02:00", 95, plou=True), {"fons": "albapluja", "dibuix": "rain"})
+
     def test_la_riera_a_la_portada_nomes_si_anuncia_alguna_cosa(self):
         # Juanjo, 21-10-2026: «que solo aparezcan cuando anuncien algo».
         ara = "2026-10-21T20:30:00+02:00"

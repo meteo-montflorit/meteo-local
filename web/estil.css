@@ -1485,26 +1485,36 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 /* «Ara», destacat: la conclusió a dalt, la temperatura en gran i les dades en
    pastilles. El radar, a dins, en el seu requadre de sempre. */
 .targeta.ara.heroi { background: var(--heroi); color: #fff; border: 0; border-radius: 1.4rem; padding: 1.1rem 1.2rem; }
-/* El fons segons el cel de la frase (casa.js, celPortada): el del primer tram,
-   en degradat cap al del segon. Tots prou foscos perquè el text blanc i el
-   suau passin de 4,5:1. Al tema fosc, una mica més apagats. */
-.targeta.ara.heroi[class*="cel-"] { background: linear-gradient(105deg, var(--cel-a, var(--heroi)) 35%, var(--cel-b, var(--cel-a, var(--heroi)))); }
-.heroi.cel-sere { --cel-a: #1d5a96; } .heroi.cel2-sere { --cel-b: #1d5a96; }
-.heroi.cel-poc { --cel-a: #2b5d8f; } .heroi.cel2-poc { --cel-b: #2b5d8f; }
-.heroi.cel-nuvol { --cel-a: #3c5873; } .heroi.cel2-nuvol { --cel-b: #3c5873; }
-.heroi.cel-cobert { --cel-a: #4b5967; } .heroi.cel2-cobert { --cel-b: #4b5967; }
-.heroi.cel-boira { --cel-a: #535d68; } .heroi.cel2-boira { --cel-b: #535d68; }
-.heroi.cel-pluja { --cel-a: #2c4459; } .heroi.cel2-pluja { --cel-b: #2c4459; }
-.heroi.cel-tempesta { --cel-a: #3d3163; } .heroi.cel2-tempesta { --cel-b: #3d3163; }
-.heroi.cel-nit { --cel-a: var(--heroi); } .heroi.cel2-nit { --cel-b: var(--heroi); }
-:root[data-theme="dark"] .targeta.ara.heroi[class*="cel-"] { box-shadow: inset 0 0 0 100vmax rgb(0 0 0 / .18); }
-/* El dibuix del cel, gran, a la dreta de la temperatura: la icona de la
-   gràfica, en blanc translúcid i el sol groc. */
-.heroi-cel { margin-left: auto; flex: none; line-height: 0; }
-.heroi-cel svg { width: 6.5rem; height: 6.5rem; fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round;
-  --ic-sol: #ffd166; --ic-sol-fons: rgb(255 209 102 / .3); --ic-nuvol: rgb(255 255 255 / .92); --ic-nuvol-fons: rgb(255 255 255 / .16);
-  --ic-aigua: #9fd0ff; --ic-lluna: #fff1c1; --ic-lluna-fons: rgb(255 241 193 / .2); }
-@media (max-width: 40rem) { .heroi-cel svg { width: 5.2rem; height: 5.2rem; } }
+/* El fons d'«Ara» segons el cel (ADR 0121; casa.js, celPortada): un color i uns
+   dibuixos per a cada cel, de dia, de nit i a la sortida i la posta del sol
+   (els dibuixos, de web/img/cel, els fa eines/fons_cel.py). Amb el cel clar, el
+   text fosc; amb el fosc, blanc: tots dos passen de 4,5:1. */
+.heroi[class*="cel-"] { --t: #fff; --s: #c9d8ee; --xip: rgb(255 255 255 / .12); --heroi-suau: var(--s); }
+.targeta.ara.heroi[class*="cel-"] { background: var(--f); color: var(--t); }
+.heroi[class*="cel-"] .veredicte { color: var(--t); }
+.heroi[class*="cel-"] .dades-ara li { background: var(--xip); }
+.heroi[class*="cel-"] a { color: var(--t); }
+.heroi[class*="cel-"] .radar-ara a { color: var(--enllac); }
+.heroi:is(.cel-sere, .cel-poc, .cel-nuvol, .cel-boira, .cel-albasere, .cel-albapoc, .cel-albanuvol) { --xip: rgb(255 255 255 / .38); }
+.heroi.cel-sere { --f: radial-gradient(circle at 90% 35%, rgb(255 240 180 / .95) 0, rgb(255 225 140 / .45) 14%, rgb(255 225 140 / 0) 38%), linear-gradient(165deg, #3d9be9 0%, #86c5f5 65%, #cfe8fb 100%); --t: #0d2340; --s: #17324f; }
+.heroi.cel-poc { --f: radial-gradient(circle at 90% 35%, rgb(255 240 180 / .7) 0, rgb(255 225 140 / 0) 30%), url("img/cel/nuvols-poc.svg") center / cover, linear-gradient(165deg, #6fb0e8, #cfe2f2); --t: #0d2340; --s: #1f3a57; }
+.heroi.cel-nuvol { --f: url("img/cel/nuvols.svg") center / cover, linear-gradient(165deg, #9fadbc, #ccd5de); --t: #14202d; --s: #2a3846; }
+.heroi.cel-cobert { --f: url("img/cel/nuvols-cobert.svg") center / cover, linear-gradient(165deg, #5d6670, #454d56); --s: #e3e8ee; }
+.heroi.cel-boira { --f: url("img/cel/boira.svg") center / cover, linear-gradient(165deg, #d3d8dd, #b9c0c8); --t: #1b2530; --s: #33404d; }
+.heroi.cel-pluja { --f: url("img/cel/gotes.svg") center / cover, url("img/cel/nuvols-cobert.svg") center / cover, linear-gradient(165deg, #3d5266, #253341); --s: #cfdbe7; }
+.heroi.cel-tempesta { --f: url("img/cel/llamps.svg") center / cover, url("img/cel/gotes.svg") center / cover, radial-gradient(ellipse at 25% 20%, rgb(190 170 255 / .25), transparent 55%), linear-gradient(165deg, #3a2d55, #1d1830); --s: #d6cdea; }
+.heroi.cel-nit { --f: radial-gradient(circle at 90% 35%, rgb(255 244 200 / .28) 0, transparent 22%), url("img/cel/estrelles.svg") center / cover, linear-gradient(165deg, #0a1430, #1f2f5a); }
+.heroi.cel-nitnuvol { --f: url("img/cel/estrelles-poques.svg") center / cover, url("img/cel/nuvols-nit.svg") center / cover, linear-gradient(165deg, #121d3a, #2a3a63); }
+.heroi.cel-nitcobert { --f: url("img/cel/nuvols-nit.svg") center / cover, linear-gradient(165deg, #151d2e, #283144); }
+.heroi.cel-albasere { --f: radial-gradient(circle at 88% 82%, rgb(255 236 170 / .95) 0, rgb(255 180 110 / .55) 16%, transparent 42%), linear-gradient(175deg, #5f82c9 0%, #d99bb0 55%, #ffc98f 100%); --t: #1d1a33; --s: #2e2847; }
+.heroi.cel-albapoc { --f: radial-gradient(circle at 88% 82%, rgb(255 236 170 / .95) 0, rgb(255 180 110 / .55) 16%, transparent 42%), url("img/cel/nuvols-tenyits.svg") center / cover, url("img/cel/nuvols-tenyits-clars.svg") center / cover, linear-gradient(175deg, #6a86c4 0%, #d9a0b2 55%, #ffcf9a 100%); --t: #1d1a33; --s: #2e2847; }
+.heroi.cel-albanuvol { --f: radial-gradient(ellipse at 50% 120%, rgb(255 170 110 / .45), transparent 60%), url("img/cel/nuvols-calents.svg") center / cover, url("img/cel/nuvols.svg") center / cover, linear-gradient(175deg, #98a3b0, #c9c3c2); --t: #14202d; --s: #2a3846; }
+.heroi.cel-albacobert { --f: radial-gradient(ellipse at 50% 125%, rgb(255 150 90 / .5), transparent 60%), url("img/cel/nuvols-calents.svg") center / cover, url("img/cel/nuvols-cobert.svg") center / cover, linear-gradient(175deg, #4e565f, #3a4048); --s: #e3e8ee; }
+.heroi.cel-albapluja { --f: url("img/cel/gotes.svg") center / cover, radial-gradient(ellipse at 50% 125%, rgb(255 150 90 / .5), transparent 60%), url("img/cel/nuvols-calents.svg") center / cover, url("img/cel/nuvols-cobert.svg") center / cover, linear-gradient(175deg, #33465a, #20293a); --s: #cfdbe7; }
+/* El dibuix del cel, gran, a la dreta de la temperatura, amb una ombra perquè
+   els núvols blancs es vegin també sobre el cel clar. */
+.heroi-cel { flex: none; width: 9.5rem; height: 9.5rem; margin: -1.6rem -.8rem -1.6rem auto; filter: drop-shadow(0 6px 10px rgb(20 35 60 / .28)); }
+@media (max-width: 40rem) { .heroi-cel { width: 7.4rem; height: 7.4rem; margin: -1.2rem -.6rem -1.2rem auto; } }
 .heroi .titular { margin: 0 0 .8rem; }
 .heroi .titular-cel { margin: 0; font-size: 1.3rem; line-height: 1.3; font-weight: 700; }
 .heroi .titular .resum-linia { margin: .35rem 0 0; color: var(--heroi-suau); display: flex; gap: .4rem; align-items: flex-start; }

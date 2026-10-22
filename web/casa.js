@@ -344,28 +344,39 @@ function avisDePluja(hores, ara = new Date()) {
     && (f.avisos || []).some((a) => (a.tipus || []).some((t) => t === 'pluja' || t === 'tempestes')));
 }
 
-// El fons d'«Ara» i el dibuix gran, segons el cel que anuncia la frase (Juanjo,
-// 22-10-2026: «el fondo de esta ficha podría amoldarse a lo que anuncia?»,
-// «y algún sol o nubes dibujados?»): el color del primer tram, en degradat cap
-// al del segon, i la icona del primer, la de la gràfica. Si ara plou, la
-// pluja (o la tempesta) mana, com a la resta de la portada (ADR 0101). De
-// nit, sense pluja, el blau de nit de sempre.
-const FONS_CEL = { 'i-sun': 'sere', 'i-cloud-sun': 'poc', 'i-cloud': 'nuvol', 'i-cloudy': 'cobert', 'i-cloud-fog': 'boira' };
+// El fons d'«Ara» i el dibuix gran, segons el cel que anuncia la frase (ADR
+// 0121; Juanjo, 22-10-2026: «el fondo de esta ficha podría amoldarse a lo que
+// anuncia?», «y algún sol o nubes dibujados?», «dibujos más realistas»): el
+// cel del primer tram i, de dia, de nit o a la sortida i la posta del sol,
+// segons l'altura del sol ara (de 6° sota l'horitzó a 6° sobre, l'alba i la
+// posta). Si ara plou, la pluja (o la tempesta) mana, com a la resta de la
+// portada (ADR 0101). Els dibuixos, de Meteocons (Bas Milius, MIT).
+const FONS_NIT = { sere: 'nit', poc: 'nitnuvol', nuvol: 'nitcobert', cobert: 'nitcobert', boira: 'nitcobert' };
+const FONS_ALBA = { sere: 'albasere', poc: 'albapoc', nuvol: 'albanuvol', cobert: 'albacobert', boira: 'albacobert', pluja: 'albapluja' };
+const DIBUIX_CEL = {
+  dia: { sere: 'clear-day', poc: 'partly-cloudy-day', nuvol: 'cloudy', cobert: 'overcast', boira: 'fog', pluja: 'rain', tempesta: 'thunderstorms-rain' },
+  nit: { sere: 'starry-night', poc: 'partly-cloudy-night', nuvol: 'cloudy', cobert: 'overcast-night', boira: 'fog-night', pluja: 'rain',
+    tempesta: 'thunderstorms-rain' },
+};
 
 function celPortada(hores, plou, radarDades, ara = new Date()) {
   const trams = tramsFrase(hores, ara);
   if (!trams.length) return null;
-  // «Molt ennuvolat» i «Cobert» tenen la mateixa icona: el fons els separa.
-  const fons = (t) => (t.clau.endsWith('|Nit') && t.cel[1] !== 'i-cloud-fog' ? 'nit'
-    : t.cel[0] === T('Molt ennuvolat') ? 'nuvol' : FONS_CEL[t.cel[1]] || 'nit');
-  const res = { fons: fons(trams[0]), fons2: fons(trams[trams.length - 1]), icona: trams[0].cel[1] };
+  const [text, ic] = trams[0].cel;
+  // «Molt ennuvolat» i «Cobert» tenen la mateixa icona: el text els separa.
+  let cel = ic === 'i-cloud-fog' ? 'boira' : ['i-sun', 'i-moon-cel'].includes(ic) ? 'sere'
+    : ['i-cloud-sun', 'i-cloud-moon'].includes(ic) ? 'poc' : text === T('Cobert') ? 'cobert' : 'nuvol';
   const estat = radarDades && radarDades.pluja && radarDades.pluja.estat;
   if (plou || estat === 'plou' || estat === 'radar_sobre') {
     const f = (hores || []).find((h) => new Date(h.fins) > ara);
-    const tempesta = f && f.codi >= 95;
-    Object.assign(res, { fons: tempesta ? 'tempesta' : 'pluja', icona: tempesta ? 'i-cloud-lightning' : 'i-cloud-rain' });
+    cel = f && f.codi >= 95 ? 'tempesta' : 'pluja';
   }
-  return res;
+  const altura = alturaSol(ara);
+  const moment = altura < -6 ? 'nit' : altura < 6 ? 'alba' : 'dia';
+  const fons = moment === 'nit' ? FONS_NIT[cel] || cel : moment === 'alba' ? FONS_ALBA[cel] || cel : cel;
+  let dibuix = DIBUIX_CEL[moment === 'nit' ? 'nit' : 'dia'][cel];
+  if (moment === 'alba' && (cel === 'sere' || cel === 'poc')) dibuix = ara.getHours() < 12 ? 'sunrise' : 'sunset';
+  return { fons, dibuix };
 }
 
 function titularAra(hores, radarDades, plou, ara = new Date()) {
@@ -443,11 +454,12 @@ function blocAra(casa, radarDades, vent, veines, hores) {
   if (titular) sec.prepend(titular);
   const cel = hores && celPortada(hores, plou, radarDades);
   if (cel) {
-    sec.classList.add(`cel-${cel.fons}`, `cel2-${cel.fons2}`);
+    sec.classList.add(`cel-${cel.fons}`);
     // Decoratiu: el cel ja el diu la frase.
-    const dibuix = element('span', 'heroi-cel');
+    const dibuix = element('img', 'heroi-cel');
+    dibuix.src = `${ARREL}img/meteocons/${cel.dibuix}.svg`;
+    dibuix.alt = '';
     dibuix.setAttribute('aria-hidden', 'true');
-    dibuix.append(icona(cel.icona));
     fila.append(dibuix);
   }
   const intensitat = (casa.plou && casa.intensitat) || 0;
