@@ -1175,16 +1175,19 @@ function incidenciesBusos(busos, quan, linia) {
 function liniaIncidenciaBus(inc, des, ambLinia) {
   const idioma = IDIOMA.codi === 'es' ? 'es' : 'ca';
   const p = element('p', 'bus-incidencia');
-  if (ambLinia) p.append(`${inc.linies.join(', ')}: `);
+  p.append(icona('i-triangle-alert'));
+  const text = element('span');
+  p.append(text);
+  if (ambLinia) text.append(element('strong', null, inc.linies.join(', ')), ': ');
   const titol = inc.titol[idioma] || inc.titol.ca;
   const url = (inc.url || {})[idioma] || (inc.url || {}).ca;
-  p.append(url ? enllacExtern(titol, url) : titol);
+  text.append(url ? enllacExtern(titol, url) : titol);
   const mateixDia = (d) => d.toDateString() === des.toDateString();
   const [inici, fi] = [inc.inici && new Date(inc.inici), inc.fi && new Date(inc.fi)];
   if (inici && inici > des) {
-    p.append(mateixDia(inici) ? T`, a partir de les ${horaCurta(inici)}.` : T`, a partir del ${diaBus(inici)} a les ${horaCurta(inici)}.`);
-  } else if (fi) p.append(mateixDia(fi) ? T`, fins a les ${horaCurta(fi)}.` : T`, fins al ${diaBus(fi)}.`);
-  else p.append('.');
+    text.append(mateixDia(inici) ? T`, a partir de les ${horaCurta(inici)}.` : T`, a partir del ${diaBus(inici)} a les ${horaCurta(inici)}.`);
+  } else if (fi) text.append(mateixDia(fi) ? T`, fins a les ${horaCurta(fi)}.` : T`, fins al ${diaBus(fi)}.`);
+  else text.append('.');
   return p;
 }
 
@@ -1219,20 +1222,22 @@ function blocBusos(busos, des) {
   const parts = [];
   if (busos.prova) parts.push(element('p', 'bus-prova', busos.prova));
   for (const l of busos.linies || []) {
-    const cap = element('p', 'bus-linia');
-    cap.append(element('span', 'tren-linia', l.linia), ' ', l.nom);
-    parts.push(cap, ...incidenciesBusos(busos, des, l.linia).map((inc) => liniaIncidenciaBus(inc, des, false)));
+    const targeta = element('section', 'bus-targeta');
+    const cap = element('h2', 'bus-linia');
+    cap.append(element('span', 'bus-xip', l.linia), ' ', l.nom);
+    targeta.append(cap, ...incidenciesBusos(busos, des, l.linia).map((inc) => liniaIncidenciaBus(inc, des, false)));
     for (const s of l.sentits) {
-      parts.push(element('p', 'bus-sentit', T`Cap a ${s.cap_a}`));
+      targeta.append(element('h3', 'bus-sentit', T`Cap a ${s.cap_a}`));
       const taula = element('dl', 'busos');
       for (const p of s.parades) taula.append(element('dt', null, TD(p.parada)), element('dd', null, horesParada(p.hores, des)));
-      parts.push(taula);
+      targeta.append(taula);
     }
     const enllacos = element('p', 'bus-enllacos');
-    if (l.mapa) enllacos.append(enllacExtern(T('Recorregut'), l.mapa));
+    if (l.mapa) enllacos.append(enllacExtern(T('Mapa del recorregut (PDF)'), l.mapa));
     if (l.mapa && l.horari) enllacos.append(' · ');
-    if (l.horari) enllacos.append(enllacExtern(T('Horari'), l.horari));
-    parts.push(enllacos);
+    if (l.horari) enllacos.append(enllacExtern(T('Horari complet (PDF)'), l.horari));
+    targeta.append(enllacos);
+    parts.push(targeta);
   }
   if (busos.temps_real_de) {
     parts.push(element('p', 'bus-nota', T`Hora d’arribada estimada, amb dades de l’AMB de les ${horaCurta(busos.temps_real_de)}.`));

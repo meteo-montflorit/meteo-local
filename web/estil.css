@@ -854,20 +854,27 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .consells { margin: .9rem 0 0; padding-left: 1.2rem; }
 .consells li { margin: .2rem 0; }
 .seccio { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--suau); margin: 0; }
-/* Les hores, just al costat del nom de la parada i cada fila amb la seva
-   ratlla: en una pantalla ampla, a l'altra punta, no es veia quina era de quina.
-   La columna dels noms fa el mateix a totes les taules, perquè les hores
-   quedin una sota l'altra; al mòbil s'estreny i el nom passa a dues ratlles. */
-.busos { display: grid; grid-template-columns: minmax(0, 15rem) max-content; justify-content: start; margin: .1rem 0 0; font-size: .95rem; }
-.busos dt, .busos dd { margin: 0; padding: .2rem 0; border-bottom: 1px solid var(--vora); }
-.busos dt { padding-right: 1rem; }
+/* Els busos, a «Consultes»: cada línia en una targeta, amb el color de l'AMB
+   a la insígnia; cada sentit amb el seu títol; les hores, just al costat del
+   nom de la parada i cada fila amb la seva ratlla (Juanjo, 22-10-2026: en
+   pantalla ampla no es veia quina hora era de quina parada; «todo muy igual
+   muy junto»). La columna dels noms fa el mateix a totes les taules,
+   perquè les hores quedin una sota l'altra; al mòbil s'estreny. */
+.bus-targeta { margin: .9rem 0 0; padding: .8rem .9rem .7rem; background: var(--superficie); border: 1px solid var(--vora); border-radius: .6rem; }
+.bus-linia { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin: 0; font-size: 1.05rem; }
+.bus-xip { padding: .05rem .45rem; border-radius: .3rem; background: #ffaa00; color: #343434; font-weight: 700; }
+.bus-sentit { margin: .9rem 0 .2rem; font-size: .95rem; font-weight: 600; }
+.bus-sentit::before { content: "→ "; color: var(--suau); }
+.busos { display: grid; grid-template-columns: minmax(0, 15rem) max-content; justify-content: start; margin: 0; font-size: .95rem; }
+.busos dt, .busos dd { margin: 0; padding: .35rem 0; border-top: 1px solid var(--vora); }
+.busos dt { padding-right: 1.2rem; }
+.busos dd { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
 @media (min-width: 40rem) { .busos { grid-template-columns: 15rem minmax(7.5rem, max-content); } }
-.busos dd { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.bus-linia { margin: 1rem 0 0; display: flex; align-items: center; gap: .4rem; font-weight: 600; }
-.bus-sentit { margin: .4rem 0 0; font-size: .9rem; color: var(--suau); }
-.bus-incidencia { margin: .3rem 0 0; font-size: .95rem; border-left: 3px solid var(--compte); padding-left: .5rem; }
-.bus-enllacos { margin: .3rem 0 0; font-size: .9rem; }
-.bus-nota { font-size: .8rem; color: var(--suau); margin-top: 1rem !important; }
+.bus-incidencia { display: flex; gap: .5rem; align-items: flex-start; margin: .6rem 0 0; padding: .45rem .6rem; font-size: .95rem;
+  background: var(--compte-fons); border-left: 3px solid var(--compte); border-radius: .3rem; }
+.bus-incidencia svg { flex: none; width: 1.1rem; height: 1.1rem; margin-top: .15rem; fill: none; stroke: var(--compte); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bus-enllacos { margin: .7rem 0 0; font-size: .9rem; }
+.bus-nota { font-size: .85rem; color: var(--suau); margin-top: .8rem !important; }
 .mitja .seccio.apartat { margin-top: .6rem; }
 .bus-prova { font-size: .8rem; font-weight: 600; color: var(--compte); margin-top: .3rem !important; }
 .tren-avisos { margin-top: .3rem; font-size: .9rem; }
