@@ -10,22 +10,6 @@ const LLOC = document.documentElement.dataset.lloc || 'casa';
 const ESTACIO_PROPIA = document.documentElement.dataset.estacio || 'l\u2019estació de casa';
 const FITXER_DADES = document.documentElement.dataset.dades || 'casa.json';
 
-// Com canvia la pressió en tres hores, amb els llindars habituals: menys d'1
-// hPa és estable; 3,6 hPa o més, un canvi ràpid.
-// curt: sense la xifra de les 3 h, perquè la línia de la targeta d'ara càpiga
-// en una sola al mòbil (Juanjo, 20-10-2026).
-function textPressio(casa, curt = false) {
-  const p = T`Pressió ${coma(casa.pressio, 0)} hPa`;
-  const d = casa.pressio_3h;
-  if (d == null) return p;
-  if (Math.abs(d) < 1) return T`${p}, estable`;
-  const sentit = d > 0 ? T('pujant') : T('baixant');
-  const rapid = Math.abs(d) >= 3.6 ? T(' ràpid') : '';
-  const signe = d > 0 ? '+' : '\u2212';
-  if (curt) return `${p}, ${sentit}${rapid}`;
-  return T`${p}, ${sentit}${rapid} (${signe}${coma(Math.abs(d))} en 3 h)`;
-}
-
 // La temperatura i la pressió, de l'estació de casa; la pluja i la humitat, de
 // la xarxa del barri (casa.consens); el vent, de Meteocat.
 // Cada dada, amb la seva icona, perquè es llegeixi d'una ullada.
@@ -439,11 +423,15 @@ function blocAra(casa, radarDades, vent, veines, hores) {
   const termometre = icona('i-thermometer');
   termometre.classList.add('vehicle');
   temp.append(termometre, `${coma(casa.temperatura)} °C`);
-  fila.append(temp);
-  // La part alta, en la seva etiqueta, si la diferència arriba a un grau; què
-  // vol dir, en prémer-la (etiquetaAlta, a comu.js).
+  // La part alta, si la diferència arriba a un grau, a sota de la temperatura
+  // i sense color, perquè el dibuix del cel hi càpiga al costat (Juanjo,
+  // 22-10-2026: al mòbil el núvol sortia de la targeta); què vol dir, en
+  // prémer-la (etiquetaAlta, a comu.js).
+  const columna = element('div', 'ara-temp-col');
+  columna.append(temp);
   const alta = textAltaAra(casa.dif_alta);
-  if (alta) fila.append(etiquetaAlta(alta));
+  if (alta) columna.append(etiquetaAlta(alta));
+  fila.append(columna);
   sec.append(fila);
   // Plou si ha plogut en els últims 15 minuts a la xarxa del barri: l'estació
   // de casa o alguna de les veïnes que compten (ADR 0060), amb la intensitat
@@ -484,11 +472,9 @@ function blocAra(casa, radarDades, vent, veines, hores) {
     llista.append(dada('i-wind', T`Vent ${coma(vent.mitja, 0)} km/h${ratxa}` + veines));
   }
   sec.append(llista);
-  // La humitat i la pressió, que es miren menys, juntes en una línia petita
-  // (Juanjo, 12-10-2026; ADR 0074).
-  const menys = [T`Humitat ${coma(casa.humitat, 0)} %`];
-  if (casa.pressio != null) menys.push(textPressio(casa, true));
-  sec.append(element('p', 'ara-menys', menys.join(' · ')));
+  // Sense la línia de la humitat i la pressió, perquè la targeta no creixi
+  // amb la part alta a sota de la temperatura (Juanjo, 22-10-2026: «podemos
+  // prescindir de la humedad y presión»). Es poden veure a la gràfica.
   const radar = blocRadar(radarDades, plou, hores);
   if (radar) sec.append(radar);
   return sec;

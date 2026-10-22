@@ -41,6 +41,13 @@ realistas» en lugar de los iconos de líneas. Pidió publicarlo el mismo día.
   `@meteocons/svg-static` 0.1.0, estilo «fill»), en `web/img/meteocons/` con
   su licencia, y acreditado en «Fonts». Es decorativo (`alt=""`): el cielo ya
   lo dice la frase.
+- **La parte alta, debajo de la temperatura y sin color** (desde la 3.184.0):
+  en el móvil, la etiqueta de color al lado de la temperatura empujaba el
+  dibujo fuera de la tarjeta, y Juanjo la veía desentonar. Para que la
+  tarjeta no crezca, sin la línea de la humedad y la presión, que se pueden
+  ver en la gráfica (Juanjo, 22-10-2026: «podemos prescindir de la humedad y
+  presión»). La temperatura no se parte en dos líneas: si falta sitio,
+  encoge el dibujo.
 - **Los dibujos del fondo** son propios, en SVG (`web/img/cel/`), y los hace
   `eines/fons_cel.py` con una semilla fija.
 

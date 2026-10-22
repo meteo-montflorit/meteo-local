@@ -1513,8 +1513,14 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .heroi.cel-albapluja { --f: url("img/cel/gotes.svg") center / cover, radial-gradient(ellipse at 50% 125%, rgb(255 150 90 / .5), transparent 60%), url("img/cel/nuvols-calents.svg") center / cover, url("img/cel/nuvols-cobert.svg") center / cover, linear-gradient(175deg, #33465a, #20293a); --s: #cfdbe7; }
 /* El dibuix del cel, gran, a la dreta de la temperatura, amb una ombra perquè
    els núvols blancs es vegin també sobre el cel clar. */
-.heroi-cel { flex: none; width: 9.5rem; height: 9.5rem; margin: -1.6rem -.8rem -1.6rem auto; filter: drop-shadow(0 6px 10px rgb(20 35 60 / .28)); }
-@media (max-width: 40rem) { .heroi-cel { width: 7.4rem; height: 7.4rem; margin: -1.2rem -.6rem -1.2rem auto; } }
+.heroi-cel { flex: 0 1 auto; min-width: 0; max-width: 45%; width: 9.5rem; height: auto; aspect-ratio: 1; margin: -1.6rem -.8rem -1.6rem auto;
+  filter: drop-shadow(0 6px 10px rgb(20 35 60 / .28)); }
+@media (max-width: 40rem) { .heroi-cel { width: 7.4rem; margin: -1.2rem -.3rem -1.2rem auto; } }
+/* La part alta, a sota de la temperatura, com a text, sense color (Juanjo,
+   22-10-2026); en prémer-la, què vol dir, com a tot arreu. */
+.ara-temp-col { display: flex; flex-direction: column; align-items: flex-start; gap: .15rem; flex: none; }
+.heroi .ara-temp-col .veredicte { white-space: nowrap; }
+.heroi .ara-temp .alta { background: none; color: var(--heroi-suau); padding: 0; font-size: 1rem; line-height: 1.3; white-space: nowrap; }
 .heroi .titular { margin: 0 0 .8rem; }
 .heroi .titular-cel { margin: 0; font-size: 1.3rem; line-height: 1.3; font-weight: 700; }
 .heroi .titular .resum-linia { margin: .35rem 0 0; color: var(--heroi-suau); display: flex; gap: .4rem; align-items: flex-start; }
