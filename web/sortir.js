@@ -601,18 +601,22 @@ function pintaSortida() {
     const titol = element('span', 'mitja-nom');
     titol.append(icona(icon), TD(nom));
     cap.append(titol, ' ', element('span', 'mitja-nivell', TD(v.etiqueta || TEXT_NIVELL[v.nivell])));
-    li.append(cap, element('p', 'mitja-motiu', v.motius.join(' ')));
     const plujaViatge = clau === 'moto' || clau === 'bici' ? mullaRodes : mulla;
     const r = roba(clau, tram, v.nivell !== 'be' && [tram[0], tram[tram.length - 1]].some(plujaViatge));
-    if (r) li.append(element('p', 'mitja-roba', T`Roba: ${r}`));
-    // Les incidències, dins de la fitxa i plegades, sempre al final: no cal
-    // anar a cap altre lloc de la pàgina (Juanjo, 09-10-2026).
-    if (clau === 'public' && dades.busos) {
-      const busos = blocBusos(dades.busos, i > 0 ? new Date(hores[i].hora) : ara, i > 0);
-      if (busos) li.append(...busos);
-    }
-    if (clau === 'public' && trens && trens.length) {
-      li.append(plec('trens', T('Estat de cada línia'), blocTrens(dades.trens)));
+    if (clau === 'public') {
+      // Trens i busos, cadascun en el seu apartat (Juanjo, 22-10-2026). El
+      // títol ja diu «Trens»: el motiu, sense.
+      li.append(cap, element('p', 'seccio apartat', T('Trens')),
+        element('p', 'mitja-motiu', v.motius.map((m) => m.replace(/^(Trens|Trenes): /, '')).join(' ')));
+      // Les incidències, dins de la fitxa i plegades: no cal anar a cap altre
+      // lloc de la pàgina (Juanjo, 09-10-2026).
+      if (trens && trens.length) li.append(plec('trens', T('Estat de cada línia'), blocTrens(dades.trens)));
+      const busos = dades.busos && blocBusos(dades.busos, i > 0 ? new Date(hores[i].hora) : ara, i > 0);
+      if (busos) li.append(element('p', 'seccio apartat', T('Busos')), ...busos);
+      if (r) li.append(element('p', 'mitja-roba', T`Roba: ${r}`));
+    } else {
+      li.append(cap, element('p', 'mitja-motiu', v.motius.join(' ')));
+      if (r) li.append(element('p', 'mitja-roba', T`Roba: ${r}`));
     }
     if (MITJANS_TRANSIT.includes(clau) && dades.transit) {
       const n = (transit || []).length;
@@ -670,7 +674,7 @@ function blocBusos(busos, des, futur) {
     });
     taula.append(dt, dd);
   }
-  const cap = element('p', 'mitja-roba', futur ? T`Bus a ${busos.parada}, segons l’horari:` : T`Bus a ${busos.parada}:`);
+  const cap = element('p', 'mitja-roba', futur ? T`Parada ${busos.parada}, segons l’horari:` : T`Parada ${busos.parada}:`);
   const parts = [cap, taula];
   if (!futur) {
     parts.push(element('p', 'bus-nota', (tard ? T`+${tard}: hi arriba ${tard} minuts tard. ` : '')

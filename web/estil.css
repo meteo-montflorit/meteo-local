@@ -859,6 +859,7 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .busos dd { font-variant-numeric: tabular-nums; }
 .bus-tard { color: var(--compte); font-weight: 600; }
 .bus-nota { font-size: .8rem; color: var(--suau); margin-top: .15rem !important; }
+.mitja .seccio.apartat { margin-top: .6rem; }
 .bus-prova { font-size: .8rem; font-weight: 600; color: var(--compte); margin-top: .3rem !important; }
 .tren-avisos { margin-top: .3rem; font-size: .9rem; }
 .tren .tren-nota { margin-top: .3rem; font-size: .9rem; color: var(--suau); }
