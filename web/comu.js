@@ -1154,6 +1154,52 @@ function enllacExtern(text, href) {
   return a;
 }
 
+// Els propers busos de la parada del barri (proposta, 22-10-2026), a «Si
+// surts» i a «Consultes», en una
+// taula d'una ullada: per a cada línia i sentit, els que passen en les 2
+// hores següents (com a molt 2, perquè la fila càpiga al mòbil) o, si no
+// n'hi ha cap, el proper. Amb «Ara»,
+// les hores són del temps real de l'AMB de l'última actualització, quan n'hi
+// ha (+2: hi arriba 2 minuts tard); més tard, de l'horari.
+function blocBusos(busos, des, futur) {
+  const limit = des.getTime() + 2 * 3600e3;
+  const grups = new Map();
+  for (const p of busos.passos || []) {
+    if (new Date(p.hora).getTime() < des.getTime()) continue;
+    const clau = `${p.linia}|${p.cap_a}`;
+    if (!grups.has(clau)) grups.set(clau, []);
+    grups.get(clau).push(p);
+  }
+  if (!grups.size) return null;
+  const hora = (iso) => { const d = new Date(iso); return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  const taula = element('dl', 'busos');
+  let tard = 0;
+  for (const [clau, ps] of grups) {
+    const [linia, capA] = clau.split('|');
+    const propers = ps.filter((p) => new Date(p.hora).getTime() <= limit).slice(0, 2);
+    const dt = element('dt');
+    dt.append(element('span', 'tren-linia', linia), ' ', T`cap a ${capA}`);
+    const dd = element('dd');
+    (propers.length ? propers : ps.slice(0, 1)).forEach((p, i) => {
+      if (i) dd.append(' · ');
+      dd.append(hora(p.hora));
+      if (!futur && p.temps_real && p.retard_min >= 2) {
+        dd.append(element('span', 'bus-tard', `\u00a0+${p.retard_min}`));
+        tard = tard || p.retard_min;
+      }
+    });
+    taula.append(dt, dd);
+  }
+  const cap = element('p', 'mitja-roba', futur ? T`Parada ${busos.parada}, segons l’horari:` : T`Parada ${busos.parada}:`);
+  const parts = [cap, taula];
+  if (!futur) {
+    parts.push(element('p', 'bus-nota', (tard ? T`+${tard}: hi arriba ${tard} minuts tard. ` : '')
+      + T`Temps real de l’AMB de les ${hora(busos.temps_real_de)}, quan n’hi ha; si no, l’horari.`));
+  }
+  if (busos.prova) parts.unshift(element('p', 'bus-prova', busos.prova));
+  return parts;
+}
+
 // L'estat de cada línia de tren, per al plec del transport públic.
 function blocTrens(trens) {
   const llista = element('ul', 'llista-trens');

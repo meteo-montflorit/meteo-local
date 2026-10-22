@@ -477,6 +477,8 @@ var IDIOMA = {
     "Parada {0}, segons l’horari:": "Parada {0}, según el horario:",
     "Parada {0}:": "Parada {0}:",
     "Busos": "Autobuses",
+    "Els propers busos urbans a la parada del barri.": "Los próximos autobuses urbanos en la parada del barrio.",
+    "Busos de Montflorit": "Autobuses de Montflorit",
     "Temps real de l’AMB de les {0}, quan n’hi ha; si no, l’horari.": "Tiempo real del AMB de las {0}, cuando lo hay; si no, el horario.",
     "Fred, fresc, calor…": "Frío, fresco, calor…",
     "A la frase de dalt, com es nota cada tram, amb la temperatura que es nota (amb el vent, quan fa fred): la mínima a la nit i al matí i la màxima a la tarda. Fred intens, sota 0\u00a0°C; molt fred, de 0 a 5\u00a0°C; fred, de 6 a 11\u00a0°C; fresc, de 12 a 17\u00a0°C; temperatura agradable, de 18 a 25\u00a0°C; calor, de 26 a 32\u00a0°C, i molta calor, des de 33\u00a0°C. Són intervals orientatius, no una classificació oficial.": "En la frase de arriba, cómo se nota cada tramo, con la temperatura que se nota (con el viento, cuando hace frío): la mínima por la noche y por la mañana y la máxima por la tarde. Frío intenso, bajo 0\u00a0°C; mucho frío, de 0 a 5\u00a0°C; frío, de 6 a 11\u00a0°C; fresco, de 12 a 17\u00a0°C; temperatura agradable, de 18 a 25\u00a0°C; calor, de 26 a 32\u00a0°C, y mucho calor, desde 33\u00a0°C. Son intervalos orientativos, no una clasificación oficial.",
