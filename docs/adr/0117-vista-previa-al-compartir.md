@@ -34,6 +34,21 @@ puedes aplicar todo».
 - De paso, los títulos en castellano de «Consultas», «Privacidad» y «Riera»,
   que seguían diciendo «Temps a Montflorit».
 
+- **Desde la 3.193.0, el atardecer de «Ara»** (`web/img/compartir-capvespre-ca.jpg`
+  y `-es.jpg`, 51 y 54 KB): el fondo de la tarjeta al ponerse el sol con
+  pocas nubes (`.cel-albapoc`, nubes teñidas) y el dibujo «sunset» de
+  Meteocons, con la letra de la web y el subtítulo con la previsión de 7 días
+  (Juanjo, 23-10-2026: «las del amanecer y atardecer son muy bonitas»; de dos
+  propuestas, el atardecer con nubes o el amanecer liso, eligió la primera,
+  la que recomendó el agente). En JPEG: con los degradados, el PNG pesaba
+  unos 400 KB. Las hace `eines/compartir.py` con los mismos archivos de
+  `web/`; las de cielo azul (`compartir-ca.png`, `compartir-es.png`) se
+  quitan. A la vez, la descripción de la portada ya no dice «les pròximes 24
+  hores» (la previsión llega a mañana a las 21 h, ADR 0041, y hay la de 7
+  días): «El temps ara a Montflorit (Cerdanyola del Vallès), la previsió hora
+  a hora fins demà i la de 7 dies, i els avisos de perill.»; y la de «Si
+  surts» nombra los autobuses (ADR 0120).
+
 ## Consecuencias
 
 - La vista previa es la de la página: un enlace a `#grafica` o a la ficha de

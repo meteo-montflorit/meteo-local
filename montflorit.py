@@ -97,8 +97,8 @@ CANVIS_INDEX = [
     ('<html lang="ca" data-theme="light">',
      '<html lang="ca" data-theme="light" data-lloc="Montflorit" data-estacio="l’estació particular"'
      f' data-dades="{DADES}" data-notes="{NOTES}">'),
-    ('content="El temps ara a casa (Montflorit, Cerdanyola del Vallès) i',
-     'content="El temps ara a Montflorit (Cerdanyola del Vallès) i'),
+    ('content="El temps ara a casa (Montflorit, Cerdanyola del Vallès),',
+     'content="El temps ara a Montflorit (Cerdanyola del Vallès),'),
     ("<title>Temps a casa</title>", "<title>Temps a Montflorit</title>"),
     # Sota el títol, què hi ha a la web (Juanjo, 09-10-2026).
     ('<h1>Temps a casa</h1>\n      <p class="ruta">Montflorit, Cerdanyola del Vallès</p>',
@@ -374,7 +374,8 @@ def open_graph(html, nom, es=False):
     titol = OG_TITOL.search(html).group(1)
     desc = OG_DESCRIPCIO.search(html)
     url = WEB + ("es/" if es else "") + ("" if nom == "index.html" else nom)
-    imatge = f"{WEB}img/compartir-{'es' if es else 'ca'}.png"
+    # La de la targeta «Ara» al capvespre (eines/compartir.py, ADR 0117).
+    imatge = f"{WEB}img/compartir-capvespre-{'es' if es else 'ca'}.jpg"
     etiquetes = [("og:type", "website"), ("og:site_name", OG_NOM[es]), ("og:title", titol), ("og:url", url),
                  ("og:locale", "es_ES" if es else "ca_ES"), ("og:locale:alternate", "ca_ES" if es else "es_ES"),
                  ("og:image", imatge), ("og:image:width", "1200"), ("og:image:height", "630"),

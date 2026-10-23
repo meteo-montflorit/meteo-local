@@ -85,12 +85,12 @@ class Web(unittest.TestCase):
         self.assertIn('<meta property="og:title" content="Riera · Temps a Montflorit">', ca)
         self.assertIn('<meta property="og:title" content="Riera · El tiempo en Montflorit">', es)
         self.assertIn('<meta property="og:url" content="https://meteo-montflorit.github.io/es/riera.html">', es)
-        self.assertIn('<meta property="og:image" content="https://meteo-montflorit.github.io/img/compartir-ca.png">', ca)
+        self.assertIn('<meta property="og:image" content="https://meteo-montflorit.github.io/img/compartir-capvespre-ca.jpg">', ca)
         self.assertIn('<meta property="og:locale" content="es_ES">', es)
         self.assertIn('og:description" content="La riera de Sant Cugat en Montflorit', es)
         self.assertIn('<meta property="og:url" content="https://meteo-montflorit.github.io/">',
                       self.llegeix("index.html"))
-        for imatge in ("img/compartir-ca.png", "img/compartir-es.png"):
+        for imatge in ("img/compartir-capvespre-ca.jpg", "img/compartir-capvespre-es.jpg"):
             self.assertTrue(os.path.exists(os.path.join(self.tmp.name, imatge)), imatge)
 
     def test_app_d_android(self):

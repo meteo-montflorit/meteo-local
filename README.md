@@ -194,6 +194,7 @@ Umbrales y lugares, en `config.py`. El porqué, en los ADR.
 | `montflorit-carrers.geojson` | Las calles con nombre del barrio y alrededores, de OpenStreetMap (ODbL), para estimar la calle probable de un corte de luz (ADR 0072) |
 | `eines/limits.py` | Editor de esos límites en un mapa: guarda en un borrador y `aplica` lo pasa a la web (ADR 0072) |
 | `eines/fons_radar.py` | Hace el fondo del mapa del radar (`web/img/radar-fons.webp`), del mapa base gris del ICGC; se rehace si cambia el radio del mapa (ADR 0019) |
+| `eines/compartir.py` | Hace las imágenes de la vista previa al compartir un enlace (`web/img/compartir-capvespre-{ca,es}.jpg`), con el fondo y el dibujo del atardecer de «Ara» (ADR 0117) |
 | `eines/mapa_barri.py` | Dibuja el mapa de esos límites que sale en «Com funciona» (`web/img/montflorit-limits.svg`) y, para el mapa de cada corte de luz, el fondo (`web/img/mapa-base.svg`) y las calles (`web/img/carrers.json`); se rehace al cambiarlos (ADR 0072 y 0077) |
 | `avisos_bot.py` | Decide los avisos públicos para el bot y el canal y los deja en `avisos.json`, con el historial de un año de la página «Perill» (ADR 0034 y 0071) |
 | `bot/` | Lo que vive en IONOS para repartir avisos: el bot de Telegram, `bot.py` (menú, suscripciones, reparto y resumen, ADR 0034); los avisos en el navegador, `push.py` (envío) y `subscripcio.php` (altas y bajas, ADR 0048); e `instalar.sh` |
