@@ -1492,16 +1492,24 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
    vista, com la fila d'icones de la gràfica, sense desplaçar. */
 .setmana .perque { margin-top: .9rem; }
 .setmana-dies { list-style: none; margin: .3rem 0 0; padding: .7rem .3rem .6rem; display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr)); background: var(--superficie); border: 1px solid var(--vora);
+  grid-template-columns: auto repeat(7, minmax(0, 1fr)); background: var(--superficie); border: 1px solid var(--vora);
   border-radius: .75rem; }
 .setmana-dies li { display: flex; flex-direction: column; align-items: center; gap: .1rem; min-width: 0;
   font-variant-numeric: tabular-nums; }
-.setmana-nom { font-weight: 600; font-size: .9rem; }
-.setmana-data { font-size: .75rem; color: var(--suau); }
+/* Cada fila, de la mateixa alçada a tots els dies i a la columna de símbols,
+   perquè quedin alineats. */
+.setmana-dies li > * { display: flex; align-items: center; justify-content: center; }
+.setmana-nom { font-weight: 600; font-size: .9rem; height: 1.35rem; }
+.setmana-data { font-size: .75rem; color: var(--suau); height: 1.1rem; }
 .setmana-cel { width: 1.7rem; height: 1.7rem; margin: .3rem 0 .2rem; fill: none; stroke: var(--text); stroke-width: 2;
   stroke-linecap: round; stroke-linejoin: round; }
-.setmana-max, .setmana-min { font-weight: 600; font-size: .95rem; }
-.setmana-pluja { font-size: .75rem; color: var(--c-aigua); font-weight: 600; min-height: 1.1em; white-space: nowrap; }
+.setmana-max, .setmana-min { font-weight: 600; font-size: .95rem; height: 1.4rem; }
+.setmana-pluja { font-size: .75rem; color: var(--c-aigua); font-weight: 600; height: 1.2rem; white-space: nowrap; }
+.setmana-claus { padding-right: .25rem; }
+.setmana-claus :is(.setmana-max, .setmana-min) { font-size: .72rem; cursor: help; }
+.setmana-claus .setmana-pluja { cursor: help; }
+.setmana-claus .setmana-pluja svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; }
 
 /* --- La portada nova (ADR 0118) --- */
 :root { --heroi: #1e3a5f; --heroi-suau: #c9d8ee; }

@@ -50,7 +50,12 @@ el ensemble de ECMWF (51 miembros) cubren los siete días.
   columnas a la vista sin desplazar (día, fecha, icono, máxima en rojo y
   mínima en azul, ADR 0063) y, solo si algún día llega a posible lluvia, una
   fila con su probabilidad. Cada columna lleva una frase para los lectores de
-  pantalla. Mide unos 200 px de alto en el móvil.
+  pantalla. Mide unos 200 px de alto en el móvil. Delante, una columna de
+  símbolos (desde la 3.191.2; Juanjo: «el % de abajo no se sabe lo que es»):
+  «màx» en rojo, «mín» en azul y, solo si hay fila de lluvia, el paraguas de
+  los tramos, cada uno con su descripción al pasar el ratón o al mantenerlo
+  pulsado. Las filas tienen la misma altura en la columna de símbolos y en
+  los días, para que queden alineadas; a 360 px cada día pasa de 47 a 41 px.
 - **Consultas**: ECMWF sale cada seis horas; la semana se pide a Open-Meteo
   como mucho cada hora (`setmana-cache.json` en el registro) y la corrección,
   una vez al día. Son unas 50 consultas más al día, frente a unas 2.900 y un

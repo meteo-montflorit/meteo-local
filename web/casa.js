@@ -569,6 +569,24 @@ function blocSetmana(dades, ara = new Date()) {
   const llista = element('ol', 'setmana-dies');
   const codi = IDIOMA.codi === 'es' ? 'es' : 'ca';
   const ambPluja = dies.some((d) => d.pluja);
+  // Una columna de símbols al principi, perquè se sàpiga què és cada fila
+  // (Juanjo, 23-10-2026: «el % de abajo no se sabe lo que es»): «màx» i «mín»
+  // del color de les xifres i el paraigua dels trams, només si hi ha pluja.
+  // Cada un, amb la seva descripció en passar-hi el ratolí o mantenint-lo
+  // premut. Per als lectors de pantalla, no: cada dia ja ho diu tot.
+  const claus = element('li', 'setmana-claus');
+  claus.setAttribute('aria-hidden', 'true');
+  const clau = (classe, contingut, descripcio) => {
+    const s = element('span', classe);
+    if (contingut) s.append(contingut);
+    if (descripcio) s.title = descripcio;
+    return s;
+  };
+  claus.append(clau('setmana-nom'), clau('setmana-data'), clau('setmana-cel'),
+    clau('setmana-max temp-max', T('màx'), T('Temperatura màxima')),
+    clau('setmana-min temp-min', T('mín'), T('Temperatura mínima')));
+  if (ambPluja) claus.append(clau('setmana-pluja', icona('i-umbrella'), T('Probabilitat de pluja')));
+  llista.append(claus);
   dies.forEach((d, i) => {
     const data = new Date(`${d.dia}T12:00`);
     const nom = i ? data.toLocaleDateString(codi, { weekday: 'short' }) : T('Avui');
