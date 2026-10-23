@@ -250,9 +250,30 @@ function valorWeb(enc, tipus) {
   return tipus === 'pluja' ? (enc.pluja && enc.pluja.brier) : enc.darrers.temperatura.error;
 }
 
+// La pluja de Meteocat i AEMET, només quan ha plogut en alguna de les hores
+// comparades: sense pluja, el seu error només compta les falses alarmes i
+// semblava que encertaven sempre (Juanjo, 23-10-2026: «aemet acierta siempre
+// con la lluvia?»).
 function valorOficial(o, tipus) {
   const v = o && o[tipus];
-  return v && v.hores ? v.oficial : null;
+  if (!v || !v.hores || (tipus === 'pluja' && !v.plogudes)) return null;
+  return v.oficial;
+}
+
+// La web, on hi ha alguna oficial, a les mateixes hores que l'AEMET (la que
+// en té més; si no, les de Meteocat): la línia de tots els dies des del 4
+// d'octubre, amb pluja, es comparava amb les oficials de dies secs.
+function valorWebComparat(general, oficial, tipus) {
+  const o = oficial || {};
+  const font = valorOficial(o.aemet, tipus) != null ? o.aemet : valorOficial(o.meteocat, tipus) != null ? o.meteocat : null;
+  return font ? font[tipus].web : general;
+}
+
+// Si hi ha oficials però encara no ha plogut a les seves hores, es diu.
+function notaPlujaOficials(cont, oficials) {
+  const sense = oficials.some((o) => o && ['meteocat', 'aemet'].some((f) => o[f] && o[f].pluja && o[f].pluja.hores && !o[f].pluja.plogudes));
+  const amb = oficials.some((o) => o && ['meteocat', 'aemet'].some((f) => valorOficial(o[f], 'pluja') != null));
+  if (sense && !amb) cont.append(element('p', 'nota', T('Meteocat i AEMET hi sortiran quan hagi plogut en alguna de les hores comparades; de moment no hi ha plogut.')));
 }
 
 function pintaAntelacions() {
@@ -261,13 +282,14 @@ function pintaAntelacions() {
   for (const [tipus, unitat, decimals] of TIPUS) {
     graficaLinies($(`grafica-antelacio-${tipus}`), {
       etiquetes: ns.map((n) => `${n}\u00a0h`),
-      series: [{ clau: 'web', valors: enc.map((e) => valorWeb(e, tipus)) },
+      series: [{ clau: 'web', valors: enc.map((e) => valorWebComparat(valorWeb(e, tipus), e && e.oficial, tipus)) },
         { clau: 'meteocat', valors: enc.map((e) => valorOficial(e && e.oficial && e.oficial.meteocat, tipus)) },
         { clau: 'aemet', valors: enc.map((e) => valorOficial(e && e.oficial && e.oficial.aemet, tipus)) }],
       unitat, decimals, marca: estat.antelacio - 1,
       descripcio: tipus === 'pluja' ? T('L’error de la pluja segons l’antelació, de la web, Meteocat i AEMET.')
         : T('L’error de la temperatura segons l’antelació, de la web, Meteocat i AEMET.'),
     });
+    if (tipus === 'pluja') notaPlujaOficials($(`grafica-antelacio-${tipus}`), enc.map((e) => e && e.oficial));
   }
 }
 
@@ -276,18 +298,21 @@ function pintaSetmanes(e) {
   for (const [tipus, unitat, decimals] of TIPUS) {
     graficaLinies($(`grafica-setmanes-${tipus}`), {
       etiquetes: setmanes.map((s) => dataCurta(s.des_de) + (s.en_curs ? '*' : '')),
-      series: [{ clau: 'web', valors: setmanes.map((s) => (tipus === 'pluja' ? s.pluja.brier : s.temperatura.error)) },
+      series: [{ clau: 'web', valors: setmanes.map((s) => valorWebComparat(tipus === 'pluja' ? s.pluja.brier : s.temperatura.error, s.oficial, tipus)) },
         { clau: 'meteocat', valors: setmanes.map((s) => valorOficial(s.oficial && s.oficial.meteocat, tipus)) },
         { clau: 'aemet', valors: setmanes.map((s) => valorOficial(s.oficial && s.oficial.aemet, tipus)) }],
       unitat, decimals,
       descripcio: tipus === 'pluja' ? T('L’error de la pluja setmana a setmana, de la web, Meteocat i AEMET.')
         : T('L’error de la temperatura setmana a setmana, de la web, Meteocat i AEMET.'),
     });
+    if (tipus === 'pluja') notaPlujaOficials($(`grafica-setmanes-${tipus}`), setmanes.map((s) => s.oficial));
   }
   // Sense «Cada setmana comença en dilluns», que és una obvietat (Juanjo, 20-10-2026).
   // Que es vegi què és cada punt (Juanjo, 20-10-2026: «donde pone que es una semana?»).
-  $('setmanes-nota').textContent = setmanes.some((s) => s.en_curs)
-    ? T('Cada punt és una setmana, amb el dia que comença; * la setmana en curs.') : T('Cada punt és una setmana, amb el dia que comença.');
+  $('setmanes-nota').textContent = (setmanes.some((s) => s.en_curs)
+    ? T('Cada punt és una setmana, amb el dia que comença; * la setmana en curs.') : T('Cada punt és una setmana, amb el dia que comença.'))
+    + (setmanes.some((s) => s.oficial && (s.oficial.aemet || s.oficial.meteocat))
+      ? ' ' + T('Les setmanes amb Meteocat i AEMET, la web a les mateixes hores que l’AEMET.') : '');
 }
 
 // --- Com aprèn ---

@@ -220,6 +220,20 @@ referencias y valores»). Ahora lleva una línea suave cada 2 °C con su cifra
 «Resum»» no se entendía: ahora dice «Per triar-ne una altra, puja al
 selector de dalt», con un enlace que lleva al deslizador.
 
+**Las mismas horas y la lluvia solo con lluvia** (23-10-2026, 3.192.4). En
+«Error según la antelación» y «Semana a semana», la línea de la web era la de
+todos los días desde el 4-10, con lluvia, y la de Meteocat y AEMET, la de sus
+horas desde el 20-10, todas secas: AEMET salía con error 0 en la lluvia
+(nunca anunció lluvia y nunca llovió) y Meteocat, en sierra (una sola hora
+mal prevista, 1/18 = 0,056, vista desde consultas cada 3 horas). Parecía que
+acertaban más que la web, que en esas mismas horas daba entre 0,000 y 0,0014
+(Juanjo: «cómo se explica esta forma tan extraña del meteocat. aemet acierta
+siempre con la lluvia?»). Ahora, donde hay oficiales, la web se mide en las
+mismas horas que AEMET (la que tiene más; si no, Meteocat), con lo que ya
+publicaba el historial (`oficial.<fuente>.<tipo>.web`), y la lluvia de las
+oficiales solo sale si ha llovido en alguna de sus horas comparadas; si no,
+una nota lo dice. El pie de la gráfica lo explica.
+
 **Datos en lugar de frases fijas** (20-10-2026, 3.168.0). Las fichas del
 radar y de las nubes solo decían cuál se usa (Juanjo: «esto es solo
 información estática, por qué no pones los datos de quien acierta y se

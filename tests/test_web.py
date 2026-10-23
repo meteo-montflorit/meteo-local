@@ -549,6 +549,15 @@ class Web(unittest.TestCase):
             self.assertEqual(B.frase_cel(files, "ca", dt.date(2026, 10, 23)), self.avalua("2026-10-23T09:30:00+02:00", expr))
             self.assertEqual(B.frase_cel(files, "es", dt.date(2026, 10, 23)), js_es(expr, "2026-10-23T09:30:00+02:00"))
 
+    def test_fiabilitat_les_oficials_a_les_mateixes_hores(self):
+        # Juanjo, 23-10-2026: «aemet acierta siempre con la lluvia?». La web, a les hores de l'AEMET on n'hi
+        # ha; la pluja de les oficials, només si ha plogut en alguna de les hores comparades.
+        of = {"aemet": {"temperatura": {"hores": 69, "web": 0.67, "oficial": 1.83}, "pluja": {"hores": 69, "plogudes": 0, "web": 0.0008, "oficial": 0.0}},
+              "meteocat": {"temperatura": {"hores": 18, "web": 0.62, "oficial": 2.28}, "pluja": {"hores": 18, "plogudes": 2, "web": 0.01, "oficial": 0.2}}}
+        expr = (f"const o = {json.dumps(of)}; [valorOficial(o.aemet, 'pluja'), valorOficial(o.meteocat, 'pluja'), "
+                "valorWebComparat(0.66, o, 'temperatura'), valorWebComparat(0.05, o, 'pluja'), valorWebComparat(0.05, {}, 'pluja')]")
+        self.assertEqual(self.avalua("2026-10-23T10:00:00+02:00", expr, "fiabilitat.js"), [None, 0.2, 0.67, 0.01, 0.05])
+
     def test_el_cel_del_bot_es_el_de_la_web(self):
         # ADR 0065: la icona del cel als missatges del bot surt de la mateixa
         # regla que la taula de la web (cel de casa.js): les dues han de coincidir.

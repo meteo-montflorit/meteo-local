@@ -207,6 +207,8 @@ var IDIOMA = {
     "{0}° menys que avui": "{0}° menos que hoy",
     "Avui, {0}": "Hoy, {0}",
     "Previsió de 7 dies": "Previsión de 7 días",
+    "Meteocat i AEMET hi sortiran quan hagi plogut en alguna de les hores comparades; de moment no hi ha plogut.": "Meteocat y AEMET saldrán cuando haya llovido en alguna de las horas comparadas; de momento no ha llovido.",
+    "Les setmanes amb Meteocat i AEMET, la web a les mateixes hores que l’AEMET.": "Las semanas con Meteocat y AEMET, la web en las mismas horas que la AEMET.",
     "màx": "máx",
     "mín": "mín",
     "Temperatura màxima": "Temperatura máxima",
