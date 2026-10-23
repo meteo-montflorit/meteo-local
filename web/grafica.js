@@ -646,6 +646,16 @@ function dibuixaGrafica(fig) {
   // El sostre, una ratlla fina amb la seva xifra, com la del vent; només si plou.
   const ambBarres = files.some((f) => plujaGrafica(f)) || ambPrevMm;
   g.append(svg('line', { class: 'g-sostre', x1: 0, x2: W, y1: ySostre, y2: ySostre }));
+  // A «Fiabilitat», una escala a l'esquerra cada 2 °C: l'eix no comença a 0
+  // i, sense, no se sabia quants graus separen les corbes (Juanjo,
+  // 23-10-2026: «esta grafica empieza en 0? faltan referencias y valores»).
+  if (opcions.escala && (ambTemp || ambPrev)) {
+    for (let v = Math.ceil(tMin / 2) * 2; v < tMax - 0.6; v += 2) {
+      const y = yT(v);
+      if (y < base - 1) g.append(svg('line', { class: 'g-escala', x1: 0, x2: W, y1: y, y2: y }));
+      g.append(svg('text', { class: 'g-mm g-escala-xifra', x: 2, y: y - 3 }, `${v}\u00a0°C`));
+    }
+  }
   files.forEach((f, i) => {
     const pluja = plujaGrafica(f);
     if (!pluja) return;

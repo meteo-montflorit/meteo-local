@@ -1227,6 +1227,8 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .grafica .g-avis.vermell { --nivell: #ef4444; }
 .grafica .g-avis.vermell text { fill: #fff; }
 .grafica .g-avis-nom { fill: var(--text); font-size: 11px; font-weight: 600; }
+.grafica .g-escala { stroke: var(--vora); stroke-width: 1; }
+.grafica .g-mm.g-escala-xifra { fill: var(--suau); }
 .grafica .g-cel { fill: none; stroke: var(--text); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .grafica .g-temp-vora { fill: none; stroke: var(--superficie); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
 .grafica .g-temp-area { stroke: none; }

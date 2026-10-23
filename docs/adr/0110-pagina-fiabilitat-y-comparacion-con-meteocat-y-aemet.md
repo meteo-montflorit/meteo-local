@@ -211,6 +211,15 @@ milímetros oficiales sigue sin comprobar: desde que se apuntan (20-10-2026,
 9:08) la estación no ha medido lluvia, así que por ahora no cambia la
 comparación; se comprobará con la primera lluvia.
 
+**Escala en la gráfica del día** (23-10-2026, 3.192.2). El eje de la
+temperatura no empieza en 0 (va de un grado por debajo de la mínima a la
+máxima) y solo llevaba la cifra de arriba: con 4 °C de alto, 1 o 2 grados de
+diferencia parecían muchos (Juanjo: «esta gráfica empieza en 0? faltan
+referencias y valores»). Ahora lleva una línea suave cada 2 °C con su cifra
+(`opcions.escala`, solo aquí; la de la portada sigue igual). Y «Es canvia a
+«Resum»» no se entendía: ahora dice «Per triar-ne una altra, puja al
+selector de dalt», con un enlace que lleva al deslizador.
+
 **Datos en lugar de frases fijas** (20-10-2026, 3.168.0). Las fichas del
 radar y de las nubes solo decían cuál se usa (Juanjo: «esto es solo
 información estática, por qué no pones los datos de quien acierta y se

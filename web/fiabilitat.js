@@ -563,7 +563,7 @@ async function pintaDia() {
   // Avui, només les hores que ja han acabat: la resta encara no té mesura.
   const ara = new Date();
   FIGURA._files = dades ? ambAntelacio(dades.hores, a).filter((f) => new Date(f.fins) <= ara) : [];
-  FIGURA._opcions = { gran: true, zona: 'baixa', antelacio: a };
+  FIGURA._opcions = { gran: true, antelacio: a, escala: true };
   FIGURA._amaga?.();
   dibuixaGrafica(FIGURA);
   $('dia-text').textContent = textDia(dades, a);
@@ -656,7 +656,18 @@ function pinta() {
   const a = estat.antelacio;
   pintaLliscador();
   // El que depèn de l'antelació ho diu (Juanjo, 20-10-2026: «el usuario debe saber lo que está viendo en cada momento»).
-  for (const p of document.querySelectorAll('.fb-amb-antelacio')) p.textContent = T`Amb la previsió feta ${a}\u00a0h abans. Es canvia a «Resum».`;
+  // Amb un enllaç al lliscador de dalt, que és on es canvia (Juanjo,
+  // 23-10-2026: «no entiendo lo de resum»).
+  for (const p of document.querySelectorAll('.fb-amb-antelacio')) {
+    const enllac = element('a', null, T('puja al selector de dalt'));
+    enllac.href = '#antelacio';
+    enllac.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      $('antelacio').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      $('antelacio').focus({ preventScroll: true });
+    });
+    p.replaceChildren(T`Amb la previsió feta ${a}\u00a0h abans. Per triar-ne una altra, `, enllac, '.');
+  }
   const e = INDEX.encert && INDEX.encert[String(a)];
   if (!e) return;
   pintaXifres(e);
