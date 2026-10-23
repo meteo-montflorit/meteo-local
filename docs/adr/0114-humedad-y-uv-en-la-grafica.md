@@ -103,3 +103,15 @@ Validación: pruebas (`tests/test_humitat_hora.py` y la del aprendizaje en
 `test_historial_grafica.py`), Ruff y ESLint; la gráfica en Chromium y Firefox,
 en escritorio y a 390 px, con tema claro y oscuro, y «Fiabilitat» en los dos
 anchos, sin errores ni desplazamiento horizontal.
+
+## Corrección (23-10-2026, 3.192.3)
+
+«Fiabilitat» decía de la humedad «calen 14 dies; en porta 0» con casos de
+tres días (del 21 al 23-10). `valida_humitat` no devolvía nada hasta poder
+evaluar algún día, y para eso el avance temporal pide 7 días de
+entrenamiento (`remostreig.MIN_DIES_ENTRENAMENT`). Ahora, mientras tanto,
+devuelve los días y las muestras sin error ni pesos (`aprenentatge.sense_avaluar`),
+que no pueden ganar a la corrección vigente. `valida_temperatura` tenía el
+mismo fallo (no se veía porque ya pasó esa fase) y se corrige igual. Juanjo:
+«¿por qué la humedad no tiene ningún día?».
+

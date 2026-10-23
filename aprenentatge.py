@@ -531,6 +531,17 @@ def valida_pluja(ms, arxiu, noms=RASGOS_PROPIS):
             "w": ajustar(x, y).tolist() if y.sum() else None}
 
 
+def sense_avaluar(ms, dies):
+    """Els primers dies, abans que l'avanç temporal (remostreig.avanc) en
+    pugui avaluar cap (calen MIN_DIES_ENTRENAMENT d'entrenament): els dies i
+    les mostres que ja hi ha, sense error ni pesos. Fins a la 3.192.3 no en
+    tornava res i «Fiabilitat» deia «en porta 0» de la humitat amb tres dies
+    de dades (Juanjo, 23-10-2026: «por qué la humedad no tiene ningún día?»)."""
+    return {"mostres": len(ms), "dies": dies, "avaluades": 0, "dies_avaluats": 0, "error": None,
+            "error_abans": None, "seguretat": None, "error_humitat": None, "error_humitat_abans": None,
+            "w": None, "w_sense_estacio": None}
+
+
 def valida_temperatura(ms, arxiu_t):
     """Error medio absoluto con avance temporal (remostreig.avanc, ADR 0106):
     la corrección ajustada con el registro propio de los días anteriores
@@ -548,11 +559,11 @@ def valida_temperatura(ms, arxiu_t):
     for ent, aval in R.avanc(dia):             # avance temporal (ADR 0106)
         pred[aval] = x[aval] @ ajustar_ridge(x[ent], error[ent])
     s = ~np.isnan(pred)
+    dies = len({m["emes"][:10] for m in ms})
     if not s.any():
-        return None
+        return sense_avaluar(ms, dies)
     abans = np.array([temperatura({"temperatura": arxiu_t}, m) for m in ms])
     xs = np.array([rasgos(m, RASGOS_TEMPERATURA_SENSE_ESTACIO) for m in ms])
-    dies = len({m["emes"][:10] for m in ms})
     return {"mostres": len(ms), "dies": dies, "avaluades": int(s.sum()), "dies_avaluats": len(set(dia[s])),
             "error": float(np.mean(np.abs(error[s] - pred[s]))),
             "error_abans": float(np.mean(np.abs(abans[s] - obs[s]))),
@@ -575,11 +586,11 @@ def valida_humitat(ms, arxiu_h):
     for ent, aval in R.avanc(dia):
         pred[aval] = x[aval] @ ajustar_ridge(x[ent], error[ent])
     s = ~np.isnan(pred)
+    dies = len({m["emes"][:10] for m in ms})
     if not s.any():
-        return None
+        return sense_avaluar(ms, dies)
     abans = np.array([rosada({"humitat": arxiu_h}, m) for m in ms])
     xs = np.array([rasgos(m, RASGOS_ROSADA_SENSE_ESTACIO) for m in ms])
-    dies = len({m["emes"][:10] for m in ms})
     # Y en puntos de humedad, lo que ve quien mira la gráfica («Fiabilitat»):
     # cada rocío con la temperatura medida en casa a esa hora.
     t = np.array([np.nan if m.get("obs_temp") is None else m["obs_temp"] for m in ms])
@@ -735,10 +746,11 @@ def apunta_historial(avui, model, vp, vt):
                         "hores_pluja_sant_cugat", "error_pluja_sant_cugat",
                         "hores_pluja_avisos", "error_pluja_avisos"])
         xv, av = (vp or {}).get("xv"), (vp or {}).get("avis")
+        r = lambda v, n: None if v is None else round(v, n)
         w.writerow([avui, *metode(model),
                     vp and vp["mostres"], vp and vp["hores_pluja"], vp and round(vp["error"], 5),
                     vp and round(vp["error_abans"], 5), vt and vt["dies"],
-                    vt and round(vt["error"], 2), vt and round(vt["error_abans"], 2),
+                    vt and r(vt["error"], 2), vt and r(vt["error_abans"], 2),
                     xv and xv["hores_pluja"], xv and round(xv["error"], 5),
                     av and av["hores_pluja"], av and round(av["error"], 5)])
 

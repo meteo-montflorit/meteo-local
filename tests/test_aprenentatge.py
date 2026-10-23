@@ -606,3 +606,20 @@ class Diari(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PrimersDies(unittest.TestCase):
+    """Abans de poder avaluar res (calen 7 dies d'entrenament), es diuen els dies que ja hi ha (Juanjo,
+    23-10-2026: «por qué la humedad no tiene ningún día?»; «Fiabilitat» deia «en porta 0» amb tres)."""
+
+    def test_humitat_i_temperatura_amb_tres_dies(self):
+        from unittest.mock import patch
+        ms = [{"fins": f"2026-10-{d}T{h:02d}:00", "emes": f"2026-10-{d}T{h:02d}:00", "obs_rosada": 10.0, "obs_temp": 15.0,
+               "temperature_2m": 15.0} for d in (21, 22, 23) for h in range(0, 24, 3)]
+        with patch.object(A, "rasgos", side_effect=lambda m, noms: [1.0] * len(noms)), \
+                patch.object(A, "rosada_model", return_value=10.5):
+            vh = A.valida_humitat(ms, None)
+            vt = A.valida_temperatura(ms, None)
+        for v in (vh, vt):
+            self.assertEqual((v["dies"], v["avaluades"], v["error"], v["seguretat"]), (3, 0, None, None))
+            self.assertFalse(A.millora(v))
