@@ -172,6 +172,18 @@ h1 { margin: 0; font-size: 1.6rem; line-height: 1.2; }
   cursor: pointer;
 }
 .cap-botons { flex: none; display: flex; gap: .5rem; }
+/* El botó doble de la zona del barri (casa.botoZona, ADR 0123): la riera i
+   la part alta, units, amb la triada com la pestanya activa. Al mòbil estret
+   només la triada, de la mida dels altres: tocar-la passa a l'altra. */
+.boto-zona { display: flex; flex: none; }
+.boto-zona .boto-icona { width: 2.25rem; }
+.boto-zona .boto-icona:first-child { border-radius: .5rem 0 0 .5rem; }
+.boto-zona .boto-icona:last-child { border-radius: 0 .5rem .5rem 0; border-left: 0; }
+.boto-zona .boto-icona[aria-pressed="true"] { background: var(--enllac); color: var(--fons); border-color: var(--enllac); }
+@media (max-width: 23.4rem) {
+  .boto-zona .boto-icona[aria-pressed="false"] { display: none; }
+  .boto-zona .boto-icona { width: 2.5rem; border-radius: .5rem; border-left: 1px solid var(--enllac); }
+}
 /* Les dues llengües, la triada com la pestanya activa del menú. */
 .idiomes {
   display: flex;
@@ -1223,7 +1235,6 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .grafica .g-temp { fill: none; stroke: var(--c-maxima); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
 .grafica .g-mm { paint-order: stroke; stroke: var(--superficie); stroke-width: 3px; stroke-linejoin: round; }
 .grafica .g-xifra { fill: var(--text); font-size: 12px; font-weight: 600; }
-.grafica .g-xifra-alta { fill: var(--alta-text); }
 .grafica .g-base, .grafica .g-marca { stroke: var(--suau); }
 .grafica .g-marca.petita { stroke-opacity: .6; }
 .grafica .g-pluja { fill: var(--c-aigua); }
@@ -1335,8 +1346,6 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .g-llegenda .g-imatge svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .visor .visor-nota { margin: .6rem 0 0; color: #fff; font-size: .95rem; text-align: center; }
 /* La part alta a la gràfica: una segona corba, discontínua, del color de la part alta (ADR 0087). */
-.grafica .g-alta { fill: none; stroke: var(--alta-text); stroke-width: 2; stroke-dasharray: 6 4; stroke-linecap: round; }
-.g-clau .m-alta { width: 1rem; height: 0; border-top: 2px dashed var(--alta-text); }
 /* La humitat i l'índex UV, a sota del vent (3.171.0); l'UV, amb els colors de l'OMS de .uv-xip. */
 .grafica .g-humitat { fill: none; stroke: var(--c-humitat); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .g-clau .m-humitat { width: 1rem; height: 2px; background: var(--c-humitat); }

@@ -116,6 +116,19 @@ function textComparacio(n, esDema) {
 // resum, que llavors passa a demà.
 const TRAM_DIA = [7, 21];
 
+// Les hores amb la temperatura de la zona triada (ADR 0123), per als comptes
+// que fan servir «temperatura» (comparaTemp).
+function ambTempZona(files) {
+  return (files || []).map((f) => (f.temperatura == null ? f : { ...f, temperatura: tempZona(f) }));
+}
+
+// El que s'ha mesurat cada hora a la zona triada: a la riera, l'estació de
+// casa; a la part alta, la mediana de les de dalt (part_alta.mesurada). Sense
+// (la reserva), no es compara.
+function mesuradaZona(dades) {
+  return zonaTriada() === 'alta' ? dades.temperatura_mesurada_alta : dades.temperatura_mesurada;
+}
+
 function comparaDia(hores, mesurada, ara = new Date()) {
   const dema = ara.getHours() >= HORA_DEMA;
   const dia = new Date(ara);
@@ -125,14 +138,18 @@ function comparaDia(hores, mesurada, ara = new Date()) {
     return new Date(f.fins) > ara && h.toDateString() === dia.toDateString()
       && h.getHours() >= TRAM_DIA[0] && h.getHours() < TRAM_DIA[1];
   });
-  const text = textComparacio(comparaTemp(files, false, mesurada, hores), dema);
+  const text = textComparacio(comparaTemp(ambTempZona(files), false, mesurada, ambTempZona(hores)), dema);
   if (!text) return null;
+  const alta = zonaTriada() === 'alta';
+  const mesurat = (ahir = false) => (alta
+    ? (ahir ? T('van mesurar ahir les estacions de la part alta') : T('han mesurat les estacions de la part alta'))
+    : (ahir ? T('va mesurar ahir l’estació de vora la riera') : T('ha mesurat l’estació de vora la riera')));
   return {
     text: dema ? T`Demà, ${text}` : T`Avui, ${text}`,
     // Què compara, en prémer-la, com la part alta.
     explica: dema
-      ? T('La màxima de demà, comparada amb la d’avui a les mateixes hores: el que ha mesurat l’estació de vora la riera i la previsió per a la resta. Amb menys de 2 graus de diferència, «semblant».')
-      : T('La màxima de les hores de dia que queden avui, comparada amb la que va mesurar ahir l’estació de vora la riera a les mateixes hores. Amb menys de 2 graus de diferència, «semblant».'),
+      ? T`La màxima de demà, comparada amb la d’avui a les mateixes hores: el que ${mesurat()} i la previsió per a la resta. Amb menys de 2 graus de diferència, «semblant».`
+      : T`La màxima de les hores de dia que queden avui, comparada amb la que ${mesurat(true)} a les mateixes hores. Amb menys de 2 graus de diferència, «semblant».`,
   };
 }
 
@@ -172,10 +189,10 @@ function resumTrams(hores, ara, mesurada) {
   const dema = new Date(ara);
   dema.setDate(dema.getDate() + 1);
   return grups.map((g) => {
-    const temps = g.files.map((f) => f.temperatura).filter((t) => t != null);
-    // Les temperatures són de la riera; a la part alta, amb la diferència de
-    // cada hora (part_alta.py, ADR 0087).
-    const alta = g.files.filter((f) => f.temperatura != null).map((f) => f.temperatura + (f.dif_alta || 0));
+    // Les temperatures de la zona triada amb el botó de dalt (ADR 0123): la
+    // riera o la part alta, amb la diferència de cada hora (ADR 0087).
+    const temps = g.files.map(tempZona).filter((t) => t != null);
+    const riera = g.files.map((f) => f.temperatura).filter((t) => t != null);
     const fenomens = [];
     const tempesta = (f) => f.codi >= 95 || (f.avisos || []).some((a) => (a.tipus || []).includes('tempestes'));
     if (g.files.some(tempesta)) fenomens.push([NOM_FENOMEN.tempesta(), 'i-cloud-lightning', origenTempesta(g.files)]);
@@ -189,9 +206,11 @@ function resumTrams(hores, ara, mesurada) {
     const ratxa = Math.max(...g.files.map((f) => f.ratxa || 0));
     if (ratxa > FENOMENS.ratxa) fenomens.push([T`ratxes de ${Math.round(ratxa)}\u00a0km/h`, 'i-wind']);
     if (temps.length && Math.max(...temps) > FENOMENS.calor) fenomens.push([NOM_FENOMEN.calor(), 'i-thermometer-sun']);
-    if (temps.length && Math.min(...temps) <= FENOMENS.glaçada) {
-      fenomens.push([Math.min(...alta) > FENOMENS.glaçada ? NOM_FENOMEN.glaçadaRiera() : NOM_FENOMEN.glaçada(),
-        'i-thermometer-snowflake']);
+    // La glaçada de la riera surt també mirant la part alta: s'hi passa per
+    // anar i venir (ADR 0123).
+    if (temps.length && Math.min(...temps) <= FENOMENS.glaçada) fenomens.push([NOM_FENOMEN.glaçada(), 'i-thermometer-snowflake']);
+    else if (riera.length && Math.min(...riera) <= FENOMENS.glaçada) {
+      fenomens.push([NOM_FENOMEN.glaçadaRiera(), 'i-thermometer-snowflake']);
     }
     const esDema = g.dia.toDateString() === dema.toDateString();
     const actual = new Date(g.files[0].hora) <= ara;
@@ -208,31 +227,13 @@ function resumTrams(hores, ara, mesurada) {
       // hores donava el doble del que queia (arxiu 2024-2026, ADR 0103).
       mm: g.files.reduce((s, f) => s + probHora(f) * (f.pluja_mm || 0), 0),
       tMin: temps.length ? Math.min(...temps) : null, tMax: temps.length ? Math.max(...temps) : null,
-      // Quant més fa a la part alta: la màxima de dia i la mínima de nit.
-      difAlta: temps.length ? (g.nom === 'Nit' ? Math.min(...alta) - Math.min(...temps)
-        : Math.max(...alta) - Math.max(...temps)) : null,
-      compara: textComparacio(comparaTemp(g.files, g.nom === 'Nit', mesurada, hores), esDema),
+      compara: textComparacio(comparaTemp(ambTempZona(g.files), g.nom === 'Nit', mesurada, ambTempZona(hores)), esDema),
       fenomens,
       avis: g.files.some((f) => avisHora(f)),
       perill: perillTram(g.files),
       files: g.files,
     };
   });
-}
-
-function textAltaTram(n) {
-  const r = arrodoneixAlta(n);
-  // Als trams, només la xifra; el text, a «Ara» i al resum del dia (Juanjo,
-  // 13-10-2026). Què vol dir, en prémer-la i a la llegenda.
-  return r ? (r > 0 ? '+' : '−') + Math.abs(r) : '';
-}
-
-function textAltaAra(n) {
-  const r = arrodoneixAlta(n);
-  if (!r) return null;
-  // Curt, al costat de la temperatura (20-10-2026); què vol dir, en prémer-la.
-  // La xifra i els graus, junts: si no hi cap, es parteix després de «Part alta:».
-  return T`Part alta: ${r > 0 ? '+' : '\u2212'}${Math.abs(r)}\u00a0°C`;
 }
 
 // La capçalera del desplegable: el nom del tram, les hores i el resum.
@@ -257,14 +258,9 @@ function resumTram(t) {
     const nucli = element('span', 'tros');
     nucli.append(...xifres, ' °C');
     const trossos = [nucli];
-    // La part alta i la comparació, diferenciades de la temperatura per
-    // llegir-ho d'una ullada (Juanjo, 13-10-2026).
-    const alta = textAltaTram(t.difAlta);
-    if (alta) {
-      const et = etiquetaAlta(alta, true);
-      et.classList.add('tros');
-      trossos.push(' ', et);
-    }
+    // La comparació, diferenciada de la temperatura per llegir-ho d'una
+    // ullada (Juanjo, 13-10-2026). Sense l'etiqueta de la part alta des de la
+    // 3.191.0: ja la tria el botó de dalt (ADR 0123).
     if (t.compara) trossos.push(' ', element('span', 'tros compara', `· ${t.compara}`));
     peca('i-thermometer', trossos, 'dada temp');
   }
@@ -311,7 +307,7 @@ const PARAULA_SENSACIO = {
   'molta calor': () => T('amb molta calor'),
 };
 function sensacioTram(t) {
-  const notes = t.files.filter((f) => f.temperatura != null).map((f) => esNota(f.temperatura, f.vent || 0));
+  const notes = t.files.filter((f) => f.temperatura != null).map((f) => esNota(tempZona(f), f.vent || 0));
   if (!notes.length) return null;
   const nivell = (v) => SENSACIO.find(([fins]) => Math.round(v) <= fins)[1];
   if (t.clau.endsWith('|Tarda')) return nivell(Math.max(...notes));
@@ -507,7 +503,7 @@ function estatPortada(dades) {
 function diaDeLaPagina(hores, mesurada, iso, ara) {
   const files = (hores || []).filter((f) => f.hora.slice(0, 10) === iso && new Date(f.fins) > ara);
   if (!files.length) return null;
-  const temps = files.map((f) => f.temperatura).filter((v) => v != null);
+  const temps = files.map(tempZona).filter((v) => v != null);
   for (const [clau, v] of Object.entries(mesurada || {})) {
     if (clau.slice(0, 10) === iso && new Date(clau) <= ara && v != null) temps.push(v);
   }
@@ -531,16 +527,18 @@ function diaDeLaPagina(hores, mesurada, iso, ara) {
 function diesSetmana(dades, ara = new Date()) {
   const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const avui = iso(ara);
+  const alta = zonaTriada() === 'alta';
   const res = [];
   for (const d of (dades.setmana || []).filter((x) => x.dia >= avui).slice(0, 7)) {
-    const propi = res.length < 2 && diaDeLaPagina(dades.hores, dades.temperatura_mesurada, d.dia, ara);
+    const propi = res.length < 2 && diaDeLaPagina(dades.hores, mesuradaZona(dades), d.dia, ara);
     if (propi) {
       res.push(propi);
       continue;
     }
     const p = d.probabilitat;
     res.push({
-      dia: d.dia, max: d.max, min: d.min, nuvols: d.nuvols, boira: false, probabilitat: p, pluja_mm: d.pluja_mm,
+      dia: d.dia, max: alta ? d.max_alta ?? d.max : d.max, min: alta ? d.min_alta ?? d.min : d.min,
+      nuvols: d.nuvols, boira: false, probabilitat: p, pluja_mm: d.pluja_mm,
       pluja: p == null ? null : p >= PROB_PLUJA ? 'pluja' : p >= PROB_POSSIBLE ? 'possible' : null,
       tempesta: d.codi >= 95, neu: esNeu(d.codi),
     });
@@ -593,6 +591,47 @@ function blocSetmana(dades, ara = new Date()) {
   return sec;
 }
 
+// La zona del barri, amb un botó doble a la botonera de dalt: la riera (les
+// ones) i la part alta (la muntanya), les icones que tenia a la gràfica
+// (Juanjo, 23-10-2026: «en la botonera de arriba… con el dibujo de una riera y
+// de una montaña»; ADR 0123). Què és cada un, en passar-hi el ratolí o
+// mantenint-lo premut. Al mòbil estret només es veu la triada, i tocar-la
+// passa a l'altra. Canviar-la torna a pintar la pàgina.
+function botoZona() {
+  const botons = document.querySelector?.('.cap-botons');
+  if (!botons || botons.querySelector('.boto-zona')) return;
+  const grup = element('div', 'boto-zona');
+  grup.setAttribute('role', 'group');
+  grup.setAttribute('aria-label', T('Zona del barri'));
+  const opcions = [
+    ['baixa', 'i-waves', T('Riera'), T('Temperatures de vora la riera, la zona més baixa i més freda del barri.')],
+    ['alta', 'i-mountain', T('Part alta'), T('Temperatures de la part alta del barri, que sol ser més càlida.')],
+  ].map(([zona, id, nom, descripcio]) => {
+    const b = element('button', 'boto-icona');
+    b.type = 'button';
+    b.dataset.zona = zona;
+    b.title = descripcio;
+    b.setAttribute('aria-label', nom);
+    b.append(icona(id));
+    return b;
+  });
+  const marca = () => opcions.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.zona === zonaTriada())));
+  for (const b of opcions) {
+    b.addEventListener('click', () => {
+      const altra = opcions.find((x) => x !== b);
+      const zona = getComputedStyle(altra).display === 'none' ? altra.dataset.zona : b.dataset.zona;
+      if (zona === zonaTriada()) return;
+      triaZona(zona);
+      marca();
+      if (DADES_AVISOS && !dadesVelles(DADES_AVISOS)) pinta(DADES_AVISOS);
+    });
+  }
+  marca();
+  zonaALAdreca();
+  grup.append(...opcions);
+  botons.prepend(grup);
+}
+
 function blocAra(casa, radarDades, vent, veines, hores, mesurada) {
   const sec = element('section', 'decisio targeta ara heroi');
   sec.setAttribute('aria-label', T`El temps avui a ${LLOC}`);
@@ -606,15 +645,14 @@ function blocAra(casa, radarDades, vent, veines, hores, mesurada) {
   const temp = element('p', 'veredicte');
   const termometre = icona('i-thermometer');
   termometre.classList.add('vehicle');
-  temp.append(termometre, `${coma(casa.temperatura)} °C`);
-  // La part alta, si la diferència arriba a un grau, a sota de la temperatura
-  // i sense color, perquè el dibuix del cel hi càpiga al costat (Juanjo,
-  // 22-10-2026: al mòbil el núvol sortia de la targeta); què vol dir, en
-  // prémer-la (etiquetaAlta, a comu.js).
+  // La de la zona triada amb el botó de dalt (ADR 0123): a la part alta, la
+  // que hi mesuren ara les estacions (casa.dif_alta, part_alta.ara), sense
+  // decimal, perquè les de dalt la donen en graus sencers (Juanjo, 23-10-2026);
+  // si no n'hi ha, la de la riera.
+  const dalt = zonaTriada() === 'alta' && casa.dif_alta != null;
+  temp.append(termometre, dalt ? `${Math.round(casa.temperatura + casa.dif_alta)} °C` : `${coma(casa.temperatura)} °C`);
   const columna = element('div', 'ara-temp-col');
   columna.append(temp);
-  const alta = textAltaAra(casa.dif_alta);
-  if (alta) columna.append(etiquetaAlta(alta));
   // Si el dia és com l'anterior, a sota (comparaDia), també al costat del
   // dibuix, perquè la targeta no creixi.
   const compara = hores && comparaDia(hores, mesurada);
@@ -1341,7 +1379,7 @@ function taulaTram(t, obert, solHora) {
     if (sol) linia.append(marcaSol(sol));
     celCel.append(linia);
     tr.append(celCel);
-    tr.append(element('td', 'num', f.temperatura == null ? '' : `${Math.round(f.temperatura)}`));
+    tr.append(element('td', 'num', f.temperatura == null ? '' : `${Math.round(tempZona(f))}`));
     tr.append(element('td', 'num', f.pluja_mm >= 0.1 ? coma(f.pluja_mm) : '\u2013'));
     const prob = element('td', 'num prob');
     if (f.probabilitat != null) {
@@ -1449,10 +1487,9 @@ function taula(hores, mesurada, riscos, sol) {
   // La persistència: la pluja de l'última hora, no la d'ara (revisor, 18-10-2026).
   if (visibles.some((f) => f.segons_estacio)) terme('*', T('Xifra que ve de la pluja de l’última hora al barri, encara que ja hagi parat: els models en donaven menys.'));
   if (visibles.some((f) => f.segons_radar)) terme('\u2020', T('Hi compta la pluja que el radar veu acostar-se.'));
-  // La part alta, només si algun tram la diu, amb l'etiqueta tal com surt
-  // (ADR 0087; Juanjo, 13-10-2026: «por qué ha desaparecido la explicación»).
-  if (trams.some((t) => arrodoneixAlta(t.difAlta) || t.fenomens.some(([nom]) => nom === NOM_FENOMEN.glaçadaRiera()))) {
-    terme('+1, +2…', T('Les temperatures són les de vora la riera, la zona més freda del barri. La xifra diu quants graus més sol fer a la part alta, que canvia segons l’hora del dia i l’època de l’any: surt del que han mesurat les estacions del barri a cada hora els últims 30 dies i, de nit, també dels núvols i el vent previstos, perquè amb el cel serè i sense vent l’aire fred s’acumula vora la riera.'), 'alta');
+  // La part alta, quan és la triada (ADR 0087 i 0123): d'on surt.
+  if (zonaTriada() === 'alta') {
+    terme(T('Part alta'), T('Les temperatures de la part alta són les de vora la riera més el que sol fer-hi de més, que canvia segons l’hora del dia i l’època de l’any: surt del que han mesurat les estacions del barri a cada hora els últims 30 dies i, de nit, també dels núvols i el vent previstos, perquè amb el cel serè i sense vent l’aire fred s’acumula vora la riera.'));
   }
   if (visibles.some((f) => avisHora(f))) terme(T('Barra de color'), T('Hores amb avís, del color del nivell.'));
   terme(T('Vent'), T('La mitjana de l’hora en km/h i, entre parèntesis, la ratxa més forta de l’hora, la del model que en preveu més.'));
@@ -1542,11 +1579,11 @@ function pinta(dades) {
   // El radar porta l'estat únic de la pluja (ADR 0101), per dir el mateix que «Ara».
   const radarAmbPluja = dades.radar && dades.pluja_ara ? { ...dades.radar, pluja: dades.pluja_ara } : dades.radar;
   const ara = dades.ara_casa && blocAra(dades.ara_casa, radarAmbPluja, dades.vent, dades.veines, dades.hores,
-    dades.temperatura_mesurada);
+    mesuradaZona(dades));
   if (ara) cont.append(ara);
   const estat = estatPortada(dades);
   if (estat) cont.append(estat);
-  const previsio = dades.hores && taula(dades.hores, dades.temperatura_mesurada, dades.riscos, dades.sol);
+  const previsio = dades.hores && taula(dades.hores, mesuradaZona(dades), dades.riscos, dades.sol);
   // La gràfica, just després d'«Ara» (19-10-2026); el detall del dia, després.
   if (previsio && previsio._grafica) cont.append(previsio._grafica);
   // El radar, sota la gràfica (Juanjo, 22-10-2026); la frase d'«Ara» ja en diu
@@ -1642,6 +1679,8 @@ calOfertaAvisos().then((cal) => {
   const ara = document.querySelector('#casa .targeta.ara');
   if (ara) ara.after(OFERTA_AVISOS);
 }).catch(() => {});
+
+botoZona();
 
 carrega(FITXER_DADES, pinta, () => {
   $('casa').replaceChildren(element('p', 'avis', T('No s’ha pogut carregar la previsió. Torna-ho a provar d’aquí a una estona.')));

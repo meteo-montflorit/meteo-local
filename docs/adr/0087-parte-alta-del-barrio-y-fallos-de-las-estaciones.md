@@ -42,6 +42,13 @@ funcionando».
 
 Versión 3.78.0.
 
+> **Desde la 3.191.0 (ADR 0123)**, la portada ya no pone la parte alta al lado
+> de cada temperatura: un botón arriba elige la riera o la parte alta, y todas
+> las temperaturas son de la zona elegida, con la misma diferencia de este ADR
+> (`dif_alta`). Lo que sigue describe cómo se calcula; lo que dice de las
+> etiquetas de «Ara» y de los tramos ya no vale para la web. El bot y el
+> resumen del día siguen igual.
+
 - **Las vecinas, marcadas**: `config.VEINES` lleva `alta` (ICERDA18,
   ICERDA28 e ICERDA48).
 - **«Ara»**: debajo de la temperatura, «Vora la riera. A la part alta, 2 °C

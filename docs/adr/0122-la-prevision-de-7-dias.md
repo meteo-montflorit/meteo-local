@@ -36,6 +36,9 @@ el ensemble de ECMWF (51 miembros) cubren los siete días.
     (`temperature_2m_previous_dayN`) y lo medido, del registro del NAS. Con
     menos de 15 días medidos, o sin registro (la reserva de IONOS), sin
     corrección (`corregit: false`).
+  - **La parte alta** (desde la 3.191.0, ADR 0123): `max_alta` y `min_alta`,
+    con la diferencia de la parte alta de cada hora sumada a ECMWF antes de
+    la máxima y la mínima, y la misma corrección.
   - **Cielo**: la nubosidad media de 7 a 21 h.
   - **Lluvia**: del ensemble de ECMWF (`ecmwf_ifs025`, 51 miembros), la parte
     de los miembros a los que llueve ese día (`C.UMBRAL_MM`, 0,2 mm, o más en

@@ -364,23 +364,26 @@ class Web(unittest.TestCase):
         self.assertIsNone(self.avalua(ara, "HISTORIAL_PERILL = [{tipus: 'riera', clau: 'x', nivell: 'atencio',"
                                            " ca: 'Avís: risc a la riera'}]; estatPortada({riera: {nivell: 'atencio'}})"))
 
-    def test_part_alta_al_costat_de_la_temperatura(self):
-        # Juanjo, 13-10-2026 (ADR 0087): les temperatures són de la riera; a la part alta, la diferència.
+    def test_les_temperatures_de_la_zona_triada(self):
+        # Juanjo, 23-10-2026 (ADR 0123): un botó tria la riera o la part alta, i totes les temperatures
+        # en són; sense etiquetes «+2». La part alta, la riera més la diferència de cada hora (ADR 0087).
         def fila(h, t, dif):
             return {"hora": f"2026-10-08T{h:02d}:00", "fins": f"2026-10-08T{h + 1:02d}:00", "probabilitat": 0,
                     "pluja_mm": 0, "temperatura": t, "ratxa": 10, "codi": 0, "neu": 0, "avisos": [], "dif_alta": dif}
         hores = [fila(h, 20 + (h == 16) * 3, 1.8 if h == 16 else 0.3) for h in range(14, 21)] \
             + [fila(21, -1, 1.5), fila(22, 0.5, 0.2)]
-        r = self.avalua("2026-10-08T13:30:00+02:00", f"resumTrams({json.dumps(hores)}, new Date())")
-        self.assertAlmostEqual(r[0]["difAlta"], 1.8)               # la màxima de la tarda
-        self.assertEqual(self.avalua("2026-10-08T13:30:00+02:00", f"textAltaTram({r[0]['difAlta']})"),
-                         "+2")
-        self.assertEqual(self.avalua("2026-10-08T13:30:00+02:00", "textAltaTram(0.4)"), "")
-        # A la nit, −1 a la riera i 0,5 a dalt: glaçada només vora la riera.
-        self.assertEqual([f[0] for f in r[1]["fenomens"]], ["glaçada vora la riera"])
-        self.assertEqual(self.avalua("2026-10-08T13:30:00+02:00", "[textAltaAra(2.4), textAltaAra(0.9), textAltaAra(0.4), textAltaAra(-1.2)]"),
-                         ["Part alta: +2\u00a0°C", "Part alta: +1\u00a0°C", None, "Part alta: \u22121\u00a0°C"])
-        # Al resum del dia, «(fins a 26 °C a la part alta)» queda a part, per a l'etiqueta.
+        expr = f"resumTrams({json.dumps(hores)}, new Date()).map((t) => [t.tMax, t.tMin, t.fenomens.map((f) => f[0])])"
+        riera = self.avalua("2026-10-08T13:30:00+02:00", expr)
+        alta = self.avalua("2026-10-08T13:30:00+02:00", "ZONA = 'alta'; " + expr)
+        self.assertEqual(riera[0][0], 23)
+        self.assertAlmostEqual(alta[0][0], 24.8)                    # 23 + 1,8 a les 16 h
+        # A la nit, −1 a la riera i 0,5 a dalt: a la riera, glaçada; a dalt, la de la riera, que s'hi passa.
+        self.assertEqual(riera[1][2], ["glaçada"])
+        self.assertEqual(alta[1][2], ["glaçada vora la riera"])
+        self.assertEqual(self.avalua("2026-10-08T13:30:00+02:00", "ZONA = 'alta'; [tempZona({temperatura: 10, dif_alta: 2}),"
+                                     " tempZona({temperatura: 10}), tempZona({temperatura: 10, dif_alta: 2, mesura: true})]"),
+                         [12, 10, 10])
+        # Al resum del dia del bot, «(fins a 26 °C a la part alta)» queda a part, per a l'etiqueta.
         r = self.avalua("2026-10-08T13:30:00+02:00",
                         "ambMarques([{t: 'Temperatura: entre 16 °C i 24 °C (fins a 26 °C a la part alta), semblant a la d\\'ahir.'}])")
         self.assertEqual([x.get("alta") or x.get("t") for x in r],
@@ -464,6 +467,12 @@ class Web(unittest.TestCase):
         d = {"temperatura_mesurada": mes, "hores": hores}
         mati = self.avalua("2026-10-10T09:30:00+02:00", f"comparaDia({json.dumps(hores)}, {json.dumps(mes)}, new Date())")
         self.assertEqual(mati["text"], "Avui, 5° més que ahir")             # 20 contra 15
+        # A la part alta, amb el que van mesurar ahir les estacions de dalt (ADR 0123).
+        alta = [{**f, "dif_alta": 1.0} for f in hores]
+        mesalta = {k: v + 3 for k, v in mes.items()}
+        r = self.avalua("2026-10-10T09:30:00+02:00", f"ZONA = 'alta'; comparaDia({json.dumps(alta)}, {json.dumps(mesalta)}, new Date())")
+        self.assertEqual(r["text"], "Avui, 3° més que ahir")                   # 21 contra 18
+        self.assertIn("estacions de la part alta", r["explica"])
         self.assertEqual(B.compara_resum(d, [f for f in hores if f["hora"] < "2026-10-11"]), 5)
         # Des de les 18 h, demà contra avui, com el resum, que llavors passa a demà.
         vespre = self.avalua("2026-10-10T19:30:00+02:00", f"comparaDia({json.dumps(hores)}, {json.dumps(mes)}, new Date())")
@@ -494,6 +503,18 @@ class Web(unittest.TestCase):
         self.assertEqual(r[3][3:], ["possible", "i-cloud-sun-rain"])              # 30 %
         self.assertEqual(r[4][3:], [None, "i-cloudy"])                              # 10 %: només el cel
         self.assertEqual(len(r), 7)                                                 # sense ahir
+        # A la part alta (ADR 0123): avui i demà amb la diferència de cada hora i el mesurat a dalt; la
+        # resta, amb la màxima i la mínima de la part alta de setmana.py.
+        for f in hores:
+            f["dif_alta"] = 2.0
+        setmana[3].update(max_alta=32.0, min_alta=2.5)
+        dades = {"hores": hores, "temperatura_mesurada": mesurada, "temperatura_mesurada_alta": {"2026-10-23T06:00": 10.5},
+                 "setmana": setmana}
+        r = self.avalua("2026-10-23T09:30:00+02:00", f"ZONA = 'alta'; diesSetmana({json.dumps(dades)}, new Date())"
+                        ".map((d) => [d.max, d.min])")
+        self.assertEqual(r[:3], [[22, 10.5], [14, 14], [32, 2.5]])
+        self.assertEqual(r[3], [30, 1])                                             # sense part alta: la de la riera
+
         # Sense dades de la setmana (la reserva d'abans), no hi ha bloc.
         self.assertIsNone(self.avalua("2026-10-23T09:30:00+02:00", f"blocSetmana({json.dumps({'hores': hores})}, new Date())"))
 

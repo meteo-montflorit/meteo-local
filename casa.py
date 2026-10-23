@@ -793,6 +793,14 @@ def recoger(anterior=None):
         salida["ara_casa"] = ara_sense_casa(veines, taula_alta, P.AHORA)
     if salida["ara_casa"]:
         salida["ara_casa"]["dif_alta"] = PA.ara(salida["ara_casa"].get("temperatura"), veines, P.AHORA)
+    # Lo medido cada hora en la parte alta, para comparar con ayer cuando se
+    # mira esa zona (ADR 0123). Solo en el NAS, como el de la riera.
+    salida["temperatura_mesurada_alta"] = None
+    if R.hay_registro():
+        try:
+            salida["temperatura_mesurada_alta"] = PA.mesurada(P.AHORA) or None
+        except Exception as ex:
+            print("No he pogut llegir la temperatura de la part alta:", ex, file=sys.stderr)
     # En el NAS, si dura un fallo de las estaciones, se le dice a Juanjo.
     if R.hay_registro():
         try:
@@ -999,7 +1007,7 @@ def recoger(anterior=None):
     # La previsión de la semana, debajo de la gráfica (ADR 0122). Si falla, la
     # de la pasada anterior: la página quita los días ya pasados.
     try:
-        salida["setmana"] = SM.calcula(P.AHORA)
+        salida["setmana"] = SM.calcula(P.AHORA, taula_alta)
     except Exception as ex:
         salida["setmana"] = (anterior or {}).get("setmana")
         salida["errors"].append(f"setmana: {ex}")

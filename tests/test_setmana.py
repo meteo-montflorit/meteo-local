@@ -63,6 +63,15 @@ class Dies(unittest.TestCase):
         self.assertEqual(res[1]["probabilitat"], 0.0)
         self.assertEqual(res[3]["codi"], 95)
 
+    def test_la_part_alta(self):
+        # ADR 0123: la mateixa compta amb la diferència de la part alta de cada hora i la mateixa correcció.
+        dies = [AVUI.isoformat()]
+        temps, t = hores(dies, lambda d, h: 20.0 if h == 15 else 10.0)
+        taula = {h: 2.0 for h in range(24)}
+        res = S.dies(AVUI, {"time": temps, "temperature_2m": t}, {"time": []}, {1: [1.0, -1.0]}, taula)
+        self.assertEqual((res[0]["max_alta"], res[0]["min_alta"]), (23.0, 11.0))
+        self.assertEqual((res[0]["max"], res[0]["min"]), (21.0, 9.0))
+
     def test_els_dies_incomplets_no_surten(self):
         dies = [AVUI.isoformat()]
         temps, t = hores(dies, lambda d, h: 15.0)

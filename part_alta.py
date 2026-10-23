@@ -55,6 +55,19 @@ def ara(temperatura, veines, ahora):
     return None if m is None else round(m - temperatura, 1)
 
 
+def mesurada(ahora, hores=72, veines_hores=None):
+    """La temperatura medida en la parte alta a cada hora en punto de las
+    últimas horas ({"AAAA-MM-DDTHH:MM" local: °C}): la mediana de las vecinas
+    de arriba, con ALTES_MIN como mínimo. Para comparar con ayer cuando se
+    mira la parte alta (ADR 0123), como temperatura_mesurada para la riera."""
+    if veines_hores is None:
+        veines_hores = {e: SE._llegeix_hores(os.path.join(DIR, f"veina-{e}.csv")) for e in ALTES}
+    desde = (ahora - dt.timedelta(hours=hores)).strftime("%Y-%m-%dT%H:%M")
+    claus = sorted({c for h in veines_hores.values() for c in h if c >= desde}, key=P.ordre_hora)
+    res = {c: mediana_alta([veines_hores.get(e, {}).get(c) for e in ALTES]) for c in claus}
+    return {c: round(v, 1) for c, v in res.items() if v is not None}
+
+
 def inicial():
     try:
         with open(INICIAL, encoding="utf-8") as f:

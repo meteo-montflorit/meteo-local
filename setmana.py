@@ -19,6 +19,9 @@ si faltan.
   vista (calibracio/setmana.py, un año de la estación). Sin el registro (la
   reserva de IONOS) o con menos de MIN_DIES días medidos, sin corrección, y
   se dice (`corregit`).
+- **La parte alta** (ADR 0123): la misma cuenta con la temperatura de cada
+  hora más la diferencia de la parte alta de esa hora (part_alta.a_les_hores),
+  y la misma corrección: la parte alta es la riera más esa diferencia.
 - **Cielo**: la nubosidad media de ECMWF de 7 a 21 h.
 - **Lluvia**: del ensemble de ECMWF (51 miembros, ENSEMBLE_SETMANA), la
   parte de los miembros a los que llueve ese día (C.UMBRAL_MM o más en el
@@ -37,6 +40,7 @@ import sys
 import urllib.parse
 
 import config as C
+import part_alta as PA
 import prevision as P
 import registre as R
 
@@ -96,11 +100,30 @@ def correccio(avui, mesurada, anteriors=None):
     return res
 
 
-def dies(avui, model, ensemble, corr):
+def alta_per_dies(model, taula, ajust=None):
+    """{dia: [temperatura de la parte alta a cada hora]}: la de ECMWF más la
+    diferencia de la parte alta de su hora, con el ajuste de las noches por
+    las nubes y el viento, lo mismo que la previsión por horas
+    (part_alta.a_les_hores; ADR 0087 y 0123)."""
+    temps = model["time"]
+    files = [{"hora": t, "fins": temps[i + 1] if i + 1 < len(temps) else t, "temperatura": v,
+              "nuvols": (model.get("cloud_cover") or [None] * len(temps))[i],
+              "vent": (model.get("wind_speed_10m") or [None] * len(temps))[i]}
+             for i, (t, v) in enumerate(zip(temps, model.get("temperature_2m") or [])) if v is not None]
+    PA.a_les_hores(files, taula, ajust)
+    res = {}
+    for f in files:
+        res.setdefault(f["hora"][:10], []).append(f["temperatura"] + (f["dif_alta"] or 0))
+    return res
+
+
+def dies(avui, model, ensemble, corr, taula=None, ajust=None):
     """Los DIES días desde hoy: máxima y mínima (corregidas si hay
-    corrección para esa antelación), nubosidad media de 7 a 21 h, probabilidad
+    corrección para esa antelación), también en la parte alta si hay
+    tabla de diferencias (taula), nubosidad media de 7 a 21 h, probabilidad
     de lluvia y lluvia esperada."""
     temp = _per_dies(model["time"], model.get("temperature_2m") or [])
+    altes = alta_per_dies(model, taula, ajust) if taula else {}
     nuvols = _per_dies(model["time"], model.get("cloud_cover") or [])
     codis = _per_dies(model["time"], model.get("weather_code") or [])
     membres = [_per_dies(ensemble["time"], v) for k, v in ensemble.items() if k.startswith("precipitation")]
@@ -113,6 +136,9 @@ def dies(avui, model, ensemble, corr):
         c = corr.get(i) if i else corr.get(1)
         dia = {"dia": d, "max": round(max(t) + (c[0] if c else 0), 1), "min": round(min(t) + (c[1] if c else 0), 1),
                "corregit": bool(c)}
+        if len(altes.get(d, [])) >= 23:
+            dia["max_alta"] = round(max(altes[d]) + (c[0] if c else 0), 1)
+            dia["min_alta"] = round(min(altes[d]) + (c[1] if c else 0), 1)
         n = [v for h, v in nuvols.get(d, []) if 7 <= h < 21]
         dia["nuvols"] = round(statistics.fmean(n)) if n else None
         dia["codi"] = max((v for _, v in codis.get(d, [])), default=None)
@@ -125,7 +151,7 @@ def dies(avui, model, ensemble, corr):
     return res
 
 
-def calcula(ahora):
+def calcula(ahora, taula=None):
     """La semana para la página. Con registro, lo guardado si tiene menos de
     CADA_MIN minutos; la corrección, la del día si ya está calculada."""
     avui = ahora.date()
@@ -150,7 +176,7 @@ def calcula(ahora):
                 print("No he pogut calcular la correcció de la setmana:", ex, file=sys.stderr)
     fi = (avui + dt.timedelta(days=DIES - 1)).isoformat()
     model = _consulta(URL, models=C.MODEL_ECMWF, start_date=avui.isoformat(), end_date=fi,
-                      hourly="temperature_2m,cloud_cover,weather_code")
+                      hourly="temperature_2m,cloud_cover,weather_code,wind_speed_10m")
     try:
         ensemble = _consulta(URL_ENSEMBLE, models=ENSEMBLE_SETMANA, start_date=avui.isoformat(), end_date=fi,
                              hourly="precipitation")
@@ -158,7 +184,7 @@ def calcula(ahora):
         # Sin el ensemble, la semana sigue sin la lluvia.
         print("No he pogut llegir l'ensemble de la setmana:", ex, file=sys.stderr)
         ensemble = {"time": []}
-    res = dies(avui, model, ensemble, corr)
+    res = dies(avui, model, ensemble, corr, taula, PA.ajust_nit())
     if R.hay_registro():
         with open(CACHE, "w", encoding="utf-8") as f:
             json.dump({"llegit": ahora.isoformat(timespec="minutes"), "dies": res,
