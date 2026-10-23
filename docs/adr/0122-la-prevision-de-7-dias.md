@@ -22,7 +22,8 @@ el ensemble de ECMWF (51 miembros) cubren los siete días.
 - **Hoy y mañana, con la previsión de la página** (`casa.js`,
   `diaDeLaPagina`), para que la semana diga lo mismo que la gráfica y los
   tramos (ADR 0101): la máxima y la mínima del día (hoy, con lo ya medido en
-  `temperatura_mesurada`; mañana, hasta las 21 h, donde acaban los datos), la
+  `temperatura_mesurada` y, desde la 3.191.3, la lectura de «Ara», para que
+  un máximo entre dos horas en punto no se quede fuera; mañana, hasta las 21 h, donde acaban los datos), la
   nubosidad media de 7 a 21 h, la probabilidad más alta de sus horas y la
   lluvia esperada (ADR 0103).
 - **Los demás días, de ECMWF a 9 km** (`setmana.py`, `config.MODEL_ECMWF`, el

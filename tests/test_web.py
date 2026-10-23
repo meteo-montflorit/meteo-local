@@ -498,6 +498,12 @@ class Web(unittest.TestCase):
         r = self.avalua("2026-10-23T09:30:00+02:00", f"diesSetmana({json.dumps(dades)}, new Date())"
                         ".map((d) => [d.dia, d.max, d.min, d.pluja, celDia(d)[1]])")
         self.assertEqual(r[0], ["2026-10-23", 20, 9, None, "i-sun"])          # amb la mínima ja mesurada
+        # La lectura d'«Ara», també: un màxim entre dues hores en punt (Juanjo, 23-10-2026).
+        amb_ara = {**dades, "ara_casa": {"hora": "2026-10-23T09:20+02:00", "temperatura": 8.4, "dif_alta": 1.0}}
+        r2 = self.avalua("2026-10-23T09:30:00+02:00", f"diesSetmana({json.dumps(amb_ara)}, new Date())[0].min")
+        self.assertEqual(r2, 8.4)
+        r2 = self.avalua("2026-10-23T09:30:00+02:00", f"ZONA = 'alta'; diesSetmana({json.dumps({**amb_ara, 'temperatura_mesurada_alta': {}})}, new Date())[0].min")
+        self.assertEqual(r2, 9)                                                    # 8,4 + 1, en graus sencers
         self.assertEqual(r[1], ["2026-10-24", 12, 12, "pluja", "i-cloud-rain"])
         self.assertEqual(r[2], ["2026-10-25", 30, 1, "pluja", "i-cloud-rain"])  # d'ECMWF: 60 %
         self.assertEqual(r[3][3:], ["possible", "i-cloud-sun-rain"])              # 30 %

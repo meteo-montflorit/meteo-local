@@ -500,13 +500,17 @@ function estatPortada(dades) {
 // els núvols de 7 a 21 h, la probabilitat més alta de les seves hores i la
 // pluja esperada (ADR 0103). La resta, d'ECMWF corregit amb l'estació
 // (setmana.py), amb la probabilitat de l'ensemble.
-function diaDeLaPagina(hores, mesurada, iso, ara) {
+function diaDeLaPagina(hores, mesurada, iso, ara, lectura = null) {
   const files = (hores || []).filter((f) => f.hora.slice(0, 10) === iso && new Date(f.fins) > ara);
   if (!files.length) return null;
   const temps = files.map(tempZona).filter((v) => v != null);
   for (const [clau, v] of Object.entries(mesurada || {})) {
     if (clau.slice(0, 10) === iso && new Date(clau) <= ara && v != null) temps.push(v);
   }
+  // La lectura d'«Ara», la de cada actualització: el registre només té les
+  // hores en punt, i un màxim entre dues hores no hi sortia, mentre «Ara» el
+  // marcava (Juanjo, 23-10-2026: «si se alcanzan 21, se rectificará?»).
+  if (lectura != null) temps.push(lectura);
   if (!temps.length) return null;
   const deDia = files.filter((f) => f.nuvols != null && new Date(f.hora).getHours() >= TRAM_DIA[0]
     && new Date(f.hora).getHours() < TRAM_DIA[1]);
@@ -528,9 +532,11 @@ function diesSetmana(dades, ara = new Date()) {
   const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const avui = iso(ara);
   const alta = zonaTriada() === 'alta';
+  const c = dades.ara_casa;
+  const lectura = c && c.hora && c.hora.slice(0, 10) === avui ? tempAra(c) : null;
   const res = [];
   for (const d of (dades.setmana || []).filter((x) => x.dia >= avui).slice(0, 7)) {
-    const propi = res.length < 2 && diaDeLaPagina(dades.hores, mesuradaZona(dades), d.dia, ara);
+    const propi = res.length < 2 && diaDeLaPagina(dades.hores, mesuradaZona(dades), d.dia, ara, d.dia === avui ? lectura : null);
     if (propi) {
       res.push(propi);
       continue;
@@ -650,6 +656,15 @@ function botoZona() {
   botons.prepend(grup);
 }
 
+// La temperatura d'«Ara» a la zona triada: a la riera, la de l'estació; a la
+// part alta, la que hi mesuren ara les estacions, en graus sencers com elles
+// (ADR 0123). Sense les de dalt, a la part alta no n'hi ha (null).
+function tempAra(casa) {
+  if (casa.temperatura == null) return null;
+  if (zonaTriada() !== 'alta') return casa.temperatura;
+  return casa.dif_alta == null ? null : Math.round(casa.temperatura + casa.dif_alta);
+}
+
 function blocAra(casa, radarDades, vent, veines, hores, mesurada) {
   const sec = element('section', 'decisio targeta ara heroi');
   sec.setAttribute('aria-label', T`El temps avui a ${LLOC}`);
@@ -667,8 +682,8 @@ function blocAra(casa, radarDades, vent, veines, hores, mesurada) {
   // que hi mesuren ara les estacions (casa.dif_alta, part_alta.ara), sense
   // decimal, perquè les de dalt la donen en graus sencers (Juanjo, 23-10-2026);
   // si no n'hi ha, la de la riera.
-  const dalt = zonaTriada() === 'alta' && casa.dif_alta != null;
-  temp.append(termometre, dalt ? `${Math.round(casa.temperatura + casa.dif_alta)} °C` : `${coma(casa.temperatura)} °C`);
+  const dalt = tempAra(casa);
+  temp.append(termometre, zonaTriada() === 'alta' && dalt != null ? `${dalt} °C` : `${coma(casa.temperatura)} °C`);
   const columna = element('div', 'ara-temp-col');
   columna.append(temp);
   // Si el dia és com l'anterior, a sota (comparaDia), també al costat del
