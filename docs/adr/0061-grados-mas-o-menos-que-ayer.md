@@ -28,6 +28,23 @@ comparar.
   temperatura de la previsión del bot, que también usan «Consultes», el
   canal y los avisos del navegador («Temperatura: entre 11 °C i 23 °C, 2
   graus més que ahir»). Mañana se compara con hoy: «2 graus menys que avui».
+- **En «Ara», el día entero** (desde la 3.190.0; Juanjo, 23-10-2026: «si
+  el día es como el de ayer, más frío, más cálido»): debajo de la
+  temperatura y de la parte alta, junto al dibujo del cielo para que la
+  tarjeta no crezca, «Avui, 2° més que ahir» o «Avui, semblant a ahir». Es la
+  misma cuenta que la línea de la temperatura del resumen del bot
+  (`bot.compara_resum`): la máxima de las horas de día (de 7 a 21 h) que
+  quedan, contra las mismas horas de ayer. Desde las 18 h (`HORA_DEMA`),
+  cuando el resumen pasa a mañana, mañana contra hoy: «Demà, 3° menys que
+  avui». Al pulsarla, una burbuja dice qué compara, como la de la parte alta
+  (`casa.comparaDia`). Con la línea nueva, la tarjeta se reduce en el móvil
+  (letra de la frase, temperatura, dibujo y pastillas): en un móvil de 393 ×
+  755 px pasa de 353 a 252 px de alto y la gráfica cabe entera sin desplazar
+  (medido el 23-10-2026 con los datos de las 8:00). Para eso, las pastillas
+  de debajo van en una fila: la de la lluvia de hoy («3,2 mm avui») solo sale
+  si ha llovido algo (Juanjo: «0,0 mm avui» a primera hora no dice nada). Si
+  ha llovido, con tres pastillas, van en dos filas. Las rachas del viento,
+  solo la cifra entre paréntesis: «Vent 7 km/h (16)».
 - **Los datos**: `casa.py` añade a los datos `temperatura_mesurada`, la de
   cada hora en punto de las últimas 72 horas, del registro del NAS y de la
   lectura de la pasada (`registre.temperatures_casa`). La web
@@ -74,3 +91,8 @@ lo previsto de hoy, sin dato no se dice nada) y el texto en los dos
 idiomas. `tests/test_web.py`: la web da lo mismo que el bot en los mismos
 casos y la cabecera del tramo lleva la diferencia. Probado en Chromium,
 Firefox y WebKit de 320 a 1280 px, en catalán y castellano.
+`tests/test_web.py` (`test_el_dia_com_l_anterior_a_ara_igual_que_el_bot`):
+la frase de «Ara», de día y desde las 18 h, da la misma cifra que el bot.
+La tarjeta, en Chromium, Firefox y WebKit a 360, 393 y 1280 px, en tema
+claro y oscuro, con el texto más largo («Demà, 12° menys que avui»), sin
+desbordamiento.

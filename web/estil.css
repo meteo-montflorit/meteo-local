@@ -89,7 +89,7 @@
 
 /* On es pinten les icones del temps amb els colors del cel. Fora d'aquí (els
    botons, les pestanyes) les mateixes icones queden del color del text. */
-.taula-hores, .tram-hores > summary, .dades-ara, .resum-linia, .grafica {
+.taula-hores, .tram-hores > summary, .dades-ara, .resum-linia, .grafica, .setmana-dies {
   --ic-sol: var(--c-sol); --ic-sol-fons: var(--c-sol-fons);
   --ic-nuvol: var(--c-nuvol); --ic-nuvol-fons: var(--c-nuvol-fons);
   --ic-aigua: var(--c-aigua); --ic-aigua-fons: var(--c-aigua-fons);
@@ -1479,6 +1479,21 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .pluja-prevista svg, .pluja-radar svg { width: 1.1rem; height: 1.1rem; flex: none; fill: none; stroke: var(--c-aigua); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .pluja-prevista.segura, .pluja-radar { font-weight: 600; }
 
+/* La previsió de 7 dies (ADR 0122; casa.js, blocSetmana): set columnes a la
+   vista, com la fila d'icones de la gràfica, sense desplaçar. */
+.setmana .perque { margin-top: .9rem; }
+.setmana-dies { list-style: none; margin: .3rem 0 0; padding: .7rem .3rem .6rem; display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr)); background: var(--superficie); border: 1px solid var(--vora);
+  border-radius: .75rem; }
+.setmana-dies li { display: flex; flex-direction: column; align-items: center; gap: .1rem; min-width: 0;
+  font-variant-numeric: tabular-nums; }
+.setmana-nom { font-weight: 600; font-size: .9rem; }
+.setmana-data { font-size: .75rem; color: var(--suau); }
+.setmana-cel { width: 1.7rem; height: 1.7rem; margin: .3rem 0 .2rem; fill: none; stroke: var(--text); stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; }
+.setmana-max, .setmana-min { font-weight: 600; font-size: .95rem; }
+.setmana-pluja { font-size: .75rem; color: var(--c-aigua); font-weight: 600; min-height: 1.1em; white-space: nowrap; }
+
 /* --- La portada nova (ADR 0118) --- */
 :root { --heroi: #1e3a5f; --heroi-suau: #c9d8ee; }
 :root[data-theme="dark"] { --heroi: #1b2d4a; --heroi-suau: #bacae3; }
@@ -1534,9 +1549,22 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
   --ic-nuvol-fons: none; --ic-aigua: currentColor; --ic-aigua-fons: none; }
 .heroi .ara-menys { color: var(--heroi-suau); }
 .heroi a { color: #fff; }
+/* Al mòbil, més petita, perquè no passi de mitja pantalla i la gràfica hi
+   càpiga sencera (Juanjo, 23-10-2026: «ahora ocupa más de la mitad de
+   pantalla en el movil»). */
 @media (max-width: 30rem) {
-  .targeta.ara.heroi { padding: 1rem; }
-  .heroi .titular-cel { font-size: 1.2rem; }
+  .targeta.ara.heroi { padding: .8rem .9rem; }
+  .heroi .titular { margin-bottom: .45rem; }
+  .heroi .titular-cel { font-size: 1.05rem; line-height: 1.28; }
+  .heroi .titular .resum-linia { margin-top: .2rem; font-size: .92rem; }
+  .heroi .veredicte { font-size: 2.7rem; }
+  .heroi .ara-temp .alta { font-size: .9rem; line-height: 1.25; }
+  .heroi-cel { width: 6rem; margin: -1rem -.2rem -1rem auto; }
+  /* Les pastilles, en una fila (Juanjo, 23-10-2026); si ha plogut avui, que
+     n'hi ha tres, en dues. */
+  .heroi .dades-ara { gap: .3rem; margin: .5rem 0 .1rem; font-size: .85rem; }
+  .heroi .dades-ara li { padding: .2rem .5rem; gap: .3rem; }
+  .heroi .dades-ara svg { width: 1rem; height: 1rem; }
 }
 /* Avisos i riera d'una ullada, sota «Ara». */
 .targeta.estat-portada { margin-top: .8rem; padding: 0; border-left-width: 1px; overflow: hidden; }

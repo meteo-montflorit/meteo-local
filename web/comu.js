@@ -1567,9 +1567,12 @@ function titolRiera(nivell) {
     : nivell === 'registre' ? T('Plou a la conca.') : T('Sense risc de crescuda ara.');
 }
 
-function etiquetaAlta(text, dinsDeTram = false) {
+// Amb «explica», la mateixa etiqueta per a una altra dada, amb la seva
+// descripció (la comparació amb ahir d'«Ara», casa.comparaDia).
+function etiquetaAlta(text, dinsDeTram = false, explica = null) {
   const el = element(dinsDeTram ? 'span' : 'button', 'alta');
-  if (dinsDeTram) el.title = TEXT_ALTA();
+  if (explica) el.dataset.explica = explica;
+  if (dinsDeTram) el.title = explica || TEXT_ALTA();
   else {
     el.type = 'button';
     el.setAttribute('aria-expanded', 'false');
@@ -1628,7 +1631,7 @@ document.addEventListener('click', (e) => {
   // Que no desplegui el tram.
   e.preventDefault();
   e.stopPropagation();
-  if (!jaOberta) obreBombolla(etiqueta);
+  if (!jaOberta) obreBombolla(etiqueta, etiqueta.dataset.explica || TEXT_ALTA());
 }, true);
 // Tocar qualsevol altre lloc la tanca, també on el clic no arriba (Safari
 // de l'iPhone no envia «click» si es toca una cosa que no es pot prémer).

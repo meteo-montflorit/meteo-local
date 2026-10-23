@@ -123,5 +123,6 @@
 | [0119](0119-cada-ficha-de-si-surts-en-grande-y-con-enlace.md) | Cada ficha de «Si surts», en grande y con su enlace | aceptado |
 | [0120](0120-autobuses-del-barrio.md) | Los autobuses del barrio: horas de paso e incidencias del AMB | aceptado |
 | [0121](0121-el-fondo-de-ara-segun-el-cielo.md) | El fondo de «Ara» según el cielo, con dibujos | aceptado |
+| [0122](0122-la-prevision-de-7-dias.md) | La previsión de 7 días: ECMWF corregido con la estación | aceptado |
 
 Plantilla: [0000-plantilla.md](0000-plantilla.md). Para crear uno: `nuevo-adr "Título"`.

@@ -452,6 +452,51 @@ class Web(unittest.TestCase):
         r = self.avalua("2026-10-10T13:30:00+02:00", f"resumTrams({json.dumps(hores)}, new Date(), {json.dumps(mes)}).map((t) => t.compara)")
         self.assertEqual(r, ["11° més que ahir"])                          # 26,5 contra 15
 
+    def test_el_dia_com_l_anterior_a_ara_igual_que_el_bot(self):
+        # Juanjo, 23-10-2026: «si el día es como el de ayer, más frío, más cálido».
+        # La mateixa xifra que la línia de la temperatura del resum del bot.
+        sys.path.insert(0, os.path.join(os.path.dirname(WEB), "bot"))
+        import bot as B
+        def fila(dia, h, t):
+            return {"hora": f"2026-10-{dia}T{h:02d}:00", "fins": f"2026-10-{dia}T{h + 1:02d}:00", "temperatura": t}
+        hores = [fila(10, h, 14.0 + h % 7) for h in range(9, 24)] + [fila(11, h, 11.0 + h % 5) for h in range(0, 22)]
+        mes = {f"2026-10-09T{h:02d}:00": 15.0 for h in range(0, 24)} | {f"2026-10-10T{h:02d}:00": 16.0 for h in range(0, 10)}
+        d = {"temperatura_mesurada": mes, "hores": hores}
+        mati = self.avalua("2026-10-10T09:30:00+02:00", f"comparaDia({json.dumps(hores)}, {json.dumps(mes)}, new Date())")
+        self.assertEqual(mati["text"], "Avui, 5° més que ahir")             # 20 contra 15
+        self.assertEqual(B.compara_resum(d, [f for f in hores if f["hora"] < "2026-10-11"]), 5)
+        # Des de les 18 h, demà contra avui, com el resum, que llavors passa a demà.
+        vespre = self.avalua("2026-10-10T19:30:00+02:00", f"comparaDia({json.dumps(hores)}, {json.dumps(mes)}, new Date())")
+        self.assertEqual(vespre["text"], "Demà, 5° menys que avui")          # 15 contra 20
+        self.assertEqual(B.compara_resum(d, [f for f in hores if "2026-10-11T06" <= f["hora"] < "2026-10-12"]), -5)
+        # Sense l'estació (la reserva), res.
+        self.assertIsNone(self.avalua("2026-10-10T09:30:00+02:00", f"comparaDia({json.dumps(hores)}, null, new Date())"))
+        # En prémer-la, què compara (etiquetaAlta amb «explica»); com la part alta.
+        r = self.avalua("2026-10-10T09:30:00+02:00", "etiquetaAlta('Avui', false, 'La màxima…').dataset.explica")
+        self.assertEqual(r, "La màxima…")
+
+    def test_la_setmana_avui_i_dema_de_la_pagina_i_la_resta_d_ecmwf(self):
+        # ADR 0122: avui i demà, de la previsió de la pàgina (com la gràfica i els trams); la resta, de setmana.py.
+        def fila(dia, h, t, p=0.0, mm=0.0):
+            return {"hora": f"2026-10-{dia}T{h:02d}:00", "fins": f"2026-10-{dia}T{h + 1:02d}:00", "temperatura": t,
+                    "probabilitat": p, "pluja_mm": mm, "nuvols": 10, "codi": 3}
+        hores = [fila(23, h, 15.0 + (h == 15) * 5) for h in range(9, 24)] \
+            + [fila(24, h, 12.0, 0.6 if h == 12 else 0.0, 2.0 if h == 12 else 0.0) for h in range(0, 21)]
+        mesurada = {"2026-10-23T06:00": 9.0, "2026-10-23T08:00": 11.0}
+        setmana = [{"dia": f"2026-10-{d}", "max": 30.0, "min": 1.0, "nuvols": 90, "codi": 3, "probabilitat": p, "pluja_mm": 3.0}
+                   for d, p in zip(range(22, 30), (0, 0, 0, 0.6, 0.3, 0.1, 0, 0))]
+        dades = {"hores": hores, "temperatura_mesurada": mesurada, "setmana": setmana}
+        r = self.avalua("2026-10-23T09:30:00+02:00", f"diesSetmana({json.dumps(dades)}, new Date())"
+                        ".map((d) => [d.dia, d.max, d.min, d.pluja, celDia(d)[1]])")
+        self.assertEqual(r[0], ["2026-10-23", 20, 9, None, "i-sun"])          # amb la mínima ja mesurada
+        self.assertEqual(r[1], ["2026-10-24", 12, 12, "pluja", "i-cloud-rain"])
+        self.assertEqual(r[2], ["2026-10-25", 30, 1, "pluja", "i-cloud-rain"])  # d'ECMWF: 60 %
+        self.assertEqual(r[3][3:], ["possible", "i-cloud-sun-rain"])              # 30 %
+        self.assertEqual(r[4][3:], [None, "i-cloudy"])                              # 10 %: només el cel
+        self.assertEqual(len(r), 7)                                                 # sense ahir
+        # Sense dades de la setmana (la reserva d'abans), no hi ha bloc.
+        self.assertIsNone(self.avalua("2026-10-23T09:30:00+02:00", f"blocSetmana({json.dumps({'hores': hores})}, new Date())"))
+
     def test_el_cel_del_bot_es_el_de_la_web(self):
         # ADR 0065: la icona del cel als missatges del bot surt de la mateixa
         # regla que la taula de la web (cel de casa.js): les dues han de coincidir.

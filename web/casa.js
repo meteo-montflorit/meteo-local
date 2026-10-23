@@ -108,6 +108,34 @@ function textComparacio(n, esDema) {
   return n > 0 ? T`${Math.abs(n)}° més que ahir` : T`${Math.abs(n)}° menys que ahir`;
 }
 
+// El dia, com l'anterior, a «Ara», sota la temperatura (Juanjo, 23-10-2026:
+// «si el día es como el de ayer, más frío, más cálido»; ADR 0061): el mateix
+// compte que la línia de la temperatura del resum del bot (bot.compara_resum),
+// la màxima de les hores de dia (TRAM_DIA). Fins a HORA_DEMA, les que queden
+// d'avui contra les mateixes d'ahir; des de llavors, demà contra avui, com el
+// resum, que llavors passa a demà.
+const TRAM_DIA = [7, 21];
+
+function comparaDia(hores, mesurada, ara = new Date()) {
+  const dema = ara.getHours() >= HORA_DEMA;
+  const dia = new Date(ara);
+  if (dema) dia.setDate(dia.getDate() + 1);
+  const files = (hores || []).filter((f) => {
+    const h = new Date(f.hora);
+    return new Date(f.fins) > ara && h.toDateString() === dia.toDateString()
+      && h.getHours() >= TRAM_DIA[0] && h.getHours() < TRAM_DIA[1];
+  });
+  const text = textComparacio(comparaTemp(files, false, mesurada, hores), dema);
+  if (!text) return null;
+  return {
+    text: dema ? T`Demà, ${text}` : T`Avui, ${text}`,
+    // Què compara, en prémer-la, com la part alta.
+    explica: dema
+      ? T('La màxima de demà, comparada amb la d’avui a les mateixes hores: el que ha mesurat l’estació de vora la riera i la previsió per a la resta. Amb menys de 2 graus de diferència, «semblant».')
+      : T('La màxima de les hores de dia que queden avui, comparada amb la que va mesurar ahir l’estació de vora la riera a les mateixes hores. Amb menys de 2 graus de diferència, «semblant».'),
+  };
+}
+
 // D'on surt la tempesta d'un tram: d'un avís oficial o dels models.
 function origenTempesta(files) {
   const avis = files.flatMap((f) => (f.avisos || []).filter((a) => (a.tipus || []).includes('tempestes')))[0];
@@ -469,7 +497,103 @@ function estatPortada(dades) {
   return sec;
 }
 
-function blocAra(casa, radarDades, vent, veines, hores) {
+// La previsió de 7 dies, sota la gràfica (ADR 0122; Juanjo, 23-10-2026: «la
+// previsión de los proximos 6 días… del cielo, temperatura y lluvia»). Avui i
+// demà, de la previsió de la pàgina, perquè diguin el mateix que la gràfica i
+// els trams: la màxima i la mínima del dia (avui, amb el que ja s'ha mesurat),
+// els núvols de 7 a 21 h, la probabilitat més alta de les seves hores i la
+// pluja esperada (ADR 0103). La resta, d'ECMWF corregit amb l'estació
+// (setmana.py), amb la probabilitat de l'ensemble.
+function diaDeLaPagina(hores, mesurada, iso, ara) {
+  const files = (hores || []).filter((f) => f.hora.slice(0, 10) === iso && new Date(f.fins) > ara);
+  if (!files.length) return null;
+  const temps = files.map((f) => f.temperatura).filter((v) => v != null);
+  for (const [clau, v] of Object.entries(mesurada || {})) {
+    if (clau.slice(0, 10) === iso && new Date(clau) <= ara && v != null) temps.push(v);
+  }
+  if (!temps.length) return null;
+  const deDia = files.filter((f) => f.nuvols != null && new Date(f.hora).getHours() >= TRAM_DIA[0]
+    && new Date(f.hora).getHours() < TRAM_DIA[1]);
+  const ambNuvols = deDia.length ? deDia : files.filter((f) => f.nuvols != null);
+  const plujes = files.map(plujaHora);
+  return {
+    dia: iso, max: Math.max(...temps), min: Math.min(...temps),
+    nuvols: ambNuvols.length ? ambNuvols.reduce((s, f) => s + nuvolsHora(f), 0) / ambNuvols.length : null,
+    boira: deDia.length > 0 && deDia.filter(esBoira).length * 2 > deDia.length,
+    pluja: plujes.includes('pluja') ? 'pluja' : plujes.includes('possible') ? 'possible' : null,
+    probabilitat: Math.max(...files.map((f) => (f.plou_ara ? 1 : f.probabilitat || 0))),
+    pluja_mm: files.reduce((s, f) => s + probHora(f) * (f.pluja_mm || 0), 0),
+    tempesta: files.some((f) => plujaHora(f) && f.codi >= 95),
+    neu: files.some((f) => plujaHora(f) && esNeu(f.codi)),
+  };
+}
+
+function diesSetmana(dades, ara = new Date()) {
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const avui = iso(ara);
+  const res = [];
+  for (const d of (dades.setmana || []).filter((x) => x.dia >= avui).slice(0, 7)) {
+    const propi = res.length < 2 && diaDeLaPagina(dades.hores, dades.temperatura_mesurada, d.dia, ara);
+    if (propi) {
+      res.push(propi);
+      continue;
+    }
+    const p = d.probabilitat;
+    res.push({
+      dia: d.dia, max: d.max, min: d.min, nuvols: d.nuvols, boira: false, probabilitat: p, pluja_mm: d.pluja_mm,
+      pluja: p == null ? null : p >= PROB_PLUJA ? 'pluja' : p >= PROB_POSSIBLE ? 'possible' : null,
+      tempesta: d.codi >= 95, neu: esNeu(d.codi),
+    });
+  }
+  return res;
+}
+
+// El cel del dia, amb les icones de la gràfica: la pluja primer, com a cada hora (cel).
+function celDia(d) {
+  if (d.pluja === 'pluja') {
+    if (d.tempesta) return [T('Tempesta'), 'i-cloud-lightning'];
+    return d.neu ? [T('Neu'), 'i-cloud-snow'] : [T('Pluja'), 'i-cloud-rain'];
+  }
+  if (d.pluja === 'possible') return [d.neu ? T('Possible neu') : d.tempesta ? T('Possible tempesta') : T('Possible pluja'), 'i-cloud-sun-rain'];
+  if (d.boira) return [T('Boira'), 'i-cloud-fog'];
+  return d.nuvols == null ? null : celNuvols(d.nuvols, false);
+}
+
+// Una columna per dia, tots set a la vista, sense desplaçar (Juanjo,
+// 23-10-2026: «algo parecido a esto pero sin la gráfica»): el dia, la data,
+// el cel, la màxima en vermell i la mínima en blau (ADR 0063) i, només si
+// arriba a possible, la probabilitat de pluja.
+function blocSetmana(dades, ara = new Date()) {
+  const dies = diesSetmana(dades, ara);
+  if (dies.length < 3) return null;
+  const sec = element('section', 'previsio setmana');
+  sec.append(element('h2', 'perque', T('Previsió de 7 dies')));
+  const llista = element('ol', 'setmana-dies');
+  const codi = IDIOMA.codi === 'es' ? 'es' : 'ca';
+  const ambPluja = dies.some((d) => d.pluja);
+  dies.forEach((d, i) => {
+    const data = new Date(`${d.dia}T12:00`);
+    const nom = i ? data.toLocaleDateString(codi, { weekday: 'short' }) : T('Avui');
+    const [max, min] = [Math.round(d.max), Math.round(d.min)];
+    const cel = celDia(d);
+    const li = element('li');
+    const pct = d.pluja ? `${Math.round(d.probabilitat * 100)} %` : '';
+    // Tot el dia en una frase, per als lectors de pantalla.
+    li.setAttribute('aria-label', [data.toLocaleDateString(codi, { weekday: 'long', day: 'numeric' }),
+      cel && cel[0], T`màxima ${max} °C, mínima ${min} °C`, pct && T`pluja ${pct}`].filter(Boolean).join(', '));
+    li.append(element('span', 'setmana-nom', nom.charAt(0).toUpperCase() + nom.slice(1)),
+      element('span', 'setmana-data', `${data.getDate()}/${data.getMonth() + 1}`));
+    const ic = cel ? icona(cel[1]) : element('span');
+    ic.classList.add('setmana-cel');
+    li.append(ic, element('span', 'setmana-max temp-max', `${max}°`), element('span', 'setmana-min temp-min', `${min}°`));
+    if (ambPluja) li.append(element('span', 'setmana-pluja', pct));
+    llista.append(li);
+  });
+  sec.append(llista);
+  return sec;
+}
+
+function blocAra(casa, radarDades, vent, veines, hores, mesurada) {
   const sec = element('section', 'decisio targeta ara heroi');
   sec.setAttribute('aria-label', T`El temps avui a ${LLOC}`);
   // Sense l'hora de la mesura: la de «Actualitzat a les…», a dalt, ja la diu, i
@@ -491,6 +615,10 @@ function blocAra(casa, radarDades, vent, veines, hores) {
   columna.append(temp);
   const alta = textAltaAra(casa.dif_alta);
   if (alta) columna.append(etiquetaAlta(alta));
+  // Si el dia és com l'anterior, a sota (comparaDia), també al costat del
+  // dibuix, perquè la targeta no creixi.
+  const compara = hores && comparaDia(hores, mesurada);
+  if (compara) columna.append(etiquetaAlta(compara.text, false, compara.explica));
   fila.append(columna);
   sec.append(fila);
   // Plou si ha plogut en els últims 15 minuts a la xarxa del barri: l'estació
@@ -520,14 +648,16 @@ function blocAra(casa, radarDades, vent, veines, hores) {
     : !plou ? dada('i-umbrella-off', T('No plou'))
       : intensitat ? dada('i-umbrella', T`Plou: ${coma(intensitat)} mm/h`)
         : dada('i-umbrella', T('Plou')));
-  // «Plou» amb «0 mm avui» es contradiu: si plou i encara no se n'ha recollit
-  // (la mediana del barri, casa.consens), només «Plou» (inventari del 18-10-2026).
-  if (!plou || casa.pluja_avui) llista.append(dada('i-cloud-rain', T`${coma(casa.pluja_avui || 0)} mm avui`));
+  // La pluja d'avui, només si n'ha caigut: «0,0 mm avui» a primera hora no diu
+  // res, i així les pastilles caben en una fila al mòbil (Juanjo, 23-10-2026).
+  // Tampoc «Plou» amb «0 mm avui», que es contradiu (inventari del 18-10-2026).
+  if (casa.pluja_avui) llista.append(dada('i-cloud-rain', T`${coma(casa.pluja_avui)} mm avui`));
   // El vent, de l'estació de Meteocat més propera, per mitges hores (ADR
   // 0037): l'estació i l'hora, a «D'on surt» (ADR 0074). Si ve de les veïnes
   // (ADR 0064), que «D'on surt» encara no diu, es diu aquí.
   if (vent && vent.mitja != null) {
-    const ratxa = vent.ratxa != null ? T` (ratxes de ${coma(vent.ratxa, 0)})` : '';
+    // Les ratxes, només la xifra entre parèntesis (Juanjo, 23-10-2026).
+    const ratxa = vent.ratxa != null ? ` (${coma(vent.ratxa, 0)})` : '';
     const veines = vent.font === 'veines' ? T(', estacions veïnes') : '';
     llista.append(dada('i-wind', T`Vent ${coma(vent.mitja, 0)} km/h${ratxa}` + veines));
   }
@@ -1411,7 +1541,8 @@ function pinta(dades) {
   }
   // El radar porta l'estat únic de la pluja (ADR 0101), per dir el mateix que «Ara».
   const radarAmbPluja = dades.radar && dades.pluja_ara ? { ...dades.radar, pluja: dades.pluja_ara } : dades.radar;
-  const ara = dades.ara_casa && blocAra(dades.ara_casa, radarAmbPluja, dades.vent, dades.veines, dades.hores);
+  const ara = dades.ara_casa && blocAra(dades.ara_casa, radarAmbPluja, dades.vent, dades.veines, dades.hores,
+    dades.temperatura_mesurada);
   if (ara) cont.append(ara);
   const estat = estatPortada(dades);
   if (estat) cont.append(estat);
@@ -1421,6 +1552,9 @@ function pinta(dades) {
   // El radar, sota la gràfica (Juanjo, 22-10-2026); la frase d'«Ara» ja en diu
   // la conclusió.
   if (ara && ara._radar) cont.append(ara._radar);
+  // La setmana, sota la gràfica i el radar (ADR 0122): primer el que és a prop.
+  const setmana = dades.hores && blocSetmana(dades);
+  if (setmana) cont.append(setmana);
   // El resum d'avui i el de demà, en text, ja no hi són (portada nova, ADR
   // 0118): ho diuen la frase de dalt d'«Ara» i els trams. Sense dades d'ara,
   // el resum d'avui, com sempre.

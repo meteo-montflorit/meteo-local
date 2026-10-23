@@ -244,6 +244,15 @@ def temperatures_casa(ahora, hores=72, recents=None):
 ESTACIO_CASA_DIES_MAX = 89
 
 
+def apunta_setmana(ahora, dies):
+    """La previsión de la semana tal como se publica, una línea cada vez que
+    se calcula (como mucho cada hora, setmana.CADA_MIN), en
+    setmana-AAAA-MM.jsonl: para comprobar con lo que pasó la probabilidad de
+    lluvia, que sale del ensemble sin calibrar (ADR 0122)."""
+    with open(os.path.join(DIR, f"setmana-{ahora:%Y-%m}.jsonl"), "a", encoding="utf-8") as f:
+        f.write(json.dumps({"t": ahora.isoformat(timespec="minutes"), "dies": dies}, ensure_ascii=False) + "\n")
+
+
 def apunta_estacio_casa(nuevas):
     """Horas completas de la estación de casa ({fin: valores}, ecowitt.hores)."""
     nuevas = {fin: h for fin, h in nuevas.items() if h.get("temperatura") is not None
