@@ -563,6 +563,15 @@ function celDia(d) {
   return d.nuvols == null ? null : celNuvols(d.nuvols, false);
 }
 
+// Les abreviatures dels dies, les normatives i en minúscula, com el nom sencer
+// (Juanjo, 23-10-2026): en català, les de l'IEC, dues lletres i punt; en
+// castellà, les de la RAE. Escrites aquí i no les del navegador, que en
+// castellà donava «sáb», «mié» sense punt.
+const DIES_CURTS = {
+  ca: ['dg.', 'dl.', 'dt.', 'dc.', 'dj.', 'dv.', 'ds.'],
+  es: ['dom.', 'lun.', 'mar.', 'miérc.', 'juev.', 'vier.', 'sáb.'],
+};
+
 // Una columna per dia, tots set a la vista, sense desplaçar (Juanjo,
 // 23-10-2026: «algo parecido a esto pero sin la gráfica»): el dia, la data,
 // el cel, la màxima en vermell i la mínima en blau (ADR 0063) i, només si
@@ -595,7 +604,7 @@ function blocSetmana(dades, ara = new Date()) {
   llista.append(claus);
   dies.forEach((d, i) => {
     const data = new Date(`${d.dia}T12:00`);
-    const nom = i ? data.toLocaleDateString(codi, { weekday: 'short' }) : T('Avui');
+    const nom = i ? DIES_CURTS[codi][data.getDay()] : T('Avui');
     const [max, min] = [Math.round(d.max), Math.round(d.min)];
     const cel = celDia(d);
     const li = element('li');
@@ -603,7 +612,7 @@ function blocSetmana(dades, ara = new Date()) {
     // Tot el dia en una frase, per als lectors de pantalla.
     li.setAttribute('aria-label', [data.toLocaleDateString(codi, { weekday: 'long', day: 'numeric' }),
       cel && cel[0], T`màxima ${max} °C, mínima ${min} °C`, pct && T`pluja ${pct}`].filter(Boolean).join(', '));
-    li.append(element('span', 'setmana-nom', nom.charAt(0).toUpperCase() + nom.slice(1)),
+    li.append(element('span', 'setmana-nom', nom),
       element('span', 'setmana-data', `${data.getDate()}/${data.getMonth() + 1}`));
     const ic = cel ? icona(cel[1]) : element('span');
     ic.classList.add('setmana-cel');

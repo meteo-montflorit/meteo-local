@@ -51,7 +51,9 @@ el ensemble de ECMWF (51 miembros) cubren los siete días.
   columnas a la vista sin desplazar (día, fecha, icono, máxima en rojo y
   mínima en azul, ADR 0063) y, solo si algún día llega a posible lluvia, una
   fila con su probabilidad. Cada columna lleva una frase para los lectores de
-  pantalla. Mide unos 200 px de alto en el móvil. Delante, una columna de
+  pantalla. Mide unos 200 px de alto en el móvil. Los días, con sus
+  abreviaturas normativas en minúscula (desde la 3.193.1; Juanjo): en catalán,
+  las del IEC («dl.», «dt.»…); en castellano, las de la RAE («lun.», «miérc.»…). Delante, una columna de
   símbolos (desde la 3.191.2; Juanjo: «el % de abajo no se sabe lo que es»):
   «màx» en rojo, «mín» en azul y, solo si hay fila de lluvia, el paraguas de
   los tramos, cada uno con su descripción al pasar el ratón o al mantenerlo
