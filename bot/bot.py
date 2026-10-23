@@ -803,6 +803,113 @@ def es_nota(t, kmh):
     return 13.12 + 0.6215 * t - 11.37 * v + 0.3965 * t * v
 
 
+# La frase de la targeta «Ara» de la web (casa.fraseCelAra, ADR 0118), per als
+# resums d'avui i de demà: com es nota cada tram i el cel (Juanjo, 23-10-2026:
+# «cuando envias las alertas de hoy, podrías poner el texto que pones de si
+# hará fresco… solo el de hoy. Y cuando envias el de mañana, también»). El
+# mateix compte que la web, a la riera, com la resta del resum.
+TRAMS_FRASE = ((7, 14, "Matí"), (14, 21, "Tarda"), (21, 7, "Nit"))
+SENSACIO = ((-1, "fred intens"), (5, "molt fred"), (11, "fred"), (17, "fresc"), (25, "agradable"),
+            (32, "calor"), (math.inf, "molta calor"))
+PARAULA_SENSACIO = {
+    "ca": {"fred intens": "amb fred intens", "molt fred": "amb molt de fred", "fred": "fred", "fresc": "fresc",
+           "agradable": "temperatura agradable", "calor": "amb calor", "molta calor": "amb molta calor"},
+    "es": {"fred intens": "con frío intenso", "molt fred": "con mucho frío", "fred": "frío", "fresc": "fresco",
+           "agradable": "temperatura agradable", "calor": "con calor", "molta calor": "con mucho calor"},
+}
+CEL_FRASE = {"ca": ("serè", "poc ennuvolat", "mig ennuvolat", "molt ennuvolat", "cobert", "boira"),
+             "es": ("despejado", "poco nuboso", "nuboso", "muy nuboso", "cubierto", "niebla")}
+QUAN_FRASE = {"ca": {"Matí": "Aquest matí", "Tarda": "Aquesta tarda", "Nit": "Aquesta nit"},
+              "es": {"Matí": "Esta mañana", "Tarda": "Esta tarde", "Nit": "Esta noche"}}
+# Al resum de demà el títol ja diu que és demà.
+QUAN_FRASE_DEMA = {"ca": {"Matí": "Al matí", "Tarda": "A la tarda", "Nit": "A la nit"},
+                   "es": {"Matí": "Por la mañana", "Tarda": "Por la tarde", "Nit": "Por la noche"}}
+
+
+def tram_frase(f):
+    """(dia, nom) del tram de l'hora, com casa.tramDe: la nit de matinada és del dia abans."""
+    t = hora_local(f["hora"])
+    nom = next(n for a, b, n in TRAMS_FRASE if (a <= t.hour < b if a < b else (t.hour >= a or t.hour < b)))
+    dia = t.date() - dt.timedelta(days=1) if nom == "Nit" and t.hour < 7 else t.date()
+    return dia, nom
+
+
+def cel_frase(files, idioma):
+    """El cel del tram en paraules (casa.celTram): boira si n'hi ha la major
+    part de les hores; si no, la mitjana dels núvols (com a icona_cel)."""
+    if sum(1 for f in files if f.get("codi") in (45, 48)) * 2 > len(files):
+        return CEL_FRASE[idioma][5]
+    n = [max(f["nuvols"], 50) if (f.get("pluja_mm") or 0) >= 0.2 else f["nuvols"] for f in files if f.get("nuvols") is not None]
+    if not n:
+        return None
+    m = sum(n) / len(n)
+    return CEL_FRASE[idioma][0 if m < 20 else 1 if m < 45 else 2 if m < 70 else 3 if m < 85 else 4]
+
+
+def sensacio_tram(files, nom):
+    """Com es nota el tram (casa.sensacioTram): la temperatura que es nota,
+    arrodonida; la màxima a la tarda i la mínima a la nit i al matí, i al
+    matí, si després escalfa fins a un altre nivell, «inici>després»."""
+    notes = [es_nota(f["temperatura"], f.get("vent") or 0) for f in files if f.get("temperatura") is not None]
+    if not notes:
+        return None
+    nivell = lambda v: next(n for fins, n in SENSACIO if math.floor(v + 0.5) <= fins)
+    if nom == "Tarda":
+        return nivell(max(notes))
+    inici = nivell(min(notes))
+    if nom != "Matí":
+        return inici
+    despres = nivell(max(notes[notes.index(min(notes)):]))
+    return inici if despres == inici else f"{inici}>{despres}"
+
+
+def text_sensacio(s, idioma, encara=False):
+    inici, _, despres = s.partition(">")
+    p = PARAULA_SENSACIO[idioma]
+    primera = (("todavía " if idioma == "es" else "encara ") + p[inici]) if encara else p[inici]
+    if not despres:
+        return primera
+    segona = "agradable" if despres == "agradable" else p[despres]
+    return f"{primera} {'y después' if idioma == 'es' else 'i després'} {segona}"
+
+
+def frase_cel(hores, idioma, dia, dema=False):
+    """La frase per als trams del dia (per a avui, els que queden, també la
+    nit; per a demà, els de demà): «Aquest matí, fresc i després agradable,
+    i molt ennuvolat; aquesta tarda, temperatura agradable i poc ennuvolat.»
+    Els trams seguits amb el mateix cel i la mateixa sensació, junts; «encara»
+    si la sensació continua. None sense dades."""
+    i_ = "y" if idioma == "es" else "i"
+    grups = []
+    for f in hores:
+        d, nom = tram_frase(f)
+        if (d == dia) if dema else (d <= dia):
+            if not grups or grups[-1][0] != (d, nom):
+                grups.append([(d, nom), []])
+            grups[-1][1].append(f)
+    # El tram en curs, si només li queda una hora, ja no és el que ve (casa.tramsFrase).
+    if len(grups) > 1 and len(grups[0][1]) <= 1:
+        grups = grups[1:]
+    quan = (QUAN_FRASE_DEMA if dema else QUAN_FRASE)[idioma]
+    parts = [[quan[nom], cel_frase(fs, idioma), sensacio_tram(fs, nom)] for (_, nom), fs in grups]
+    parts = [p for p in parts if p[1]]
+    if not parts:
+        return None
+    junts = []
+    for p in parts:
+        if junts and junts[-1][1:] == p[1:]:
+            junts[-1][0] += f" {i_} {p[0][0].lower()}{p[0][1:]}"
+        else:
+            junts.append(list(p))
+    amb = lambda cel, s, encara: cel if not s else (
+        f"{text_sensacio(s, idioma, encara)}, {i_} {cel}" if ">" in s else f"{text_sensacio(s, idioma, encara)} {i_} {cel}")
+    trossos = []
+    for n, (q, cel, s) in enumerate(junts):
+        encara = bool(n and s and s.split(">")[0] == junts[n - 1][2])
+        trossos.append(f"{q if not n else q[0].lower() + q[1:]}, {amb(cel, s, encara)}")
+    return "; ".join(trossos) + "."
+
+
 def peca(s, idioma):
     for fins, ca, es in ROBA:
         if fins is None or s <= fins:
@@ -981,6 +1088,7 @@ def resum(dades, idioma, moment, dema=False, avui=False, telegram=False):
         fins = (f" (hasta las {fi} h)" if idioma == "es" else f" (fins a les {fi} h)") if 0 < fi < 21 else ""
         linies = [(f"<b>Previsión para mañana, {nom_dia}, en Montflorit</b>" if idioma == "es"
                    else f"<b>Previsió per a demà, {nom_dia}, a Montflorit</b>") + fins]
+        linies.append(frase_cel(dia, idioma, dema, dema=True))
         if franges(nit):    # la noche, solo si se espera lluvia
             linies.append(amb_icona(emoji_pluja(nit), ("Esta noche: " if idioma == "es" else "Aquesta nit: ")
                                     + text_franges(franges(nit), idioma) + "."))
@@ -998,6 +1106,7 @@ def resum(dades, idioma, moment, dema=False, avui=False, telegram=False):
         linies = [f"<b>Hoy, {nom_dia}, en Montflorit</b>" if idioma == "es"
                   else f"<b>Avui, {nom_dia}, a Montflorit</b>",
                   text_ara(dades, idioma, moment=moment),
+                  frase_cel(hores, idioma, moment.date()),
                   text_temperatura(tram, idioma, "Temperatura de aquí a medianoche" if idioma == "es"
                                    else "Temperatura d'aquí a mitjanit", compara_resum(dades, tram), "ahir",
                                    (dades.get("ara_casa") or {}).get("temperatura")),

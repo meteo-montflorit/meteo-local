@@ -1431,3 +1431,31 @@ class PlujaPrevista(unittest.TestCase):
         for f in sec["hores"]:
             f["probabilitat"] = 0.05
         self.assertIsNone(B.text_pluja_prevista(sec, "ca", ARA))
+
+
+class FraseCel(unittest.TestCase):
+    """La frase d'«Ara» als resums (Juanjo, 23-10-2026): la d'avui, amb tots els trams que queden d'avui
+    (també la nit); la de demà, amb «Al matí» i «A la tarda», que el títol ja diu demà."""
+
+    @staticmethod
+    def hores(dia, desde, fins, temp, nuvols):
+        res = []
+        t = dt.datetime.fromisoformat(f"{dia}T{desde:02d}:00")
+        while t < dt.datetime.fromisoformat(f"{dia}T00:00") + dt.timedelta(hours=fins):
+            res.append({"hora": t.isoformat(timespec="minutes"), "fins": (t + dt.timedelta(hours=1)).isoformat(timespec="minutes"),
+                        "temperatura": temp(t.hour), "nuvols": nuvols(t.hour), "vent": 0, "codi": 3, "pluja_mm": 0})
+            t += dt.timedelta(hours=1)
+        return res
+
+    def test_avui_amb_la_nit_i_dema_sense_repetir_dema(self):
+        avui = dt.date(2026, 10, 23)
+        files = self.hores("2026-10-23", 9, 31, lambda h: 20 if 13 <= h <= 17 else 12, lambda h: 10)
+        self.assertEqual(B.frase_cel(files, "ca", avui),
+                         "Aquest matí, fresc i després agradable, i serè; aquesta tarda, temperatura agradable i serè; "
+                         "aquesta nit, fresc i serè.")
+        dema = self.hores("2026-10-24", 7, 14, lambda h: 12, lambda h: 10) + self.hores("2026-10-24", 14, 21, lambda h: 12, lambda h: 95)
+        self.assertEqual(B.frase_cel(dema, "es", dt.date(2026, 10, 24), dema=True),
+                         "Por la mañana, fresco y despejado; por la tarde, todavía fresco y cubierto.")
+        # El tram en curs amb una sola hora ja no compta si en ve un altre.
+        files = self.hores("2026-10-23", 13, 21, lambda h: 20, lambda h: 10)
+        self.assertTrue(B.frase_cel(files, "ca", avui).startswith("Aquesta tarda,"))

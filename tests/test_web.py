@@ -524,6 +524,31 @@ class Web(unittest.TestCase):
         # Sense dades de la setmana (la reserva d'abans), no hi ha bloc.
         self.assertIsNone(self.avalua("2026-10-23T09:30:00+02:00", f"blocSetmana({json.dumps({'hores': hores})}, new Date())"))
 
+    def test_la_frase_del_bot_es_la_de_la_targeta(self):
+        # Juanjo, 23-10-2026: el resum d'avui i el de demà porten la frase d'«Ara» (fresc, agradable…):
+        # el bot (bot.frase_cel) ha de dir el mateix que la web (casa.fraseCelAra) amb els mateixos trams.
+        sys.path.insert(0, os.path.join(os.path.dirname(WEB), "bot"))
+        import bot as B
+        def hores(temp, nuvols, vent=0, codi=3):
+            return [{"hora": f"2026-10-23T{h:02d}:00", "fins": f"2026-10-23T{h + 1:02d}:00", "temperatura": temp(h),
+                     "nuvols": nuvols(h), "vent": vent, "codi": codi(h) if callable(codi) else codi,
+                     "probabilitat": 0, "pluja_mm": 0, "avisos": []} for h in range(9, 21)]
+        casos = [
+            hores(lambda h: 12 + (h - 9), lambda h: 90 if h < 14 else 30),          # fresc i després agradable
+            hores(lambda h: 14, lambda h: 95),                                       # el mateix als dos trams
+            hores(lambda h: 6, lambda h: 10, vent=25),                               # fred amb vent
+            hores(lambda h: 30 + (h > 13) * 4, lambda h: 5),                         # calor
+            hores(lambda h: 10, lambda h: 60, codi=lambda h: 45 if h < 14 else 3),   # boira al matí
+            hores(lambda h: 16 - (h - 9) * 0.3, lambda h: 50),                       # un matí que es refreda
+        ]
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from test_montflorit import js as js_es    # la web en castellà, amb montflorit/es.js
+        import datetime as dt
+        for files in casos:
+            expr = f"fraseCelAra({json.dumps(files)}, new Date())"
+            self.assertEqual(B.frase_cel(files, "ca", dt.date(2026, 10, 23)), self.avalua("2026-10-23T09:30:00+02:00", expr))
+            self.assertEqual(B.frase_cel(files, "es", dt.date(2026, 10, 23)), js_es(expr, "2026-10-23T09:30:00+02:00"))
+
     def test_el_cel_del_bot_es_el_de_la_web(self):
         # ADR 0065: la icona del cel als missatges del bot surt de la mateixa
         # regla que la taula de la web (cel de casa.js): les dues han de coincidir.

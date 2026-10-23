@@ -90,6 +90,21 @@ con una simulación de avisos. Juanjo: «me gusta, publica la portada nueva».
   `web/fonts`, sin Google; crédito en «Fonts») y las tarjetas algo más
   redondeadas, para que las demás páginas no desentonen.
 
+- **También en los resúmenes** (desde la 3.192.0; Juanjo, 23-10-2026:
+  «cuando envías las alertas de hoy, podrías poner el texto que pones de si
+  hará fresco… solo el de hoy. Y cuando envías el de mañana, también.
+  Telegram y app… y en Consultes»): `bot.frase_cel`, la misma cuenta en
+  Python, debajo de «Ara mateix» en el de hoy y del título en el de mañana.
+  Lo usan el bot y el canal de Telegram, los avisos en el navegador y
+  «Consultes» (`montflorit.consultes`), que salen todos de `bot.resum`. El de
+  hoy, con todos los tramos que quedan de hoy, también la noche («aquesta
+  nit»); el de mañana, sus tramos con «Al matí» y «A la tarda», porque el
+  título ya dice que es mañana. Los tramos seguidos iguales van juntos («Al
+  matí i a la tarda, fresc i cobert») y «encara» compara con el anterior. A
+  la riera, como el resto del resumen (el bot no sabe la zona de cada uno,
+  ADR 0123). `tests/test_web.py` comprueba que el bot y la tarjeta dicen lo
+  mismo con los mismos tramos, en catalán y castellano.
+
 ## Alternativas descartadas
 
 - **Una tira hora a hora en lugar de la gráfica**, como en la maqueta: más
