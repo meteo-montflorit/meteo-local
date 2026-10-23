@@ -200,6 +200,17 @@ crèdits», donde se explica para qué se leen las previsiones oficiales (Juanjo
 más datos»). Para volver a ponerla: `MENU_FIABILITAT = true` y la línea de
 «Com funciona» con su traducción (está en el historial de este ADR).
 
+**De vuelta en el menú** (23-10-2026, 3.192.1). Con 20 días de la web (414
+horas de temperatura, 28 de lluvia prevista) y tres de Meteocat y AEMET (18 y
+69 horas comparadas en temperatura, con diferencia segura), hay datos que
+publicar, aunque no todos (Juanjo: «me avisarás cuando la página fiabilitat
+tenga datos publicables? aunque no sean todos»; «sí, publica»). Los apartados
+sin bastantes datos ya dicen en la página cuándo los tendrán («si mejora»,
+con 8 semanas; las correcciones nuevas). La hipótesis de la hora de los
+milímetros oficiales sigue sin comprobar: desde que se apuntan (20-10-2026,
+9:08) la estación no ha medido lluvia, así que por ahora no cambia la
+comparación; se comprobará con la primera lluvia.
+
 **Datos en lugar de frases fijas** (20-10-2026, 3.168.0). Las fichas del
 radar y de las nubes solo decían cuál se usa (Juanjo: «esto es solo
 información estática, por qué no pones los datos de quien acierta y se

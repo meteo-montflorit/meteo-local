@@ -1976,7 +1976,7 @@ for (const b of document.querySelectorAll('.boto-compartir')) b.addEventListener
 // campana»). A l'ordinador, igual des de la 3.165.0 (Juanjo, 20-10-2026:
 // «pon los tres puntos»); a la 3.164.0 s'hi havia deixat tot a la vista, cosa
 // que ell no havia demanat.
-const MENU_FIABILITAT = false;
+const MENU_FIABILITAT = true;
 function menuMes() {
   const botons = document.querySelector?.('.cap-botons');
   if (!botons) return;
