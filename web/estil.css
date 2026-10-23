@@ -182,7 +182,7 @@ h1 { margin: 0; font-size: 1.6rem; line-height: 1.2; }
 .boto-zona .boto-icona[aria-pressed="true"] { background: var(--enllac); color: var(--fons); border-color: var(--enllac); }
 @media (max-width: 23.4rem) {
   .boto-zona .boto-icona[aria-pressed="false"] { display: none; }
-  .boto-zona .boto-icona { width: 2.5rem; border-radius: .5rem; border-left: 1px solid var(--enllac); }
+  .boto-zona .boto-icona:is(:first-child, :last-child) { width: 2.5rem; border-radius: .5rem; border-left: 1px solid var(--enllac); }
 }
 /* Les dues llengües, la triada com la pestanya activa del menú. */
 .idiomes {
