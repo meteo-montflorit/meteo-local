@@ -148,3 +148,50 @@ ahí el historial quedaba escondido.
   local); axe-core sin infracciones en la portada y en la ventana.
 - El calendario del navegador no sale en las capturas: queda por comprobar a
   mano en el móvil.
+
+## Cambio del 24-10-2026: el historial de «Perill», sin borrar nada
+
+Juanjo preguntó cuánto se guardaba y si era costoso ampliarlo a varios años,
+y después: «pero podré consultar las condiciones de un día de hace 3 años?».
+Lo medido ya se guardaba sin límite (el registro del NAS y un archivo por día
+en IONOS), pero el historial de «Perill» se borraba al año
+(`HISTORIAL_DIES = 366`). Además de perderse las fichas, al rehacer los días
+del historial de la gráfica (un formato nuevo, o IONOS reconstruido desde el
+NAS) los de hace más de un año perderían las alertas que salen de él. Ampliar
+el plazo en el mismo archivo no convenía: cada página de la web descarga
+`avisos.json` en cada visita (el punto de «Perill») y el receptor de IONOS
+rechaza archivos de más de 2 MB. El agente propuso repartirlo por años y
+Juanjo lo aprobó («sí, añádelo a la rama»).
+
+- `avisos_bot.py` ya no borra nada. Lo que acabó hace más de `ARXIU_DIES`
+  (35) días sale de `avisos.json` y pasa al archivo del año en que empezó,
+  `avisos-AAAA.json` (`parteix`, `arxiva`): el propio, en la carpeta del estado
+  (en el NAS, `/estat`; en la reserva, la suya), unido con el publicado (el
+  NAS y la reserva llevan cada uno el suyo, como `fusiona`) y con los nuevos.
+  Se escribe en la carpeta del estado y al lado del `avisos.json` que se
+  publica. Lo que sigue en curso no se archiva nunca.
+- `publica.sh` sube los archivos por año que se hayan escrito en la pasada,
+  en un envío aparte: si IONOS los rechazara, los datos de siempre ya han
+  entrado. `rep-dades.sh` acepta `avisos-20AA.json`, JSON como los demás.
+- «Perill» los lee una vez por visita, de 2026 al año actual, y los une al
+  historial (sin repetir episodios): las fichas viejas, sus meses plegados y
+  sus enlaces directos siguen funcionando. Las demás páginas no los
+  descargan.
+- `historial.py` lee el historial de «Perill» entero (`historial_perill`:
+  `avisos.json` y los archivos por año de su carpeta) para las alertas de cada
+  hora.
+- Si el NAS perdiera su copia, la recupera de la publicada en IONOS en la
+  siguiente pasada que archive algo de ese año.
+
+**Al publicar**: `reserva/instalar.sh` en IONOS, para que el receptor acepte
+los archivos nuevos (si no, solo se rechaza el envío aparte). El primer
+episodio que se archivará acabó el 10-10-2026: pasará hacia el 15-11-2026.
+
+Validado: `tests/test_historial.py`,
+`test_no_es_perd_res_i_el_vell_va_a_l_arxiu_del_seu_any`;
+`tests/test_rep_dades.py`, `test_accepta_l_arxiu_de_perill`;
+`tests/test_historial_grafica.py` (las alertas, también desde el archivo del
+año); en local, «Perill» con los incendios de octubre pasados a un
+`avisos-2026.json` simulado: salen en su sitio y el enlace directo lleva a la
+ficha.
+

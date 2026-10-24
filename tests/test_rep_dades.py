@@ -70,6 +70,14 @@ class RepDades(unittest.TestCase):
         for nom, cos in (("historial-2026-10-16.json", b"no"), ("historial-x.json", b"{}"), ("historial-2026-10-16.php", b"{}")):
             self.assertEqual(self.rep(paquet([(nom, cos)])).returncode, 1, nom)
 
+    def test_accepta_l_arxiu_de_perill(self):
+        # ADR 0124: els arxius per any de l'historial de «Perill».
+        r = self.rep(paquet([("avisos-2026.json", b'{"any": 2026, "historial": []}')]))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue(os.path.exists(os.path.join(self.dir, "avisos-2026.json")))
+        for nom, cos in (("avisos-2026.json", b"no"), ("avisos-26.json", b"{}"), ("avisos-2026.php", b"{}")):
+            self.assertNotEqual(self.rep(paquet([(nom, cos)])).returncode, 0, nom)
+
     def test_rebutja_noms_repetits_i_de_mes(self):
         r = self.rep(paquet([("montflorit.json", b"{}"), ("montflorit.json", b"{}")]))
         self.assertEqual(r.returncode, 1)

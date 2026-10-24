@@ -142,11 +142,32 @@ class Historial(unittest.TestCase):
         self.assertEqual((len(h), h[0]["ca"], h[0].get("darrer")[11:16]), (1, "alerta", "12:30"))
         self.assertEqual(AB.pagina(nou, h), "perill.html#" + AB.id_fitxa("pla:INUNCAT", h[0]["inici"]))
 
-    def test_es_guarda_un_any(self):
+    def test_no_es_perd_res_i_el_vell_va_a_l_arxiu_del_seu_any(self):
+        # ADR 0124: fins a la 3.193 es guardava un any i es borrava. Ara, el que
+        # va acabar fa més d'ARXIU_DIES dies passa a avisos-AAAA.json (el de
+        # l'any en què va començar), unit amb el publicat, i el que segueix no.
+        import tempfile
         estat = {}
-        AB.historial(estat, [avis(0, "aemet:pluja:x", "groc", fins=ARA.isoformat())], ARA)
-        self.assertEqual(len(AB.historial(estat, [], ARA + dt.timedelta(days=300))), 1)
-        self.assertEqual(AB.historial(estat, [], ARA + dt.timedelta(days=AB.HISTORIAL_DIES + 1)), [])
+        AB.historial(estat, [avis(0, "aemet:pluja:x", "groc", fins=ARA.isoformat()),
+                             avis(0, "incendi:y", "incendi")], ARA)
+        h = AB.historial(estat, [], ARA + dt.timedelta(days=400))
+        self.assertEqual(len(h), 2)                        # ja no es borra
+        recents, vells = AB.parteix(h, ARA + dt.timedelta(days=AB.ARXIU_DIES + 1))
+        self.assertEqual(([e["clau"] for e in recents], [e["clau"] for e in vells]), (["incendi:y"], ["aemet:pluja:x"]))
+        self.assertEqual(AB.parteix(h, ARA + dt.timedelta(days=AB.ARXIU_DIES - 1))[1], [])
+        with tempfile.TemporaryDirectory() as estat_dir, tempfile.TemporaryDirectory() as sortida:
+            publicat = os.path.join(sortida, "avisos.json")
+            altre = {"clau": "incendi:z", "tipus": "perill", "inici": "2026-01-02T10:00+01:00", "fi": "2026-01-02T11:00+01:00"}
+            with open(os.path.join(sortida, "avisos-2026.json"), "w", encoding="utf-8") as f:
+                json.dump({"any": 2026, "historial": [altre]}, f)
+            self.assertEqual(AB.arxiva(vells, estat_dir, sortida, publicat), ["avisos-2026.json"])
+            for carpeta in (estat_dir, sortida):
+                with open(os.path.join(carpeta, "avisos-2026.json"), encoding="utf-8") as f:
+                    self.assertEqual([e["clau"] for e in json.load(f)["historial"]], ["incendi:z", "aemet:pluja:x"])
+            # Una altra vegada el mateix: no es repeteix.
+            AB.arxiva(vells, estat_dir, sortida, publicat)
+            with open(os.path.join(estat_dir, "avisos-2026.json"), encoding="utf-8") as f:
+                self.assertEqual(len(json.load(f)["historial"]), 2)
 
     def test_s_uneix_amb_el_publicat_per_l_altre_servidor(self):
         # El NAS torna després que la reserva hagi vist un incendi i el seu final.

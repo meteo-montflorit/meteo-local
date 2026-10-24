@@ -31,8 +31,10 @@ Tipos:
   «Perill».
 
 Cada aviso de peligro y de la riera es parte de un episodio (episodi): el
-historial de los últimos HISTORIAL_DIES días, con su comienzo y su final, va
-en avisos.json para la página «Perill» de la web (ADR 0071).
+historial, con su comienzo y su final, va en avisos.json para la página
+«Perill» de la web (ADR 0071). Desde la 3.194.0 no se borra nada: lo acabado
+hace más de ARXIU_DIES días pasa a un archivo por año (avisos-AAAA.json), al
+lado del estado y del avisos.json que se publica (ADR 0124).
 
 Los trenes y el tráfico no avisan desde el 09-10-2026: se consultan en «Si
 surts» y con /trens y /transit del bot (ADR 0053).
@@ -59,7 +61,11 @@ import riscos as RS
 
 ESTAT = os.path.join(os.path.dirname(os.environ.get("REGISTRE_DIR", "/estat/registre")), "bot-avisos.json")
 CONSERVA_H = 24          # avisos que se guardan en avisos.json
-HISTORIAL_DIES = 366     # episodios de peligro de la página «Perill»: un año (ADR 0071)
+# Lo acabado hace más de ARXIU_DIES días sale de avisos.json, que cada página
+# de la web descarga, y pasa al archivo de su año, que solo lee «Perill» (ADR
+# 0124; hasta la 3.193, un año y se borraba: HISTORIAL_DIES = 366). Más que los
+# 30 días de «Últims 30 dies» de «Perill».
+ARXIU_DIES = 35
 # Más información de cada tipo de aviso, si su texto no lleva ya un enlace
 # (ADR 0071).
 BOMBERS = {"ca": "https://interior.gencat.cat/ca/arees_dactuacio/bombers/actuacions-de-bombers/",
@@ -1143,10 +1149,73 @@ def historial(estat, nous, ahora, anterior=None):
         for e in h:
             if e["clau"].startswith("pla:") and not e.get("fi") and e["clau"][4:] not in visibles:
                 e["fi"] = ahora.isoformat(timespec="minutes")
-    limit = ahora - dt.timedelta(days=HISTORIAL_DIES)
-    estat["historial"] = [e for e in h if dt.datetime.fromisoformat(
-        e.get("fi") or e.get("fins") or e.get("darrer") or e["inici"]) > limit]
-    return estat["historial"]
+    estat["historial"] = h
+    return h
+
+
+def final(e, ahora):
+    """Cuándo acabó un episodio: su final o, en los de AEMET, que no tienen
+    mensaje de final, el fin de su validez si ya ha pasado; None si sigue."""
+    if e.get("fi"):
+        return dt.datetime.fromisoformat(e["fi"])
+    if e.get("fins") and dt.datetime.fromisoformat(e["fins"]) <= ahora:
+        return dt.datetime.fromisoformat(e["fins"])
+    return None
+
+
+def parteix(hist, ahora):
+    """(recents, vells): lo que sigue o acabó hace ARXIU_DIES días o menos, y
+    lo que va a los archivos por año."""
+    limit = ahora - dt.timedelta(days=ARXIU_DIES)
+    recents, vells = [], []
+    for e in hist:
+        fi = final(e, ahora)
+        (vells if fi and fi < limit else recents).append(e)
+    return recents, vells
+
+
+def nom_arxiu(any_):
+    return f"avisos-{any_}.json"
+
+
+def llegeix_arxiu(font):
+    """El historial de un archivo por año (ruta o dirección); [] si no está."""
+    try:
+        if font.startswith("https://"):
+            with urllib.request.urlopen(font, timeout=20) as r:
+                return json.load(r).get("historial") or []
+        with open(font, encoding="utf-8") as f:
+            return json.load(f).get("historial") or []
+    except (OSError, ValueError):
+        return []
+
+
+def arxiva(vells, dir_estat, dir_sortida, anterior=None):
+    """Los episodios viejos, cada uno al archivo del año en que empezó: el
+    propio (en la carpeta del estado), unido con el publicado (al lado de
+    `anterior`, el avisos.json publicado: el NAS y la reserva llevan cada uno
+    el suyo) y con los nuevos, como `fusiona`. Se escribe en las dos carpetas
+    y devuelve los nombres escritos en la de salida."""
+    per_any = {}
+    for e in vells:
+        per_any.setdefault(e["inici"][:4], []).append(e)
+    def publicat(nom):
+        if not anterior:
+            return []
+        if anterior.startswith("https://"):
+            return llegeix_arxiu(anterior.rsplit("/", 1)[0] + "/" + nom)
+        return llegeix_arxiu(os.path.join(os.path.dirname(anterior), nom))
+    noms = []
+    for any_, nous in sorted(per_any.items()):
+        nom = nom_arxiu(any_)
+        tots = fusiona(fusiona(llegeix_arxiu(os.path.join(dir_estat, nom)), publicat(nom)), nous)
+        for carpeta in dict.fromkeys((dir_estat, dir_sortida)):
+            ruta = os.path.join(carpeta, nom)
+            with open(ruta + ".tmp", "w", encoding="utf-8") as f:
+                json.dump({"any": int(any_), "historial": tots}, f, ensure_ascii=False)
+            os.replace(ruta + ".tmp", ruta)
+        noms.append(nom)
+    return noms
 
 
 SENTIT_PREALERTA = {"ca": "Es preveia un risc a mitjà termini. El pla no estava activat: només calia estar-ne pendent.",
@@ -1326,6 +1395,15 @@ def actualitza(casa_json, sortida, ahora=None, anterior=None, avisa=True):
     estat["llista"] = llista
     hist = comunicats(historial(estat, nous, ahora, anterior_publicat(anterior)), salida.get("plans"))
     hist = prealertes(estat, salida, hist, ahora)
+    # Lo acabado hace tiempo, al archivo de su año (ADR 0124): no se pierde y
+    # avisos.json, que descarga cada página, no crece.
+    hist, vells = parteix(hist, ahora)
+    if vells:
+        try:
+            arxiva(vells, os.path.dirname(ESTAT), os.path.dirname(os.path.abspath(sortida)), anterior)
+            estat["historial"] = hist
+        except OSError:
+            hist = sorted(hist + vells, key=lambda e: e["inici"])
     # El enlace va en el aviso, no en el historial: la ficha ya está en la web.
     for a in nous:
         amb_enllac(a, hist)

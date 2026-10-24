@@ -596,6 +596,23 @@ def ruta_avisos():
     return os.path.join(os.environ.get("ESTAT_DIR") or os.path.dirname(A.REGISTRE), "avisos.json")
 
 
+def historial_perill(avisos):
+    """El historial de «Perill» entero: avisos.json y, a su lado, los
+    archivos por año (avisos-AAAA.json, ADR 0124), sin repetir episodios."""
+    res, vistos = [], set()
+    for ruta in [avisos] + sorted(glob.glob(os.path.join(os.path.dirname(avisos), "avisos-20[0-9][0-9].json"))):
+        try:
+            with open(ruta, encoding="utf-8") as f:
+                hist = json.load(f).get("historial") or []
+        except (OSError, ValueError):
+            continue
+        for e in hist:
+            if (e.get("clau"), e.get("inici")) not in vistos:
+                vistos.add((e.get("clau"), e.get("inici")))
+                res.append(e)
+    return res
+
+
 def tots(avui=None, registre=None, emes=None, avisos=None):
     """Todos los días del registro, del primero a hoy. avisos: la ruta del
     historial de «Perill» (avisos.json), para las alertas de cada hora."""
@@ -605,13 +622,7 @@ def tots(avui=None, registre=None, emes=None, avisos=None):
     casa = A._llegeix("estacio-casa.csv")
     meteocat, veines = A._meteocat(), A._veines()
     vent, nuvols = A._llegeix("vent-mitges-hores.csv"), A._llegeix("nuvols-sabadell.csv")
-    trams = []
-    if avisos:
-        try:
-            with open(avisos, encoding="utf-8") as f:
-                trams = trams_perill(json.load(f).get("historial"))
-        except (OSError, ValueError):
-            pass
+    trams = trams_perill(historial_perill(avisos)) if avisos else []
     previstes = per_hora(emes if emes is not None else emissions(registre))
     # Las horas con sol directo sobre el termómetro (ADR 0081), del registro.
     sol = SE.hores_tocades(list(casa), SE.episodis(os.path.join(registre or A.REGISTRE, "sol-estacio.csv")))

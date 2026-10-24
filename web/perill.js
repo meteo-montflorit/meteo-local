@@ -451,8 +451,33 @@ function vesA(id) {
 // Un enllaç dins de la pàgina («Substituït per l'avís de Meteocat»), també.
 window.addEventListener('hashchange', () => vesA(location.hash.slice(1)));
 
+// Els arxius per any (avisos-AAAA.json, ADR 0124): el que va acabar fa més de
+// 35 dies ja no és a avisos.json, que descarrega cada pàgina. Es llegeixen un
+// cop per visita, des del primer any de la web fins a l'actual; un que no hi
+// sigui (cap episodi vell encara) no compta.
+const PRIMER_ANY = 2026;
+let ARXIUS = null;
+function llegeixArxius() {
+  if (!ARXIUS) {
+    const anys = [];
+    for (let a = PRIMER_ANY; a <= new Date().getFullYear(); a++) anys.push(a);
+    // Com l'historial de la gràfica: a IONOS i, en local, al costat de la pàgina.
+    const llegeixAny = (a) => baixa(`${DADES_URL}avisos-${a}.json`).catch(() => baixa(`avisos-${a}.json`));
+    ARXIUS = Promise.all(anys.map((a) => llegeixAny(a).then((d) => d.historial || [], () => [])))
+      .then((ll) => ll.flat());
+  }
+  return ARXIUS;
+}
+
+// El d'avisos.json, si el mateix episodi (clau i començament) és als dos.
+function ambArxius(dades, vells) {
+  const hi = new Set((dades.historial || []).map((e) => `${e.clau}|${e.inici}`));
+  return { ...dades, historial: [...(dades.historial || []), ...vells.filter((e) => !hi.has(`${e.clau}|${e.inici}`))] };
+}
+
 function llegeix() {
-  llegeixDades(FITXER_AVISOS).then((d) => { pinta(d); vesAlAvis(); }, () => {
+  llegeixDades(FITXER_AVISOS).then((d) => llegeixArxius().then((vells) => ambArxius(d, vells)))
+    .then((d) => { pinta(d); vesAlAvis(); }, () => {
     if ($('perill').querySelector('.carregant')) {
       $('perill').replaceChildren();
       $('avis-dades').textContent = T('No s’han pogut carregar els avisos. Torna-ho a provar d’aquí a una estona.');

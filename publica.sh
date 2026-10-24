@@ -120,6 +120,14 @@ if [ -f "$CLAU_IONOS" ] && [ -n "${IONOS:-}" ]; then
     sortida=$?
     echo "$(date '+%F %T')  IONOS ha fallat (sortida $sortida: $(tr '\n' ' ' < "$dades/ionos.err" | cut -c1-300)): es publica a GitHub" >&2
   fi
+  # Los archivos por año del historial de «Perill» (avisos-AAAA.json, ADR
+  # 0124), solo cuando avisos_bot.py ha pasado algo a ellos, y en un envío
+  # aparte: si IONOS los rechazara, los datos de siempre ya han entrado.
+  arxius=$(cd "$dades" && ls avisos-20[0-9][0-9].json 2>/dev/null | tr '\n' ' ' || true)
+  if [ "$a_ionos" = 1 ] && [ -n "$arxius" ]; then
+    tar -czf - -C "$dades" $arxius | ssh -i "$CLAU_IONOS" -o BatchMode=yes -o ConnectTimeout=20 "$IONOS" 2>"$dades/ionos.err" \
+      || echo "$(date '+%F %T')  IONOS ha rebutjat l'arxiu de «Perill» ($arxius): $(tr '\n' ' ' < "$dades/ionos.err" | cut -c1-300)" >&2
+  fi
 fi
 
 # A GitHub: siempre sin IONOS; con IONOS, si cambia el código o toca.

@@ -123,6 +123,12 @@ class Historial(unittest.TestCase):
         self.assertNotIn("avisos", h["13"])
         self.assertEqual(h["12"]["avisos"], [{"nivell": "taronja", "tipus": ["pluja"], "font": "meteocat"}])
         self.assertEqual(h["12"]["riscos_hora"], [{"tipus": "ratxa", "nivell": "groc"}])
+        # El que ja és a l'arxiu de l'any (ADR 0124) també hi és.
+        os.rename(avisos, os.path.join(reg, "avisos-2026.json"))
+        with open(avisos, "w", encoding="utf-8") as f:
+            json.dump({"historial": []}, f)
+        d = next(x for x in H.tots(dt.date(2026, 10, 17), reg, avisos=avisos) if x["dia"] == dia)
+        self.assertEqual(d["hores"][8]["avisos"], [aemet, pre])
         # Sense l'historial de «Perill», res d'ell.
         d = next(x for x in H.tots(dt.date(2026, 10, 17), reg) if x["dia"] == dia)
         self.assertNotIn("avisos", d["hores"][8])
