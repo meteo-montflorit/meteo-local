@@ -221,6 +221,7 @@ Umbrales y lugares, en `config.py`. El porqué, en los ADR.
 | `riera.py` | Lluvia en la cuenca de la riera de Sant Cugat y aviso de atención o peligro de desbordamiento, con registro de episodios (ADR 0027) |
 | `radar_fonts.py` | Apunta lo que daba cada radar y, cada día, elige el que acierta más (ADR 0026) |
 | `nuvols.py` | El cielo de cada hora: mezcla las nubes de cuatro modelos, lee el METAR del aeropuerto de Sabadell y, cada día, elige los pesos que aciertan más (ADR 0088) |
+| `nuvols_satellit.py` | El cielo tapado sobre el barrio según la máscara de nubes de Meteosat (EUMETSAT), en observación, y la pregunta a Juanjo cuando discrepa de Sabadell (ADR 0126) |
 | `registre.py` | Registro en el NAS de lo medido en Montflorit y en la estación particular, y de lo que daban los modelos, para aprender (ADR 0006 y 0012) |
 | `aprenentatge.py` | Aprendizaje de la previsión: regresiones, comprobación y cambio de método (ADR 0012, `docs/estadistica.md`) |
 | `calibracio/` | Descarga del histórico, análisis y calibración (los datos, en `dades/`, no se suben) |

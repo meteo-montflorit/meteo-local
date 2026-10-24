@@ -84,6 +84,11 @@ if [ -n "$ESTAT_DIR" ]; then
   # El mateix amb el plugim que només veu el radar (plugim.py, ADR 0019).
   python3 plugim.py respostes >/dev/null 2>&1 || echo "$(date '+%F %T')  han fallat les respostes del plugim" >&2
   python3 plugim.py pregunta >/dev/null 2>&1 || echo "$(date '+%F %T')  ha fallat la pregunta del plugim" >&2
+  # El cel tapat segons el satèl·lit (Meteosat, EUMETView), en observació, i
+  # la pregunta quan discrepa de Sabadell (nuvols_satellit.py, ADR 0126).
+  timeout 150 python3 nuvols_satellit.py apunta >/dev/null 2>&1 || echo "$(date '+%F %T')  ha fallat el cel del satèl·lit" >&2
+  python3 nuvols_satellit.py respostes >/dev/null 2>&1 || echo "$(date '+%F %T')  han fallat les respostes del cel" >&2
+  python3 nuvols_satellit.py pregunta >/dev/null 2>&1 || echo "$(date '+%F %T')  ha fallat la pregunta del cel" >&2
 fi
 # El historial de la gráfica y el acierto de la previsión (ADR 0099): el
 # índice y los dos últimos días (hoy cambia a cada hora; ayer se cierra a
