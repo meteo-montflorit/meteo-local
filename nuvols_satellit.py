@@ -75,6 +75,11 @@ def quart(t):
     return t.replace(minute=t.minute - t.minute % 15, second=0, microsecond=0)
 
 
+def hora_servidor(t):
+    """L'hora com l'escriu el servidor: «2026-10-24T05:30:00.000Z»."""
+    return t.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
 def baixa(t, obre=urllib.request.urlopen):
     """La imatge de la màscara al voltant del barri a l'hora t: PNG."""
     lat, lon = C.CASA
@@ -84,13 +89,16 @@ def baixa(t, obre=urllib.request.urlopen):
     # valors i no un dibuix, no ofereix la màscara (24-10-2026).
     url = (f"{URL}?service=WMS&version=1.3.0&request=GetMap&layers={CAPA}&styles={ESTIL}&crs=EPSG:4326"
            f"&bbox={lat - dlat},{lon - dlon},{lat + dlat},{lon + dlon}&width={MIDA}&height={MIDA}"
-           f"&format=image/png&transparent=true&time={t.strftime('%Y-%m-%dT%H:%M:00Z')}")
+           f"&format=image/png&transparent=true&time={hora_servidor(t)}")
     with obre(url, timeout=60) as r:
         if not r.headers.get("Content-Type", "").startswith("image/png"):
             raise ValueError("EUMETView no ha tornat cap imatge")
         # Si aquell quart d'hora no hi és, el servidor dona el més proper i ho
         # diu en una capçalera: seria apuntar una imatge amb una altra hora.
-        if "Nearest value used" in (r.headers.get("Warning") or ""):
+        # La capçalera surt també amb la mateixa hora si s'escriu d'una altra
+        # manera (sense mil·lèsimes): només compta si l'hora és una altra.
+        avis = r.headers.get("Warning") or ""
+        if "Nearest value used" in avis and f"time={hora_servidor(t)}" not in avis:
             raise ValueError("EUMETView no té aquell quart d'hora")
         return r.read()
 

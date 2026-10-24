@@ -40,7 +40,11 @@ mes y preguntar a Juanjo cuando discrepen; Juanjo: «sí, prepáralo así».
   en medio (`CAIXA`), en `registre/nuvols-satellit.csv` (`t` en tiempo
   universal, `nuvols` en %, `pixels` con dato). Si el servidor no tiene ese
   cuarto de hora devuelve el más cercano y lo dice en una cabecera
-  (`Warning: 99 Nearest value used`): no se apunta. No se usa en ningún sitio.
+  (`Warning: 99 Nearest value used`): no se apunta. La cabecera sale también
+  con la misma hora si se pide sin milésimas, y en la 3.196.0 eso dejó sin
+  apuntar todos los cuartos: desde la 3.196.1 se pide como la escribe el
+  servidor (`…T05:30:00.000Z`) y solo se descarta si la hora es otra. No se
+  usa en ningún sitio.
 - **`pregunta`**: de 9 a 19 h, si las dos observaciones vigentes (75 minutos
   como mucho) discrepan de verdad, una por debajo del 30 % y la otra por
   encima del 70 %, un mensaje a Juanjo con botones (`confirmacio.py`, como la

@@ -70,7 +70,12 @@ class Satellit(unittest.TestCase):
                 t = url.split("time=")[1]
                 demanats.append(t)
                 if t.startswith("2026-10-24T05:30"):
-                    return Resposta(png(S.MIDA * S.MIDA, 0), avis="99 Nearest value used: time=...")
+                    return Resposta(png(S.MIDA * S.MIDA, 0),
+                                    avis="99 Nearest value used: time=2026-10-24T05:45:00.000Z  (msg_fes:clm)")
+                if t.startswith("2026-10-24T05:00"):
+                    # El servidor avisa amb la mateixa hora: val (24-10-2026).
+                    return Resposta(png(S.MIDA * S.MIDA, 0),
+                                    avis="99 Nearest value used: time=2026-10-24T05:00:00.000Z  (msg_fes:clm)")
                 if t.startswith("2026-10-24T05:15"):
                     return Resposta(b"<xml/>", "text/xml")
                 return Resposta(png(S.MIDA * S.MIDA, 0))
