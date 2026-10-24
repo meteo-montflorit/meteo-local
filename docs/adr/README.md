@@ -125,6 +125,6 @@
 | [0121](0121-el-fondo-de-ara-segun-el-cielo.md) | El fondo de «Ara» según el cielo, con dibujos | aceptado |
 | [0122](0122-la-prevision-de-7-dias.md) | La previsión de 7 días: ECMWF corregido con la estación | aceptado |
 | [0123](0123-un-boton-para-elegir-la-zona-del-barrio.md) | Un botón para elegir la zona del barrio: riera o parte alta | aceptado |
-| [0124](0124-historial-de-lo-medido-en-la-grafica.md) | Historial de lo medido en la gráfica | propuesto |
+| [0124](0124-historial-de-lo-medido-en-la-grafica.md) | Historial de lo medido en la gráfica | aceptado |
 
 Plantilla: [0000-plantilla.md](0000-plantilla.md). Para crear uno: `nuevo-adr "Título"`.

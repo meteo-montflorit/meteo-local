@@ -1,6 +1,6 @@
 # 124. Historial de lo medido en la gráfica
 
-Fecha: 2026-10-24 · Estado: propuesto (rama `historial-mesurat`)
+Fecha: 2026-10-24 · Estado: aceptado
 
 ## Contexto
 
