@@ -108,3 +108,16 @@ Versión 3.191.0.
   la dirección pasa a `?zona=alta` y al recargar se conserva; sin
   desbordamiento; axe-core sin incidencias en toda la página, también a
   1280 px.
+
+## Cambio del 24-10-2026 (3.195.0): la riera, también sin decimal en «Ara»
+
+Juanjo: «para uniformizar la temperatura de la riera de la tarjeta inicial
+debería mostrarse sin decimales como la de la parte alta? así no se ve
+diferencia». El agente estuvo de acuerdo: al cambiar de zona, la cifra pasaba
+de «11,1 °C» a «12 °C», y el resto de la web (gráfica, tramos, semana,
+comparación con ayer, bot) ya va en grados enteros; la décima de la estación
+de casa es real, pero no aporta a quien mira el barrio (la previsión se
+equivoca 0,7 °C de media). Juanjo: «sí, hazlo y publícalo». La temperatura de
+la riera en «Ara» se redondea a grados enteros, como la de la parte alta
+(`casa.js`, `blocAra`); nada más cambia.
+

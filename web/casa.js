@@ -690,9 +690,11 @@ function blocAra(casa, radarDades, vent, veines, hores, mesurada) {
   // La de la zona triada amb el botó de dalt (ADR 0123): a la part alta, la
   // que hi mesuren ara les estacions (casa.dif_alta, part_alta.ara), sense
   // decimal, perquè les de dalt la donen en graus sencers (Juanjo, 23-10-2026);
-  // si no n'hi ha, la de la riera.
+  // si no n'hi ha, la de la riera. La de la riera, també en graus sencers des
+  // de la 3.195.0, perquè canviar de zona no canviï el format i com la resta
+  // de la web (Juanjo, 24-10-2026: «uniformizar … así no se ve diferencia»).
   const dalt = tempAra(casa);
-  temp.append(termometre, zonaTriada() === 'alta' && dalt != null ? `${dalt} °C` : `${coma(casa.temperatura)} °C`);
+  temp.append(termometre, `${zonaTriada() === 'alta' && dalt != null ? dalt : Math.round(casa.temperatura)} °C`);
   const columna = element('div', 'ara-temp-col');
   columna.append(temp);
   // Si el dia és com l'anterior, a sota (comparaDia), també al costat del
