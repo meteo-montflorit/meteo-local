@@ -25,6 +25,14 @@ con lo que se predijo 1h antes de cada hora y con el error, lo mismo con
   media de las dos medias horas y la racha mayor, vent-mitges-hores.csv), y el
   cielo tapado observado en el aeropuerto de Sabadell (nuvols-sabadell.csv,
   desde el 13-10-2026). Solo van las que se saben.
+- Desde la 3.195.0 (formato 9; ADR 0125), lo que decía la web de la parte
+  alta: en `prev`, un cuarto valor, la temperatura prevista más la diferencia
+  de la parte alta (`dif_alta`) de esa hora en esa publicación. El registro la
+  guarda desde la 3.195.0 (`mostrat.dif_alta`); en las publicaciones de antes,
+  desde que la web la mostraba (13-10-2026), se rehace con el mismo cálculo y
+  solo con lo registrado hasta entonces (`difs_alta`). Y el acierto de la
+  parte alta (`temperatura_alta`): el error contra la temperatura medida
+  arriba y, en las mismas horas, el de la riera.
 - Desde la 3.194.1 (formato 8; ADR 0124), la temperatura medida en la parte
   alta (`temperatura_alta`): la mediana de las vecinas de arriba
   (part_alta.ALTES, al menos part_alta.ALTES_MIN), la media del principio y
@@ -102,11 +110,12 @@ MIN_CASOS_PLUJA = 20                     # para dar el acierto de la lluvia (en 
 # El formato de los días: si cambia, se rehacen todos, no solo los últimos
 # (3.137.0: los mm previstos; 3.141.0: la temperatura del tramo, el sol y las
 # franjas; 3.143.0: los mm esperados; 3.194.0: humedad, presión, viento,
-# nubes y las alertas de cada hora; 3.194.1: la parte alta), y lo apunta en el registro. Por tandas: IONOS
+# nubes y las alertas de cada hora; 3.194.1: la parte alta; 3.195.0: su
+# previsión y su acierto), y lo apunta en el registro. Por tandas: IONOS
 # acepta como mucho 12 archivos por envío (reserva/rep-dades.sh, ADR 0057), y
 # todos de golpe se rechazaron (18-10-2026, 22 archivos). Con los 2 días de
 # siempre, el índice, los datos y las 4 imágenes, caben 3 más por pasada.
-FORMAT = 8
+FORMAT = 9
 REFER_PER_PASSADA = 3
 # Si mejora con el tiempo (ADR 0110; Juanjo, 20-10-2026: «dado que la pagina
 # aprende, estaria bien una comparación semana a semana»): por semanas de
@@ -149,6 +158,50 @@ def emissions(registre=None):
                 if hores:
                     res[e["emes"]] = hores
     return res
+
+
+# Desde cuándo la web mostraba la parte alta (ADR 0087): el primer
+# «dif_alta» del registro. Antes no hay previsión de arriba que comprobar.
+ALTA_DES_DE = "2026-10-13T09:00"
+
+
+def difs_alta(emes, registre=None):
+    """Pone en cada hora de cada publicación sin ella `dif_alta`, lo que la
+    web sumaba a la temperatura para la parte alta: como part_alta.a_les_hores,
+    la media de la diferencia de los dos extremos de la hora en la tabla de
+    part_alta.per_hores, calculada solo con lo registrado antes de la
+    publicación; de noche, la del ajuste por nubes y viento que apunta
+    part-alta-nit.csv, si la hay. Las publicaciones de antes de ALTA_DES_DE, sin
+    nada."""
+    dir_ = registre or A.REGISTRE
+    falten = [k for k in emes if k[:16] >= ALTA_DES_DE and any("dif_alta" not in m for m in emes[k].values())]
+    if not falten:
+        return emes
+    casa = SE._llegeix_hores(os.path.join(dir_, "estacio-casa.csv"))
+    veines = {e: SE._llegeix_hores(os.path.join(dir_, f"veina-{e}.csv")) for e in PA.ALTES}
+    eps = SE.episodis(os.path.join(dir_, "sol-estacio.csv"))
+    nit = {}
+    try:
+        with open(os.path.join(dir_, "part-alta-nit.csv"), encoding="utf-8") as f:
+            nit = {(r["fins"], r["emes"]): A._num(r["dif_ajust"]) for r in csv.DictReader(f)}
+    except OSError:
+        pass
+    for k in falten:
+        abans = k[:16]
+        taula = PA.per_hores(dt.datetime.fromisoformat(k), {c: v for c, v in casa.items() if c < abans},
+                             {e: {c: v for c, v in h.items() if c < abans} for e, h in veines.items()}, eps)
+        for fins, m in emes[k].items():
+            if "dif_alta" in m:
+                continue
+            d = nit.get((fins, k))
+            if d is None:
+                hora = P.clau_hora(dt.datetime.fromisoformat(fins).replace(tzinfo=P.ZONA) - dt.timedelta(hours=1)) \
+                    if len(fins) == 16 else P.clau_hora(dt.datetime.fromisoformat(fins) - dt.timedelta(hours=1))
+                vals = [taula.get(PA.hora_solar(c)) for c in (hora, fins)]
+                vals = [v for v in vals if v is not None]
+                d = round(sum(vals) / len(vals), 1) if vals else None
+            m["dif_alta"] = d
+    return emes
 
 
 def per_hora(emes):
@@ -292,11 +345,33 @@ def un_dia(dia, casa, meteocat, veines, previstes, sol=(), vent=None, nuvols=Non
         if riscos:
             f["riscos_hora"] = riscos
         if p:
-            f["prev"] = {str(n): [m.get("temperatura"), m.get("probabilitat"), m.get("pluja_mm")]
+            f["prev"] = {str(n): [m.get("temperatura"), m.get("probabilitat"), m.get("pluja_mm"),
+                                  None if m.get("temperatura") is None or m.get("dif_alta") is None
+                                  else round(m["temperatura"] + m["dif_alta"], 1)]
                          for n, m in sorted(p.items())}
         files.append(f)
     return {"dia": dia.isoformat(), "hores": files,
             "encert": {str(n): encert(files, n) for n in ANTELACIONS}}
+
+
+def _prev_alta(f, n):
+    """La temperatura que decía la web para la parte alta n horas antes."""
+    v = (f.get("prev") or {}).get(str(n))
+    return v[3] if v and len(v) > 3 else None
+
+
+def encert_alta(files, n):
+    """El acierto de la parte alta con n horas de antelación: el error medio
+    contra la temperatura medida arriba, el sesgo y, en las mismas horas, el
+    error de la riera (sin las horas con sol sobre el termómetro de casa, como
+    en la riera, para comparar lo mismo)."""
+    parells = [(_prev_alta(f, n) - f["temperatura_alta"], _prev(f, n)[0] - f["temperatura"]) for f in files
+               if f.get("temperatura_alta") is not None and _prev_alta(f, n) is not None
+               and f["temperatura"] is not None and _prev(f, n)[0] is not None and not f.get("sol")]
+    h = len(parells)
+    return {"error": round(sum(abs(a) for a, _ in parells) / h, 2) if h else None, "hores": h,
+            "biaix": round(sum(a for a, _ in parells) / h, 2) if h else None,
+            "error_riera": round(sum(abs(b) for _, b in parells) / h, 2) if h else None}
 
 
 def _prev(f, n):
@@ -340,6 +415,7 @@ def encert(files, n):
           for f in files if _prev(f, n)[2] is not None and f["pluja_mm"] is not None]
     return {"temperatura": {"error": round(sum(errors) / len(errors), 2) if errors else None, "hores": len(errors),
                             "biaix": round(sum(signes) / len(signes), 2) if signes else None},
+            "temperatura_alta": encert_alta(files, n),
             "pluja": {"plou": plou, "sec": sec, "franges": franges, "brier": brier},
             "mm": {"previst": round(sum(p for p, _ in mm), 1), "mesurat": round(sum(m for _, m in mm), 1),
                    "hores": len(mm)}}
@@ -364,8 +440,12 @@ def suma(encerts):
             fr[1] += pl
             fr[2] = round(fr[2] + sp, 3)
     mms = [e["mm"] for e in encerts if e.get("mm")]
+    altes = [e["temperatura_alta"] for e in encerts if (e.get("temperatura_alta") or {}).get("hores")]
+    ha = sum(a["hores"] for a in altes)
+    pes = lambda k: round(sum(a[k] * a["hores"] for a in altes) / ha, 2) if ha else None  # noqa: E731
     return {"temperatura": {"error": round(err / hores, 2) if hores else None, "hores": hores,
                             "biaix": round(signe / hores, 2) if hores else None},
+            "temperatura_alta": {"error": pes("error"), "hores": ha, "biaix": pes("biaix"), "error_riera": pes("error_riera")},
             "pluja": {"plou": plou, "sec": sec, "franges": franges, "brier": brier},
             "mm": {"previst": round(sum(m["previst"] for m in mms), 1), "mesurat": round(sum(m["mesurat"] for m in mms), 1),
                    "hores": sum(m["hores"] for m in mms)}}
@@ -641,7 +721,7 @@ def tots(avui=None, registre=None, emes=None, avisos=None):
     meteocat, veines = A._meteocat(), A._veines()
     vent, nuvols = A._llegeix("vent-mitges-hores.csv"), A._llegeix("nuvols-sabadell.csv")
     trams = trams_perill(historial_perill(avisos)) if avisos else []
-    previstes = per_hora(emes if emes is not None else emissions(registre))
+    previstes = per_hora(difs_alta(emes if emes is not None else emissions(registre), registre))
     # Las horas con sol directo sobre el termómetro (ADR 0081), del registro.
     sol = SE.hores_tocades(list(casa), SE.episodis(os.path.join(registre or A.REGISTRE, "sol-estacio.csv")))
     dies, d = [], PRIMER_DIA
@@ -703,7 +783,14 @@ def index(dies, avui, comp=None):
             r = resum_comparacio(dies_f)
             if r["temperatura"]["hores"] or r["pluja"]["hores"]:
                 oficial[font] = {**r, "des_de": min(dies_f)}
-        return {"darrers": suma([e for _, e in darrers]),
+        res_darrers = suma([e for _, e in darrers])
+        # La parte alta contra la riera en las mismas horas (ADR 0125): en qué
+        # parte de los remuestreos por días se equivoca menos la parte alta.
+        altes = [(d, e["temperatura_alta"]) for d, e in darrers if (e.get("temperatura_alta") or {}).get("hores")]
+        res_darrers["temperatura_alta"]["seguretat"] = R.seguretat(
+            [a["error"] * a["hores"] for _, a in altes], [a["error_riera"] * a["hores"] for _, a in altes],
+            [d for d, _ in altes]) if altes else None
+        return {"darrers": res_darrers,
                 "anteriors": suma(finestra(fi - dt.timedelta(days=2 * DIES_FINESTRA),
                                            fi - dt.timedelta(days=DIES_FINESTRA))),
                 "mesos": {m: suma(e) for m, e in sorted(mesos.items())},

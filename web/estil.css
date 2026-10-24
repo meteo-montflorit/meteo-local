@@ -1434,7 +1434,14 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .fb-lliscador-eix span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .fb-dia { margin: .2rem 0 .4rem; }
 .fb-xifres { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin: .5rem 0; }
-@media (max-width: 40rem) { .fb-xifres { grid-template-columns: repeat(2, 1fr); } }
+/* La darrera, si es queda sola a la fila, d'un costat a l'altre (amb la part
+   alta en són set, ADR 0125): sense forats. */
+.fb-xifres > :last-child:nth-child(3n+1) { grid-column: 1 / -1; }
+@media (max-width: 40rem) {
+  .fb-xifres { grid-template-columns: repeat(2, 1fr); }
+  .fb-xifres > :last-child:nth-child(3n+1) { grid-column: auto; }
+  .fb-xifres > :last-child:nth-child(2n+1) { grid-column: 1 / -1; }
+}
 .fb-xifra { background: var(--superficie); border: 1px solid var(--vora); border-radius: .6rem; padding: .6rem .75rem; }
 .fb-xifra p { margin: 0; }
 .fb-xifra-titol { color: var(--suau); font-size: .9rem; }

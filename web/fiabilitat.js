@@ -83,13 +83,26 @@ function xifra(titol, valor, peu, nota) {
 
 function xifraTemperatura(t, minim) {
   if (!t || t.error == null || t.hores < minim) {
-    return xifra(T('Temperatura'), '—', T`Encara poques dades (${t ? t.hores : 0} hores).`);
+    return xifra(T('Temperatura a la riera'), '—', T`Encara poques dades (${t ? t.hores : 0} hores).`);
   }
   let nota = null;
   if (t.biaix != null && Math.abs(t.biaix) >= 0.1) {
     nota = t.biaix > 0 ? T`Sol dir ${coma(t.biaix)}\u00a0°C més del que fa.` : T`Sol dir ${coma(-t.biaix)}\u00a0°C menys del que fa.`;
   }
-  return xifra(T('Temperatura'), `${coma(t.error)}\u00a0°C`, T('és el que s’equivoca, de mitjana'), nota);
+  return xifra(T('Temperatura a la riera'), `${coma(t.error)}\u00a0°C`, T('és el que s’equivoca, de mitjana'), nota);
+}
+
+// La part alta (ADR 0125): el que diu la web per a dalt contra el que mesuren
+// les veïnes de dalt i, a les mateixes hores, el que s'equivoca a la riera.
+function xifraAlta(a, minim) {
+  if (!a || a.error == null || a.hores < minim) {
+    return xifra(T('Temperatura a la part alta'), '—', T`Encara poques dades (${a ? a.hores : 0} hores).`);
+  }
+  const notes = [T`A les mateixes hores, a la riera: ${coma(a.error_riera)}\u00a0°C; la diferència ${textSegur(a.seguretat)}.`];
+  if (a.biaix != null && Math.abs(a.biaix) >= 0.1) {
+    notes.push(a.biaix > 0 ? T`Sol dir ${coma(a.biaix)}\u00a0°C més del que fa.` : T`Sol dir ${coma(-a.biaix)}\u00a0°C menys del que fa.`);
+  }
+  return xifra(T('Temperatura a la part alta'), `${coma(a.error)}\u00a0°C`, T('és el que s’equivoca, de mitjana'), notes.join(' '));
 }
 
 // La pluja, amb el que va passar de veritat: de les hores en què deia que
@@ -136,6 +149,7 @@ function pintaXifres(e) {
   const m = INDEX.minims || {};
   const p = e.darrers.pluja;
   $('xifres').replaceChildren(xifraTemperatura(e.darrers.temperatura, m.temperatura_hores || 48),
+    xifraAlta(e.darrers.temperatura_alta, m.temperatura_hores || 48),
     xifraPluja(p, true, m.pluja_casos || 20), xifraPluja(p, false, m.pluja_casos || 20),
     xifraOficial('Meteocat', e.oficial && e.oficial.meteocat), xifraOficial('AEMET', e.oficial && e.oficial.aemet),
     xifraMillora(e.millora));

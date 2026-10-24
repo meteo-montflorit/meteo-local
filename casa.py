@@ -680,6 +680,8 @@ def filas_registro(desde, h, e, mostradas, casa=None, avisos=None, planes=None, 
                         "segons_radar": f.get("segons_radar", False), "plou_ara": f.get("plou_ara", False),
                         "ratxa": f.get("ratxa"), "nuvols": f.get("nuvols"),
                         "avisos": f.get("avisos") or [],
+                        # Lo que sumaba para la parte alta, para su acierto (ADR 0125).
+                        "dif_alta": f.get("dif_alta"),
                         "riscos": riscos_hora(fin - dt.timedelta(hours=1), fin, riscos)}
         # Lo que daba el radar llevado hacia delante, para aprender (ADR 0019).
         d["radar_mm"] = (f.get("radar") or {}).get("mm")

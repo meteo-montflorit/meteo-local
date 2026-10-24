@@ -1553,6 +1553,21 @@ con lo medido en Montflorit:
   apartado 6). Un sesgo negativo quiere decir que suele dar menos
   temperatura de la que hace. Las horas con sol directo sobre el termómetro
   (apartado 17) no cuentan, como en el aprendizaje. Se da desde 48 horas.
+- **Temperatura en la parte alta** (ADR 0125): el mismo EMA y el mismo sesgo,
+  con la previsión de arriba, $T^{\text{prevista}}_h + \Delta_h$ (la de la
+  riera más la diferencia de la parte alta de esa hora en esa publicación,
+  apartado 6 y ADR 0087), contra la temperatura medida arriba: en cada extremo
+  de la hora, la mediana de las vecinas de arriba (con dos como mínimo), y la
+  media de los dos. Al lado, el EMA de la riera **en las mismas horas**, y si
+  la diferencia es casualidad con el remuestreo por días del apartado
+  siguiente, sobre las sumas de error de cada día. Cuenta desde el 13-10-2026,
+  cuando la web empezó a dar la parte alta. El registro guarda $\Delta_h$
+  desde la 3.195.0; en las publicaciones de antes se rehace con el mismo
+  cálculo de la web y solo con lo registrado hasta entonces (la mediana de 30
+  días por hora solar y, de noche, el ajuste apuntado en
+  `part-alta-nit.csv`). Las vecinas dan grados enteros: el error de redondeo
+  de una lectura es de hasta medio grado, y una parte del EMA de arriba viene
+  de la medida, no de la previsión.
 - **Lluvia**: el error de Brier de la probabilidad anunciada $p_h$ contra lo
   que pasó, $o_h = 1$ si llovió (0,2 mm o más, con `aprenentatge.observada`:
   casa, las vecinas y, para las horas secas, Meteocat) y 0 si no,

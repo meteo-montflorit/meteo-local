@@ -101,6 +101,36 @@ class Historial(unittest.TestCase):
         self.assertEqual(d["hores"][9]["temperatura_alta"], 18.5)    # (17,5 + 19,5) / 2
         self.assertNotIn("temperatura_alta", d["hores"][10])         # a les 11, només una veïna
 
+    def test_l_encert_de_la_part_alta(self):
+        # ADR 0125: el que deia la web per a dalt (temperatura + dif_alta) contra
+        # la mesurada per les veïnes de dalt, i la riera a les mateixes hores.
+        files = [{"temperatura": 15, "temperatura_alta": 17, "prev": {"1": [14, 0, 0, 16.5]}},
+                 {"temperatura": 16, "temperatura_alta": 18, "prev": {"1": [16, 0, 0, 19.0]}},
+                 {"temperatura": 16, "temperatura_alta": None, "prev": {"1": [16, 0, 0, 18.0]}},
+                 {"temperatura": 20, "temperatura_alta": 22, "sol": True, "prev": {"1": [25, 0, 0, 27.0]}}]
+        self.assertEqual(H.encert_alta(files, 1), {"error": 0.75, "hores": 2, "biaix": 0.25, "error_riera": 0.5})
+        self.assertEqual(H.encert_alta(files, 2)["hores"], 0)
+        t = H.suma([{"temperatura": {"error": 1, "hores": 1, "biaix": 0}, "pluja": {"plou": [0, 0], "sec": [0, 0]},
+                     "temperatura_alta": {"error": 1.0, "hores": 2, "biaix": 1.0, "error_riera": 0.5}},
+                    {"temperatura": {"error": 1, "hores": 1, "biaix": 0}, "pluja": {"plou": [0, 0], "sec": [0, 0]},
+                     "temperatura_alta": {"error": 0.4, "hores": 3, "biaix": -0.4, "error_riera": 0.2}}])
+        self.assertEqual(t["temperatura_alta"], {"error": 0.64, "hores": 5, "biaix": 0.16, "error_riera": 0.32})
+
+    def test_la_diferencia_de_la_part_alta_es_refa(self):
+        # Les publicacions d'abans de desar «dif_alta»: el mateix càlcul que la
+        # web, amb el que hi havia registrat; abans del 13-10-2026, res; la que
+        # ja la porta, igual. Sense registre de dalt, la taula de partida.
+        import part_alta as PA
+        emes = {"2026-10-12T09:03+02:00": {"2026-10-12T11:00": {"temperatura": 15}},
+                "2026-10-16T09:03+02:00": {"2026-10-16T11:00": {"temperatura": 15},
+                                           "2026-10-16T12:00": {"temperatura": 16, "dif_alta": 0.7}}}
+        H.difs_alta(emes, self.dir.name)
+        self.assertNotIn("dif_alta", emes["2026-10-12T09:03+02:00"]["2026-10-12T11:00"])
+        self.assertEqual(emes["2026-10-16T09:03+02:00"]["2026-10-16T12:00"]["dif_alta"], 0.7)
+        taula = PA.inicial()
+        esperat = round((taula[PA.hora_solar("2026-10-16T10:00")] + taula[PA.hora_solar("2026-10-16T11:00")]) / 2, 1)
+        self.assertEqual(emes["2026-10-16T09:03+02:00"]["2026-10-16T11:00"]["dif_alta"], esperat)
+
     def test_les_alertes_de_cada_hora(self):
         # ADR 0124: a l'historial, les alertes de cada hora en el format de la
         # gràfica. El que pintava la gràfica (mostrat), si es va desar; si no,
