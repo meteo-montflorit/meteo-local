@@ -58,6 +58,31 @@ ahí el historial quedaba escondido.
   `historial.py` (formato 6) lo añade a cada hora solo cuando se sabe; al
   cambiar el formato, los días ya publicados se rehacen solos, tres por
   pasada. Cada día pasa de unos 14 a unos 21 KB.
+- **Las alertas de cada hora, con la misma franja que la previsión**
+  (Juanjo, 24-10-2026: «en el historial deberían aparecer las alertas que
+  afectan a cada uno, es posible?»; el agente lo entendió como cada día y
+  propuso cómo, y Juanjo lo aprobó): una fila por organismo, del color del
+  nivel y solo en las horas en que estuvo en vigor; tocar un tramo dice qué
+  era, y la ficha de cada hora lo añade. `historial.py` (formato 7) pone en
+  cada hora `avisos` y `riscos_hora`, el formato de la gráfica de la
+  previsión:
+  - AEMET, Meteocat y los riesgos de la propia web: lo que pintaba la gráfica
+    en la publicación más cercana antes de la hora, que el registro guarda
+    desde la 3.194.0 (`mostrat.avisos` y `mostrat.riscos`; `casa.riscos_hora`
+    hace lo mismo que `riscosHora` de la web).
+  - En los días de antes (4-24 de octubre): AEMET, del historial de «Perill»
+    (desde que valía hasta que acabó o lo sustituyó Meteocat); Meteocat, de
+    la marca que el registro guardaba cada hora para el aprendizaje (lluvia o
+    tiempo violento, moderado o alto: `avis_meteocat`, `avis_meteocat_alt`),
+    sin el fenómeno exacto, y dicho «pluja». Los riesgos propios de esos días
+    no se guardaron y no salen (el viento fuerte previsto del 19-10).
+  - Siempre, del historial de «Perill» (`avisos.json` del estado,
+    `historial.ruta_avisos`): los planes de Protección Civil, en su fase
+    («Protecció Civil · INUNCAT en alerta», también la prealerta), los
+    incendios («Bombers») y la riera, mientras estuvieron en curso.
+  En el móvil, como la gráfica del historial se desplaza, los nombres de las
+  filas van siempre arriba y fijos a la izquierda, con las cifras de la
+  escala; un día pasado se abre en las 0 h y las 24 horas, en la última.
 - La escala de grados a la izquierda, como en «Fiabilitat», y fija al
   desplazar la gráfica (antes se perdía; vale también para «Fiabilitat»).
 - **El resumen debajo**, como conclusión (`resumMesurat`): «No ha plogut» o
@@ -84,6 +109,8 @@ ahí el historial quedaba escondido.
 
 ## Consecuencias y riesgos
 
+- Las alertas de Meteocat de antes del 24 de octubre son aproximadas: la
+  marca horaria no distingue la lluvia del tiempo violento.
 - Solo hay datos desde el 4 de octubre de 2026 (las nubes, desde el 13). El
   viento no es del barrio (el anemómetro de casa no se usa) ni las nubes
   tampoco (Sabadell, a unos 8 km); la parte alta no se mide.
@@ -107,6 +134,12 @@ ahí el historial quedaba escondido.
   días, y el 18 de octubre en la web con viento, humedad, presión y nubes, en
   móvil (WebKit y Chromium) y escritorio; axe-core sin infracciones con todas
   las capas, en Chromium y Firefox, claro y oscuro.
+- Alertas: `test_les_alertes_de_cada_hora` (lo guardado, lo reconstruido, los
+  planes y la prealerta superpuestos, sin «Perill»), `test_riscos_de_la_hora`
+  (`casa.riscos_hora`). Con el registro y el historial de «Perill» reales, los
+  incendios del 10 y el 16, el INUNCAT del 15 al 20, AEMET y Meteocat del 17
+  al 20 y el aviso de AEMET de hoy; el 19 de octubre en el móvil (WebKit,
+  Chromium y Firefox) con los nombres fijos; axe-core sin infracciones.
 - En un servidor local con los datos reales de IONOS (24-10-2026): las 24
   horas, el 18 de octubre con 8,6 mm, las flechas, el enlace directo, volver
   a la previsión y «Fiabilitat» sin cambios. `probar-web` en Chromium,

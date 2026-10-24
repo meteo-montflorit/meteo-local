@@ -86,6 +86,47 @@ class Historial(unittest.TestCase):
         self.assertNotIn("ratxa", g)
         self.assertNotIn("nuvols", g)
 
+    def test_les_alertes_de_cada_hora(self):
+        # ADR 0124: a l'historial, les alertes de cada hora en el format de la
+        # gràfica. El que pintava la gràfica (mostrat), si es va desar; si no,
+        # l'AEMET de l'historial de «Perill» i Meteocat de la seva marca. I
+        # sempre els plans, la prealerta, els incendis i la riera.
+        reg = self.dir.name
+        dia = "2026-10-16"
+        with open(os.path.join(reg, "casa-2026-10.jsonl"), "w", encoding="utf-8") as f:
+            hores = [{"fins": f"{dia}T{h:02d}:00", "avis_meteocat": 1.0 if h == 10 else 0.0, "avis_meteocat_alt": 0.0,
+                      "mostrat": {"temperatura": 15, "probabilitat": 0, "pluja_mm": 0}} for h in range(9, 12)]
+            hores.append({"fins": f"{dia}T13:00", "mostrat": {"temperatura": 15, "probabilitat": 0, "pluja_mm": 0,
+                          "avisos": [{"nivell": "taronja", "tipus": ["pluja"], "font": "meteocat"}],
+                          "riscos": [{"tipus": "ratxa", "nivell": "groc"}]}})
+            f.write(json.dumps({"emes": f"{dia}T07:03+02:00", "hores": hores}) + "\n")
+        avisos = os.path.join(reg, "avisos.json")
+        with open(avisos, "w", encoding="utf-8") as f:
+            json.dump({"historial": [
+                {"clau": "aemet:tempestes:2026-10-16T08:00:00+02:00", "inici": "2026-10-15T20:00+02:00", "nivell": "groc",
+                 "comenca": "2026-10-16T08:00:00+02:00", "fins": "2026-10-16T09:59:59+02:00"},
+                {"clau": "pla:INUNCAT", "inici": "2026-10-16T09:30+02:00", "nivell": "pc", "ca": "🟠 <b>en fase d'alerta</b>",
+                 "fi": "2026-10-16T11:10+02:00"},
+                {"clau": "prealerta:INUNCAT", "inici": "2026-10-16T07:10+02:00", "nivell": "prealerta",
+                 "fi": "2026-10-16T09:30+02:00"}]}, f)
+        d = next(x for x in H.tots(dt.date(2026, 10, 17), reg, avisos=avisos) if x["dia"] == dia)
+        h = {f["hora"][11:13]: f for f in d["hores"]}
+        aemet = {"font": "aemet", "nivell": "groc", "tipus": ["tempestes"]}
+        pre = {"font": "pc", "nivell": "groc", "tipus": ["INUNCAT"], "fase": "prealerta"}
+        alerta = {"font": "pc", "nivell": "taronja", "tipus": ["INUNCAT"], "fase": "alerta"}
+        # Sense mostrat.avisos: l'AEMET de «Perill» i Meteocat de la marca (la
+        # de la fila que acaba a les 10, la de 9 a 10).
+        self.assertEqual(h["08"]["avisos"], [aemet, pre])
+        self.assertEqual(h["09"]["avisos"], [aemet, {"font": "meteocat", "nivell": "groc", "tipus": ["pluja"]}, alerta, pre])
+        self.assertEqual(h["10"]["avisos"], [alerta])
+        self.assertEqual(h["11"]["avisos"], [alerta])                # sense publicació: només «Perill»
+        self.assertNotIn("avisos", h["13"])
+        self.assertEqual(h["12"]["avisos"], [{"nivell": "taronja", "tipus": ["pluja"], "font": "meteocat"}])
+        self.assertEqual(h["12"]["riscos_hora"], [{"tipus": "ratxa", "nivell": "groc"}])
+        # Sense l'historial de «Perill», res d'ell.
+        d = next(x for x in H.tots(dt.date(2026, 10, 17), reg) if x["dia"] == dia)
+        self.assertNotIn("avisos", d["hores"][8])
+
     def test_encert_per_antelacio(self):
         e = next(x for x in self.dies if x["dia"] == "2026-10-16")["encert"]
         # Amb 1 h: el tram de 6 a 7 (mitjana 21,5 °C) amb la de les 6:03 (27 °C: 5,5

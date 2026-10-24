@@ -640,9 +640,29 @@ def previsio(desde, h, e, avisos, model=None, casa=None, nc=None, planes=None, r
     return filas
 
 
-def filas_registro(desde, h, e, mostradas, casa=None, avisos=None, planes=None, riera=None, veines=None):
+def riscos_hora(ini, fin, riscos, ahora=None):
+    """Los riesgos de la propia web (riscos.py) que la gráfica pinta en la
+    hora, como riscosHora de web/grafica.js: los previstos, si su franja la
+    toca; los de ahora, solo en la hora en curso."""
+    ahora = ahora or P.AHORA
+    res = []
+    for r in riscos or []:
+        if r.get("origen") == "previsio":
+            if not (r.get("des_de") and dt.datetime.fromisoformat(r["des_de"]) < fin
+                    and dt.datetime.fromisoformat(r["fins"]) > ini):
+                continue
+        elif not ini <= ahora < fin:
+            continue
+        res.append({"tipus": r["tipus"], "nivell": r["nivell"]})
+    return res
+
+
+def filas_registro(desde, h, e, mostradas, casa=None, avisos=None, planes=None, riera=None, veines=None,
+                   riscos=None):
     """Todo lo que los modelos daban para cada hora de la tabla, junto a lo que
-    mostró la página: lo que hace falta para aprender de los fallos (ADR 0012)."""
+    mostró la página: lo que hace falta para aprender de los fallos (ADR 0012).
+    Desde la 3.194.0, también los avisos y riesgos que pintaba la gráfica en
+    cada hora, para el historial (ADR 0124)."""
     prob = prob_ensemble(e)
     indice = {t: i for i, t in enumerate(h["time"])}
     prever = al_prever(desde, h, casa, riera, veines)
@@ -658,7 +678,9 @@ def filas_registro(desde, h, e, mostradas, casa=None, avisos=None, planes=None, 
         d["mostrat"] = {"pluja_mm": f["pluja_mm"], "probabilitat": f["probabilitat"],
                         "temperatura": f["temperatura"], "segons_estacio": f["segons_estacio"],
                         "segons_radar": f.get("segons_radar", False), "plou_ara": f.get("plou_ara", False),
-                        "ratxa": f.get("ratxa"), "nuvols": f.get("nuvols")}
+                        "ratxa": f.get("ratxa"), "nuvols": f.get("nuvols"),
+                        "avisos": f.get("avisos") or [],
+                        "riscos": riscos_hora(fin - dt.timedelta(hours=1), fin, riscos)}
         # Lo que daba el radar llevado hacia delante, para aprender (ADR 0019).
         d["radar_mm"] = (f.get("radar") or {}).get("mm")
         d["radar_prob"] = (f.get("radar") or {}).get("prob")
@@ -1043,7 +1065,8 @@ def recoger(anterior=None):
             if salida["hores"] and not salida.get("previsio_de"):
                 r = salida.get("riera")
                 R.apunta_casa(P.AHORA, filas_registro(P.AHORA, h, e, salida["hores"][:HORAS], casa,
-                                                      avisos, planes, salida.get("riera"), veines),
+                                                      avisos, planes, salida.get("riera"), veines,
+                                                      salida.get("riscos")),
                               salida["ara_casa"], {"pluja_1h": r["mm_1h"], "fins": r["fins"]} if r else None,
                               pluja_veines_ara(veines) if veines else None)
         except Exception as ex:

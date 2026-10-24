@@ -75,6 +75,20 @@ class Registre(unittest.TestCase):
         finally:
             casa.SMP_ACTUAL = vell
 
+    def test_riscos_de_la_hora(self):
+        # ADR 0124: el registre desa els riscos propis que la gràfica pinta a
+        # cada hora, com riscosHora de grafica.js: els previstos, si la franja
+        # la toca; els d'ara, només a l'hora en curs.
+        ara = dt.datetime(2026, 10, 19, 13, 20, tzinfo=TZ)
+        riscos = [{"tipus": "ratxa", "nivell": "groc", "origen": "previsio",
+                   "des_de": "2026-10-19T17:00+02:00", "fins": "2026-10-19T18:00+02:00"},
+                  {"tipus": "pluja_30min", "nivell": "taronja", "origen": "mesura", "des_de": None, "fins": None}]
+        hora = lambda h: (dt.datetime(2026, 10, 19, h, tzinfo=TZ), dt.datetime(2026, 10, 19, h + 1, tzinfo=TZ))  # noqa: E731
+        self.assertEqual(casa.riscos_hora(*hora(17), riscos, ara), [{"tipus": "ratxa", "nivell": "groc"}])
+        self.assertEqual(casa.riscos_hora(*hora(13), riscos, ara), [{"tipus": "pluja_30min", "nivell": "taronja"}])
+        self.assertEqual(casa.riscos_hora(*hora(15), riscos, ara), [])
+        self.assertEqual(casa.riscos_hora(*hora(15), None, ara), [])
+
     def test_cinc_minuts_de_casa(self):
         # Trams complets de 5 minuts; el que passa per mitjanit, amb l'acumulat que torna a zero.
         filas = [lectura("23:50", 5.0, dia=4), lectura("23:55", 5.4, dia=4), lectura("00:00", 5.6),

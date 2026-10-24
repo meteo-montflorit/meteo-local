@@ -25,6 +25,15 @@ con lo que se predijo 1h antes de cada hora y con el error, lo mismo con
   media de las dos medias horas y la racha mayor, vent-mitges-hores.csv), y el
   cielo tapado observado en el aeropuerto de Sabadell (nuvols-sabadell.csv,
   desde el 13-10-2026). Solo van las que se saben.
+- Desde la 3.194.0 (formato 7; ADR 0124), las alertas de cada hora, en el
+  formato de la gráfica de la previsión (`avisos`, `riscos_hora`): las de
+  AEMET y Meteocat y los riesgos de la propia web, lo que pintaba la gráfica
+  en la publicación más cercana antes de la hora (`mostrat`); en los días de
+  antes de guardarlo, las de AEMET del historial de «Perill» (desde que valían
+  hasta que acabaron) y las de Meteocat de la marca de cada hora (lluvia o
+  tiempo violento, moderado o alto). Y siempre, del historial de «Perill»
+  (avisos.json), los planes de Protección Civil (también la prealerta), los
+  incendios y la riera, mientras estuvieron en curso.
 - Lo previsto: lo que mostraba la web (`mostrat` de casa-AAAA-MM.jsonl, que
   apunta cada hora la previsión publicada) en la publicación de unas N horas
   antes del comienzo de la hora (entre N h y media antes y N h y media menos
@@ -85,12 +94,12 @@ MIN_HORES_TEMP = 48                      # para dar el error de la temperatura
 MIN_CASOS_PLUJA = 20                     # para dar el acierto de la lluvia (en cada sentido)
 # El formato de los días: si cambia, se rehacen todos, no solo los últimos
 # (3.137.0: los mm previstos; 3.141.0: la temperatura del tramo, el sol y las
-# franjas; 3.143.0: los mm esperados; 3.194.0: humedad, presión, viento y
-# nubes), y lo apunta en el registro. Por tandas: IONOS
+# franjas; 3.143.0: los mm esperados; 3.194.0: humedad, presión, viento,
+# nubes y las alertas de cada hora), y lo apunta en el registro. Por tandas: IONOS
 # acepta como mucho 12 archivos por envío (reserva/rep-dades.sh, ADR 0057), y
 # todos de golpe se rechazaron (18-10-2026, 22 archivos). Con los 2 días de
 # siempre, el índice, los datos y las 4 imágenes, caben 3 más por pasada.
-FORMAT = 6
+FORMAT = 7
 REFER_PER_PASSADA = 3
 # Si mejora con el tiempo (ADR 0110; Juanjo, 20-10-2026: «dado que la pagina
 # aprende, estaria bien una comparación semana a semana»): por semanas de
@@ -126,7 +135,10 @@ def emissions(registre=None):
                     e = json.loads(linia)
                 except ValueError:
                     continue
-                hores = {h["fins"]: h["mostrat"] for h in e.get("hores") or [] if h.get("mostrat")}
+                # Les marques de Meteocat de l'hora (senyals_avis), per a
+                # l'historial dels dies d'abans que es desés el que pintava.
+                hores = {h["fins"]: {**h["mostrat"], **{k: h[k] for k in ("avis_meteocat", "avis_meteocat_alt") if k in h}}
+                         for h in e.get("hores") or [] if h.get("mostrat")}
                 if hores:
                     res[e["emes"]] = hores
     return res
@@ -176,7 +188,64 @@ def vent_tram(vent, fins):
     return (round(sum(mitges) / 2) if None not in mitges else None), A.ratxa_observada(vent, fins)
 
 
-def un_dia(dia, casa, meteocat, veines, previstes, sol=(), vent=None, nuvols=None):
+def _moment(iso):
+    return dt.datetime.fromisoformat(iso) if iso else None
+
+
+def trams_perill(hist, ahora=None):
+    """Del historial de «Perill», lo que estuvo en curso y cuándo:
+    [(inici, fi, avís)], con el avís en el formato de la gráfica ({font,
+    nivell, tipus}, y la fase en los planes). Los de AEMET, desde que valían
+    hasta que acabaron (para los días sin `mostrat.avisos`, con la clave
+    `aemet`); los planes, la prealerta, los incendios y la riera, siempre.
+    Meteocat y los riesgos propios no: sus franjas no se guardaban."""
+    ahora = ahora or dt.datetime.now().astimezone()
+    res = []
+    for e in hist or []:
+        clau = e.get("clau") or ""
+        tipus = clau.split(":")[0]
+        fi = min(t for t in (_moment(e.get("fi")), _moment(e.get("fins")), ahora) if t)
+        if tipus == "aemet":
+            ini = _moment(e.get("comenca")) or _moment(clau.split(":", 2)[2])
+            avis = {"font": "aemet", "nivell": e.get("nivell"), "tipus": [clau.split(":")[1]]}
+        elif tipus in ("pla", "prealerta"):
+            ini = _moment(e["inici"])
+            fase = "prealerta" if tipus == "prealerta" else "emergència" if "emerg" in (e.get("ca") or "") else "alerta"
+            avis = {"font": "pc", "nivell": {"prealerta": "groc", "alerta": "taronja"}.get(fase, "vermell"),
+                    "tipus": [clau.split(":")[1]], "fase": fase}
+        elif tipus == "incendi":
+            ini = _moment(e["inici"])
+            avis = {"font": "bombers", "nivell": "vermell", "tipus": ["incendi"]}
+        elif tipus == "riera":
+            ini = _moment(e["inici"])
+            avis = {"font": "web", "nivell": "vermell" if e.get("nivell") == "perill" else "taronja", "tipus": ["riera"]}
+        else:
+            continue
+        if ini and fi > ini:
+            res.append((ini, fi, tipus, avis))
+    return res
+
+
+def alertes_hora(hora, fins, m, trams):
+    """(avisos, riscos_hora) de la hora: lo que pintaba la gráfica (`mostrat`)
+    o, si es de antes de guardarlo, AEMET del historial y Meteocat de su
+    marca; y siempre los planes, los incendios y la riera."""
+    ini = dt.datetime.fromisoformat(hora).replace(tzinfo=P.ZONA) if len(hora) == 16 else dt.datetime.fromisoformat(hora)
+    fi = ini + dt.timedelta(hours=1)
+    dins = [(t, a) for i, f, t, a in trams if i < fi and f > ini]
+    m = m or {}
+    if "avisos" in m:
+        avisos, riscos = list(m["avisos"]), list(m.get("riscos") or [])
+    else:
+        avisos, riscos = [a for t, a in dins if t == "aemet"], []
+        if m.get("avis_meteocat"):
+            avisos.append({"font": "meteocat", "nivell": "taronja" if m.get("avis_meteocat_alt") else "groc",
+                           "tipus": ["pluja"]})
+    avisos += [a for t, a in dins if t != "aemet" and a not in avisos]
+    return avisos, riscos
+
+
+def un_dia(dia, casa, meteocat, veines, previstes, sol=(), vent=None, nuvols=None, trams=()):
     """El día, para la web: {dia, hores: [...], encert: {N: …}}. sol: las
     horas en punto con sol directo sobre el termómetro (sol_estacio.hores_tocades);
     vent: vent-mitges-hores.csv; nuvols: nuvols-sabadell.csv (por «fins»)."""
@@ -198,6 +267,12 @@ def un_dia(dia, casa, meteocat, veines, previstes, sol=(), vent=None, nuvols=Non
         if hora in sol or fins in sol:
             f["sol"] = True
         p = previstes.get(fins)
+        # Les alertes, de la publicació més propera abans de l'hora (ADR 0124).
+        avisos, riscos = alertes_hora(hora, fins, p[min(p)] if p else None, trams)
+        if avisos:
+            f["avisos"] = avisos
+        if riscos:
+            f["riscos_hora"] = riscos
         if p:
             f["prev"] = {str(n): [m.get("temperatura"), m.get("probabilitat"), m.get("pluja_mm")]
                          for n, m in sorted(p.items())}
@@ -515,20 +590,34 @@ def canvis(dies, dir_=None):
     return sorted(res, key=lambda c: c["dia"], reverse=True)
 
 
-def tots(avui=None, registre=None, emes=None):
-    """Todos los días del registro, del primero a hoy."""
+def ruta_avisos():
+    """El historial de «Perill» que publica.sh deja en la carpeta del estado
+    (ESTAT_DIR; en el NAS, /estat/avisos.json, al lado del registro)."""
+    return os.path.join(os.environ.get("ESTAT_DIR") or os.path.dirname(A.REGISTRE), "avisos.json")
+
+
+def tots(avui=None, registre=None, emes=None, avisos=None):
+    """Todos los días del registro, del primero a hoy. avisos: la ruta del
+    historial de «Perill» (avisos.json), para las alertas de cada hora."""
     avui = avui or dt.date.today()
     if registre:
         A.REGISTRE = registre
     casa = A._llegeix("estacio-casa.csv")
     meteocat, veines = A._meteocat(), A._veines()
     vent, nuvols = A._llegeix("vent-mitges-hores.csv"), A._llegeix("nuvols-sabadell.csv")
+    trams = []
+    if avisos:
+        try:
+            with open(avisos, encoding="utf-8") as f:
+                trams = trams_perill(json.load(f).get("historial"))
+        except (OSError, ValueError):
+            pass
     previstes = per_hora(emes if emes is not None else emissions(registre))
     # Las horas con sol directo sobre el termómetro (ADR 0081), del registro.
     sol = SE.hores_tocades(list(casa), SE.episodis(os.path.join(registre or A.REGISTRE, "sol-estacio.csv")))
     dies, d = [], PRIMER_DIA
     while d <= avui:
-        dies.append(un_dia(d, casa, meteocat, veines, previstes, sol, vent, nuvols))
+        dies.append(un_dia(d, casa, meteocat, veines, previstes, sol, vent, nuvols, trams))
         d += dt.timedelta(days=1)
     return dies
 
@@ -600,11 +689,11 @@ def index(dies, avui, comp=None):
             "encert": {str(n): per_antelacio(n) for n in ANTELACIONS}}
 
 
-def fes(carpeta, ultims=None, avui=None, registre=None):
+def fes(carpeta, ultims=None, avui=None, registre=None, avisos=None):
     """Escribe historial.json y los días (todos o los `ultims`). Devuelve los nombres."""
     avui = avui or dt.date.today()
     emes = emissions(registre)
-    dies = tots(avui, registre, emes)
+    dies = tots(avui, registre, emes, avisos)
     comp = comparacio(dies, emes, O.registre(registre or A.REGISTRE))
     os.makedirs(carpeta, exist_ok=True)
     noms = ["historial.json"]
@@ -648,4 +737,4 @@ def fes(carpeta, ultims=None, avui=None, registre=None):
 if __name__ == "__main__":
     if len(sys.argv) not in (3, 4) or sys.argv[1] != "fes":
         sys.exit(__doc__)
-    print(" ".join(fes(sys.argv[2], int(sys.argv[3]) if len(sys.argv) == 4 else None)))
+    print(" ".join(fes(sys.argv[2], int(sys.argv[3]) if len(sys.argv) == 4 else None, avisos=ruta_avisos())))

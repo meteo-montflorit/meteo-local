@@ -114,8 +114,15 @@ function riscosHora(f, riscos, ara = new Date()) {
 // oficial del mateix fenomen («pluja intensa» de la web i «pluja» de l'AEMET).
 const FENOMEN_RISC = { pluja_30min: 'pluja', pluja_3h: 'pluja', pluja_24h: 'pluja', ratxa: 'vent', neu_24h: 'neu' };
 
+// Les fonts dels avisos, en l'ordre de les files i dels textos. Protecció
+// Civil i Bombers només surten a l'historial (ADR 0124): els plans, en la seva
+// fase («INUNCAT en alerta»), i els incendis.
+const ORDRE_FONT = ['meteocat', 'aemet', 'pc', 'bombers', 'web'];
+const nomAvis = (a, t) => (a.font === 'pc' ? T`${t} en ${TD(a.fase)}` : a.font === 'bombers' ? T('incendi forestal') : TD(t));
+
 function elementsPerill(f) {
-  return [...(f.avisos || []).flatMap((a) => a.tipus.map((t) => ({ nivell: a.nivell, nom: TD(t), font: a.font || 'aemet', fenomen: t }))),
+  return [...(f.avisos || []).flatMap((a) => a.tipus.map((t) => ({ nivell: a.nivell, nom: nomAvis(a, t), font: a.font || 'aemet',
+    fenomen: a.font === 'pc' || a.font === 'bombers' ? `${a.font}:${t}` : t }))),
     ...(f.riscos_hora || []).map((r) => ({ nivell: r.nivell, nom: NOM_RISC()[r.tipus] || r.tipus, font: 'web',
       fenomen: FENOMEN_RISC[r.tipus] || r.tipus }))];
 }
@@ -125,7 +132,7 @@ function delNivellMesAlt(elements) {
   const nivell = elements.map((a) => a.nivell).sort((a, b) => ORDRE_NIVELL.indexOf(b) - ORDRE_NIVELL.indexOf(a))[0];
   const daquest = elements.filter((a) => a.nivell === nivell);
   const noms = [...new Set(daquest.map((a) => a.nom))].sort();
-  const fonts = ['meteocat', 'aemet', 'web'].filter((x) => daquest.some((a) => a.font === x)).join('');
+  const fonts = ORDRE_FONT.filter((x) => daquest.some((a) => a.font === x)).join('');
   // Cada nivell i cada font amb els seus fenòmens, del nivell més alt al més
   // baix: el color és el del més alt, però el text els diu tots (Juanjo,
   // 17-10-2026: amb perill alt de Meteocat per pluja i avís groc de l'AEMET
@@ -137,7 +144,7 @@ function delNivellMesAlt(elements) {
   const perFont = nivells.flatMap((nv) => {
     const aquests = elements.filter((a) => a.nivell === nv && !dits.has(a.fenomen || a.nom));
     aquests.forEach((a) => dits.add(a.fenomen || a.nom));
-    return ['meteocat', 'aemet', 'web'].map((x) => [x, [...new Set(aquests.filter((a) => a.font === x).map((a) => a.nom))].sort(), nv])
+    return ORDRE_FONT.map((x) => [x, [...new Set(aquests.filter((a) => a.font === x).map((a) => a.nom))].sort(), nv])
       .filter(([, n]) => n.length);
   });
   return { nivell, noms, fonts, perFont };
@@ -171,7 +178,6 @@ function tramsAvis(hores) {
 // nivell, d'esquerra a dreta. Dos fenòmens de la mateixa font amb els mateixos
 // trams, en una sola fila («AEMET · pluja, tempestes»). Cada fenomen, a cada
 // hora, només al seu nivell més alt, com a la franja de les taules (avisHora).
-const ORDRE_FONT = ['meteocat', 'aemet', 'web'];
 function filesAvis(hores) {
   const perClau = new Map();
   hores.forEach((f, i) => {
@@ -213,6 +219,8 @@ function textPerill(p) {
     const nivell = TD(nv);
     // Qui avisa, primer (Juanjo, 17-10-2026).
     if (font === 'meteocat') return T`Meteocat: perill ${GRAU_METEOCAT()[nv]} per ${que}`;
+    if (font === 'pc') return T`Protecció Civil: pla ${que}`;
+    if (font === 'bombers') return T`Bombers: ${que} a prop del barri`;
     if (font === 'web') return T`Temps a Montflorit: avís ${nivell} per ${que} (no oficial)`;
     return T`AEMET: avís ${nivell} per ${que}`;
   }).join('; ');
@@ -222,12 +230,14 @@ function textPerill(p) {
 // o de diversos nivells, juntes, del nivell més alt al més baix. Amb ambFont,
 // també d'on surt cada un, «Perill alt (Meteocat): pluja» (la franja de la
 // gràfica; Juanjo, 17-10-2026: «añade el origen: meteocat, aemet, etc»).
-const NOM_FONT = () => ({ meteocat: 'Meteocat', aemet: 'AEMET', web: T('aquesta aplicació') });
+const NOM_FONT = () => ({ meteocat: 'Meteocat', aemet: 'AEMET', pc: T('Protecció Civil'), bombers: 'Bombers',
+  web: T('aquesta aplicació') });
 function partsPerill(p, ambQue = true, ambFont = false) {
   const parts = new Map();
   for (const [font, noms, nv = p.nivell] of perFonts(p)) {
     const origen = ambFont && NOM_FONT()[font] ? ` (${NOM_FONT()[font]})` : '';
-    const nom = (font === 'meteocat' ? T`Perill ${GRAU_METEOCAT()[nv]}` : T`Avís ${TD(nv)}`) + origen;
+    const nom = (font === 'meteocat' ? T`Perill ${GRAU_METEOCAT()[nv]}` : font === 'pc' ? T('Pla de Protecció Civil')
+      : font === 'bombers' ? 'Bombers' : T`Avís ${TD(nv)}`) + (font === 'pc' || font === 'bombers' ? '' : origen);
     const abans = parts.get(nom);
     parts.set(nom, { nivell: nv, que: [...new Set([...(abans ? abans.que : []), ...noms])] });
   }
@@ -434,8 +444,12 @@ function dibuixaGrafica(fig) {
   for (const fila of filesA) {
     fila.nom = `${NOM_FONT()[fila.font] || fila.font} · ${fila.noms.join(', ')}`;
     const llarg = mesura(fila.nom);
-    fila.davant = x(fila.trams[0].ini) - 6 >= llarg;
-    fila.darrere = !fila.davant && x(fila.trams[fila.trams.length - 1].fi) + 6 + llarg <= W;
+    // A l'historial, que es desplaça fins al final, el nom sempre a sobre i a
+    // l'esquerra de la part que es veu (amb les xifres fixes, més avall): al
+    // costat de la barra, quedava fora de la vista (ADR 0124).
+    fila.fix = Boolean(opcions.historial) && W > Wv + 1;
+    fila.davant = !fila.fix && x(fila.trams[0].ini) - 6 >= llarg;
+    fila.darrere = !fila.fix && !fila.davant && x(fila.trams[fila.trams.length - 1].fi) + 6 + llarg <= W;
     fila.y = yFila;
     fila.yBarra = fila.davant || fila.darrere ? yFila : yFila + hNom;
     yFila = fila.yBarra + hBarra + 4;
@@ -549,6 +563,8 @@ function dibuixaGrafica(fig) {
     } else if (fila.darrere) {
       g.append(svg('text', { class: 'g-avis-nom', x: x(fila.trams[fila.trams.length - 1].fi) + 5, y: fila.yBarra + 12 },
         fila.nom));
+    } else if (fila.fix) {
+      g.append(svg('text', { class: 'g-avis-nom g-nom-fix', x: 2, y: fila.y + 10 }, fila.nom));
     } else {
       g.append(svg('text', { class: 'g-avis-nom', x: x0f > W / 2 ? W - 2 : Math.max(2, x0f),
         y: fila.y + 10, 'text-anchor': x0f > W / 2 ? 'end' : 'start' }, fila.nom));
@@ -559,7 +575,10 @@ function dibuixaGrafica(fig) {
       const p = { nivell: t.nivell, perFont: [[fila.font, fila.noms, t.nivell]] };
       const grup = svg('g', { class: `g-avis ${t.nivell}` });
       grup.append(svg('rect', { x: x0, y: y + hNom, width: Math.max(1, x1 - x0), height: hBarra, rx: 3 }));
-      const etiqueta = fila.font === 'meteocat' ? GRAU_METEOCAT()[t.nivell] : TD(t.nivell);
+      // Els plans, la fase; els incendis, res (el nom de la fila ja ho diu).
+      const FASE_NIVELL = { groc: 'prealerta', taronja: 'alerta', vermell: 'emergència' };
+      const etiqueta = fila.font === 'meteocat' ? GRAU_METEOCAT()[t.nivell] : fila.font === 'pc' ? TD(FASE_NIVELL[t.nivell])
+        : fila.font === 'bombers' ? '' : TD(t.nivell);
       if (etiqueta && mesura(etiqueta) + 8 <= x1 - x0) {
         grup.append(svg('text', { x: (x0 + x1) / 2, y: y + hNom + 12, 'text-anchor': 'middle' }, etiqueta));
       }
@@ -809,7 +828,7 @@ function dibuixaGrafica(fig) {
   fig.querySelector('.g-fixes')?.remove();
   // També l'escala de graus (l'historial i «Fiabilitat»), que es perdia en
   // desplaçar la gràfica fins al final (ADR 0124).
-  const sostreXifres = g.querySelectorAll('.g-sostre-xifra, .g-escala-xifra');
+  const sostreXifres = g.querySelectorAll('.g-sostre-xifra, .g-escala-xifra, .g-nom-fix');
   if (W > Wv + 1 && sostreXifres.length) {
     const visible = caixa.clientWidth;
     const fixes = svg('svg', { class: 'g-fixes', width: visible, height: H, viewBox: `0 0 ${visible} ${H}`, 'aria-hidden': 'true' });
@@ -882,6 +901,9 @@ function dibuixaGrafica(fig) {
       if (f.humitat != null) linies.push(T`Humitat: ${f.humitat}\u00a0%`);
       if (f.pressio != null) linies.push(T`Pressió: ${Math.round(f.pressio)}\u00a0hPa`);
       if (f.nuvols != null) linies.push(T`Cel tapat a Sabadell: ${f.nuvols}\u00a0%`);
+      // Les alertes que hi havia (ADR 0124).
+      const alertes = avisHora(f);
+      if (alertes) linies.push(textPerill(alertes));
       return linies;
     }
     const [textCel] = f.plou_ara ? [T('Plou ara')] : cel(f);
@@ -1310,9 +1332,10 @@ function vistaGrafica(historialInicial = null) {
       fig.querySelector('.g-fixes')?.remove();
       fig.querySelector('.g-llegenda')?.remove();
     }
-    // El final a la vista: les últimes hores són les que es busquen.
+    // Les darreres 24 h, amb el final a la vista: les últimes hores són les
+    // que es busquen. Un dia, des de les 0 h.
     const caixa = fig.querySelector('.g-desplaca');
-    if (caixa) caixa.scrollLeft = caixa.scrollWidth;
+    if (caixa) caixa.scrollLeft = pos === '24h' ? caixa.scrollWidth : 0;
     resumHist.replaceChildren(...resumMesurat(files, pos === '24h', pos === '24h' || pos === avuiIso())
       .map((t) => element('span', null, t)));
   };
