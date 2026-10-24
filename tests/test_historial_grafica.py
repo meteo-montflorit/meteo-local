@@ -65,6 +65,27 @@ class Historial(unittest.TestCase):
         self.assertEqual(f["prev"]["3"][0], 20.0)
         self.assertNotIn("prev", d["hores"][3])            # cap publicació abans de les 3
 
+    def test_humitat_pressio_vent_i_nuvols(self):
+        # ADR 0124 (formato 6): lo demás que se mide, para el historial de la
+        # gráfica. La humedad y la presión, la media del principio y del final
+        # de la hora; el viento de Sant Cugat, la media de las dos medias horas
+        # y la racha mayor; el cielo tapado de Sabadell; lo que falta, no va.
+        reg = self.dir.name
+        dia = "2026-10-16"
+        with open(os.path.join(reg, "vent-mitges-hores.csv"), "w", encoding="utf-8") as f:
+            f.write("fins,XV,XV_ratxa,XF,XF_ratxa\n")
+            f.write(f"{dia}T09:30,6.0,15.0,3,8\n{dia}T10:00,9.0,21.0,4,9\n{dia}T11:00,5.0,12.0,2,6\n")
+        with open(os.path.join(reg, "nuvols-sabadell.csv"), "w", encoding="utf-8") as f:
+            f.write(f"fins,nuvols,capes,metars\n{dia}T10:00,75,2,METAR\n")
+        d = next(x for x in H.tots(dt.date(2026, 10, 17), reg) if x["dia"] == dia)
+        f = d["hores"][9]                                  # de 9 a 10
+        self.assertEqual((f["humitat"], f["pressio"]), (90, 1015.0))
+        self.assertEqual((f["vent"], f["ratxa"], f["nuvols"]), (8, 21, 75))
+        g = d["hores"][10]                                 # de 10 a 11: falta la media hora de les 10:30
+        self.assertNotIn("vent", g)
+        self.assertNotIn("ratxa", g)
+        self.assertNotIn("nuvols", g)
+
     def test_encert_per_antelacio(self):
         e = next(x for x in self.dies if x["dia"] == "2026-10-16")["encert"]
         # Amb 1 h: el tram de 6 a 7 (mitjana 21,5 °C) amb la de les 6:03 (27 °C: 5,5

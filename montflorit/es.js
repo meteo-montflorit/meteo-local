@@ -30,6 +30,7 @@ var IDIOMA = {
     'D’una hora no se sap.': 'De una hora no se sabe.', 'De {0} hores no se sap.': 'De {0} horas no se sabe.',
     'Mínima: {0}\u00a0°C, {1}. Màxima: {2}\u00a0°C, {3}.': 'Mínima: {0}\u00a0°C, {1}. Máxima: {2}\u00a0°C, {3}.',
     'les 24 h fins a les {0}': 'las 24 h hasta las {0}',
+    'Vent a Sant Cugat: {0}\u00a0km/h': 'Viento en Sant Cugat: {0}\u00a0km/h', 'Cel tapat a Sabadell: {0}\u00a0%': 'Cielo tapado en Sabadell: {0}\u00a0%',
     'Temps a Montflorit (Cerdanyola del Vallès) · mesurat al barri: {0} · meteo-montflorit.github.io': 'Temps a Montflorit (Cerdanyola del Vallès) · medido en el barrio: {0} · meteo-montflorit.github.io',
     'a les {0}\u00a0h': 'a las {0}\u00a0h', 'avui a les {0}\u00a0h': 'hoy a las {0}\u00a0h', 'ahir a les {0}\u00a0h': 'ayer a las {0}\u00a0h',
     "Nou!": "¡Nuevo!",

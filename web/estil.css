@@ -1306,6 +1306,7 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
   border-top: 1px solid var(--vora); }
 .vg-fixes[hidden] { display: none; }
 .vg-fixa { display: inline-flex; align-items: center; gap: .45rem; cursor: pointer; }
+.vg-fixa[hidden] { display: none; }
 .vg-fixa svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .vista-grafica .grafica { margin: 0; padding: 0; border: none; }
 .grafica .g-vent { fill: none; stroke: var(--c-nuvol); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }

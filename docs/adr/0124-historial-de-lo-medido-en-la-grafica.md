@@ -42,9 +42,23 @@ ahí el historial quedaba escondido.
   para saltar a cualquier día.
 - **Solo lo medido**: temperatura en línea, lluvia en barras («Pluja
   mesurada» en la leyenda, sin probabilidad) y el cielo de lluvia donde
-  llovió. La previsión y el acierto siguen en «Fiabilitat». Las opciones de
-  la previsión (viento, humedad…) se esconden: no hay datos medidos de eso.
-  La escala de grados a la izquierda, como en «Fiabilitat», y fija al
+  llovió. La previsión y el acierto siguen en «Fiabilitat».
+- **Lo demás que se mide, con los mismos interruptores que la previsión**
+  (Juanjo, 24-10-2026, al ver la primera versión: «Yo te preguntaba de otro
+  tipo de datos como la presion, nubosidad, etc»; el agente propuso cuáles y
+  cómo, y Juanjo lo aprobó): humedad y presión de la estación de casa; viento
+  y rachas de Sant Cugat, el mismo que enseña «Ara» (`C.VENT_ESTACIO`), y el
+  cielo tapado observado en el aeropuerto de Sabadell (desde el 13-10-2026),
+  que da también el icono del cielo de cada hora. Quien tenga encendida la
+  presión la ve igual en la previsión y en lo medido. Cada interruptor sale
+  solo si el día que se ve trae ese dato; el UV no se mide y no sale. La ficha
+  de cada hora dice dónde se mide lo que no es del barrio («Vent a Sant
+  Cugat», «Cel tapat a Sabadell»), y el cielo tapado va tal cual se observó,
+  sin el mínimo del 50 % que la previsión pone a las horas con lluvia.
+  `historial.py` (formato 6) lo añade a cada hora solo cuando se sabe; al
+  cambiar el formato, los días ya publicados se rehacen solos, tres por
+  pasada. Cada día pasa de unos 14 a unos 21 KB.
+- La escala de grados a la izquierda, como en «Fiabilitat», y fija al
   desplazar la gráfica (antes se perdía; vale también para «Fiabilitat»).
 - **El resumen debajo**, como conclusión (`resumMesurat`): «No ha plogut» o
   «Han caigut 3,2 mm» (en un día acabado, «No va ploure» / «Van caure»),
@@ -70,19 +84,29 @@ ahí el historial quedaba escondido.
 
 ## Consecuencias y riesgos
 
-- Solo hay datos desde el 4 de octubre de 2026, y solo temperatura y lluvia:
-  el viento de la estación no se usa y la parte alta no se mide.
+- Solo hay datos desde el 4 de octubre de 2026 (las nubes, desde el 13). El
+  viento no es del barrio (el anemómetro de casa no se usa) ni las nubes
+  tampoco (Sabadell, a unos 8 km); la parte alta no se mide.
 - La lluvia medida por debajo de 0,2 mm en una hora no dibuja barra (el mismo
   umbral que la gráfica de la previsión), pero cuenta en el total.
 - Un día con pocas horas (hoy de madrugada) ocupa todo el ancho: las horas
   salen anchas.
-- La imagen de la gráfica (cámara) dice qué se midió y de cuándo («mesurat al barri: les 24 h fins a les 05:00»), no la hora de la previsión.
+- La imagen de la gráfica (cámara) dice qué se midió y de cuándo («mesurat
+  al barri: les 24 h fins a les 05:00»), no la hora de la previsión.
+- Con todas las capas encendidas, en el móvil la ventana se desplaza hacia
+  abajo, como en la previsión.
 
 ## Validación
 
 - `tests/test_web.py`, `test_historial_mesurat`: las 24 horas con ayer y hoy,
   sin las horas sin medir ni la previsión; el resumen con lluvia, sin dato,
   con sol sobre el termómetro y sin medidas; el enlace y el nombre del día.
+  `tests/test_historial_grafica.py`, `test_humitat_pressio_vent_i_nuvols`:
+  las medias de la hora, la racha mayor y que lo que falta no va.
+- Con una copia del registro del NAS: el historial en formato 6 de los 21
+  días, y el 18 de octubre en la web con viento, humedad, presión y nubes, en
+  móvil (WebKit y Chromium) y escritorio; axe-core sin infracciones con todas
+  las capas, en Chromium y Firefox, claro y oscuro.
 - En un servidor local con los datos reales de IONOS (24-10-2026): las 24
   horas, el 18 de octubre con 8,6 mm, las flechas, el enlace directo, volver
   a la previsión y «Fiabilitat» sin cambios. `probar-web` en Chromium,

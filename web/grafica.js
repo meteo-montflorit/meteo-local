@@ -66,7 +66,8 @@ function cel(f) {
   return celNuvols(nuvolsHora(f), nit);
 }
 
-const nuvolsHora = (f) => ((f.pluja_mm || 0) >= 0.2 ? Math.max(f.nuvols, 50) : f.nuvols);
+// Les hores mesurades (l'historial), el cel tapat tal com es va observar.
+const nuvolsHora = (f) => (!f.mesura && (f.pluja_mm || 0) >= 0.2 ? Math.max(f.nuvols, 50) : f.nuvols);
 const esBoira = (f) => f.codi === 45 || f.codi === 48;
 
 // Per vuitens de cel tapat: serè 0, poc 1-2, mig 3-5, molt 6-7, cobert 8.
@@ -874,6 +875,13 @@ function dibuixaGrafica(fig) {
       const mmPrevist = p.mm == null ? '' : T`, ${mm(p.mm)}\u00a0mm`;
       linies.push(f.pluja_mm == null ? T('Pluja: no se sap') : T`Pluja: ${mm(f.pluja_mm)}\u00a0mm`
         + previst(p.probabilitat, T` (prevista: ${Math.round((p.probabilitat ?? 0) * 100)}\u00a0%${mmPrevist})`));
+      // La resta del que es mesura (ADR 0124), amb on, si no és al barri.
+      if (f.vent != null) {
+        linies.push(T`Vent a Sant Cugat: ${f.vent}\u00a0km/h` + (f.ratxa != null ? T`, ratxes de ${f.ratxa}\u00a0km/h` : ''));
+      }
+      if (f.humitat != null) linies.push(T`Humitat: ${f.humitat}\u00a0%`);
+      if (f.pressio != null) linies.push(T`Pressió: ${Math.round(f.pressio)}\u00a0hPa`);
+      if (f.nuvols != null) linies.push(T`Cel tapat a Sabadell: ${f.nuvols}\u00a0%`);
       return linies;
     }
     const [textCel] = f.plou_ara ? [T('Plou ara')] : cel(f);
@@ -1288,7 +1296,9 @@ function vistaGrafica(historialInicial = null) {
     if (pos !== historial) return;
     fig._amaga?.();
     fig._files = files;
-    fig._opcions = { gran: true, escala: true, historial: true };
+    fig._opcions = { gran: true, escala: true, historial: true, vent: fixes.vent, humitat: fixes.humitat,
+      pressio: fixes.pressio, nuvols: fixes.nuvols };
+    mostraInterruptors(files);
     // Per als crèdits de la imatge: les 24 h, amb l'hora de l'última mesura.
     fig._nomHistorial = pos === '24h' && files.length
       ? T`les 24 h fins a les ${horaCurta(new Date(files[files.length - 1].fins))}` : nomHistorial(pos);
@@ -1341,7 +1351,6 @@ function vistaGrafica(historialInicial = null) {
     botoHist.setAttribute('aria-pressed', String(ambHist));
     navega.hidden = !ambHist;
     resumHist.hidden = !ambHist;
-    fixesEl.hidden = ambHist;
     titol.textContent = ambHist ? T('Historial') : T('Previsió');
     fig.querySelector('figcaption')?.replaceChildren(ambHist
       ? T('Gràfica del que es va mesurar al barri, hora a hora: temperatura i pluja.')
@@ -1358,6 +1367,7 @@ function vistaGrafica(historialInicial = null) {
     const tornada = fig._opcions && fig._opcions.historial;
     fig._nomHistorial = null;
     fig._files = horesVista();
+    mostraInterruptors(HORES_GRAFICA);
     fig._opcions = { gran: true, vent: ambVent && opcions.vent,
       humitat: ambHumitat && fixes.humitat, pressio: ambPressio && fixes.pressio, nuvols: ambNuvols && fixes.nuvols, uv: ambUv && fixes.uv };
     dibuixaGrafica(fig);
@@ -1372,11 +1382,14 @@ function vistaGrafica(historialInicial = null) {
   const fixesEl = element('div', 'vg-fixes');
   fixesEl.setAttribute('role', 'group');
   fixesEl.setAttribute('aria-label', T('Es recorda per a totes les gràfiques'));
-  if (ambVent) fixesEl.append(vent);
-  if (ambHumitat) fixesEl.append(humitat);
-  if (ambPressio) fixesEl.append(pressio);
-  if (ambNuvols) fixesEl.append(nuvols);
-  if (ambUv) fixesEl.append(uv);
+  // Cadascun, només si el que es veu en porta: a la previsió, el que dona el
+  // model; a l'historial, el que es va mesurar (sense UV; ADR 0124).
+  const interruptors = { vent, humitat, pressio, nuvols, uv };
+  fixesEl.append(...Object.values(interruptors));
+  const mostraInterruptors = (files) => {
+    for (const [clau, el] of Object.entries(interruptors)) el.hidden = !files.some((f) => f[clau] != null);
+    fixesEl.hidden = Object.values(interruptors).every((el) => el.hidden);
+  };
 
   dlg.append(cap, barraHist, fig, resumHist, fixesEl);
   // Un toc fora de la finestra la tanca, com Esc.

@@ -18,6 +18,13 @@ con lo que se predijo 1h antes de cada hora y con el error, lo mismo con
   sabe si llovió, None. Las horas con sol directo sobre el termómetro
   (sol_estacio.py, ADR 0081) llevan `sol` y no cuentan para el acierto de la
   temperatura, como en el aprendizaje.
+- Desde la 3.194.0 (formato 6; ADR 0124), lo demás que se mide, para el
+  historial de la gráfica: la humedad y la presión de la estación de casa
+  (la media del principio y del final de la hora, como la temperatura); el
+  viento y las rachas de Sant Cugat (C.VENT_ESTACIO, el que enseña «Ara»: la
+  media de las dos medias horas y la racha mayor, vent-mitges-hores.csv), y el
+  cielo tapado observado en el aeropuerto de Sabadell (nuvols-sabadell.csv,
+  desde el 13-10-2026). Solo van las que se saben.
 - Lo previsto: lo que mostraba la web (`mostrat` de casa-AAAA-MM.jsonl, que
   apunta cada hora la previsión publicada) en la publicación de unas N horas
   antes del comienzo de la hora (entre N h y media antes y N h y media menos
@@ -78,11 +85,12 @@ MIN_HORES_TEMP = 48                      # para dar el error de la temperatura
 MIN_CASOS_PLUJA = 20                     # para dar el acierto de la lluvia (en cada sentido)
 # El formato de los días: si cambia, se rehacen todos, no solo los últimos
 # (3.137.0: los mm previstos; 3.141.0: la temperatura del tramo, el sol y las
-# franjas; 3.143.0: los mm esperados), y lo apunta en el registro. Por tandas: IONOS
+# franjas; 3.143.0: los mm esperados; 3.194.0: humedad, presión, viento y
+# nubes), y lo apunta en el registro. Por tandas: IONOS
 # acepta como mucho 12 archivos por envío (reserva/rep-dades.sh, ADR 0057), y
 # todos de golpe se rechazaron (18-10-2026, 22 archivos). Con los 2 días de
 # siempre, el índice, los datos y las 4 imágenes, caben 3 más por pasada.
-FORMAT = 5
+FORMAT = 6
 REFER_PER_PASSADA = 3
 # Si mejora con el tiempo (ADR 0110; Juanjo, 20-10-2026: «dado que la pagina
 # aprende, estaria bien una comparación semana a semana»): por semanas de
@@ -148,9 +156,30 @@ def temperatura_tram(casa, hora, fins):
     return None if t0 is None or t1 is None else round((t0 + t1) / 2, 1)
 
 
-def un_dia(dia, casa, meteocat, veines, previstes, sol=()):
+def mitjana_tram(casa, hora, fins, camp, decimals=0):
+    """La media de las lecturas del principio y del final de la hora; si solo
+    hay una, esa; None si no hay ninguna."""
+    vals = [A._num((casa.get(k) or {}).get(camp)) for k in (hora, fins)]
+    vals = [v for v in vals if v is not None]
+    if not vals:
+        return None
+    v = round(sum(vals) / len(vals), decimals)
+    return int(v) if decimals == 0 else v
+
+
+def vent_tram(vent, fins):
+    """(viento medio, racha) de la estación del viento en la hora que acaba en
+    fins: la media de las dos medias horas y la racha mayor; None si falta
+    alguna."""
+    t = dt.datetime.fromisoformat(fins).astimezone()
+    mitges = [A._num((vent.get(P.clau_hora(t - dt.timedelta(minutes=m))) or {}).get(C.VENT_ESTACIO)) for m in (0, 30)]
+    return (round(sum(mitges) / 2) if None not in mitges else None), A.ratxa_observada(vent, fins)
+
+
+def un_dia(dia, casa, meteocat, veines, previstes, sol=(), vent=None, nuvols=None):
     """El día, para la web: {dia, hores: [...], encert: {N: …}}. sol: las
-    horas en punto con sol directo sobre el termómetro (sol_estacio.hores_tocades)."""
+    horas en punto con sol directo sobre el termómetro (sol_estacio.hores_tocades);
+    vent: vent-mitges-hores.csv; nuvols: nuvols-sabadell.csv (por «fins»)."""
     files = []
     for hora, fins in hores_del_dia(dia):
         t = temperatura_tram(casa, hora, fins)
@@ -158,6 +187,14 @@ def un_dia(dia, casa, meteocat, veines, previstes, sol=()):
         f = {"hora": hora, "fins": fins, "mesura": True,
              "temperatura": t,
              "pluja_mm": None if mm is None else round(mm, 1)}
+        v, r = vent_tram(vent or {}, fins)
+        n = A._num((nuvols or {}).get(fins, {}).get("nuvols"))
+        for camp, valor in (("humitat", mitjana_tram(casa, hora, fins, "humitat")),
+                            ("pressio", mitjana_tram(casa, hora, fins, "pressio", 1)),
+                            ("vent", v), ("ratxa", None if r is None else round(r)),
+                            ("nuvols", None if n is None else round(n))):
+            if valor is not None:
+                f[camp] = valor
         if hora in sol or fins in sol:
             f["sol"] = True
         p = previstes.get(fins)
@@ -485,12 +522,13 @@ def tots(avui=None, registre=None, emes=None):
         A.REGISTRE = registre
     casa = A._llegeix("estacio-casa.csv")
     meteocat, veines = A._meteocat(), A._veines()
+    vent, nuvols = A._llegeix("vent-mitges-hores.csv"), A._llegeix("nuvols-sabadell.csv")
     previstes = per_hora(emes if emes is not None else emissions(registre))
     # Las horas con sol directo sobre el termómetro (ADR 0081), del registro.
     sol = SE.hores_tocades(list(casa), SE.episodis(os.path.join(registre or A.REGISTRE, "sol-estacio.csv")))
     dies, d = [], PRIMER_DIA
     while d <= avui:
-        dies.append(un_dia(d, casa, meteocat, veines, previstes, sol))
+        dies.append(un_dia(d, casa, meteocat, veines, previstes, sol, vent, nuvols))
         d += dt.timedelta(days=1)
     return dies
 
