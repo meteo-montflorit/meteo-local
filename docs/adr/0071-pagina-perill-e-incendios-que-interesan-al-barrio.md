@@ -152,7 +152,8 @@ actius» («hazlo así»).
 - Contenido: lo que está activo ahora; las situaciones acabadas de los
   últimos 30 días; los meses anteriores, plegados, uno por mes, hasta un año
   (Juanjo: «historial mensual … luego se agrupan en acordeones los meses
-  anteriores, de momento hasta un año»). Cada situación, una ficha con el
+  anteriores, de momento hasta un año»); desde la 3.194.0, sin límite, con lo
+  viejo en archivos por año (ADR 0124). Cada situación, una ficha con el
   color de su círculo, el texto del aviso tal como llegó, desde cuándo y, si
   ha acabado, hasta cuándo, con 🟢 y el detalle plegado.
 - Entran los avisos de peligro y de la riera: incendios, AEMET, planes de
@@ -193,7 +194,9 @@ propusieron dos y aprobó los dos («de acuerdo, hazlo así»):
   acaban a su hora). `historial` agrupa los avisos por suceso: el primero lo
   abre, los siguientes actualizan el texto y se quedan el peor nivel, y el
   final lo cierra. Un plan que deja de mostrarse (ADR 0062) se cierra.
-- Se guarda `HISTORIAL_DIES` (366) días en el estado y va en `avisos.json`,
+- Se guardaba `HISTORIAL_DIES` (366) días (desde la 3.194.0, sin borrar
+  nada: lo acabado hace más de 35 días va a `avisos-AAAA.json`, ADR 0124) en
+  el estado y va en `avisos.json`,
   que ya se publica en IONOS (la página lo lee de allí) y que, desde ahora,
   va también en la copia de GitHub, la reserva de la web.
 - El NAS y la reserva de IONOS llevan estados distintos: cada uno une su
