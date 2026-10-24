@@ -39,6 +39,21 @@ def nuvols(r, n, color, opacitat, y0=20, y1=ALT - 10, difuminat=14):
                f'<g filter="url(#b)">{cos}</g>')
 
 
+def taques(r, clares, fosques, clares_des_de=-40):
+    """El cobert de dia (Juanjo, 24-10-2026: «no se trata de clarearlo todo
+    sino que no parezca de noche»; i, amb una foto del cel: un gris uniforme,
+    fred, amb taques suaus una mica més fosques i una mica més clares, sense
+    núvols amb contorn). clares, fosques: (color, opacitat) de cada mena;
+    clares_des_de: on comencen les clares (amb text blanc, només a la dreta,
+    on no hi ha text, perquè es llegeixi)."""
+    def grup(n, color, opacitat, des_de=-40):
+        return f'<g fill="{color}" opacity="{opacitat}">' + "".join(
+            f'<ellipse cx="{r.uniform(des_de, AMPLE + 40):.0f}" cy="{r.uniform(-20, ALT + 20):.0f}" '
+            f'rx="{r.uniform(60, 150):.0f}" ry="{r.uniform(25, 60):.0f}"/>' for _ in range(n)) + "</g>"
+    return svg('<defs><filter id="t"><feGaussianBlur stdDeviation="22"/></filter></defs>'
+               f'<g filter="url(#t)">{grup(7, *clares, clares_des_de)}{grup(8, *fosques)}</g>')
+
+
 def gotes(r):
     return svg("".join(f'<path d="M{r.uniform(0, AMPLE + 10):.0f} {r.uniform(-10, ALT - 5):.0f} l-5 14" stroke="#cfe3ff" '
                        f'stroke-opacity="{r.uniform(.15, .4):.2f}" stroke-width="1.4" stroke-linecap="round"/>'
@@ -74,6 +89,7 @@ def fes():
         "nuvols-poc": nuvols(r, 4, "#ffffff", .55),
         "nuvols": nuvols(r, 8, "#ffffff", .5),
         "nuvols-cobert": nuvols(r, 9, "#22292f", .38),
+        "cobert-dia-clar": taques(random.Random(24), ("#e6e9ee", .45), ("#7d848e", .35)),
         "nuvols-nit": nuvols(r, 6, "#8fa3c9", .25),
         # A la sortida i a la posta del sol, els núvols de baix encesos.
         "nuvols-tenyits": nuvols(r, 5, "#ff9f8a", .55, 40, 200),

@@ -95,3 +95,27 @@ realistas» en lugar de los iconos de líneas. Pidió publicarlo el mismo día.
 - Simulación local con todos los casos, revisada por Juanjo en pantalla el
   22-10-2026; Chromium, Firefox y WebKit, de 360 a 1280 px, sin errores ni
   imágenes que no carguen.
+
+## Cambio del 24-10-2026 (3.197.0): el cubierto de día, gris claro
+
+Juanjo, ante la tarjeta con el cielo cubierto a media mañana: «esta tarjeta tan
+oscura que hay ahora es correcta?». Lo era (el gris plomo con nubes oscuras),
+pero parecía de noche: «no se trata de clarearlo todo sino que no parezca de
+noche. Más nubes, que se vea que son nubes oscuras, pero no tanto como
+ahora», y mandó una foto del cielo de ese momento: un gris uniforme y frío
+con manchas suaves algo más oscuras y algo más claras, sin nubes con contorno.
+Con texto blanco el gris no puede ser tan claro (para 4,5:1 el fondo tiene que
+quedar por debajo de una luminancia de 0,18), así que el agente le enseñó tres
+versiones en local: la de antes; texto blanco con manchas, lo más claro posible;
+y gris claro con texto oscuro. Juanjo eligió la tercera («Ok, c»).
+
+- `.heroi.cel-cobert` (solo el cubierto de día): degradado `#b3b8c0 → #a3a9b2`
+  con `img/cel/cobert-dia-clar.svg`, manchas claras y oscuras muy difuminadas
+  (`eines/fons_cel.py`, `taques`), texto `#14202d` y línea `#2a3846`, y las
+  etiquetas («No plou», el viento) con el fondo de los cielos claros. El
+  cubierto de noche, con lluvia y al amanecer no cambian.
+- Contraste medido sobre el fondo sin el texto, en el ordenador y el móvil: el
+  texto, 6,2:1; la línea, 4,6:1, en el punto más oscuro de la zona del texto.
+- Se distingue de «nuboso» (gris perla azulado con nubes blancas) por ser gris
+  plano y sin nubes dibujadas.
+
