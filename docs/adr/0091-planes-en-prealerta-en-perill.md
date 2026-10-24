@@ -38,7 +38,8 @@ alerta o emergencia.
 
 - La prealerta sigue sin avisar al móvil ni a Telegram (ADR 0051): solo se ve
   en la web.
-- No queda en el historial: cuando acaba, la ficha desaparece de «Ara».
+- No quedaba en el historial: al acabar, la ficha desaparecía de «Ara» sin
+  dejar rastro. Desde el 24-10-2026, sí (ver el cambio de esa fecha, abajo).
 
 ## Cómo se validó
 
@@ -90,3 +91,36 @@ vigente, para que al publicarlo no salga el del INUNCAT de las 19:43.
 
 Validado: `test_un_comunicat_nou_s_avisa_una_vegada` y
 `test_el_comunicat_nou_porta_a_la_fitxa_sense_canviar_la`.
+
+## Cambio del 24-10-2026: la prealerta, en el historial al acabar
+
+De madrugada salió en la web una prealerta de Protección Civil, que
+desapareció cuando Protección Civil vació su lista de planes (a las 04:47,
+según la fecha de actualización del conjunto de datos de la Generalitat).
+Juanjo: «ya no está y tampoco está en el historial de avisos, que ha
+pasado?». No quedaba rastro ni en el NAS, así que ni siquiera se pudo saber
+qué plan era. No guardarla fue decisión del agente (este ADR), no de Juanjo.
+El agente propuso guardarla, sin avisar al móvil, y Juanjo lo aprobó («si,
+hazlo»).
+
+- `avisos_bot.prealertes` apunta en el estado (`prealertes`) cada plan en
+  prealerta que se ve, con su comienzo oficial (`des_de`, hora de Madrid), el
+  motivo y el comunicado. Cuando deja de estar en prealerta, añade al
+  historial una ficha **ya cerrada** (`prealerta:<PLA>`, nivel `prealerta`):
+  «Protecció Civil: pla … en fase de prealerta», qué quería decir, el motivo
+  según Protección Civil (en catalán, tal como lo publica, también en
+  castellano), «La prealerta no arriba com a avís», el comunicado o la página
+  de Protección Civil y el final: «Ha passat a fase d'alerta» o «Ja no consta
+  en prealerta». En «Perill» sale en «Últims 30 dies» como las demás.
+- Mientras dura no hay ficha en el historial: la de «Ara» sigue saliendo de
+  `plans_prealerta`, así que no se duplica ni enciende el punto de «Perill»,
+  y sigue sin avisar (ADR 0051).
+- Una prealerta oculta por no tener motivo meteorológico (ADR 0062) solo se
+  apunta si llegó a mostrarse. Sin datos de Protección Civil en una pasada,
+  no se toca nada.
+
+Validado: `tests/test_historial.py`,
+`test_la_prealerta_queda_a_l_historial_quan_acaba` (la ficha al acabar, sin
+repetirse, el paso a alerta, la oculta y la pasada sin datos); en local, una
+prealerta simulada en «Perill», con su ficha en «Últims 30 dies».
+

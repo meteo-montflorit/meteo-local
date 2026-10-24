@@ -206,6 +206,41 @@ class Historial(unittest.TestCase):
         self.assertEqual(r, [AB.id_fitxa(c, i) for c, i in casos])
 
 
+    def test_la_prealerta_queda_a_l_historial_quan_acaba(self):
+        # ADR 0124 (24-10-2026): una prealerta de matinada que va desaparèixer
+        # sense deixar rastre. Mentre dura no hi ha fitxa (la d'«Ara» surt de
+        # plans_prealerta); en acabar, una de tancada amb el començament oficial.
+        estat = {}
+        pdf = "https://documents.dadesobertes.gencat.cat/cecat/docs/P-1.pdf"
+        pre = {"pla": "INUNCAT", "nom": "d'inundacions", "fase": "prealerta", "des_de": "23/10/2026 22:10",
+               "descripcio": "Pluges intenses", "comunicat": pdf}
+        h = AB.prealertes(estat, {"plans": [pre]}, [], ARA)
+        self.assertEqual(h, [])
+        # Sense dades de Protecció Civil, res no canvia.
+        self.assertEqual(AB.prealertes(estat, {"plans": None}, [], ARA), [])
+        h = AB.prealertes(estat, {"plans": []}, [], ARA + dt.timedelta(hours=1))
+        self.assertEqual(len(h), 1)
+        e = h[0]
+        self.assertEqual((e["clau"], e["inici"], e["fi"][11:16]), ("prealerta:INUNCAT", "2026-10-23T22:10+02:00", "13:00"))
+        self.assertEqual(e["nivell"], "prealerta")
+        self.assertEqual(e["comunicat"], pdf)
+        self.assertTrue(e["ca"].startswith("🟡 <b>Protecció Civil: pla d'inundacions (INUNCAT) en fase de prealerta</b>"))
+        self.assertIn("Motiu, segons Protecció Civil: Pluges intenses.", e["ca"])
+        self.assertIn("Motivo, según Protecció Civil: Pluges intenses.", e["es"])
+        self.assertTrue(e["fi_ca"].endswith("Ja no consta en prealerta."))
+        # Una altra passada sense el pla: no es repeteix.
+        self.assertEqual(len(AB.prealertes(estat, {"plans": []}, h, ARA + dt.timedelta(hours=2))), 1)
+        # Si passa a alerta, ho diu.
+        estat = {}
+        AB.prealertes(estat, {"plans": [pre]}, [], ARA)
+        h = AB.prealertes(estat, {"plans": [dict(pre, fase="alerta")]}, [], ARA)
+        self.assertTrue(h[0]["fi_ca"].endswith("Ha passat a fase d'alerta."))
+        self.assertTrue(h[0]["fi_es"].endswith("Ha pasado a fase de alerta."))
+        # Una que només ha estat oculta (sense motiu meteorològic, ADR 0062) no s'apunta.
+        estat = {}
+        AB.prealertes(estat, {"plans": [], "plans_ocults": [pre]}, [], ARA)
+        self.assertEqual(AB.prealertes(estat, {"plans": []}, [], ARA), [])
+
     def test_els_plans_en_prealerta_van_a_avisos_json(self):
         # «Perill» els ensenya a «Ara»: no avisen i no tenen fitxa a l'historial (ADR 0091).
         import tempfile

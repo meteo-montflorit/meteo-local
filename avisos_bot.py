@@ -1149,6 +1149,78 @@ def historial(estat, nous, ahora, anterior=None):
     return estat["historial"]
 
 
+SENTIT_PREALERTA = {"ca": "Es preveia un risc a mitjà termini. El pla no estava activat: només calia estar-ne pendent.",
+                    "es": "Se preveía un riesgo a medio plazo. El plan no estaba activado: solo había que estar pendiente."}
+
+
+def data_fase(text):
+    """«24/10/2026 01:10», hora de Madrid, de los datos de Protección Civil;
+    None si no se entiende. La zona, explícita, para no depender del reloj
+    del equipo que lo ejecuta (el NAS o la reserva de IONOS)."""
+    from zoneinfo import ZoneInfo
+    try:
+        return dt.datetime.strptime(text, "%d/%m/%Y %H:%M").replace(tzinfo=ZoneInfo("Europe/Madrid"))
+    except (TypeError, ValueError):
+        return None
+
+
+def prealertes(estat, salida, hist, ahora):
+    """Las prealertas de Protección Civil, en el historial de «Perill» cuando
+    acaban (ADR 0124; Juanjo, 24-10-2026, tras una prealerta de madrugada que
+    desapareció sin dejar rastro: «ya no está y tampoco está en el historial
+    de avisos, que ha pasado?»). Mientras duran, la ficha de «Ara» sale de
+    `plans_prealerta` (ADR 0091) y no avisan (ADR 0051); al acabar, una ficha
+    ya cerrada, con el comienzo oficial y el final: si ha pasado a alerta o
+    emergencia, o si ya no consta. Las ocultas por no tener motivo
+    meteorológico (ADR 0062) siguen en curso, pero solo se apuntan si llegaron
+    a mostrarse. Sin datos de Protección Civil, no se toca nada."""
+    plans = salida.get("plans")
+    if plans is None:
+        return hist
+    ara = ahora.isoformat(timespec="minutes")
+    visibles = {p["pla"]: p for p in plans if p.get("fase") == "prealerta"}
+    ocults = {p["pla"]: p for p in salida.get("plans_ocults") or [] if p.get("fase") == "prealerta"}
+    actius = {p["pla"]: p for p in plans + (salida.get("plans_ocults") or []) if p.get("fase") in ("alerta", "emergència")}
+    abans = estat.get("prealertes") or {}
+    nou = {}
+    for k, p in {**ocults, **visibles}.items():
+        vell = abans.get(k) or {}
+        t = data_fase(p.get("des_de"))
+        nou[k] = {"nom": p["nom"], "inici": vell.get("inici") or (t.isoformat(timespec="minutes") if t else ara),
+                  "descripcio": p.get("descripcio") or vell.get("descripcio"),
+                  "comunicat": p.get("comunicat") or vell.get("comunicat"),
+                  "vista": vell.get("vista") or k in visibles}
+    for k, v in abans.items():
+        if k in nou or not v.get("vista"):
+            continue
+        nom_ca, nom_es = v["nom"], NOM_PLA_ES.get(v["nom"], v["nom"])
+        motiu = f"\nMotiu, segons Protecció Civil: {html.escape(v['descripcio'], quote=False)}." if v.get("descripcio") else ""
+        passa = actius.get(k)
+        fase = (passa or {}).get("fase")
+        de = "d'" if fase and fase[0] in "aeiouàèéíòóú" else "de "
+        fase_es = {"emergència": "emergencia"}.get(fase, fase)
+        e = {"clau": f"prealerta:{k}", "tipus": "perill", "inici": v["inici"], "nivell": "prealerta",
+             "ca": negreta(f"Protecció Civil: pla {nom_ca} ({k}) en fase de prealerta", "mig")
+                   + f"\n{SENTIT_PREALERTA['ca']}{motiu}\nLa prealerta no arriba com a avís.",
+             "es": negreta(f"Protección Civil: plan {nom_es} ({k}) en fase de prealerta", "mig")
+                   + f"\n{SENTIT_PREALERTA['es']}{motiu.replace('Motiu, segons', 'Motivo, según')}"
+                   + "\nLa prealerta no llega como aviso.",
+             "escrit": ara, "fi": ara,
+             "fi_ca": negreta(f"Protecció Civil: el pla {nom_ca} ({k}) ja no està en prealerta", "fi")
+                      + (f"\nHa passat a fase {de}{fase}." if passa else "\nJa no consta en prealerta."),
+             "fi_es": negreta(f"Protección Civil: el plan {nom_es} ({k}) ya no está en prealerta", "fi")
+                      + (f"\nHa pasado a fase de {fase_es}." if passa else "\nYa no consta en prealerta.")}
+        if v.get("comunicat"):
+            e["comunicat"] = v["comunicat"]
+        else:
+            e["enllac"] = PROTECCIO_CIVIL
+        if not any(x["clau"] == e["clau"] and x["inici"] == e["inici"] for x in hist):
+            hist.append(e)
+    estat["prealertes"] = nou
+    hist.sort(key=lambda e: e["inici"])
+    return hist
+
+
 # El enlace al comunicado que llevaba el texto del aviso, si ya había uno al
 # empezar (text_pla).
 ENLLAC_COMUNICAT = re.compile(r'\n<a href="[^"]*">Comunica(?:t|do) \(PDF\)</a>')
@@ -1253,6 +1325,7 @@ def actualitza(casa_json, sortida, ahora=None, anterior=None, avisa=True):
     llista = [a for a in estat.get("llista", []) if dt.datetime.fromisoformat(a["hora"]) > limit] + nous
     estat["llista"] = llista
     hist = comunicats(historial(estat, nous, ahora, anterior_publicat(anterior)), salida.get("plans"))
+    hist = prealertes(estat, salida, hist, ahora)
     # El enlace va en el aviso, no en el historial: la ficha ya está en la web.
     for a in nous:
         amb_enllac(a, hist)
