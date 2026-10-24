@@ -1558,7 +1558,7 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .heroi.cel-nuvol { --f: url("img/cel/nuvols.svg") center / cover, linear-gradient(165deg, #9fadbc, #ccd5de); --t: #14202d; --s: #2a3846; }
 /* El cobert de dia, gris clar amb taques suaus i text fosc, com el cel de debò
    (Juanjo, 24-10-2026, amb una foto: «no parezca de noche»; ADR 0121). */
-.heroi.cel-cobert { --f: url("img/cel/cobert-dia-clar.svg") center / cover, linear-gradient(165deg, #b3b8c0, #a3a9b2); --t: #14202d; --s: #2a3846; }
+.heroi.cel-cobert { --f: url("img/cel/cobert-dia-clar.svg") center / cover, linear-gradient(165deg, #b3b8c0, #a3a9b2); --t: #0b121a; --s: #111a24; }
 .heroi.cel-boira { --f: url("img/cel/boira.svg") center / cover, linear-gradient(165deg, #d3d8dd, #b9c0c8); --t: #1b2530; --s: #33404d; }
 .heroi.cel-pluja { --f: url("img/cel/gotes.svg") center / cover, url("img/cel/nuvols-cobert.svg") center / cover, linear-gradient(165deg, #3d5266, #253341); --s: #cfdbe7; }
 .heroi.cel-tempesta { --f: url("img/cel/llamps.svg") center / cover, url("img/cel/gotes.svg") center / cover, radial-gradient(ellipse at 25% 20%, rgb(190 170 255 / .25), transparent 55%), linear-gradient(165deg, #3a2d55, #1d1830); --s: #d6cdea; }

@@ -111,11 +111,17 @@ y gris claro con texto oscuro. Juanjo eligió la tercera («Ok, c»).
 
 - `.heroi.cel-cobert` (solo el cubierto de día): degradado `#b3b8c0 → #a3a9b2`
   con `img/cel/cobert-dia-clar.svg`, manchas claras y oscuras muy difuminadas
-  (`eines/fons_cel.py`, `taques`), texto `#14202d` y línea `#2a3846`, y las
+  (`eines/fons_cel.py`, `taques`), texto `#0b121a` y línea `#111a24` (desde la 3.197.1), y las
   etiquetas («No plou», el viento) con el fondo de los cielos claros. El
   cubierto de noche, con lluvia y al amanecer no cambian.
 - Contraste medido sobre el fondo sin el texto, en el ordenador y el móvil: el
   texto, 6,2:1; la línea, 4,6:1, en el punto más oscuro de la zona del texto.
+- Desde la 3.197.1, más diferencia entre las manchas (Juanjo, 24-10-2026:
+  «incrementa algo la diferencia entre nubosidad más oscura y clara» y «la zona
+  oscura son nubes más negras»): claras `#f1f3f6` al 65 % y oscuras `#5a616b`
+  al 55 %. Con ellas el texto anterior se quedaba en 4,0:1, así que el texto
+  pasa a `#0b121a` (5,0:1) y la línea a `#111a24` (4,7:1), medidos igual. Más
+  oscuras no caben: el texto tendría que ser negro.
 - Se distingue de «nuboso» (gris perla azulado con nubes blancas) por ser gris
   plano y sin nubes dibujadas.
 

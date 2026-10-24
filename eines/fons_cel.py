@@ -89,7 +89,7 @@ def fes():
         "nuvols-poc": nuvols(r, 4, "#ffffff", .55),
         "nuvols": nuvols(r, 8, "#ffffff", .5),
         "nuvols-cobert": nuvols(r, 9, "#22292f", .38),
-        "cobert-dia-clar": taques(random.Random(24), ("#e6e9ee", .45), ("#7d848e", .35)),
+        "cobert-dia-clar": taques(random.Random(24), ("#f1f3f6", .65), ("#5a616b", .55)),
         "nuvols-nit": nuvols(r, 6, "#8fa3c9", .25),
         # A la sortida i a la posta del sol, els núvols de baix encesos.
         "nuvols-tenyits": nuvols(r, 5, "#ff9f8a", .55, 40, 200),
