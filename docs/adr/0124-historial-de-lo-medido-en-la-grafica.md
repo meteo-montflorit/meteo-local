@@ -113,7 +113,8 @@ ahí el historial quedaba escondido.
   marca horaria no distingue la lluvia del tiempo violento.
 - Solo hay datos desde el 4 de octubre de 2026 (las nubes, desde el 13). El
   viento no es del barrio (el anemómetro de casa no se usa) ni las nubes
-  tampoco (Sabadell, a unos 8 km); la parte alta no se mide.
+  tampoco (Sabadell, a unos 8 km). La parte alta, medida por las vecinas,
+  solo desde el 9-10-2026 (ver el cambio de la 3.194.1).
 - La lluvia medida por debajo de 0,2 mm en una hora no dibuja barra (el mismo
   umbral que la gráfica de la previsión), pero cuenta en el total.
 - Un día con pocas horas (hoy de madrugada) ocupa todo el ancho: las horas
@@ -194,4 +195,30 @@ Validado: `tests/test_historial.py`,
 año); en local, «Perill» con los incendios de octubre pasados a un
 `avisos-2026.json` simulado: salen en su sitio y el enlace directo lleva a la
 ficha.
+
+## Cambio del 24-10-2026 (3.194.1): la parte alta, también en el historial
+
+Juanjo: «cuando tengo activado riera o parte alta, el historial lo tiene en
+cuenta?». No: enseñaba siempre la temperatura de la estación de casa, la de
+la riera, sin decirlo. Además, este ADR decía que la parte alta no se mide, y
+no era cierto: las vecinas de arriba (ICERDA18, ICERDA28 e ICERDA48,
+`part_alta.ALTES`) se registran hora a hora desde el 9-10-2026, y la web ya las
+usa para el «ahora» de la parte alta (ADR 0087). El error fue del agente. Juanjo
+aprobó la corrección («sí, hazlo y publícalo»).
+
+- `historial.py` (formato 8) añade a cada hora `temperatura_alta`: en cada
+  extremo de la hora, la mediana de las vecinas de arriba con al menos dos
+  (`part_alta.mediana_alta`, la regla del «ahora»), y la media de los dos,
+  como la de casa. Las vecinas dan grados enteros: el resultado va de medio en
+  medio grado.
+- Con el selector de zona en la parte alta (ADR 0123), el historial usa esa
+  temperatura en la gráfica, la ficha de cada hora y la mínima y la máxima
+  (`ambZonaHistorial`); el sol sobre el termómetro de casa no cuenta en ella.
+  Un día sin datos de arriba (del 4 al 8 de octubre) enseña la riera y lo
+  dice: «D'aquest dia només hi ha la temperatura de la riera».
+
+Validado: `test_la_temperatura_de_la_part_alta` y, en `test_historial_mesurat`,
+la zona; con el registro real, la parte alta de 1 a 2 °C por encima de la
+riera a mediodía; en el móvil, el 17-10 con la parte alta (26 °C a las 14 h) y
+el 6-10 con la nota de la riera.
 

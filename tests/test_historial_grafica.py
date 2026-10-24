@@ -86,6 +86,21 @@ class Historial(unittest.TestCase):
         self.assertNotIn("ratxa", g)
         self.assertNotIn("nuvols", g)
 
+    def test_la_temperatura_de_la_part_alta(self):
+        # ADR 0124 (3.194.1): la mediana de les veïnes de dalt a cada extrem de
+        # l'hora, amb dues com a mínim, i la mitjana dels dos; si en falta, res.
+        import part_alta as PA
+        reg = self.dir.name
+        dia = "2026-10-16"
+        a, b = PA.ALTES[:2]
+        for est, temps in ((a, {9: 17, 10: 19}), (b, {9: 18, 10: 20, 11: 21})):
+            with open(os.path.join(reg, f"veina-{est}.csv"), "w", encoding="utf-8") as f:
+                f.write("fins,pluja_mm,temperatura,humitat,rosada,pressio,vent,ratxa\n")
+                f.write("".join(f"{dia}T{h:02d}:00,0.0,{t},80,10,1015,1,2\n" for h, t in temps.items()))
+        d = next(x for x in H.tots(dt.date(2026, 10, 17), reg) if x["dia"] == dia)
+        self.assertEqual(d["hores"][9]["temperatura_alta"], 18.5)    # (17,5 + 19,5) / 2
+        self.assertNotIn("temperatura_alta", d["hores"][10])         # a les 11, només una veïna
+
     def test_les_alertes_de_cada_hora(self):
         # ADR 0124: a l'historial, les alertes de cada hora en el format de la
         # gràfica. El que pintava la gràfica (mostrat), si es va desar; si no,

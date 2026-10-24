@@ -33,6 +33,7 @@ var IDIOMA = {
     '{0} en {1}': '{0} en {1}', 'Protecció Civil: pla {0}': 'Protección Civil: plan {0}', 'incendi forestal': 'incendio forestal',
     'Bombers: {0} a prop del barri': 'Bombers: {0} cerca del barrio', 'Pla de Protecció Civil': 'Plan de Protección Civil',
     'Protecció Civil': 'Protección Civil',
+    'D’aquest dia només hi ha la temperatura de la riera.': 'De este día solo hay la temperatura de la riera.',
     'Vent a Sant Cugat: {0}\u00a0km/h': 'Viento en Sant Cugat: {0}\u00a0km/h', 'Cel tapat a Sabadell: {0}\u00a0%': 'Cielo tapado en Sabadell: {0}\u00a0%',
     'Temps a Montflorit (Cerdanyola del Vallès) · mesurat al barri: {0} · meteo-montflorit.github.io': 'Temps a Montflorit (Cerdanyola del Vallès) · medido en el barrio: {0} · meteo-montflorit.github.io',
     'a les {0}\u00a0h': 'a las {0}\u00a0h', 'avui a les {0}\u00a0h': 'hoy a las {0}\u00a0h', 'ahir a les {0}\u00a0h': 'ayer a las {0}\u00a0h',

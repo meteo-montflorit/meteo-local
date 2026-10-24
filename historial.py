@@ -25,6 +25,12 @@ con lo que se predijo 1h antes de cada hora y con el error, lo mismo con
   media de las dos medias horas y la racha mayor, vent-mitges-hores.csv), y el
   cielo tapado observado en el aeropuerto de Sabadell (nuvols-sabadell.csv,
   desde el 13-10-2026). Solo van las que se saben.
+- Desde la 3.194.1 (formato 8; ADR 0124), la temperatura medida en la parte
+  alta (`temperatura_alta`): la mediana de las vecinas de arriba
+  (part_alta.ALTES, al menos part_alta.ALTES_MIN), la media del principio y
+  del final de la hora, como la de casa. Para el historial con el selector de
+  zona en la parte alta (ADR 0123); el registro de las vecinas empieza el
+  9-10-2026.
 - Desde la 3.194.0 (formato 7; ADR 0124), las alertas de cada hora, en el
   formato de la gráfica de la previsión (`avisos`, `riscos_hora`): las de
   AEMET y Meteocat y los riesgos de la propia web, lo que pintaba la gráfica
@@ -74,6 +80,7 @@ import config as C
 import previsio_oficial as O
 import prevision as P
 import remostreig as R
+import part_alta as PA
 import sol_estacio as SE
 
 REGISTRE = A.REGISTRE
@@ -95,11 +102,11 @@ MIN_CASOS_PLUJA = 20                     # para dar el acierto de la lluvia (en 
 # El formato de los días: si cambia, se rehacen todos, no solo los últimos
 # (3.137.0: los mm previstos; 3.141.0: la temperatura del tramo, el sol y las
 # franjas; 3.143.0: los mm esperados; 3.194.0: humedad, presión, viento,
-# nubes y las alertas de cada hora), y lo apunta en el registro. Por tandas: IONOS
+# nubes y las alertas de cada hora; 3.194.1: la parte alta), y lo apunta en el registro. Por tandas: IONOS
 # acepta como mucho 12 archivos por envío (reserva/rep-dades.sh, ADR 0057), y
 # todos de golpe se rechazaron (18-10-2026, 22 archivos). Con los 2 días de
 # siempre, el índice, los datos y las 4 imágenes, caben 3 más por pasada.
-FORMAT = 7
+FORMAT = 8
 REFER_PER_PASSADA = 3
 # Si mejora con el tiempo (ADR 0110; Juanjo, 20-10-2026: «dado que la pagina
 # aprende, estaria bien una comparación semana a semana»): por semanas de
@@ -165,6 +172,16 @@ def temperatura_tram(casa, hora, fins):
     si falta alguna."""
     t0 = A._num((casa.get(hora) or {}).get("temperatura"))
     t1 = A._num((casa.get(fins) or {}).get("temperatura"))
+    return None if t0 is None or t1 is None else round((t0 + t1) / 2, 1)
+
+
+def temperatura_alta_tram(veines, hora, fins):
+    """La temperatura medida en la parte alta en el tramo: en cada extremo, la
+    mediana de las vecinas de arriba (con PA.ALTES_MIN como mínimo, como el
+    «ahora» de la parte alta), y la media de los dos; None si falta alguno."""
+    def en(k):
+        return PA.mediana_alta([A._num((veines.get(e, {}).get(k) or {}).get("temperatura")) for e in PA.ALTES])
+    t0, t1 = en(hora), en(fins)
     return None if t0 is None or t1 is None else round((t0 + t1) / 2, 1)
 
 
@@ -258,7 +275,8 @@ def un_dia(dia, casa, meteocat, veines, previstes, sol=(), vent=None, nuvols=Non
              "pluja_mm": None if mm is None else round(mm, 1)}
         v, r = vent_tram(vent or {}, fins)
         n = A._num((nuvols or {}).get(fins, {}).get("nuvols"))
-        for camp, valor in (("humitat", mitjana_tram(casa, hora, fins, "humitat")),
+        for camp, valor in (("temperatura_alta", temperatura_alta_tram(veines, hora, fins)),
+                            ("humitat", mitjana_tram(casa, hora, fins, "humitat")),
                             ("pressio", mitjana_tram(casa, hora, fins, "pressio", 1)),
                             ("vent", v), ("ratxa", None if r is None else round(r)),
                             ("nuvols", None if n is None else round(n))):

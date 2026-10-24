@@ -1186,6 +1186,17 @@ function resumMesurat(files, vint4 = false, ara = vint4) {
   return res;
 }
 
+// La zona triada amb el botó de dalt (ADR 0123), també a l'historial: amb la
+// part alta, la temperatura mesurada per les veïnes de dalt (historial.py,
+// «temperatura_alta»; sense el sol sobre el termòmetre de casa, que no hi
+// compta). Si el que es veu no en porta cap (abans del 9-10-2026), la de la
+// riera, i «nomesRiera» perquè la pàgina ho digui.
+function ambZonaHistorial(files, zona = zonaTriada()) {
+  if (zona !== 'alta') return { files, nomesRiera: false };
+  if (!files.some((f) => f.temperatura_alta != null)) return { files, nomesRiera: files.length > 0 };
+  return { files: files.map(({ sol, ...f }) => ({ ...f, temperatura: f.temperatura_alta ?? null })), nomesRiera: false };
+}
+
 // El nom del que es veu: «Darreres 24 h», «Avui», «Ahir» o la data.
 function nomHistorial(pos) {
   if (pos === '24h') return T('Darreres 24 h');
@@ -1316,6 +1327,8 @@ function vistaGrafica(historialInicial = null) {
       files = horesMesurades((await llegeixDiaHistorial(pos) || {}).hores);
     }
     if (pos !== historial) return;
+    const zona = ambZonaHistorial(files);
+    files = zona.files;
     fig._amaga?.();
     fig._files = files;
     fig._opcions = { gran: true, escala: true, historial: true, vent: fixes.vent, humitat: fixes.humitat,
@@ -1337,7 +1350,8 @@ function vistaGrafica(historialInicial = null) {
     const caixa = fig.querySelector('.g-desplaca');
     if (caixa) caixa.scrollLeft = pos === '24h' ? caixa.scrollWidth : 0;
     resumHist.replaceChildren(...resumMesurat(files, pos === '24h', pos === '24h' || pos === avuiIso())
-      .map((t) => element('span', null, t)));
+      .map((t) => element('span', null, t)),
+    ...(zona.nomesRiera ? [element('span', null, T('D’aquest dia només hi ha la temperatura de la riera.'))] : []));
   };
   const posaHistorial = (pos) => {
     historial = pos;

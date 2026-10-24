@@ -1521,6 +1521,16 @@ espera.then(() => console.log(JSON.stringify([mostrades, enviats])));
         self.assertEqual(self.avalua(ara, f"resumMesurat({json.dumps(sec)})")[0], "No va ploure.")
         self.assertEqual(self.avalua(ara, f"resumMesurat({json.dumps(sec)}, false, true)")[0], "No ha plogut.")
         self.assertEqual(self.avalua(ara, "resumMesurat([])"), ["D’aquest dia no hi ha mesures."])
+        # La zona (ADR 0123): amb la part alta, la seva temperatura mesurada i
+        # sense el sol de casa; sense dades de dalt, la de la riera, i ho diu.
+        alt = [dict(hora("2026-10-18", 0, 15, 0.0, sol=True), temperatura_alta=17), hora("2026-10-18", 1, 14, 0.0)]
+        z = self.avalua(ara, f"ambZonaHistorial({json.dumps(alt)}, 'alta')")
+        self.assertEqual([f["temperatura"] for f in z["files"]], [17, None])
+        self.assertNotIn("sol", z["files"][0])
+        self.assertFalse(z["nomesRiera"])
+        z = self.avalua(ara, f"ambZonaHistorial({json.dumps(dia)}, 'alta')")
+        self.assertEqual((z["files"][0]["temperatura"], z["nomesRiera"]), (15, True))
+        self.assertEqual(self.avalua(ara, f"ambZonaHistorial({json.dumps(alt)}, 'baixa').files[0].temperatura"), 15)
         # L'enllaç: #historial (les 24 h) o #historial-AAAA-MM-DD.
         self.assertEqual(self.avalua(ara, "['#historial', '#historial-2026-10-18', '#grafica', '#historial-x']"
                                           ".map(historialDeLAdreca)"), ["24h", "2026-10-18", None, None])
