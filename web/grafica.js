@@ -806,7 +806,9 @@ function dibuixaGrafica(fig) {
   // 20-10-2026: «se puede hacer que estos dos valores estén siempre
   // visibles?»). A la imatge (compacta), dins de la gràfica, com abans.
   fig.querySelector('.g-fixes')?.remove();
-  const sostreXifres = g.querySelectorAll('.g-sostre-xifra');
+  // També l'escala de graus (l'historial i «Fiabilitat»), que es perdia en
+  // desplaçar la gràfica fins al final (ADR 0124).
+  const sostreXifres = g.querySelectorAll('.g-sostre-xifra, .g-escala-xifra');
   if (W > Wv + 1 && sostreXifres.length) {
     const visible = caixa.clientWidth;
     const fixes = svg('svg', { class: 'g-fixes', width: visible, height: H, viewBox: `0 0 ${visible} ${H}`, 'aria-hidden': 'true' });
@@ -954,7 +956,9 @@ function dibuixaGrafica(fig) {
   // (Juanjo, 16-10-2026: «entre lluvia probable y puede llover no hay
   // diferencia para un usuario normal»).
   const pct = (p) => Math.round(p * 100);
-  if (plujes.includes('pluja')) ll.append(clau('m-pluja', T`Pluja, ${pct(PROB_PLUJA)}\u00a0% o més`));
+  // A l'historial, la pluja que va caure, sense probabilitat (ADR 0124).
+  if (opcions.historial && plujes.includes('pluja')) ll.append(clau('m-pluja', T('Pluja mesurada')));
+  else if (plujes.includes('pluja')) ll.append(clau('m-pluja', T`Pluja, ${pct(PROB_PLUJA)}\u00a0% o més`));
   if (plujes.includes('possible')) {
     ll.append(clau('m-pluja possible', T`Pluja, del ${pct(PROB_POSSIBLE)} al ${pct(PROB_PLUJA)}\u00a0%`));
   }
@@ -971,7 +975,7 @@ function dibuixaGrafica(fig) {
   if (hUv) ll.append(clau('m-uv', T('Índex UV')));
   ll.append(clau('m-nit', T('Nit')));
   if (fig._botoImatge) ll.append(botoImatge(fig, 'g-imatge'));
-  if (fig._botoOpcions) ll.append(botoOpcions());
+  if (fig._botoOpcions) ll.append(botoHistorial(), botoOpcions());
   // Els avisos de més enllà de la gràfica, a sobre (avisosMesEnlla).
   fig.querySelector('.g-mes-enlla')?.remove();
   const mesEnlla = files.length && new Date(files[n - 1].fins) > new Date() ? avisosMesEnlla(files[n - 1].fins) : [];
@@ -1079,7 +1083,96 @@ function ambZona(o) {
   return { ...resta, zona: o.zona || (alta === true && baixa === false ? 'alta' : 'baixa') };
 }
 
-function vistaGrafica() {
+// --- L'historial: el que es va mesurar al barri, hora a hora (ADR 0124;
+// Juanjo, 24-10-2026: «consultar un historial, por ejemplo si llovió las
+// horas pasadas o ver la temperatura hace una semana»). Les dades són les de
+// «Fiabilitat» (historial.py): la temperatura de l'estació i la pluja del
+// barri des del 4-10-2026. Aquí, sense la previsió: el que deia i com encerta
+// són a «Fiabilitat». ---
+
+// L'historial és a IONOS, al costat de les dades; en local, al costat de la pàgina.
+function llegeixHistorial(nom) {
+  return baixa(DADES_URL + nom).catch(() => baixa(nom));
+}
+
+const DIES_HISTORIAL = new Map();
+function llegeixDiaHistorial(d) {
+  if (!DIES_HISTORIAL.has(d)) DIES_HISTORIAL.set(d, llegeixHistorial(`historial-${d}.json`).catch(() => null));
+  return DIES_HISTORIAL.get(d);
+}
+
+function isoDia(data) {
+  return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
+}
+const avuiIso = () => isoDia(new Date());
+
+// Les hores ja acabades, sense la previsió; les últimes que encara no tenen
+// mesura (la publicació va per darrere de l'hora), fora.
+function horesMesurades(hores, ara = new Date()) {
+  const res = (hores || []).filter((f) => new Date(f.fins) <= ara).map(({ prev, ...f }) => f);
+  while (res.length && res[res.length - 1].temperatura == null && res[res.length - 1].pluja_mm == null) res.pop();
+  return res;
+}
+
+// Les darreres 24 hores amb mesura: les d'ahir i les d'avui.
+function darreres24(ahir, avui, ara = new Date()) {
+  return horesMesurades([...((ahir && ahir.hores) || []), ...((avui && avui.hores) || [])], ara).slice(-24);
+}
+
+// El resum, com a conclusió: si va ploure i quant, i la mínima i la màxima
+// amb la seva hora. Les temperatures són la mitjana de cada hora, sense les
+// hores amb sol sobre el termòmetre, que no compten (historial.py).
+// «vint4»: les darreres 24 h, amb «avui» i «ahir» a les hores; «ara»: el que
+// encara dura (les 24 h i avui), que diu «no ha plogut» i no «no va ploure».
+function resumMesurat(files, vint4 = false, ara = vint4) {
+  if (!files.length) return [T('D’aquest dia no hi ha mesures.')];
+  const res = [];
+  const conegudes = files.filter((f) => f.pluja_mm != null);
+  const mm = conegudes.reduce((s, f) => s + f.pluja_mm, 0);
+  if (!conegudes.length) {
+    res.push(T('De la pluja no hi ha dades.'));
+  } else {
+    const xifra = mm >= 10 ? String(Math.round(mm)) : coma(mm);
+    let text = mm < 0.05 ? (ara ? T('No ha plogut.') : T('No va ploure.'))
+      : ara ? T`Han caigut ${xifra}\u00a0mm.` : T`Van caure ${xifra}\u00a0mm.`;
+    const sense = files.length - conegudes.length;
+    if (sense) text += ' ' + (sense === 1 ? T('D’una hora no se sap.') : T`De ${sense} hores no se sap.`);
+    res.push(text);
+  }
+  const temps = files.filter((f) => f.temperatura != null && !f.sol);
+  if (temps.length) {
+    const avui = avuiIso();
+    const quan = (f) => {
+      const h = new Date(f.hora).getHours();
+      if (!vint4) return T`a les ${h}\u00a0h`;
+      return f.hora.slice(0, 10) === avui ? T`avui a les ${h}\u00a0h` : T`ahir a les ${h}\u00a0h`;
+    };
+    const min = temps.reduce((a, f) => (f.temperatura < a.temperatura ? f : a));
+    const max = temps.reduce((a, f) => (f.temperatura > a.temperatura ? f : a));
+    res.push(T`Mínima: ${Math.round(min.temperatura)}\u00a0°C, ${quan(min)}. Màxima: ${Math.round(max.temperatura)}\u00a0°C, ${quan(max)}.`);
+  } else {
+    res.push(T('De la temperatura no hi ha dades.'));
+  }
+  return res;
+}
+
+// El nom del que es veu: «Darreres 24 h», «Avui», «Ahir» o la data.
+function nomHistorial(pos) {
+  if (pos === '24h') return T('Darreres 24 h');
+  const ahir = new Date();
+  ahir.setDate(ahir.getDate() - 1);
+  if (pos === avuiIso()) return T('Avui');
+  if (pos === isoDia(ahir)) return T('Ahir');
+  const nom = new Date(`${pos}T12:00`).toLocaleDateString(IDIOMA.codi === 'es' ? 'es' : 'ca',
+    { weekday: 'long', day: 'numeric', month: 'long' });
+  return nom.charAt(0).toUpperCase() + nom.slice(1);
+}
+
+// L'adreça de l'historial: #historial (les darreres 24 h) o #historial-AAAA-MM-DD.
+const esAdrecaHistorial = (h) => /^#historial(-\d{4}-\d{2}-\d{2})?$/.test(h);
+const adrecaHistorial = (pos) => (pos === '24h' ? '#historial' : `#historial-${pos}`);
+
+function vistaGrafica(historialInicial = null) {
   if (!HORES_GRAFICA || document.querySelector('dialog.vista-grafica')) return;
   // Les que es recorden (fixes) i les d'aquesta visita, que comencen sempre igual.
   const fixes = { vent: false, zona: 'baixa', humitat: false, pressio: false, nuvols: false, uv: false, ...llegeixOpcionsGrafica() };
@@ -1138,12 +1231,140 @@ function vistaGrafica() {
   const desa = () => {
     try { localStorage.setItem(CLAU_GRAFICA, JSON.stringify(fixes)); } catch (_) {}
   };
-  const dibuixa = () => {
+  // L'historial: un botó que canvia la gràfica pel que es va mesurar; ‹ i ›
+  // per anar d'un dia a l'altre i, al mig, el nom del dia, que obre el
+  // calendari per saltar a qualsevol (ADR 0124). Comença per les darreres 24 h.
+  let historial = null;      // null: la previsió; '24h' o 'AAAA-MM-DD'
+  let index = null;
+  const botoHist = element('button', 'vg-opcio');
+  botoHist.type = 'button';
+  botoHist.title = T('El que es va mesurar al barri, hora a hora');
+  botoHist.append(icona('i-history'), T('Historial'));
+  const navega = element('div', 'vg-dia');
+  const fletxa = (d, text) => {
+    const b = element('button', 'boto-icona');
+    b.type = 'button';
+    b.title = text;
+    b.setAttribute('aria-label', text);
+    b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
+    return b;
+  };
+  const enrere = fletxa('m15 18-6-6 6-6', T('Dia anterior'));
+  const endavant = fletxa('m9 18 6-6-6-6', T('Dia següent'));
+  // El nom del dia obre el calendari del navegador (un camp de data amagat).
+  const nomDia = element('button', 'vg-nom-dia vg-data');
+  nomDia.type = 'button';
+  nomDia.title = T('Tria un dia al calendari');
+  const textDia = element('span');
+  nomDia.append(textDia, icona('i-calendar'));
+  const calendari = element('input', 'visualment-amagat vg-calendari');
+  calendari.type = 'date';
+  calendari.tabIndex = -1;
+  calendari.setAttribute('aria-hidden', 'true');
+  navega.append(enrere, nomDia, endavant, calendari);
+  const barraHist = element('div', 'vg-historial');
+  barraHist.append(botoHist, navega);
+  const resumHist = element('p', 'vg-resum-historial');
+  resumHist.setAttribute('aria-live', 'polite');
+  // Les posicions, de la més antiga a la més nova: cada dia i, al final, les 24 h.
+  const posicions = () => [...((index && index.dies) || []).filter((d) => d <= avuiIso()), '24h'];
+  const dibuixaHistorial = async () => {
+    const pos = historial;
+    const llista = posicions();
+    const i = llista.indexOf(pos);
+    enrere.disabled = i <= 0;
+    endavant.disabled = i < 0 || i >= llista.length - 1;
+    textDia.textContent = nomHistorial(pos);
+    nomDia.setAttribute('aria-label', T`${nomHistorial(pos)}: tria un altre dia al calendari`);
+    let files;
+    if (pos === '24h') {
+      const ahir = new Date();
+      ahir.setDate(ahir.getDate() - 1);
+      const [a, b] = await Promise.all([llegeixDiaHistorial(isoDia(ahir)), llegeixDiaHistorial(avuiIso())]);
+      files = darreres24(a, b);
+    } else {
+      files = horesMesurades((await llegeixDiaHistorial(pos) || {}).hores);
+    }
+    if (pos !== historial) return;
     fig._amaga?.();
+    fig._files = files;
+    fig._opcions = { gran: true, escala: true, historial: true };
+    // Per als crèdits de la imatge: les 24 h, amb l'hora de l'última mesura.
+    fig._nomHistorial = pos === '24h' && files.length
+      ? T`les 24 h fins a les ${horaCurta(new Date(files[files.length - 1].fins))}` : nomHistorial(pos);
+    if (files.length) {
+      dibuixaGrafica(fig);
+    } else {
+      // Sense mesures, res de l'anterior: ni la gràfica ni la llegenda.
+      fig.querySelector('.g-desplaca svg')?.remove();
+      fig.querySelector('.g-fixes')?.remove();
+      fig.querySelector('.g-llegenda')?.remove();
+    }
+    // El final a la vista: les últimes hores són les que es busquen.
+    const caixa = fig.querySelector('.g-desplaca');
+    if (caixa) caixa.scrollLeft = caixa.scrollWidth;
+    resumHist.replaceChildren(...resumMesurat(files, pos === '24h', pos === '24h' || pos === avuiIso())
+      .map((t) => element('span', null, t)));
+  };
+  const posaHistorial = (pos) => {
+    historial = pos;
+    history.replaceState(null, '', pos ? adrecaHistorial(pos) : '#grafica');
+    dibuixa();
+  };
+  botoHist.addEventListener('click', () => posaHistorial(historial ? null : '24h'));
+  // Un enllaç de l'historial amb la finestra ja oberta hi va directament.
+  dlg._posaHistorial = posaHistorial;
+  enrere.addEventListener('click', () => {
+    const llista = posicions();
+    posaHistorial(llista[llista.indexOf(historial) - 1] || historial);
+  });
+  endavant.addEventListener('click', () => {
+    const llista = posicions();
+    posaHistorial(llista[llista.indexOf(historial) + 1] || historial);
+  });
+  nomDia.addEventListener('click', () => {
+    const dies = (index && index.dies) || [];
+    if (!dies.length) return;
+    calendari.min = dies[0];
+    calendari.max = avuiIso();
+    calendari.value = historial === '24h' ? avuiIso() : historial;
+    try { calendari.showPicker(); } catch (_) { calendari.focus(); }
+  });
+  calendari.addEventListener('change', () => {
+    const d = calendari.value;
+    if (posicions().includes(d)) posaHistorial(d);
+    else if (d) avisBreu(T('D’aquest dia no hi ha mesures.'));
+  });
+
+  const dibuixa = () => {
+    const ambHist = Boolean(historial);
+    botoHist.setAttribute('aria-pressed', String(ambHist));
+    navega.hidden = !ambHist;
+    resumHist.hidden = !ambHist;
+    fixesEl.hidden = ambHist;
+    titol.textContent = ambHist ? T('Historial') : T('Previsió');
+    fig.querySelector('figcaption')?.replaceChildren(ambHist
+      ? T('Gràfica del que es va mesurar al barri, hora a hora: temperatura i pluja.')
+      : T('Gràfica de la previsió hora a hora: perill, cel, temperatura i probabilitat de pluja.'));
+    if (ambHist) {
+      if (!index) {
+        llegeixHistorial('historial.json').then((d) => { index = d; if (historial) dibuixa(); }, () => {});
+      }
+      dibuixaHistorial();
+      return;
+    }
+    fig._amaga?.();
+    // De tornada de l'historial, la previsió des del principi.
+    const tornada = fig._opcions && fig._opcions.historial;
+    fig._nomHistorial = null;
     fig._files = horesVista();
     fig._opcions = { gran: true, vent: ambVent && opcions.vent,
       humitat: ambHumitat && fixes.humitat, pressio: ambPressio && fixes.pressio, nuvols: ambNuvols && fixes.nuvols, uv: ambUv && fixes.uv };
     dibuixaGrafica(fig);
+    if (tornada) {
+      const caixa = fig.querySelector('.g-desplaca');
+      if (caixa) caixa.scrollLeft = 0;
+    }
   };
   // Les que es recorden, a part (Juanjo, 19-10-2026), sense el rètol «Es recorda
   // per a totes les gràfiques», que ja s'entén (Juanjo, 20-10-2026: «quita
@@ -1157,7 +1378,7 @@ function vistaGrafica() {
   if (ambNuvols) fixesEl.append(nuvols);
   if (ambUv) fixesEl.append(uv);
 
-  dlg.append(cap, fig, fixesEl);
+  dlg.append(cap, barraHist, fig, resumHist, fixesEl);
   // Un toc fora de la finestra la tanca, com Esc.
   dlg.addEventListener('click', (e) => {
     if (e.target !== dlg) return;
@@ -1168,23 +1389,37 @@ function vistaGrafica() {
     dlg.remove();
     // Les altres gràfiques de la pàgina, amb el vent que s'hi hagi triat.
     dibuixaGrafiques();
-    if (location.hash === '#grafica') history.replaceState(null, '', location.pathname + location.search);
+    if (location.hash === '#grafica' || esAdrecaHistorial(location.hash)) {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
   });
   document.body.append(dlg);
   dlg.showModal();
-  if (location.hash !== '#grafica') history.replaceState(null, '', '#grafica');
+  // Des de l'enllaç o del botó de la portada, ja a l'historial.
+  historial = historialInicial;
+  history.replaceState(null, '', historial ? adrecaHistorial(historial) : '#grafica');
   dibuixa();
   tanca.focus();
 }
 
-// Si s'ha obert l'enllaç de la gràfica (#grafica), en gran, la primera vegada.
+// Si s'ha obert l'enllaç de la gràfica (#grafica) o de l'historial
+// (#historial, #historial-AAAA-MM-DD), en gran, la primera vegada.
+function historialDeLAdreca(h) {
+  if (!esAdrecaHistorial(h)) return null;
+  return h === '#historial' ? '24h' : h.slice('#historial-'.length);
+}
 let obertaGrafica = false;
 function obreGraficaDeLEnllac() {
-  if (obertaGrafica || location.hash !== '#grafica') return;
+  if (obertaGrafica || (location.hash !== '#grafica' && !esAdrecaHistorial(location.hash))) return;
   obertaGrafica = true;
-  vistaGrafica();
+  vistaGrafica(historialDeLAdreca(location.hash));
 }
-addEventListener('hashchange', () => { if (location.hash === '#grafica') vistaGrafica(); });
+addEventListener('hashchange', () => {
+  if (location.hash !== '#grafica' && !esAdrecaHistorial(location.hash)) return;
+  const oberta = document.querySelector('dialog.vista-grafica');
+  if (oberta) oberta._posaHistorial(historialDeLAdreca(location.hash));
+  else vistaGrafica(historialDeLAdreca(location.hash));
+});
 
 // --- La gràfica com a imatge, des de la web i la app (Juanjo, 17-10-2026: «se
 // puede añadir a la gráfica una captura? … incluiría la misma información que
@@ -1246,7 +1481,11 @@ function avisosMesEnlla(fiIso) {
   });
 }
 
-function creditsGrafica() {
+function creditsGrafica(fig = null) {
+  // A l'historial, el que es va mesurar i de quan, no la previsió (ADR 0124).
+  if (fig && fig._nomHistorial) {
+    return [T`Temps a Montflorit (Cerdanyola del Vallès) · mesurat al barri: ${fig._nomHistorial} · meteo-montflorit.github.io`];
+  }
   const g = GENERAT_GRAFICA ? new Date(GENERAT_GRAFICA) : new Date();
   const codi = IDIOMA.codi === 'es' ? 'es' : 'ca';
   const dia = `${g.toLocaleDateString(codi, { weekday: 'long' })} ${g.toLocaleDateString(codi, { day: 'numeric', month: 'long' })}`;
@@ -1341,7 +1580,7 @@ function svgDeLaGraficaCompacta(fig) {
   const mida = document.createElement('canvas').getContext('2d');
   mida.font = `13px ${lletra}`;
   const cap = (t) => mida.measureText(t).width <= W;
-  const linies = creditsGrafica().flatMap((l) => {
+  const linies = creditsGrafica(fig).flatMap((l) => {
     const res = [];
     for (const tros of l.split(' · ')) {
       const prova = res.length ? `${res[res.length - 1]} · ${tros}` : tros;
@@ -1415,7 +1654,7 @@ function comparteixImatge(fig) {
   const png = pngDeLaGrafica(fig);
   if (potCompartirImatges()) {
     png.then((blob) => navigator.share({ files: [new File([blob], nomImatge(), { type: 'image/png' })],
-      title: 'Temps a Montflorit', text: creditsGrafica()[0] }))
+      title: 'Temps a Montflorit', text: creditsGrafica(fig)[0] }))
       .catch((e) => { if (e.name !== 'AbortError') mostraImatge(png); });
     return;
   }
@@ -1461,6 +1700,22 @@ function botoOpcions() {
   b.addEventListener('click', (e) => {
     e.stopPropagation();
     vistaGrafica();
+  });
+  return b;
+}
+
+// L'historial, també a la vista des de la portada: és el que es busca quan es
+// vol saber si ha plogut (ADR 0124). Obre la gràfica en gran, ja amb les
+// darreres 24 h.
+function botoHistorial() {
+  const b = element('button', 'g-opcions g-historial');
+  b.type = 'button';
+  b.title = T('El que es va mesurar al barri, hora a hora');
+  b.setAttribute('aria-label', T('Historial'));
+  b.append(icona('i-history'), element('span', 'text-amplia', T('Historial')));
+  b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    vistaGrafica('24h');
   });
   return b;
 }

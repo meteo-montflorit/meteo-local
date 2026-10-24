@@ -1488,6 +1488,46 @@ espera.then(() => console.log(JSON.stringify([mostrades, enviats])));
             self.assertIn(color, temes[0], color)
             self.assertIn(color, temes[1].split("}")[0], color)
 
+    def test_historial_mesurat(self):
+        # ADR 0124: l'historial de la gràfica en gran. Les darreres 24 h, amb
+        # les hores d'ahir i d'avui ja acabades i mesurades; el resum, si va
+        # ploure i quant, i la mínima i la màxima amb la seva hora.
+        def hora(dia, h, t, mm, sol=False):
+            f = {"hora": f"{dia}T{h:02d}:00", "fins": f"{dia}T{h:02d}:59", "mesura": True,
+                 "temperatura": t, "pluja_mm": mm, "prev": {"1": [t, 0, 0]}}
+            if sol:
+                f["sol"] = True
+            return f
+        ahir = {"hores": [hora("2026-10-23", h, 12 + h / 2, 0.0) for h in range(24)]}
+        avui = {"hores": [hora("2026-10-24", h, 10 + h / 10, 0.4 if h == 3 else 0.0) for h in range(6)]
+                + [hora("2026-10-24", h, None, None) for h in range(6, 24)]}
+        ara = "2026-10-24T06:05:00+02:00"
+        files = self.avalua(ara, f"darreres24({json.dumps(ahir)}, {json.dumps(avui)})")
+        self.assertEqual(len(files), 24)
+        self.assertEqual(files[0]["hora"], "2026-10-23T06:00")
+        self.assertEqual(files[-1]["hora"], "2026-10-24T05:00")
+        self.assertNotIn("prev", files[0])
+        self.assertEqual(self.avalua(ara, f"resumMesurat(darreres24({json.dumps(ahir)}, {json.dumps(avui)}), true)"),
+                         ["Han caigut 0,4\u00a0mm.",
+                          "Mínima: 10\u00a0°C, avui a les 0\u00a0h. Màxima: 24\u00a0°C, ahir a les 23\u00a0h."])
+        # Un dia passat: «van caure», les hores sense dada de pluja, i les
+        # hores amb sol sobre el termòmetre no compten per a la màxima.
+        dia = [hora("2026-10-18", 0, 15, 4.3), hora("2026-10-18", 1, 14, None),
+               hora("2026-10-18", 2, 25, 0.0, sol=True), hora("2026-10-18", 3, 16, 2.0)]
+        self.assertEqual(self.avalua(ara, f"resumMesurat({json.dumps(dia)})"),
+                         ["Van caure 6,3\u00a0mm. D’una hora no se sap.",
+                          "Mínima: 14\u00a0°C, a les 1\u00a0h. Màxima: 16\u00a0°C, a les 3\u00a0h."])
+        sec = [hora("2026-10-20", 0, 15, 0.0)]
+        self.assertEqual(self.avalua(ara, f"resumMesurat({json.dumps(sec)})")[0], "No va ploure.")
+        self.assertEqual(self.avalua(ara, f"resumMesurat({json.dumps(sec)}, false, true)")[0], "No ha plogut.")
+        self.assertEqual(self.avalua(ara, "resumMesurat([])"), ["D’aquest dia no hi ha mesures."])
+        # L'enllaç: #historial (les 24 h) o #historial-AAAA-MM-DD.
+        self.assertEqual(self.avalua(ara, "['#historial', '#historial-2026-10-18', '#grafica', '#historial-x']"
+                                          ".map(historialDeLAdreca)"), ["24h", "2026-10-18", None, None])
+        self.assertEqual(self.avalua(ara, "[nomHistorial('24h'), nomHistorial('2026-10-24'), nomHistorial('2026-10-23'),"
+                                          " nomHistorial('2026-10-18')]"),
+                         ["Darreres 24 h", "Avui", "Ahir", "Diumenge, 18 d’octubre"])
+
 
 if __name__ == "__main__":
     unittest.main()

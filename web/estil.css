@@ -1338,6 +1338,8 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
   padding: 0 .7rem; border: 1px solid var(--vora); border-radius: .5rem; background: var(--superficie); color: var(--text);
   font: inherit; font-size: .9rem; cursor: pointer; }
 .g-llegenda .g-opcions svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* «Historial» (ADR 0124), just davant d'«Opcions» i igual que ell. */
+.g-llegenda .g-opcions + .g-opcions { margin-left: -.5rem; }
 @media (max-width: 30rem) {
   .g-llegenda .g-opcions { width: 2.25rem; padding: 0; justify-content: center; }
   .g-llegenda .g-opcions .text-amplia { display: none; }
@@ -1366,6 +1368,20 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 /* El dia i l'antelació de «Fiabilitat» (fiabilitat.js, ADR 0110; fins a la
    3.164.0, a la vista en gran de la gràfica, ADR 0099). */
 .vg-dia { display: flex; align-items: center; gap: .5rem; }
+/* L'historial de la gràfica en gran (ADR 0124): el botó i, al costat, el dia
+   amb les fletxes; el nom del dia obre el calendari. */
+.vg-historial { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: .6rem 0; }
+.vg-historial .vg-dia { gap: .3rem; }
+/* El calendari s'obre sota el nom del dia. */
+.vg-historial .vg-dia { position: relative; }
+.vg-dia .vg-calendari { left: 2.6rem; top: 100%; }
+.vg-data { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.25rem;
+  padding: 0 .7rem; border: 1px solid var(--vora); border-radius: .5rem; background: var(--superficie); color: var(--text);
+  font: inherit; font-weight: 600; cursor: pointer; }
+.vg-data svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; color: var(--suau); }
+.vg-resum-historial { margin: .6rem 0 0; }
+.vg-resum-historial span { display: block; }
+.vg-resum-historial[hidden] { display: none; }
 .vg-dia[hidden], .vg-dia [hidden] { display: none; }
 .vg-dia .boto-icona { width: 2.25rem; height: 2.25rem; }
 .vg-dia .boto-icona:disabled { opacity: .35; cursor: default; }

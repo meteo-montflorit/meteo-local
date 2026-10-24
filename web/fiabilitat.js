@@ -17,7 +17,6 @@
 const ANTELACIO_MAX = 23;
 const SEGURETAT = 0.95;
 let INDEX = null;
-const DIES_HISTORIAL = new Map();
 const estat = { antelacio: 1, dia: null };
 
 // Les sèries, cadascuna amb el seu color i el seu traç (no només el color).
@@ -25,19 +24,8 @@ const SERIES = () => ({
   web: T('Aquesta web'), meteocat: 'Meteocat', aemet: 'AEMET', vigent: T('L’actual'), candidata: T('La nova, en entrenament'),
 });
 
-function llegeixHistorial(nom) {
-  return baixa(DADES_URL + nom).catch(() => baixa(nom));
-}
-
-function llegeixDia(d) {
-  if (!DIES_HISTORIAL.has(d)) DIES_HISTORIAL.set(d, llegeixHistorial(`historial-${d}.json`).catch(() => null));
-  return DIES_HISTORIAL.get(d);
-}
-
-function avuiIso() {
-  const a = new Date();
-  return `${a.getFullYear()}-${String(a.getMonth() + 1).padStart(2, '0')}-${String(a.getDate()).padStart(2, '0')}`;
-}
+// llegeixHistorial, llegeixDiaHistorial i avuiIso, de grafica.js: també els fa
+// servir l'historial de la gràfica en gran (ADR 0124).
 
 function codiData() {
   return IDIOMA.codi === 'es' ? 'es' : 'ca';
@@ -582,7 +570,7 @@ async function pintaDia() {
   $('dia-nom').textContent = estat.dia === avuiIso() ? T('Avui')
     : nomData(estat.dia, { weekday: 'long', day: 'numeric', month: 'long' });
   const dia = estat.dia;
-  const dades = await llegeixDia(dia);
+  const dades = await llegeixDiaHistorial(dia);
   if (dia !== estat.dia) return;
   const a = estat.antelacio;
   // Avui, només les hores que ja han acabat: la resta encara no té mesura.
