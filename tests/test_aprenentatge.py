@@ -208,6 +208,10 @@ class Rasgos(unittest.TestCase):
         self.assertGreaterEqual(A.pluja_observada(z, [z, z], dues), 0.6)
         # Una sola veïna amb pluja: no se sap.
         self.assertIsNone(A.pluja_observada(z, [z, z], {**seca, "ICERDA28": p}))
+        # I llavors, els seus mm: potser va plovisquejar (l'historial ho diu).
+        self.assertEqual(A.pluja_dubtosa({**seca, "ICERDA28": p}), 0.6)
+        self.assertIsNone(A.pluja_dubtosa(seca))
+        self.assertIsNone(A.pluja_dubtosa({**seca, "ICERDA48": p}))     # la que no compta
         # La que no compta per a la pluja no decideix.
         self.assertEqual(A.pluja_observada(z, [z, z], {**seca, "ICERDA48": p}), 0.0)
         # Sense cap veïna que confirmi, com abans: Meteocat.

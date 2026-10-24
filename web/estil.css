@@ -1396,6 +1396,11 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 /* La pluja prevista de les hores passades («Fiabilitat»): només la vora. */
 .grafica .g-pluja-prev { fill: none; stroke: var(--c-aigua-text); stroke-width: 1.5; stroke-dasharray: 3 2; }
 .g-clau .m-pluja-prev { width: .55rem; height: .8rem; border: 1.5px dashed var(--c-aigua-text); box-sizing: border-box; }
+/* Potser va plovisquejar: només una veïna hi va marcar pluja (historial). */
+.grafica .g-pluja-dubte { stroke: var(--c-aigua); stroke-width: 1; }
+.grafica .g-ratlla { stroke: var(--c-aigua); stroke-width: 1.5; }
+.g-clau .m-pluja-dubte { width: .55rem; height: .8rem; border: 1px solid var(--c-aigua); box-sizing: border-box;
+  background: repeating-linear-gradient(45deg, var(--c-aigua) 0 1.5px, transparent 1.5px 4px); }
 .grafica .g-prev { fill: none; stroke: var(--c-maxima); stroke-opacity: .45; stroke-width: 2; stroke-dasharray: 2 3; }
 .grafica .g-ara { stroke: var(--text); stroke-opacity: .55; stroke-width: 1.5; }
 .g-clau .m-prev { width: 1rem; height: 0; border-top: 2px dotted color-mix(in srgb, var(--c-maxima) 55%, transparent); }

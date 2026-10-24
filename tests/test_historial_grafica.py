@@ -86,6 +86,24 @@ class Historial(unittest.TestCase):
         self.assertNotIn("ratxa", g)
         self.assertNotIn("nuvols", g)
 
+    def test_les_hores_en_que_potser_va_plovisquejar(self):
+        # 3.198.0: casa a zero i una sola veïna que compta amb pluja: no se sap,
+        # però l'hora porta els mm de la veïna; si totes són a zero, seca.
+        import config as C
+        reg = self.dir.name
+        dia = "2026-10-16"
+        compten = [k for k, v in C.VEINES.items() if v.get("plou")]
+        for est in compten:
+            with open(os.path.join(reg, f"veina-{est}.csv"), "w", encoding="utf-8") as f:
+                f.write("fins,pluja_mm,temperatura,humitat,rosada,pressio,vent,ratxa\n")
+                f.write("".join(f"{dia}T{h:02d}:00,{0.2 if est == compten[0] and h == 6 else 0.0},15,80,10,1015,1,2\n"
+                                for h in (5, 6, 7)))
+        d = next(x for x in H.tots(dt.date(2026, 10, 17), reg) if x["dia"] == dia)
+        f = d["hores"][5]                                  # de 5 a 6
+        self.assertEqual((f["pluja_mm"], f["pluja_dubte"]), (None, 0.2))
+        self.assertEqual(d["hores"][6]["pluja_mm"], 0.0)
+        self.assertNotIn("pluja_dubte", d["hores"][6])
+
     def test_la_temperatura_de_la_part_alta(self):
         # ADR 0124 (3.194.1): la mediana de les veïnes de dalt a cada extrem de
         # l'hora, amb dues com a mínim, i la mitjana dels dos; si en falta, res.

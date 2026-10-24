@@ -111,11 +111,12 @@ MIN_CASOS_PLUJA = 20                     # para dar el acierto de la lluvia (en 
 # (3.137.0: los mm previstos; 3.141.0: la temperatura del tramo, el sol y las
 # franjas; 3.143.0: los mm esperados; 3.194.0: humedad, presión, viento,
 # nubes y las alertas de cada hora; 3.194.1: la parte alta; 3.195.0: su
-# previsión y su acierto), y lo apunta en el registro. Por tandas: IONOS
+# previsión y su acierto; 3.198.0: las horas en que solo una vecina vio
+# lluvia), y lo apunta en el registro. Por tandas: IONOS
 # acepta como mucho 12 archivos por envío (reserva/rep-dades.sh, ADR 0057), y
 # todos de golpe se rechazaron (18-10-2026, 22 archivos). Con los 2 días de
 # siempre, el índice, los datos y las 4 imágenes, caben 3 más por pasada.
-FORMAT = 9
+FORMAT = 10
 REFER_PER_PASSADA = 3
 # Si mejora con el tiempo (ADR 0110; Juanjo, 20-10-2026: «dado que la pagina
 # aprende, estaria bien una comparación semana a semana»): por semanas de
@@ -326,6 +327,10 @@ def un_dia(dia, casa, meteocat, veines, previstes, sol=(), vent=None, nuvols=Non
         f = {"hora": hora, "fins": fins, "mesura": True,
              "temperatura": t,
              "pluja_mm": None if mm is None else round(mm, 1)}
+        # Si no se sabe porque solo una vecina vio lluvia, sus mm: quizá lloviznó.
+        dubte = A.dubtosa(veines, fins) if mm is None else None
+        if dubte is not None:
+            f["pluja_dubte"] = round(dubte, 1)
         v, r = vent_tram(vent or {}, fins)
         n = A._num((nuvols or {}).get(fins, {}).get("nuvols"))
         for camp, valor in (("temperatura_alta", temperatura_alta_tram(veines, hora, fins)),

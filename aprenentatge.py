@@ -406,6 +406,18 @@ def pluja_observada(casa, meteocat=(), veines=None, llindar=None):
     return 0.0 if prop and all(x < llindar for x in prop) else None
 
 
+def pluja_dubtosa(veines=None, llindar=None):
+    """Cuando pluja_observada no lo sabe porque solo una vecina de las que
+    cuentan ve lluvia (y no llegan a C.VEINES_PLUJA_MIN): sus mm, para que el
+    historial diga que quizá lloviznó y no solo «no se sabe» (Juanjo,
+    24-10-2026: «por que pone que de 2 hores no se sap?»). None si ninguna
+    vecina ve lluvia: entonces lo que falta son datos."""
+    llindar = C.UMBRAL_MM if llindar is None else llindar
+    mullen = [_num((x or {}).get("pluja_mm")) for k, x in (veines or {}).items() if C.VEINES.get(k, {}).get("plou")]
+    mullen = [x for x in mullen if x is not None and x >= llindar]
+    return max(mullen) if mullen else None
+
+
 def plou_ara_barri(casa, veines, plugim=False):
     """Si llueve ahora en Montflorit, para comprobar lo que decía el radar
     (radar_fonts.py; ADR 0102): True, False o None si no se sabe. La regla de
@@ -449,6 +461,11 @@ def observada(casa, meteocat, veines, fins):
     """pluja_observada de la hora que acaba en fins, con los registros leídos."""
     return pluja_observada(casa.get(fins), [m.get(fins) for m in meteocat],
                            {k: v.get(fins) for k, v in veines.items()})
+
+
+def dubtosa(veines, fins):
+    """pluja_dubtosa de la hora que acaba en fins, con los registros leídos."""
+    return pluja_dubtosa({k: v.get(fins) for k, v in veines.items()})
 
 
 def mostres():

@@ -647,6 +647,11 @@ function dibuixaGrafica(fig) {
   const grad = svg('linearGradient', { id: idGrad, x1: 0, y1: 0, x2: 0, y2: 1 });
   grad.append(svg('stop', { offset: 0, class: 'g-grad-dalt' }), svg('stop', { offset: 1, class: 'g-grad-baix' }));
   defs.append(grad);
+  // Les hores en què potser va plovisquejar (historial), ratllades.
+  const idRatlles = 'g-pluja-ratlles';
+  const ratlles = svg('pattern', { id: idRatlles, width: 4, height: 4, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' });
+  ratlles.append(svg('line', { class: 'g-ratlla', x1: 0, y1: 0, x2: 0, y2: 4 }));
+  defs.append(ratlles);
   g.append(defs);
   if (ambTemp && principal) {
     g.append(svg('path', { class: 'g-temp-area', fill: `url(#${idGrad})`,
@@ -683,6 +688,14 @@ function dibuixaGrafica(fig) {
     const intensa = intensitatPluja(f.pluja_mm || 0);
     g.append(svg('rect', { class: `g-pluja ${pluja === 'pluja' ? 'segura' : pluja}${intensa ? ' ' + intensa : ''}`,
       x: x(i) + col * 0.15, y, width: col * 0.7, height: base - y }));
+  });
+  // Les hores en què només una veïna va veure pluja: una barra baixa
+  // ratllada, perquè es vegi on és el «potser» del resum.
+  files.forEach((f, i) => {
+    if (f.pluja_mm != null || f.pluja_dubte == null) return;
+    const h = Math.max(8, alcadaPluja(f.pluja_dubte, sostre) * (hPluja - 14));
+    g.append(svg('rect', { class: 'g-pluja-dubte', fill: `url(#${idRatlles})`,
+      x: x(i) + col * 0.15, y: base - h, width: col * 0.7, height: h }));
   });
   // Els mm que deia la previsió de les hores passades, a «Fiabilitat»: una
   // vora puntejada a la seva alçada, damunt de la barra del que va ploure
@@ -892,7 +905,10 @@ function dibuixaGrafica(fig) {
           + (f.sol ? T(' · sol sobre el termòmetre, no compta') : ''));
       const mm = (v) => (v >= 10 ? String(Math.round(v)) : v < 0.05 ? '0' : coma(Math.round(v * 10) / 10));
       const mmPrevist = p.mm == null ? '' : T`, ${mm(p.mm)}\u00a0mm`;
-      linies.push(f.pluja_mm == null ? T('Pluja: no se sap') : T`Pluja: ${mm(f.pluja_mm)}\u00a0mm`
+      const plujaNul = f.pluja_dubte != null
+        ? T`Pluja: potser va plovisquejar (només una estació veïna, ${mm(f.pluja_dubte)}\u00a0mm)`
+        : T('Pluja: no se sap');
+      linies.push(f.pluja_mm == null ? plujaNul : T`Pluja: ${mm(f.pluja_mm)}\u00a0mm`
         + previst(p.probabilitat, T` (prevista: ${Math.round((p.probabilitat ?? 0) * 100)}\u00a0%${mmPrevist})`));
       // La resta del que es mesura (ADR 0124), amb on, si no és al barri.
       if (f.vent != null) {
@@ -995,6 +1011,7 @@ function dibuixaGrafica(fig) {
   if (plujes.includes('poca')) {
     ll.append(clau('m-pluja poca', T`Pluja, del ${pct(PROB_POCA)} al ${pct(PROB_POSSIBLE)}\u00a0%`));
   }
+  if (files.some((f) => f.pluja_mm == null && f.pluja_dubte != null)) ll.append(clau('m-pluja-dubte', T('Potser va plovisquejar')));
   const intenses = files.filter((f) => plujaGrafica(f)).map((f) => intensitatPluja(f.pluja_mm || 0));
   if (intenses.includes('forta')) ll.append(clau('m-pluja forta', T('Pluja forta')));
   if (intenses.includes('torrencial')) ll.append(clau('m-pluja torrencial', T('Pluja torrencial')));
@@ -1165,7 +1182,16 @@ function resumMesurat(files, vint4 = false, ara = vint4) {
     const xifra = mm >= 10 ? String(Math.round(mm)) : coma(mm);
     let text = mm < 0.05 ? (ara ? T('No ha plogut.') : T('No va ploure.'))
       : ara ? T`Han caigut ${xifra}\u00a0mm.` : T`Van caure ${xifra}\u00a0mm.`;
-    const sense = files.length - conegudes.length;
+    // Les hores en què només una veïna va veure pluja (historial.py,
+    // «pluja_dubte»): potser va plovisquejar; la resta, sense dades.
+    const dubte = files.filter((f) => f.pluja_mm == null && f.pluja_dubte != null).length;
+    const sense = files.length - conegudes.length - dubte;
+    if (dubte) {
+      const quantes = dubte === 1 ? T('En una hora') : T`En ${dubte} hores`;
+      const mes = mm < 0.05 ? '' : T(' més');
+      text += ' ' + (ara ? T`${quantes}${mes} potser ha plovisquejat: només una estació veïna hi ha marcat pluja.`
+        : T`${quantes}${mes} potser va plovisquejar: només una estació veïna hi va marcar pluja.`);
+    }
     if (sense) text += ' ' + (sense === 1 ? T('D’una hora no se sap.') : T`De ${sense} hores no se sap.`);
     res.push(text);
   }

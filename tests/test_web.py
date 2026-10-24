@@ -1517,6 +1517,15 @@ espera.then(() => console.log(JSON.stringify([mostrades, enviats])));
         self.assertEqual(self.avalua(ara, f"resumMesurat({json.dumps(dia)})"),
                          ["Van caure 6,3\u00a0mm. D’una hora no se sap.",
                           "Mínima: 14\u00a0°C, a les 1\u00a0h. Màxima: 16\u00a0°C, a les 3\u00a0h."])
+        # Les hores en què només una veïna va veure pluja: potser va plovisquejar.
+        dubte = [*dia, {**hora("2026-10-18", 4, 15, None), "pluja_dubte": 0.2},
+                 {**hora("2026-10-18", 5, 15, None), "pluja_dubte": 0.3}]
+        self.assertEqual(self.avalua(ara, f"resumMesurat({json.dumps(dubte)})")[0],
+                         "Van caure 6,3\u00a0mm. En 2 hores més potser va plovisquejar: només una estació "
+                         "veïna hi va marcar pluja. D’una hora no se sap.")
+        sec1 = [hora("2026-10-20", 0, 15, 0.0), {**hora("2026-10-20", 1, 15, None), "pluja_dubte": 0.2}]
+        self.assertEqual(self.avalua(ara, f"resumMesurat({json.dumps(sec1)}, false, true)")[0],
+                         "No ha plogut. En una hora potser ha plovisquejat: només una estació veïna hi ha marcat pluja.")
         sec = [hora("2026-10-20", 0, 15, 0.0)]
         self.assertEqual(self.avalua(ara, f"resumMesurat({json.dumps(sec)})")[0], "No va ploure.")
         self.assertEqual(self.avalua(ara, f"resumMesurat({json.dumps(sec)}, false, true)")[0], "No ha plogut.")

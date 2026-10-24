@@ -222,3 +222,32 @@ la zona; con el registro real, la parte alta de 1 a 2 °C por encima de la
 riera a mediodía; en el móvil, el 17-10 con la parte alta (26 °C a las 14 h) y
 el 6-10 con la nota de la riera.
 
+
+## Cambio del 24-10-2026 (3.198.0): las horas en que quizá lloviznó
+
+Juanjo, ante el historial del 19-10-2026: «por que pone que de 2 hores no se
+sap?». En las dos horas (de 5 a 6 y de 21 a 22) casa marcaba 0,0 mm y solo una
+de las vecinas que cuentan para la lluvia marcaba 0,2 mm, el mínimo que cuenta
+como lluvia: la regla de la lluvia medida (`aprenentatge.pluja_observada`, ADR
+0070) no lo decide, porque pide casa o dos vecinas. La regla es correcta, pero
+«no se sap» no se entendía sin conocerla. El agente propuso decirlo con
+palabras y señalar esas horas en la gráfica; Juanjo: «hazlo».
+
+- `aprenentatge.pluja_dubtosa`: cuando la hora no se sabe porque solo una
+  vecina que cuenta ve lluvia, sus mm; si ninguna la ve, None (lo que falta
+  son datos). `historial.py` (formato 10) lo guarda en la hora como
+  `pluja_dubte`.
+- El resumen lo dice aparte: «Van caure 25 mm. En 2 hores més potser va
+  plovisquejar: només una estació veïna hi va marcar pluja.» (sin «més» si no
+  llovió; «ha plovisquejat» en las últimas 24 horas). Las horas sin datos
+  siguen con «no se sap».
+- En la gráfica, una barra baja rayada en esas horas, «Potser va plovisquejar»
+  en la leyenda y, en la ficha de la hora, «Pluja: potser va plovisquejar
+  (només una estació veïna, 0,2 mm)». La regla no cambia: esas horas no suman
+  en los mm del día ni en el aprendizaje.
+
+Validado: `test_les_hores_en_que_potser_va_plovisquejar`, `pluja_dubtosa` en
+`test_montflorit_primer` y los textos en `test_historial_mesurat`; con el
+registro real del 19-10-2026 (casa 0,0; ICERDA6 0,2 a las 6 h e ICERDA18 0,2
+a las 22 h), en Chromium, Firefox y WebKit, en el ordenador y el móvil, en
+claro y oscuro.
