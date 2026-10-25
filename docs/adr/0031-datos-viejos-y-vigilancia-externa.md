@@ -83,3 +83,38 @@ Validación: `test_cada_pagina_avisa_de_les_seves_fonts` y, en Firefox, las
 tres páginas con un error simulado del sol (ningún aviso), del radar (en
 todas menos en la ficha del sol) y de los trenes (en «Si surts» y en
 «Avui»).
+
+## Cambio del 25-10-2026 (3.204.0): cada fuente caída, qué deja de salir, desde cuándo y quién se ocupa
+
+El aviso general «No s’han pogut llegir totes les fonts: la informació és
+menys segura» hacía parecer que fallaba toda la web: el 25-10-2026 a las 12:00
+salió en la portada solo porque Meteoalarm (los avisos de AEMET) respondió con
+un error 500 (Juanjo: «en lugar de ese mensaje genérico no puedes poner un
+mensaje más concreto? indicando lo que puede fallar, ahora parece que toda la
+web va mal», y «que no parezca algo permanente»). Y si una fuente caía un día
+entero, la web lo repetía en cada actualización y nadie se enteraba: la S2
+estuvo dos días «sense dades» (ADR 0079). Desde la 3.204.0:
+
+- **La web dice qué no llega, qué deja de salir y desde cuándo**
+  (`avisosFonts` y `TEXT_FONT_FALLA` en `web/comu.js`). Si es de esta
+  actualización: «En aquesta actualització no han arribat els avisos de
+  l’AEMET: els de Meteocat, sí. Es torna a provar a la propera actualització,
+  a les 12:18.». Si dura más de FONT_FALLA_ACTUALITZACIO_MIN (20) minutos:
+  «Des de les 12:00 no arriben els avisos de l’AEMET: els de Meteocat, sí. Es
+  torna a provar a cada actualització.» (o «Des d’ahir a les 18:00…»). Una
+  fuente sin texto propio: «una de les fonts no ha respost: la resta de la
+  informació és al dia». La riera mantiene su texto (21-10-2026).
+- **El NAS apunta desde cuándo falla cada fuente** (`fonts_falla.py`, en
+  `/estat/fonts-falla.json`) y lo publica (`fonts_falla` en los datos). En la
+  reserva de IONOS, sin estado, desde ahora.
+- **Si dura LLINDAR_H (3) horas**: si el error es de la red o del servidor (no
+  responde, un 500…), un aviso a Juanjo por Telegram, una vez, y otro cuando
+  vuelve; si parece del programa (la fuente ha cambiado de formato), se lo
+  encarga al reparador (ADR 0113), que solo publica el arreglo si con él la
+  fuente se vuelve a leer y, si no lo consigue, avisa a Juanjo. Meteocat
+  (`smp.py`) y las estaciones (`estacions.py`) ya tenían su aviso y no se
+  vigilan aquí.
+
+Una fuente nueva que se añada a la lista de una página lleva también su texto
+en `TEXT_FONT_FALLA` y en `fonts_falla.QUE`. Validación:
+`tests/test_fonts_falla.py` y `test_cada_pagina_avisa_de_les_seves_fonts`.

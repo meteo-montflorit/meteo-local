@@ -813,8 +813,10 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 /* El sol: el recorregut d'avui sobre l'horitzó, el del 21 de juny i el del 21
    de desembre, fins, i on és ara. El cel i la nit, del color de la barra que
    hi havia abans. */
-:root { --sol-cel: #dbeafe; --sol-nit: rgb(30 41 59 / .82); --sol-avui: #f59e0b; --sol-ref: #64748b; --sol-guia: #94a3b8; }
-:root[data-theme="dark"] { --sol-cel: #1e3a5f; --sol-nit: rgb(2 6 23 / .72); --sol-avui: #fbbf24; --sol-ref: #94a3b8; --sol-guia: #64748b; }
+:root { --sol-cel: #dbeafe; --sol-nit: rgb(30 41 59 / .82); --sol-avui: #f59e0b; --sol-ref: #64748b; --sol-guia: #94a3b8;
+  --lluna-nit: rgb(99 102 241 / .18); --lluna-linia: #4338ca; }
+:root[data-theme="dark"] { --sol-cel: #1e3a5f; --sol-nit: rgb(2 6 23 / .72); --sol-avui: #fbbf24; --sol-ref: #94a3b8; --sol-guia: #64748b;
+  --lluna-nit: rgb(2 6 23 / .55); --lluna-linia: var(--c-lluna); }
 /* Quadrat i de tota l'amplada: el dibuix es fa a la mida de la fitxa (pintaSol). */
 .sol-grafica { display: block; width: 100%; height: auto; margin: .6rem 0 .3rem; border-radius: .6rem; overflow: hidden; }
 /* En una pantalla ampla, el dibuix a l'esquerra i el text al costat. */
@@ -855,6 +857,16 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .sol-peca { white-space: nowrap; }
 .sol-mostra { display: inline-block; width: 1.4rem; height: 0; margin: 0 .35rem 0 0; vertical-align: middle; }
 .sol-mostra-avui { border-top: 3px solid var(--sol-avui); }
+/* La Lluna: la corba del seu color, les hores de nit, fosques, i on és ara. */
+.lluna-nit { fill: var(--lluna-nit); }
+/* La franja de la nit, clara, i la línia, més fosca que el color de la Lluna:
+   5,3:1 de contrast de nit i 6,5:1 de dia (Juanjo, 25-10-2026: «hay poco
+   contraste con la linea, sobre todo de noche»). */
+.lluna-corba { fill: none; stroke: var(--lluna-linia); stroke-width: 3; stroke-linecap: round; }
+.lluna-ara-sota { opacity: .55; }
+.lluna-mostra-corba { border-top: 3px solid var(--lluna-linia); }
+.lluna-mostra-nit { height: .8rem; border-radius: 2px; background: var(--lluna-nit); border: 1px solid var(--vora); }
+.lluna-fase-ara svg.lluna { width: 1.3em; height: 1.3em; margin-right: .35em; vertical-align: -.25em; }
 .sol-mostra-juny { border-top: 2px dashed var(--sol-ref); }
 .sol-mostra-desembre { border-top: 3px dotted var(--sol-ref); }
 .sol-uv { line-height: 1.9; }
@@ -1645,6 +1657,8 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .heroi-sota:has(.heroi-sol:not([hidden]) + .heroi-lluna) { padding-bottom: calc(22% - 1.2em + .3rem); }
 .heroi-sol, .heroi-lluna { margin: 0; white-space: nowrap; }
 .heroi-lluna svg.lluna { width: 1em; height: 1em; margin-right: .25em; vertical-align: -.15em; }
+.heroi-lluna a { color: inherit; text-decoration: none; }
+.heroi-lluna a:hover, .heroi-lluna a:focus-visible { text-decoration: underline; }
 @media (max-width: 40rem) { .heroi-cel-bloc { width: 7.4rem; margin: -1.6rem -.3rem -.8rem auto; } }
 /* La part alta, a sota de la temperatura, com a text, sense color (Juanjo,
    22-10-2026); en prémer-la, què vol dir, com a tot arreu. */

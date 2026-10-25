@@ -113,3 +113,15 @@ diseño con el aviso posterior, solo informativo.
   incumplimiento y las tres comprobaciones pasaron después. Sin ese arreglo,
   el reparador no habría podido distinguir nunca un fallo de GitHub de uno
   del código.
+
+## Cambio del 25-10-2026 (3.204.0): también las fuentes que cambian de formato
+
+Cuando una fuente lleva 3 horas sin poder leerse por un error del programa y
+no de la red (`fonts_falla.py`, ADR 0031), y no hay ningún commit por arreglar,
+el reparador lanza el agente con `reparador-fonts-instruccions.md` y el error.
+Además de las comprobaciones de siempre, el programa vuelve a ejecutar
+`casa.py` en la copia, con el estado en una carpeta temporal, y solo sube el
+arreglo si el error de esa fuente ha desaparecido. Si no lo consigue, avisa a
+Juanjo con qué falla y qué ha encontrado el agente. Cada caída de cada fuente
+(fuente y desde cuándo) se intenta una sola vez.
+

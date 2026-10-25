@@ -25,7 +25,7 @@ Versión 3.200.0, con el recorrido del sol de «Consultes» (ADR 0054).
   universal y las horas salen en hora local con su desfase, como pidió
   Juanjo para toda la web el mismo día («internamente siempre utc y al
   mostrar datos los adaptas al horario actual»).
-- **«Ara»**: de 12 horas antes a 12 después de una fase principal, debajo
+- **«Ara»**: de 24 horas antes a 24 después de una fase principal, debajo
   del dibujo del cielo, con su dibujo pequeño delante: «Lluna plena: demà,
   5:12» (con el día solo si no es hoy), con la misma forma que «Sortida del
   sol: 7:14» (ADR 0121) y en el mismo hueco, para que la tarjeta no crezca
@@ -57,7 +57,7 @@ Versión 3.200.0, con el recorrido del sol de «Consultes» (ADR 0054).
   la Luna dibujada como se ve, la fase de ahora y la parte iluminada («Lluna
   plena, il·luminada al 100 %»), la salida y la puesta por orden, y las
   próximas cuatro fases con su día. La fase de ahora se nombra con la
-  principal si está a 12 horas o menos (la misma regla que «Ara»); si no,
+  principal si está a 24 horas o menos (la misma regla que «Ara»); si no,
   con la de paso: creciente, gibosa creciente, gibosa menguante, menguante.
 - **El dibujo, propio y fiel** (`dibuixLluna`): el disco oscuro, el lado
   iluminado (a la derecha cuando crece, desde el hemisferio norte) y el
@@ -103,10 +103,61 @@ Versión 3.200.0, con el recorrido del sol de «Consultes» (ADR 0054).
   con «+01:00»; las fases en orden, con la de antes; el mismo resultado
   pedido con dos desfases distintos; la salida y la puesta del día local, y
   uno a tres días al mes sin una de las dos.
-- `tests/test_web.py`: la fase sale de 12 horas antes a 12 después y no
+- `tests/test_web.py`: la fase sale de 24 horas antes a 24 después y no
   fuera; «demà, 5:12»; los nombres de las fases de paso.
 - En el navegador, con el reloj a las 20:00 del 25-10-2026 y los datos de
   esa hora: «Lluna plena: demà, 5:12» bajo el dibujo de «Ara», la Luna en la
   columna de 5 a 6 de la gráfica con su leyenda, y «Sol i lluna» con la Luna,
   en Chromium, Firefox y WebKit, móvil y escritorio, claro y oscuro; axe-core
   sin incidencias.
+
+## Cambio del 25-10-2026 (3.204.0): 24 horas, la gráfica de la Luna, el enlace y la opción
+
+### 24 horas en lugar de 12
+
+Con 12 horas, la Luna llena del 26-10 a las 5:12 salía en «Ara» el domingo
+por la tarde y desaparecía el lunes a las 17:12, antes de que la Luna saliera
+esa noche, iluminada aún al 99 %. La fase se ve casi igual las dos tardes y
+noches que la rodean, así que la ventana es de 24 horas antes y después
+(`FASE_A_PROP_H`), en «Ara» y en «Consultes». La gráfica por horas la sigue
+marcando solo en su hora. Lo propuso el agente y Juanjo lo aprobó: «sí, ponlo
+a 24 horas».
+
+### La gráfica del arc de la Luna en «Sol i lluna»
+
+Juanjo, 25-10-2026: «puedes hacer un grafico similar al del sol para la luna
+del dia?». El mismo cuadrado que el del sol, con el texto al lado en pantallas
+anchas: la altura de la Luna cada 10 minutos (`lluna.recorregut`, Astronomy
+Engine con la refracción), las horas de noche más oscuras (cuando el sol está
+bajo el horizonte, para ver cuándo se ve con el cielo negro), las líneas de la
+salida, el momento más alto y la puesta con su hora, y la Luna, con su fase,
+donde está ahora si está dentro del dibujo.
+
+No es el día de reloj: la Luna sale cada día unos 50 minutos más tarde y el día
+de 0 a 24 h la cortaría a media noche. Son 24 horas centradas en su momento
+más alto, del arco que interesa: si ahora está sobre el horizonte, el de ahora;
+si no, el siguiente (a mediodía, el de esa tarde y noche, no el de la noche
+pasada). El texto dice ese arco como el del sol: «Surt avui a les 17:14 per
+l’est i es pon demà a les 07:37 pel nord-oest. A les 00:18 puja fins a 64°
+sobre l’horitzó.» Con datos de antes de la 3.204.0, sin recorrido, el dibujo
+grande de la fase y la frase de la salida y la puesta del día.
+
+### Un toque lleva a la Luna de «Consultes»
+
+Juanjo, 25-10-2026: «si pulso encima de la etiqueta de la luna quiero que se
+vaya a la sección de la luna en consultas». La línea de la fase de «Ara» y la
+etiqueta de la gráfica llevan a `consultes.html#lluna`: abre «Sol i lluna»,
+baja hasta la Luna y la destaca un momento. La etiqueta va por encima de las
+zonas de cada hora de la gráfica. Para que el destacado no se perdiera,
+«Sol i lluna» solo se vuelve a pintar si cambia el ancho de la ventana: en el
+móvil, la barra de direcciones que se esconde al desplazar la página también
+avisa de un cambio de tamaño (4 de cada 12 llegadas perdían el destacado).
+
+### Se puede quitar de la gráfica
+
+Juanjo, 25-10-2026: «en opciones del gráfico añade la posibilidad de quitar la
+luna». Un interruptor más, «Lluna», al final de las opciones de la gráfica,
+encendido de serie y recordado para todas las gráficas, como los demás; solo
+aparece si la gráfica tiene alguna fase en sus horas. Su icono es una Luna en
+cuarto con el trazo de los demás, no el icono de la luna, que es el del tema
+oscuro.

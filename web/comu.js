@@ -209,9 +209,11 @@ function alturaSol(data) {
 
 // --- La Lluna (lluna.py, ADR 0127): les fases, calculades al NAS amb
 // Astronomy Engine. Una fase principal es diu fins a FASE_A_PROP_H hores abans
-// i després (Juanjo, 25-10-2026: «12h antes y después de una fase de la luna
-// salga en la tarjeta de avui»), a «Ara» i a «Consultes» igual.
-const FASE_A_PROP_H = 12;
+// i després, a «Ara» i a «Consultes» igual: les dues vesprades i nits que la
+// Lluna es veu així, sigui l'hora de la fase quina sigui. Amb 12 hores, la de
+// les 5:12 del matí desapareixia a les 17:12, abans que sortís la Lluna aquella
+// nit, encara plena al 99 % (Juanjo, 25-10-2026: «sí, ponlo a 24 horas»).
+const FASE_A_PROP_H = 24;
 // Les dades de la Lluna de la pàgina, per a la gràfica (les posa qui les llegeix).
 let LLUNA = null;
 const ANGLE_FASE = { nova: 0, quart_creixent: 90, plena: 180, quart_minvant: 270 };
@@ -408,9 +410,93 @@ function avisosFonts(dades, fonts) {
   } else if (riera.some((e) => e.includes('falten mitges hores'))) {
     avisos.push(T('A l’estació de Meteocat de Sant Cugat li falten mitges hores de pluja: el risc de la riera pot quedar curt.'));
   }
-  if (errors.length > riera.length) avisos.push(T('No s’han pogut llegir totes les fonts: la informació és menys segura.'));
+  // La resta, cadascuna amb el que falla i el que deixa de sortir, i no un
+  // «menys segura» general: semblava que fallava tota la pàgina (Juanjo,
+  // 25-10-2026, amb els avisos de l'AEMET sense respondre a les 12 h). Que
+  // no sembli per sempre («que no parezca algo permanente»): si és d'aquesta
+  // actualització, ho diu, i quan es torna a provar; si fa més d'una
+  // actualització que falla, des de quan (fonts_falla.py, ADR 0031).
+  const vistos = new Set();
+  let ara = true;
+  for (const e of errors) {
+    if (e.startsWith('riera')) continue;
+    const font = e.startsWith('entorn: ') ? e.split(':').slice(0, 2).join(':') : e.split(':')[0];
+    const des = (dades.fonts_falla || {})[font];
+    const fa = des && ((dades.generat ? new Date(dades.generat) : new Date()) - llegeixHora(des)) / 60000;
+    const t = (TEXT_FONT_FALLA()[font] || TEXT_FONT_DESCONEGUDA)();
+    let text;
+    if (fa > FONT_FALLA_ACTUALITZACIO_MIN) {
+      ara = false;
+      text = T`Des ${quanDes(des)} ${t.des}: ${t.efecte}.`;
+    } else {
+      text = T`En aquesta actualització ${t.ara}: ${t.efecte}.`;
+    }
+    if (!vistos.has(text)) {
+      vistos.add(text);
+      avisos.push(text);
+    }
+  }
+  if (vistos.size) {
+    const pendent = dades.horari && properaPendent(dades);
+    const quan = pendent && horaCurta(new Date(pendent.getTime() + ESPERA_PUBLICACIO_MIN * 60000));
+    avisos[avisos.length - 1] += ' ' + (!ara ? T('Es torna a provar a cada actualització.')
+      : quan ? T`Es torna a provar a la propera actualització, a les ${quan}.`
+        : T('Es torna a provar a la propera actualització.'));
+  }
   return avisos;
 }
+
+// Més d'aquests minuts fallant: ja no és d'aquesta actualització (n'hi ha
+// cada 15 minuts, i amb pluja, més sovint).
+const FONT_FALLA_ACTUALITZACIO_MIN = 20;
+
+// «de les 12:00», «d’ahir a les 18:00», «del dilluns 19 a les 18:00».
+function quanDes(iso) {
+  const h = horaCurta(iso);
+  const dies = diesEntre(llegeixHora(iso), new Date());
+  if (dies <= 0) return T`de les ${h}`;
+  if (dies === 1) return T`d’ahir a les ${h}`;
+  return T`del ${textData(iso)} a les ${h}`;
+}
+
+// Per a cada font de la pàgina: el que no ha arribat en aquesta actualització
+// (ara), el mateix quan fa estona que falla (des) i què no surt (efecte).
+const TEXT_FONT_DESCONEGUDA = () => ({ ara: T('una de les fonts no ha respost'),
+  des: T('una de les fonts no respon'), efecte: T('la resta de la informació és al dia') });
+const TEXT_FONT_FALLA = () => {
+  const estacio = { ara: T('l’estació del barri no ha respost'), des: T('l’estació del barri no respon'),
+    efecte: T('el temps d’ara surt de les estacions veïnes') };
+  return {
+    previsió: () => ({ ara: T('no ha arribat la previsió dels models'), des: T('no arriba la previsió dels models'),
+      efecte: T('no hi ha previsió hora a hora') }),
+    ensemble: () => ({ ara: T('no han arribat les 40 variants del model alemany'),
+      des: T('no arriben les 40 variants del model alemany'), efecte: T('la probabilitat de pluja és menys afinada') }),
+    estació: () => estacio,
+    'estació de casa': () => estacio,
+    'estacions veïnes': () => ({ ara: T('les estacions veïnes no han respost'), des: T('les estacions veïnes no responen'),
+      efecte: T('si plou ara, només ho sap l’estació del barri') }),
+    vent: () => ({ ara: T('l’estació de Meteocat de Sant Cugat no ha respost'),
+      des: T('l’estació de Meteocat de Sant Cugat no respon'), efecte: T('no surt el vent mesurat') }),
+    radar: () => ({ ara: T('el radar no ha respost'), des: T('el radar no respon'),
+      efecte: T('no es pot dir si s’acosta pluja') }),
+    'final de la pluja': () => ({ ara: T('no s’ha pogut calcular quan pararà de ploure'),
+      des: T('no es pot calcular quan pararà de ploure'), efecte: T('la resta de la previsió és al dia') }),
+    avisos: () => ({ ara: T('no han arribat els avisos de l’AEMET'), des: T('no arriben els avisos de l’AEMET'),
+      efecte: T('els de Meteocat, sí') }),
+    plans: () => ({ ara: T('no han arribat els plans de Protecció Civil'), des: T('no arriben els plans de Protecció Civil'),
+      efecte: T('si n’hi hagués un d’activat, no sortiria') }),
+    'entorn: incendis': () => ({ ara: T('no han arribat els incendis dels Bombers'),
+      des: T('no arriben els incendis dels Bombers'), efecte: T('si n’hi hagués un a prop, no sortiria') }),
+    'entorn: pla_alfa': () => ({ ara: T('no ha arribat el Pla Alfa d’avui'), des: T('no arriba el Pla Alfa'),
+      efecte: T('no surt el risc d’incendi forestal') }),
+    trens: () => ({ ara: T('no ha arribat l’estat dels trens'), des: T('no arriba l’estat dels trens'),
+      efecte: T('no se sap si hi ha incidències') }),
+    trànsit: () => ({ ara: T('no ha arribat l’estat del trànsit'), des: T('no arriba l’estat del trànsit'),
+      efecte: T('no se sap si hi ha incidències a prop') }),
+    'índex UV': () => ({ ara: T('no ha arribat l’índex UV'), des: T('no arriba l’índex UV'),
+      efecte: T('no surt la protecció solar recomanada') }),
+  };
+};
 
 function pintaHorari(dades, fonts = FONTS_TEMPS) {
   const ara = new Date();

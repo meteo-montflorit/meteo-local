@@ -650,6 +650,32 @@ class Web(unittest.TestCase):
         self.assertEqual(len(text({"errors": [caiguda, "radar: timeout"], "riera": None})), 2)
         self.assertIn("pot quedar curt", text({"errors": ["riera: a Sant Cugat (Meteocat) li falten mitges hores de pluja"],
                                                "riera": {}})[0])
+        # La resta, cadascuna amb el que falla i el que deixa de sortir, i no un
+        # «menys segura» general (Juanjo, 25-10-2026: «parece que toda la web va mal»).
+        # I que és d'aquesta actualització, amb quan es torna a provar, o des de
+        # quan falla si fa més d'una actualització («que no parezca algo permanente»).
+        horari = {"trams": [["00:00", "23:59"]], "cada_min": 15, "desfase_min": 1}
+        aemet = ["avisos: HTTP Error 500: Internal Server Error"]
+        self.assertEqual(text({"errors": aemet, "horari": horari, "generat": "2026-10-09T12:01+02:00",
+                               "fonts_falla": {"avisos": "2026-10-09T12:01+02:00"}}),
+                         ["En aquesta actualització no han arribat els avisos de l’AEMET: els de Meteocat, sí. "
+                          "Es torna a provar a la propera actualització, a les 12:18."])
+        self.assertEqual(text({"errors": aemet, "horari": horari, "generat": "2026-10-09T12:01+02:00",
+                               "fonts_falla": {"avisos": "2026-10-09T09:01+02:00"}}),
+                         ["Des de les 09:01 no arriben els avisos de l’AEMET: els de Meteocat, sí. "
+                          "Es torna a provar a cada actualització."])
+        self.assertEqual(text({"errors": aemet, "generat": "2026-10-09T12:01+02:00",
+                               "fonts_falla": {"avisos": "2026-10-08T18:00+02:00"}}),
+                         ["Des d’ahir a les 18:00 no arriben els avisos de l’AEMET: els de Meteocat, sí. "
+                          "Es torna a provar a cada actualització."])
+        self.assertEqual(text({"errors": ["estació: x", "estació de casa: y", "entorn: incendis: 500"]}),
+                         ["En aquesta actualització l’estació del barri no ha respost: el temps d’ara surt de les estacions veïnes.",
+                          "En aquesta actualització no han arribat els incendis dels Bombers: si n’hi hagués un a prop, no sortiria. "
+                          "Es torna a provar a la propera actualització."])
+        self.assertEqual(self.avalua("2026-10-09T12:05:00+02:00",
+                                     "avisosFonts({errors: ['nova: x']}, ['nova'])", "casa.js"),
+                         ["En aquesta actualització una de les fonts no ha respost: la resta de la informació és al dia. "
+                          "Es torna a provar a la propera actualització."])
         # A «Consultes», segons la fitxa: el sol no avisa enlloc; els trens, només a «Avui».
         def consulta(triada, errors):
             return self.avalua("2026-10-09T18:05:00+02:00",
@@ -677,14 +703,16 @@ class Web(unittest.TestCase):
                                          "consultes.js")
         self.assertEqual([migdia("2026-10-25") // 60, migdia("2026-06-21") // 60, migdia("2026-12-21") // 60], [12, 12, 12])
 
-    def test_la_fase_de_la_lluna_12_hores_abans_i_despres(self):
-        # Juanjo, 25-10-2026 (ADR 0127): a «Ara», de 12 hores abans a 12 després.
+    def test_la_fase_de_la_lluna_24_hores_abans_i_despres(self):
+        # Juanjo, 25-10-2026 (ADR 0127): a «Ara», de 24 hores abans a 24 després,
+        # les dues vesprades i nits en què es veu així.
         lluna = json.dumps({"angle": 175, "fases": [{"fase": "plena", "hora": "2026-10-26T05:12+01:00"}]})
         fase = lambda ara: self.avalua(ara, f"(faseAProp({lluna}, new Date()) || {{}}).fase || null")  # noqa: E731
-        self.assertIsNone(fase("2026-10-25T17:00:00+01:00"))
-        self.assertEqual(fase("2026-10-25T17:20:00+01:00"), "plena")
-        self.assertEqual(fase("2026-10-26T17:05:00+01:00"), "plena")
-        self.assertIsNone(fase("2026-10-26T17:20:00+01:00"))
+        self.assertIsNone(fase("2026-10-25T05:00:00+01:00"))
+        self.assertEqual(fase("2026-10-25T05:20:00+01:00"), "plena")
+        self.assertEqual(fase("2026-10-26T21:00:00+01:00"), "plena")       # la nit de després, encara plena
+        self.assertEqual(fase("2026-10-27T05:05:00+01:00"), "plena")
+        self.assertIsNone(fase("2026-10-27T05:20:00+01:00"))
         r = self.avalua("2026-10-25T20:00:00+01:00",
                         f"[quanFase('2026-10-26T05:12+01:00', new Date()), nomFaseLluna({lluna}, new Date()),"
                         " nomFaseLluna({angle: 120, fases: []}, new Date()), nomFaseLluna({angle: 300, fases: []}, new Date())]",

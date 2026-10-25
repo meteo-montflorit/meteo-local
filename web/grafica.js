@@ -561,10 +561,11 @@ function dibuixaGrafica(fig) {
   // 25-10-2026; ADR 0127): a mitja alçada de la zona de la temperatura, amb
   // el nom al costat sobre el fons de la gràfica, que no la tapi la corba
   // (Juanjo, 25-10-2026: «por enmedio del grafico … con una etiqueta visible
-  // indicando la fase»). Es posa damunt de tot, menys de les zones de les hores.
+  // indicando la fase»). Es posa damunt de tot, també de les zones de les hores.
   const fasesGrafica = [];
   const llunesGrafica = [];
-  for (const fase of (LLUNA && LLUNA.fases) || []) {
+  const ambLluna = opcions.gran ? opcions.lluna !== false : opcions.lluna ?? llunaTriada();
+  for (const fase of (ambLluna && LLUNA && LLUNA.fases) || []) {
     const t = new Date(fase.hora);
     const i = files.findIndex((f) => new Date(f.hora) <= t && t < new Date(f.fins));
     if (i < 0) continue;
@@ -576,11 +577,15 @@ function dibuixaGrafica(fig) {
     for (const [k, v] of Object.entries({ x: cx - mida / 2, y: cy - mida / 2, width: mida, height: mida })) lluna.setAttribute(k, v);
     const nom = NOM_FASE_LLUNA()[fase.fase];
     const text = `${nom}: ${quanFase(fase.hora)}`;
-    const grup = svg('g', { class: 'g-lluna' });
+    // Porta a la Lluna de «Consultes» (Juanjo, 25-10-2026); per això va damunt
+    // de les zones de les hores.
+    // Fora del teclat: la gràfica és amagada als lectors de pantalla i s'hi
+    // arriba també des de la línia de la fase d'«Ara».
+    const grup = svg('a', { class: 'g-lluna', href: 'consultes.html#lluna', tabindex: '-1' });
     const fons = svg('rect', { class: 'g-lluna-fons', y: cy - 10, height: 20, rx: 5 });
     const etiqueta = svg('text', { class: 'g-lluna-nom', x: cx + mida / 2 + 4, y: cy + 4 }, nom);
     grup.append(fons, lluna, etiqueta, svg('title', {}, text));
-    grup.addEventListener('click', () => avisBreu(`${text}.`));
+    grup.setAttribute('aria-label', text);
     g.append(grup);
     // El nom, a la dreta; si no hi cap, a l'esquerra.
     const llarg = etiqueta.getComputedTextLength();
@@ -1011,7 +1016,6 @@ function dibuixaGrafica(fig) {
     fitxa.style.left = `${fx}px`;
     fitxa.style.top = `${fy}px`;
   };
-  for (const grup of llunesGrafica) g.append(grup);
   files.forEach((f, i) => {
     const zona = svg('rect', { class: 'g-zona', x: x(i), y: yCel - 2, width: col, height: baix - yCel + 2 });
     zona.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') mostra(i); });
@@ -1024,6 +1028,7 @@ function dibuixaGrafica(fig) {
     g.append(zona);
   });
   g.append(retol);
+  for (const grup of llunesGrafica) g.append(grup);
   fig._amaga = amaga;
 
   fig.querySelector('.g-llegenda')?.remove();
@@ -1154,6 +1159,13 @@ const humitatTriada = () => llegeixOpcionsGrafica().humitat === true;
 const pressioTriada = () => llegeixOpcionsGrafica().pressio === true;
 const nuvolsTriats = () => llegeixOpcionsGrafica().nuvols === true;
 const uvTriat = () => llegeixOpcionsGrafica().uv === true;
+// La Lluna, de sèrie sí; es pot treure a les opcions (Juanjo, 25-10-2026).
+const llunaTriada = () => llegeixOpcionsGrafica().lluna !== false;
+// Si alguna fase principal cau dins les hores de la gràfica.
+const faseDins = (files) => ((LLUNA && LLUNA.fases) || []).some((fase) => {
+  const t = new Date(fase.hora);
+  return files.some((f) => new Date(f.hora) <= t && t < new Date(f.fins));
+});
 
 // L'índex UV amb els colors i els noms de l'OMS: el límit de dalt de cada
 // nivell, la classe i el nom (el «Sol» de «Consultes» i la gràfica).
@@ -1296,7 +1308,8 @@ const adrecaHistorial = (pos) => (pos === '24h' ? '#historial' : `#historial-${p
 function vistaGrafica(historialInicial = null) {
   if (!HORES_GRAFICA || document.querySelector('dialog.vista-grafica')) return;
   // Les que es recorden (fixes) i les d'aquesta visita, que comencen sempre igual.
-  const fixes = { vent: false, zona: 'baixa', humitat: false, pressio: false, nuvols: false, uv: false, ...llegeixOpcionsGrafica() };
+  const fixes = { vent: false, zona: 'baixa', humitat: false, pressio: false, nuvols: false, uv: false, lluna: true,
+    ...llegeixOpcionsGrafica() };
   const opcions = { get vent() { return fixes.vent; } };
   const dlg = element('dialog', 'vista-grafica');
   dlg.setAttribute('aria-labelledby', 'vg-titol');
@@ -1322,7 +1335,7 @@ function vistaGrafica(historialInicial = null) {
   accions.append(botoImatge(fig, 'boto-icona'), comparteixBoto, tanca);
   cap.append(titol, accions);
 
-  // Les opcions que es recorden: el vent, la humitat, la pressió, els núvols i l'UV.
+  // Les opcions que es recorden: el vent, la humitat, la pressió, els núvols, l'UV i la Lluna.
   // Les que es recorden, amb interruptors, com a «Avisos».
   const interruptor = (clau, icon, text, descripcio) => {
     const fila = element('label', 'vg-fixa');
@@ -1332,7 +1345,7 @@ function vistaGrafica(historialInicial = null) {
     c.setAttribute('role', 'switch');
     c.checked = Boolean(fixes[clau]);
     c.addEventListener('change', () => { fixes[clau] = c.checked; desa(); dibuixa(); });
-    fila.append(icona(icon), element('span', null, text), c);
+    fila.append(typeof icon === 'string' ? icona(icon) : icon, element('span', null, text), c);
     return fila;
   };
   const vent = interruptor('vent', 'i-wind', T('Vent'), T('Afegeix el vent i les ratxes, en km/h.'));
@@ -1348,6 +1361,13 @@ function vistaGrafica(historialInicial = null) {
   const ambNuvols = HORES_GRAFICA.some((f) => f.nuvols != null);
   const uv = interruptor('uv', 'i-sun', T('UV'), T('Afegeix l’índex UV de les hores de sol, amb els colors de l’OMS.'));
   const ambUv = HORES_GRAFICA.some((f) => f.uv != null);
+  // Una lluna en quart, amb el traç de les altres icones, i no la icona de la
+  // lluna, que és la del tema fosc.
+  const iconaFase = icona('i-cloud');
+  iconaFase.setAttribute('viewBox', '0 0 24 24');
+  iconaFase.innerHTML = '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>';
+  const lluna = interruptor('lluna', iconaFase, T('Lluna'),
+    T('Afegeix les fases principals de la Lluna (nova, plena i quarts) a la seva hora.'));
   // Només es desen les que es recorden.
   const desa = () => {
     try { localStorage.setItem(CLAU_GRAFICA, JSON.stringify(fixes)); } catch (_) {}
@@ -1410,7 +1430,7 @@ function vistaGrafica(historialInicial = null) {
     fig._amaga?.();
     fig._files = files;
     fig._opcions = { gran: true, escala: true, historial: true, vent: fixes.vent, humitat: fixes.humitat,
-      pressio: fixes.pressio, nuvols: fixes.nuvols };
+      pressio: fixes.pressio, nuvols: fixes.nuvols, lluna: fixes.lluna };
     mostraInterruptors(files);
     // Per als crèdits de la imatge: les 24 h, amb l'hora de l'última mesura.
     fig._nomHistorial = pos === '24h' && files.length
@@ -1484,7 +1504,8 @@ function vistaGrafica(historialInicial = null) {
     fig._files = horesVista();
     mostraInterruptors(HORES_GRAFICA);
     fig._opcions = { gran: true, vent: ambVent && opcions.vent,
-      humitat: ambHumitat && fixes.humitat, pressio: ambPressio && fixes.pressio, nuvols: ambNuvols && fixes.nuvols, uv: ambUv && fixes.uv };
+      humitat: ambHumitat && fixes.humitat, pressio: ambPressio && fixes.pressio, nuvols: ambNuvols && fixes.nuvols, uv: ambUv && fixes.uv,
+      lluna: fixes.lluna };
     dibuixaGrafica(fig);
     if (tornada) {
       const caixa = fig.querySelector('.g-desplaca');
@@ -1499,10 +1520,12 @@ function vistaGrafica(historialInicial = null) {
   fixesEl.setAttribute('aria-label', T('Es recorda per a totes les gràfiques'));
   // Cadascun, només si el que es veu en porta: a la previsió, el que dona el
   // model; a l'historial, el que es va mesurar (sense UV; ADR 0124).
-  const interruptors = { vent, humitat, pressio, nuvols, uv };
+  const interruptors = { vent, humitat, pressio, nuvols, uv, lluna };
   fixesEl.append(...Object.values(interruptors));
   const mostraInterruptors = (files) => {
-    for (const [clau, el] of Object.entries(interruptors)) el.hidden = !files.some((f) => f[clau] != null);
+    for (const [clau, el] of Object.entries(interruptors)) {
+      el.hidden = clau === 'lluna' ? !faseDins(files) : !files.some((f) => f[clau] != null);
+    }
     fixesEl.hidden = Object.values(interruptors).every((el) => el.hidden);
   };
 

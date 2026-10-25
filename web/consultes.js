@@ -46,9 +46,16 @@ function opcioVista(clau) {
 }
 let DADES = null;
 
+// Les adreces d'una part d'una consulta: consultes.html#lluna obre «Sol i
+// lluna» i hi baixa fins a la Lluna (Juanjo, 25-10-2026: la Lluna de «Ara» i
+// de la gràfica hi porten).
+const PARTS = { lluna: ['sol', '.lluna-bloc'] };
+
 // La triada: la de l'adreça (consultes.html#transit), la de l'última vegada en
 // aquest dispositiu o, la primera vegada, «Avui».
 function triadaInicial() {
+  const part = PARTS[location.hash.slice(1)];
+  if (part) return part[0];
   const delHash = location.hash.slice(1);
   if (OPCIONS.some(([c]) => c === delHash)) return delHash;
   try {
@@ -420,27 +427,146 @@ function pintaSol(dies, ara = new Date(), lluna = null) {
     text.append(linia);
   }
   if (dies[1]) text.append(element('p', 'nota', T`Demà surt a les ${horaCurta(dies[1].sortida)} i es pon a les ${horaCurta(dies[1].posta)}.`));
-  if (lluna) peces.push(blocLluna(lluna, ara));
+  if (lluna) peces.push(blocLluna(lluna, ara, costat, ampla));
   return peces;
 }
 
-// La Lluna avui (ADR 0127): com es veu, quina fase és i quina part en surt
-// il·luminada, quan surt i es pon, i les fases que vénen.
-function blocLluna(lluna, ara = new Date()) {
+// La gràfica de la Lluna, com la del sol (Juanjo, 25-10-2026: «un grafico
+// similar al del sol para la luna del dia»): l'arc que interessa, el d'ara si
+// és a sobre de l'horitzó i, si no, el següent, de 12 hores abans a 12 després
+// del moment més alt (lluna.py, recorregut), amb les hores de nit fosques
+// (quan el sol és a sota de l'horitzó), la sortida, el moment més alt i la
+// posta, i la Lluna on és ara, amb la seva fase.
+const LLUNA_DIB = { ample: 340, alt: 340, esq: 6, dre: 6, dalt: 24, baix: 20, max: 80, min: -7 };
+function graficaLluna(lluna, ara, ample = 340) {
+  const r = lluna.recorregut;
+  const D = { ...LLUNA_DIB, ample, alt: ample };
+  const inici = llegeixHora(r.inici);
+  const fiMin = (r.alt.length - 1) * r.pas;
+  const x = (min) => D.esq + (min / fiMin) * (D.ample - D.esq - D.dre);
+  const y = (graus) => D.dalt + (D.max - graus) / (D.max - D.min) * (D.alt - D.dalt - D.baix);
+  const minDe = (iso) => (llegeixHora(iso) - inici) / 60000;
+  const svg = nodeSvg('svg', { viewBox: `0 0 ${D.ample} ${D.alt}`, class: 'sol-grafica lluna-grafica', 'aria-hidden': 'true' });
+  const y0 = y(0);
+  const fons = D.alt - D.baix;
+  const retall = `lluna-retall-${numSol += 1}`;
+  const defs = nodeSvg('defs');
+  const clip = nodeSvg('clipPath', { id: retall });
+  clip.append(nodeSvg('rect', { x: 0, y: 0, width: D.ample, height: fons }));
+  defs.append(clip);
+  svg.append(defs, nodeSvg('rect', { x: 0, y: 0, width: D.ample, height: y0, class: 'sol-cel' }));
+  // Les hores de nit, el cel fosc: quan es veu la Lluna amb el cel negre.
+  let nitDes = null;
+  for (let min = 0; min <= fiMin; min += r.pas) {
+    const nit = posicioSol(new Date(inici.getTime() + min * 60000)).altura < -0.833;
+    if (nit && nitDes == null) nitDes = min;
+    if ((!nit || min + r.pas > fiMin) && nitDes != null) {
+      const fins = nit ? fiMin : min;
+      svg.append(nodeSvg('rect', { x: x(nitDes), y: 0, width: x(fins) - x(nitDes), height: y0, class: 'lluna-nit' }));
+      nitDes = null;
+    }
+  }
+  const cami = r.alt.map((alt, n) => `${n ? 'L' : 'M'}${x(n * r.pas).toFixed(1)} ${y(alt).toFixed(1)}`).join('');
+  svg.append(nodeSvg('path', { d: cami, class: 'lluna-corba', 'clip-path': `url(#${retall})` }));
+  svg.append(nodeSvg('rect', { x: 0, y: y0, width: D.ample, height: fons - y0, class: 'sol-nit' }));
+  svg.append(nodeSvg('line', { x1: 0, x2: D.ample, y1: y0, y2: y0, class: 'sol-horitzo' }));
+  const text = (tx, ty, contingut, classe, ancora = 'middle') => {
+    const t = nodeSvg('text', { x: tx.toFixed(1), y: ty.toFixed(1), class: classe, 'text-anchor': ancora });
+    t.textContent = contingut;
+    return t;
+  };
+  // La sortida, el moment més alt i la posta, amb l'hora a dalt; a la vora,
+  // alineada amb la vora.
+  const marge = 22;
+  const guies = [[r.sortida, (h) => `↑ ${h}`], [r.culminacio && r.culminacio.hora, (h) => h], [r.posta, (h) => `↓ ${h}`]];
+  for (const [iso, etiqueta] of guies) {
+    if (!iso) continue;
+    const gx = x(minDe(iso));
+    const [xt, ancora] = gx < marge ? [2, 'start'] : gx > D.ample - marge ? [D.ample - 2, 'end'] : [gx, 'middle'];
+    svg.append(nodeSvg('line', { x1: gx, x2: gx, y1: D.dalt - 6, y2: y0, class: 'sol-guia' }),
+      text(xt, D.dalt - 10, etiqueta(horaCurta(iso)), 'sol-etiqueta', ancora));
+  }
+  if (r.culminacio && r.culminacio.alt > 0) {
+    svg.append(text(x(minDe(r.culminacio.hora)) + 12, y(r.culminacio.alt) - 7, `${Math.round(r.culminacio.alt)}°`, 'sol-etiqueta', 'start'));
+  }
+  // Les hores del rellotge, a sota, cada tres.
+  const primera = Math.ceil(inici.getTime() / 36e5) * 36e5;
+  for (let t = primera; t <= inici.getTime() + fiMin * 60000; t += 36e5) {
+    const h = horaLocal(new Date(t));
+    if (h % 3) continue;
+    const hx = x((t - inici) / 60000);
+    const [xt, ancora] = hx < 14 ? [2, 'start'] : hx > D.ample - 14 ? [D.ample - 2, 'end'] : [hx, 'middle'];
+    svg.append(text(xt, D.alt - 5, `${h} h`, 'sol-eix', ancora));
+  }
+  // On és ara, amb la fase, si és dins del dibuix.
+  const minAra = (ara - inici) / 60000;
+  if (minAra >= 0 && minAra <= fiMin) {
+    const i = Math.min(r.alt.length - 2, Math.floor(minAra / r.pas));
+    const alt = r.alt[i] + (r.alt[i + 1] - r.alt[i]) * (minAra / r.pas - i);
+    const mida = 22;
+    const cy = Math.min(y(alt), fons - mida / 2 - 2);
+    const dib = dibuixLluna(lluna.angle);
+    for (const [k, v] of Object.entries({ x: x(minAra) - mida / 2, y: cy - mida / 2, width: mida, height: mida })) dib.setAttribute(k, v);
+    if (alt < 0) dib.classList.add('lluna-ara-sota');
+    svg.append(dib);
+  }
+  return svg;
+}
+
+// Quan, amb el dia si no és avui: «avui a les 17:14», «demà a les 07:37».
+function quanArc(iso, ara) {
+  const h = horaCurta(iso);
+  const d = diesEntre(ara, llegeixHora(iso));
+  return d === 0 ? T`avui a les ${h}` : d === 1 ? T`demà a les ${h}` : d === -1 ? T`ahir a les ${h}` : T`a les ${h}`;
+}
+
+// La Lluna avui (ADR 0127): la gràfica del seu arc, quina fase és i quina part
+// en surt il·luminada, quan surt i es pon, i les fases que vénen.
+function blocLluna(lluna, ara = new Date(), costat = 340, ampla = false) {
   const bloc = element('section', 'lluna-bloc');
   const titol = element('p', 'lluna-titol');
   titol.append(element('strong', null, T('La lluna avui a Montflorit')));
-  const fila = element('div', 'lluna-fila');
-  const gran = dibuixLluna(lluna.angle);
-  gran.classList.add('lluna-gran');
-  const text = element('div', 'lluna-text');
-  text.append(element('p', null, T`${nomFaseLluna(lluna, ara)}, il·luminada al ${lluna.il_luminacio} %.`));
-  // La sortida i la posta, per ordre; un dia al mes no surt o no es pon.
-  const { sortida, posta } = lluna.avui || {};
+  const r = lluna.recorregut;
+  // Amb el recorregut, la gràfica i el text al costat o a sota, com el sol;
+  // sense (dades d'abans de la 3.204.0), el dibuix gran de la fase.
+  const fila = element('div', r ? (ampla ? 'sol-bloc sol-bloc-ample' : 'sol-bloc') : 'lluna-fila');
+  const text = element('div', r ? 'sol-text lluna-text' : 'lluna-text');
+  const fase = element('p', 'lluna-fase-ara');
+  fase.append(dibuixLluna(lluna.angle), T`${nomFaseLluna(lluna, ara)}, il·luminada al ${lluna.il_luminacio} %.`);
+  text.append(fase);
+  if (r) {
+    const dibuix = element('div', 'sol-dibuix');
+    if (ampla) dibuix.style.width = `${costat}px`;
+    dibuix.append(graficaLluna(lluna, ara, costat));
+    const llegenda = element('p', 'sol-llegenda');
+    const peca = (classe, nom) => {
+      const e = element('span', 'sol-peca');
+      e.append(element('span', `sol-mostra ${classe}`), nom);
+      return e;
+    };
+    llegenda.append(peca('lluna-mostra-corba', T('la Lluna')), peca('lluna-mostra-nit', T('nit')));
+    llegenda.setAttribute('aria-hidden', 'true');
+    dibuix.append(llegenda);
+    fila.append(dibuix, text);
+  } else {
+    const gran = dibuixLluna(lluna.angle);
+    gran.classList.add('lluna-gran');
+    fila.append(gran, text);
+  }
   const h = (iso) => horaCurta(iso);
-  const quan = sortida && posta ? (sortida < posta ? T`Surt a les ${h(sortida)} i es pon a les ${h(posta)}.`
-    : T`Es pon a les ${h(posta)} i surt a les ${h(sortida)}.`)
-    : sortida ? T`Surt a les ${h(sortida)}; avui no es pon.` : posta ? T`Es pon a les ${h(posta)}; avui no surt.` : '';
+  const per = (az) => (az == null ? '' : ` ${direccioSol(az)}`);
+  let quan = '';
+  if (r && r.sortida && r.posta) {
+    // L'arc de la gràfica, en paraules, com el del sol.
+    quan = T`Surt ${quanArc(r.sortida, ara)}${per(r.sortida_az)} i es pon ${quanArc(r.posta, ara)}${per(r.posta_az)}.`;
+    if (r.culminacio && r.culminacio.alt > 0) quan += ' ' + T`A les ${h(r.culminacio.hora)} puja fins a ${Math.round(r.culminacio.alt)}° sobre l’horitzó.`;
+  } else {
+    // La sortida i la posta, per ordre; un dia al mes no surt o no es pon.
+    const { sortida, posta } = lluna.avui || {};
+    quan = sortida && posta ? (sortida < posta ? T`Surt a les ${h(sortida)} i es pon a les ${h(posta)}.`
+      : T`Es pon a les ${h(posta)} i surt a les ${h(sortida)}.`)
+      : sortida ? T`Surt a les ${h(sortida)}; avui no es pon.` : posta ? T`Es pon a les ${h(posta)}; avui no surt.` : '';
+  }
   if (quan) text.append(element('p', null, quan));
   const properes = (lluna.fases || []).filter((f) => new Date(f.hora) - ara > -FASE_A_PROP_H * 36e5).slice(0, 4);
   if (properes.length) {
@@ -453,7 +579,6 @@ function blocLluna(lluna, ara = new Date()) {
     }
     text.append(llista);
   }
-  fila.append(gran, text);
   bloc.append(titol, fila);
   return bloc;
 }
@@ -474,12 +599,20 @@ function fontsConsulta() {
 }
 
 // El dibuix del sol es fa a l'amplada de la fitxa: si canvia (girar el mòbil,
-// fer la finestra més ampla), es torna a fer.
+// fer la finestra més ampla), es torna a fer. Només si canvia l'amplada: al
+// mòbil, la barra de l'adreça que s'amaga en desplaçar també fa «resize», i
+// tornar-ho a pintar treia el ressaltat de la Lluna en arribar-hi
+// (consultes.html#lluna) i el lloc on es llegia.
 let esperaMida = null;
+let ampladaSol = typeof window !== 'undefined' ? window.innerWidth : 0;
 if (typeof window !== 'undefined' && window.addEventListener) {
   window.addEventListener('resize', () => {
     clearTimeout(esperaMida);
-    esperaMida = setTimeout(() => { if (triada === 'sol') pintaConsulta(); }, 200);
+    esperaMida = setTimeout(() => {
+      if (window.innerWidth === ampladaSol) return;
+      ampladaSol = window.innerWidth;
+      if (triada === 'sol') pintaConsulta();
+    }, 200);
   });
 }
 
@@ -715,7 +848,13 @@ function mapaTall(t, m) {
 
 // Si s'hi arriba per un enllaç (consultes.html#llum), la consulta es destaca
 // la primera vegada que es pinta.
-let assenyalada = !OPCIONS.some(([c]) => c === location.hash.slice(1));
+let assenyalada = !OPCIONS.some(([c]) => c === location.hash.slice(1)) && !PARTS[location.hash.slice(1)];
+
+// Què es destaca en arribar: la part (la Lluna) o la consulta sencera.
+function assenyalaArribada() {
+  const part = PARTS[location.hash.slice(1)];
+  assenyala((part && $('consulta').querySelector(part[1])) || $('consulta'));
+}
 function pinta(dades) {
   DADES = dades;
   LLUNA = dades.lluna || null;
@@ -730,7 +869,7 @@ function pinta(dades) {
   posaVersio(dades.versio);
   if (!assenyalada && !velles) {
     assenyalada = true;
-    assenyala($('consulta'));
+    assenyalaArribada();
   }
 }
 
@@ -743,13 +882,16 @@ function repintaAvisos() {
 pintaOpcions();
 opcioVista(triada);
 window.addEventListener('hashchange', () => {
-  const clau = location.hash.slice(1);
-  if (clau === triada || !OPCIONS.some(([c]) => c === clau)) return;
-  triada = clau;
-  opcioVista(clau);
-  for (const r of document.querySelectorAll('#opcions input')) r.checked = r.value === clau;
-  pintaConsulta();
-  assenyala($('consulta'));
+  const part = PARTS[location.hash.slice(1)];
+  const clau = part ? part[0] : location.hash.slice(1);
+  if (!OPCIONS.some(([c]) => c === clau)) return;
+  if (clau !== triada) {
+    triada = clau;
+    opcioVista(clau);
+    for (const r of document.querySelectorAll('#opcions input')) r.checked = r.value === clau;
+    pintaConsulta();
+  } else if (!part) return;
+  assenyalaArribada();
 });
 carrega(FITXER_DADES, pinta, () => {
   $('consulta').replaceChildren(element('p', 'avis', T('No s’ha pogut carregar la previsió. Torna-ho a provar d’aquí a una estona.')));
