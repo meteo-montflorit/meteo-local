@@ -95,9 +95,14 @@ tres días, que desaparece al abrir cada una, y no en «Si surts».
 
 - La precisión solo se ha medido en la CV1; de la CV4 y la CV5 se sabe que
   aparecen en el tiempo real, no cuánto aciertan.
-- Las horas del GTFS se cuentan desde la medianoche local: el día del cambio
-  de hora podrían desviarse una hora en viajes de madrugada, que en estas
-  líneas no hay.
+- Las horas del GTFS se cuentan, como dice el formato, desde las 12 del
+  mediodía menos 12 horas (desde la 3.199.1). Hasta entonces se contaban desde
+  la medianoche local, y este riesgo decía que solo fallarían los viajes de
+  madrugada: era falso. El día del cambio de hora (25 o 23 horas) medianoche
+  y «mediodía menos 12 h» no son el mismo momento, y todos los buses sin
+  tiempo real salían una hora antes (en octubre) o después (en marzo) el día
+  entero. Lo encontró el inventario de horas del 25-10-2026, el mismo día del
+  cambio; `tests/test_busos.py` lo comprueba con ese día.
 - La página de condiciones de uso del AMB y el formato de sus feeds pueden
   cambiar sin aviso.
 

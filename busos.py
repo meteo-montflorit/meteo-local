@@ -29,9 +29,12 @@ import time
 import urllib.request
 import zipfile
 from collections import defaultdict
+from zoneinfo import ZoneInfo
 
 import config as C
 from trens import camps
+
+ZONA = ZoneInfo("Europe/Madrid")
 
 TEMPS_REAL = "https://www.ambmobilitat.cat/transit/trips-updates/trips.bin"
 AVISOS = "https://www.ambmobilitat.cat/transit/alerts/alerts.bin"
@@ -117,10 +120,12 @@ def horari(zip_bytes, dies):
     passos = []
     for dia in dies:
         clau = f"{dia:%Y%m%d}"
-        # Les hores del GTFS es compten des de les 12 menys 12 hores: amb el
-        # canvi d'hora, des de la mitjanit local no s'erra més d'una hora en
-        # els busos de matinada, que al barri no n'hi ha.
-        mitjanit = dt.datetime.combine(dia, dt.time()).timestamp()
+        # Les hores del GTFS es compten des de les 12 del migdia menys 12 hores,
+        # no des de la mitjanit: el dia del canvi d'hora (25 o 23 hores) no són
+        # el mateix moment, i comptant des de la mitjanit tots els busos sense
+        # temps real sortien una hora abans o després tot el dia, no només els
+        # de matinada (inventari del 25-10-2026, el mateix dia del canvi).
+        mitjanit = dt.datetime.combine(dia, dt.time(12), tzinfo=ZONA).timestamp() - 12 * 3600
         for viatge, (servei, cap_a) in viatges.items():
             c = calendari.get(servei)
             actiu = bool(c) and c["start_date"] <= clau <= c["end_date"] and c[noms_dia[dia.weekday()]] == "1"

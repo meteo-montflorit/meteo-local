@@ -6,6 +6,7 @@ import io
 import os
 import sys
 import unittest
+from zoneinfo import ZoneInfo
 import zipfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -66,6 +67,13 @@ class Horari(unittest.TestCase):
         self.assertEqual(sorted(v["v"] for v in hor["viatges"]), ["508.1", "508.2", "508.3"])
         v = next(v for v in hor["viatges"] if v["v"] == "508.1")
         self.assertEqual(v["p"]["201464"], MITJANIT + 9 * 3600 + 60)
+
+    def test_el_dia_del_canvi_d_hora(self):
+        # 25-10-2026: el GTFS compta des de les 12 menys 12 hores; un bus de les
+        # 10:00 passa a les 10:00 de l'hora d'hivern, no a les 9:00.
+        hor = BU.horari(ZIP, [dt.date(2026, 10, 25)])
+        v = next(v for v in hor["viatges"] if v["v"] == "508.2")
+        self.assertEqual(dt.datetime.fromtimestamp(v["p"]["201243"], ZoneInfo("Europe/Madrid")).strftime("%H:%M"), "10:00")
 
     def test_un_dissabte_sense_excepcio_no_hi_ha_el_servei_de_feiner(self):
         hor = BU.horari(ZIP, [dt.date(2026, 10, 24)])
