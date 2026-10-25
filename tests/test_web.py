@@ -338,7 +338,10 @@ class Web(unittest.TestCase):
                       "fins": f"2026-10-{21 + (h + 1 >= 24)}T{(h + 1) % 24:02d}:00", "probabilitat": 0, "pluja_mm": 0,
                       "nuvols": nuvols, "vent": 0, "avisos": [], "temperatura": 15, "codi": 45 if boira else codi}
                      for h in range(6, 34)]
-            return self.avalua(ara, f"celPortada({json.dumps(hores)}, {json.dumps(plou)}, null, new Date())")
+            r = self.avalua(ara, f"celPortada({json.dumps(hores)}, {json.dumps(plou)}, null, new Date())")
+            moments.append(r.pop("moment"))
+            return r
+        moments = []
         mati, tarda, nit = "2026-10-21T10:30:00+02:00", "2026-10-21T15:30:00+02:00", "2026-10-21T23:30:00+02:00"
         self.assertEqual(cel(tarda, 5), {"fons": "sere", "dibuix": "clear-day"})
         self.assertEqual(cel(tarda, 30), {"fons": "poc", "dibuix": "partly-cloudy-day"})
@@ -354,6 +357,17 @@ class Web(unittest.TestCase):
         self.assertEqual(cel("2026-10-21T18:45:00+02:00", 5), {"fons": "albasere", "dibuix": "sunset"})
         self.assertEqual(cel("2026-10-21T08:10:00+02:00", 5), {"fons": "albasere", "dibuix": "sunrise"})
         self.assertEqual(cel("2026-10-21T18:45:00+02:00", 95, plou=True), {"fons": "albapluja", "dibuix": "rain"})
+        self.assertEqual(moments[:2] + moments[-3:], ["dia", "dia", "alba", "alba", "alba"])
+
+    def test_l_hora_del_sol_a_l_alba_i_a_la_posta(self):
+        # Juanjo, 25-10-2026: a sota del dibuix, abans i després.
+        sol = json.dumps([{"dia": "2026-10-25", "sortida": "2026-10-25T07:14", "posta": "2026-10-25T17:55"}])
+        hora = lambda ara: self.avalua(ara, f"textSol({sol}, new Date())")  # noqa: E731
+        self.assertEqual(hora("2026-10-25T07:05:00+01:00"), "Sortida del sol: 7:14")
+        self.assertEqual(hora("2026-10-25T07:30:00+01:00"), "Sortida del sol: 7:14")
+        self.assertEqual(hora("2026-10-25T17:40:00+01:00"), "Posta del sol: 17:55")
+        self.assertEqual(hora("2026-10-25T18:10:00+01:00"), "Posta del sol: 17:55")
+        self.assertEqual(hora("2026-10-26T07:05:00+01:00"), "")          # sense les dades d'aquell dia
 
     def test_la_riera_a_la_portada_nomes_si_anuncia_alguna_cosa(self):
         # Juanjo, 21-10-2026: «que solo aparezcan cuando anuncien algo».

@@ -1577,9 +1577,23 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .heroi.cel-albapluja { --f: url("img/cel/gotes.svg") center / cover, radial-gradient(ellipse at 50% 125%, rgb(255 150 90 / .5), transparent 60%), url("img/cel/nuvols-calents.svg") center / cover, url("img/cel/nuvols-cobert.svg") center / cover, linear-gradient(175deg, #33465a, #20293a); --s: #cfdbe7; }
 /* El dibuix del cel, gran, a la dreta de la temperatura, amb una ombra perquè
    els núvols blancs es vegin també sobre el cel clar. */
-.heroi-cel { flex: 0 1 auto; min-width: 0; max-width: 45%; width: 9.5rem; height: auto; aspect-ratio: 1; margin: -1.6rem -.8rem -1.6rem auto;
-  filter: drop-shadow(0 6px 10px rgb(20 35 60 / .28)); }
-@media (max-width: 40rem) { .heroi-cel { width: 7.4rem; margin: -1.2rem -.3rem -1.2rem auto; } }
+.heroi-cel-bloc { flex: 0 1 auto; min-width: 0; max-width: 45%; width: 9.5rem; margin: -1.6rem -.8rem -1.6rem auto;
+  display: flex; flex-direction: column; align-items: center; }
+.heroi-cel { display: block; width: 100%; height: auto; aspect-ratio: 1; filter: drop-shadow(0 6px 10px rgb(20 35 60 / .28)); }
+/* L'hora de l'alba o la posta, sota el dibuix, dins del marge buit de baix
+   del dibuix (el marge en %, proporcional a l'amplada del dibuix), i amb el
+   mateix de farciment a sota, menys la línia: la targeta no canvia d'alçada. Centrada amb el dibuix; si no hi cap, creix cap a
+   l'esquerra, no fora de la targeta. */
+.heroi-sol { align-self: flex-end; min-width: 100%; margin: -22% 0 0; padding-bottom: calc(22% - 1.2em); font-size: .95rem;
+  line-height: 1.2; color: var(--heroi-suau); white-space: nowrap; text-align: center; }
+.heroi-sol[hidden] { display: none; }
+@media (max-width: 40rem) { .heroi-cel-bloc { width: 7.4rem; margin: -1.2rem -.3rem -1.2rem auto; } }
+/* Als mòbils més estrets, el text llarg («Puesta del sol: 17:55») en dues
+   línies sota el dibuix, sense tocar «Avui, 3° més que ahir». */
+@media (max-width: 22.4rem) {
+  .heroi-sol { align-self: center; max-width: calc(100% + 1.5rem); padding-bottom: calc(22% - 1.2em + .3rem); white-space: normal;
+    text-wrap: balance; }
+}
 /* La part alta, a sota de la temperatura, com a text, sense color (Juanjo,
    22-10-2026); en prémer-la, què vol dir, com a tot arreu. */
 .ara-temp-col { display: flex; flex-direction: column; align-items: flex-start; gap: .15rem; flex: none; }
@@ -1609,7 +1623,9 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
   .heroi .titular .resum-linia { margin-top: .2rem; font-size: .92rem; }
   .heroi .veredicte { font-size: 2.7rem; }
   .heroi .ara-temp .alta { font-size: .9rem; line-height: 1.25; }
-  .heroi-cel { width: 6rem; margin: -1rem -.2rem -1rem auto; }
+  .heroi-cel-bloc { width: 6rem; margin: -1rem -.2rem -1rem auto; }
+  /* Com les pastilles. */
+  .heroi-sol { font-size: .85rem; }
   /* Les pastilles, en una fila (Juanjo, 23-10-2026); si ha plogut avui, que
      n'hi ha tres, en dues. */
   .heroi .dades-ara { gap: .3rem; margin: .5rem 0 .1rem; font-size: .85rem; }

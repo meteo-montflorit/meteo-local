@@ -2,6 +2,29 @@
 
 Fecha: 2026-10-22 · Estado: aceptado
 
+**25-10-2026 (3.199.0): la hora del sol bajo el dibujo.** Mientras dura el
+dibujo del alba y de la puesta (de 6° bajo el horizonte a 6° sobre él, unos
+30 minutos antes y después en otoño), debajo va la hora: «Sortida del sol:
+7:14» y «Posta del sol: 17:55» (Juanjo: «se podría poner la hora de salida y
+puesta justo debajo del sol?»). También con el cielo tapado, cuando el
+dibujo es una nube: el sol sale igual. Primero fue «Surt a les 7:14», que
+pasaba a «Ha sortit a les 7:14» al salir; con la nube no se entendía qué
+salía (Juanjo: «a ver si se entiende que es lo que surt»). De las dos
+formas con «el sol», Juanjo eligió la del nombre, la que propuso el agente:
+sin verbo no cambia al salir el sol y cabe en una línea desde 360 px; con
+verbo («El sol s'ha post a les 17:55») partía en dos en los móviles. La hora sale de los datos del sol que
+ya usa la tabla (`sol`) y cambia con el dibujo cada minuto (`textSol`,
+`posaCel`). El dibujo y la hora van en un bloque (`.heroi-cel-bloc`), así
+que se mueven y cambian de tamaño juntos. La hora va en el hueco vacío bajo
+el horizonte del dibujo, con márgenes en % de su anchura (`margin-top: -22%`
+y debajo `calc(22% - 1.2em)`), para que la tarjeta mida lo mismo con la hora
+y sin ella. Si no cabe centrada, crece hacia la izquierda, nunca fuera de la
+tarjeta. En el móvil va con la letra de las pastillas, sin reducirla, y solo
+por debajo de 360 px pasa a dos líneas; ahí la tarjeta crece 13 px. Medido en
+Chromium, Firefox y WebKit a 320, 360, 393, 600, 768 y 1280 px con los cuatro
+textos (catalán y castellano): desde 360 px, una línea, la misma altura y al
+menos 46 px hasta «Avui, 3° més que ahir»; axe-core sin incidencias.
+
 ## Contexto
 
 Desde la portada nueva (ADR 0118), la tarjeta «Ara» tenía siempre el mismo

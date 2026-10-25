@@ -814,6 +814,8 @@ var IDIOMA = {
     "ara": "ahora",
     "Surt a les {0} i es pon a les {1}.": "Sale a las {0} y se pone a las {1}.",
     "Surt el sol a les": "Sale el sol a las",
+    "Sortida del sol: {0}": "Salida del sol: {0}",
+    "Posta del sol: {0}": "Puesta del sol: {0}",
     "Canvi d’hora": "Cambio de hora",
     "Aquesta nit el rellotge es retarda una hora: a les 3 tornen a ser les 2, i la franja de 2 a 3 surt dues vegades.": "Esta noche el reloj se retrasa una hora: a las 3 vuelven a ser las 2, y la franja de 2 a 3 sale dos veces.",
     "Aquesta nit el rellotge s’avança una hora: a les 2 passen a ser les 3, i la franja de 2 a 3 no hi és.": "Esta noche el reloj se adelanta una hora: a las 2 pasan a ser las 3, y la franja de 2 a 3 no está.",

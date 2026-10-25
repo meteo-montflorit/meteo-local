@@ -413,7 +413,21 @@ function celPortada(hores, plou, radarDades, ara = new Date()) {
   const fons = moment === 'nit' ? FONS_NIT[cel] || cel : moment === 'alba' ? FONS_ALBA[cel] || cel : cel;
   let dibuix = DIBUIX_CEL[moment === 'nit' ? 'nit' : 'dia'][cel];
   if (moment === 'alba' && (cel === 'sere' || cel === 'poc')) dibuix = ara.getHours() < 12 ? 'sunrise' : 'sunset';
-  return { fons, dibuix };
+  return { fons, dibuix, moment };
+}
+
+// A l'alba i a la posta, l'hora a sota del dibuix, també amb el cel tapat
+// (Juanjo, 25-10-2026): «Sortida del sol: 7:14», «Posta del sol: 17:55».
+// Amb «del sol», perquè sota el núvol s'entengui què surt, i sense verb, que
+// no canvia quan ja ha sortit i cap en una línia al mòbil. Sense el zero de
+// davant, com a la taula (marcaSol).
+function textSol(sol, ara = new Date()) {
+  const dia = (sol || []).find((d) => new Date(`${d.dia}T12:00`).toDateString() === ara.toDateString());
+  const mati = ara.getHours() < 12;
+  const quan = dia && (mati ? dia.sortida : dia.posta);
+  if (!quan) return '';
+  const h = new Date(quan).toLocaleTimeString(IDIOMA.codi, { hour: 'numeric', minute: '2-digit' });
+  return mati ? T`Sortida del sol: ${h}` : T`Posta del sol: ${h}`;
 }
 
 // El cel que té ara la targeta, per tornar-lo a mirar cada minut a la vora de
@@ -424,7 +438,10 @@ function celPortada(hores, plou, radarDades, ara = new Date()) {
 let CEL_ARA = null;
 
 function posaCel(cel) {
-  const { sec, dibuix } = CEL_ARA;
+  const { sec, dibuix, horaSol, sol } = CEL_ARA;
+  const textHora = cel.moment === 'alba' ? textSol(sol) : '';
+  horaSol.textContent = textHora;
+  horaSol.hidden = !textHora;
   sec.classList.remove(...[...sec.classList].filter((c) => c.startsWith('cel-')));
   sec.classList.add(`cel-${cel.fons}`);
   const src = `${ARREL}img/meteocons/${cel.dibuix}.svg`;
@@ -678,7 +695,7 @@ function tempAra(casa) {
   return casa.dif_alta == null ? null : Math.round(casa.temperatura + casa.dif_alta);
 }
 
-function blocAra(casa, radarDades, vent, veines, hores, mesurada) {
+function blocAra(casa, radarDades, vent, veines, hores, mesurada, sol) {
   const sec = element('section', 'decisio targeta ara heroi');
   sec.setAttribute('aria-label', T`El temps avui a ${LLOC}`);
   // Sense l'hora de la mesura: la de «Actualitzat a les…», a dalt, ja la diu, i
@@ -720,8 +737,13 @@ function blocAra(casa, radarDades, vent, veines, hores, mesurada) {
     const dibuix = element('img', 'heroi-cel');
     dibuix.alt = '';
     dibuix.setAttribute('aria-hidden', 'true');
-    fila.append(dibuix);
-    CEL_ARA = { sec, dibuix, hores, plou, radarDades };
+    // L'hora de l'alba o de la posta, amb el dibuix: es mou i es fa gran o
+    // petita amb ell.
+    const bloc = element('div', 'heroi-cel-bloc');
+    const horaSol = element('p', 'heroi-sol');
+    bloc.append(dibuix, horaSol);
+    fila.append(bloc);
+    CEL_ARA = { sec, dibuix, horaSol, hores, plou, radarDades, sol };
     posaCel(cel);
   } else CEL_ARA = null;
   const intensitat = (casa.plou && casa.intensitat) || 0;
@@ -1632,7 +1654,7 @@ function pinta(dades) {
   // El radar porta l'estat únic de la pluja (ADR 0101), per dir el mateix que «Ara».
   const radarAmbPluja = dades.radar && dades.pluja_ara ? { ...dades.radar, pluja: dades.pluja_ara } : dades.radar;
   const ara = dades.ara_casa && blocAra(dades.ara_casa, radarAmbPluja, dades.vent, dades.veines, dades.hores,
-    mesuradaZona(dades));
+    mesuradaZona(dades), dades.sol);
   if (ara) cont.append(ara);
   const estat = estatPortada(dades);
   if (estat) cont.append(estat);
