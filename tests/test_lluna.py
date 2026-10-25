@@ -46,5 +46,19 @@ class Lluna(unittest.TestCase):
         self.assertTrue(1 <= len(buits) <= 3)
 
 
+    def test_el_recorregut_es_l_arc_que_interessa(self):
+        # A migdia, sota l'horitzó: el d'aquest vespre (surt a les 17:14, puja
+        # a 64° a les 0:18 i es pon a les 7:37), no el de la nit passada.
+        r = LU.recorregut(dt.datetime(2026, 10, 25, 11, 0, tzinfo=dt.timezone.utc))
+        self.assertEqual((r["sortida"][11:16], r["culminacio"]["hora"][11:16], r["posta"][11:16]), ("17:14", "00:18", "07:37"))
+        self.assertEqual((round(r["culminacio"]["alt"]), r["pas"], len(r["alt"])), (64, 10, 145))
+        self.assertTrue(r["sortida"] < r["culminacio"]["hora"] < r["posta"])
+        self.assertEqual(max(r["alt"]), r["culminacio"]["alt"])
+        # A les 4 de la matinada, encara a sobre: el mateix arc, el d'ara.
+        ara = LU.recorregut(dt.datetime(2026, 10, 26, 3, 0, tzinfo=dt.timezone.utc))
+        self.assertEqual(ara["culminacio"]["hora"], r["culminacio"]["hora"])
+        # Per on: per l'est-nord-est i l'oest-nord-oest.
+        self.assertEqual((r["sortida_az"], r["posta_az"]), (71, 293))
+
 if __name__ == "__main__":
     unittest.main()

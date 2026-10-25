@@ -60,7 +60,12 @@ SORTIDA_MAX = 6000            # caracteres de cada comprobación fallida para el
 # Lo que el agente no puede tocar: lo que decide qué se comprueba y cómo se
 # despliega (reparador-instruccions.md).
 PROHIBITS = (".github/", "ruff.toml", "eslint.config.mjs", ".coveragerc", "desplegament.py",
-             "reparador.py", "reparador-instruccions.md", "nas/")
+             "reparador.py", "reparador-instruccions.md", "reparador-fonts-instruccions.md", "nas/")
+# Una font que fa hores que no es pot llegir per un error del programa
+# (fonts_falla.py, ADR 0031): les instruccions de l'agent i quant pot trigar a
+# tornar-la a llegir la comprovació.
+INSTRUCCIONS_FONTS = os.path.join(ARREL, "reparador-fonts-instruccions.md")
+LECTURA_MAX_MIN = 15
 AUTOR = ["-c", "user.name=meteo-local (NAS)", "-c", "user.email=meteo-local@users.noreply.github.com"]
 # Las mismas órdenes que la acción de GitHub (.github/workflows/previsio.yml).
 COMPROVACIONS = [
@@ -168,9 +173,9 @@ def incompliments(noms, abans, despres):
 
 # --- El agente -----------------------------------------------------------------------
 
-def agent(repo, fallades):
+def agent(repo, fallades, instruccions=INSTRUCCIONS):
     """Claude Code en la copia. Devuelve su respuesta final (dict)."""
-    with open(INSTRUCCIONS, encoding="utf-8") as f:
+    with open(instruccions, encoding="utf-8") as f:
         text = f.read()
     for c in fallades:
         text += f"\n\n## Ha fallado: {c['nom']}\n\n```\n{c['sortida']}\n```\n"
@@ -285,6 +290,92 @@ def repara(sha, estat):
             "cost_usd": res.get("cost_usd"), "minuts": res.get("minuts")})
 
 
+# --- Una font que fa hores que no es pot llegir (fonts_falla.py, ADR 0031) ------------
+
+def falla_encara(copia, font, executa=subprocess.run):
+    """Si, amb la copia, la font continua fallant: casa.py hi torna a llegir
+    totes les fonts, amb l'estat en una carpeta temporal (no toca el de la web)."""
+    import tempfile
+    import fonts_falla as FF
+    with tempfile.TemporaryDirectory() as tmp:
+        entorn = {**os.environ, "TZ": "Europe/Madrid", "ESTAT_DIR": tmp, "REGISTRE_DIR": os.path.join(tmp, "res"),
+                  "TRENS_DIR": tmp, "POLLEN_DIR": tmp, "AIRE_DIR": tmp, "BUSOS_DIR": tmp,
+                  "CACHE_WEB": os.path.join(tmp, "cache-web"), "RADAR_CACHE": os.path.join(tmp, "radar-cache"),
+                  "APRENENTATGE_DIR": os.path.join(tmp, "aprenentatge")}
+        sortida = os.path.join(tmp, "casa.json")
+        executa(["python3", "casa.py", "--json", sortida], cwd=copia, env=entorn, capture_output=True,
+                timeout=LECTURA_MAX_MIN * 60)
+        try:
+            with open(sortida, encoding="utf-8") as f:
+                errors = json.load(f).get("errors") or []
+        except (OSError, ValueError):
+            return "casa.py no ha acabat"
+        return next((e for e in errors if FF.font(e) == font), None)
+
+
+def repara_font(font, s, estat):
+    """Un agent arregla la lectura de la font; el programa ho comprova tornant-la
+    a llegir. Si no s'arregla, s'avisa Juanjo."""
+    import fonts_falla as FF
+    sha = git(ARREL, "ls-remote", URL_REPO, "refs/heads/main").split()[0]
+    copia = ruta("copia")
+    if not prepara_copia(sha):
+        return
+    fallida = versio(copia)
+    abans = proves(copia)
+    res = agent(copia, [{"nom": f"la font «{font}», des de {s['des_de']}", "sortida": s["error"]}],
+                INSTRUCCIONS_FONTS)
+    motius = []
+    if not res.get("arreglat"):
+        motius.append("l'agent no ho ha arreglat")
+    else:
+        motius += incompliments(canviats(copia, sha), abans, proves(copia))
+        if versio(copia) != fallida:
+            motius.append("ha canviat VERSION")
+        if not motius:
+            motius += [f"continua fallant: {c['nom']}" for c in comprovacions(copia) if not c["ok"]]
+        if not motius and (encara := falla_encara(copia, font)):
+            motius.append(f"la font continua fallant: {encara[:200]}")
+    if motius:
+        apunta({"sha": sha, "font": font, "resultat": "no_arreglat", "motiu": "; ".join(motius),
+                "detall": res.get("detall"), "cost_usd": res.get("cost_usd"), "minuts": res.get("minuts")})
+        avisa(FF.text_falla(font, s) + " Un agent ho ha provat d'arreglar i no ho ha aconseguit: "
+              + (res.get("detall") or "; ".join(motius))[:500])
+        return
+    nova = puja_versio(copia)
+    missatge = f"{res.get('commit') or f'Es torna a llegir la font {font}'} (reparador, {nova}, ADR 0031 i 0113)"
+    nou = puja(copia, sha, missatge, etiqueta=f"v{nova}")
+    estat.setdefault("propis", []).append(nou)
+    causa = (res.get("causa") or "").rstrip(".")
+    estat["avisa"] = {"sha": nou, "text": f"Temps a Montflorit: {FF.nom(font)} no es podia llegir des del "
+                      f"{H.local(s['des_de']):%d/%m a les %H:%M}" + (f" ({causa})" if causa else "")
+                      + f". Un agent ho ha arreglat i ja està publicada la {nova}."}
+    apunta({"sha": sha, "font": font, "resultat": "arreglat", "nou": nou, "versio": fallida, "versio_nova": nova,
+            "detall": res.get("detall"), "cost_usd": res.get("cost_usd"), "minuts": res.get("minuts")})
+
+
+def comprova_fonts(estat):
+    """La font que fonts_falla.py ha encarregat al reparador, una vegada per
+    fallada (font i des de quan)."""
+    import fonts_falla as FF
+    intentades = estat.setdefault("fonts_intentades", [])
+    for font, s in FF._llegeix(FF.FITXER).items():
+        clau = f"{font}|{s.get('des_de')}"
+        if not s.get("reparar") or clau in intentades:
+            continue
+        intentades.append(clau)
+        estat["fonts_intentades"] = intentades[-50:]
+        desa(ruta("estat"), estat)
+        try:
+            repara_font(font, s, estat)
+        except Exception as ex:
+            apunta({"font": font, "resultat": "no_arreglat", "motiu": f"error del reparador: {ex}"})
+            avisa(FF.text_falla(font, s) + f" El reparador no ho ha pogut provar: {ex}")
+        finally:
+            desa(ruta("estat"), estat)
+        return
+
+
 def publicat(sha):
     """Si la copia que publica la web ya incluye sha."""
     try:
@@ -315,6 +406,8 @@ def comprova(ara=None):
             desa(ruta("estat"), estat)
         intentats = estat.setdefault("intentats", [])
         if not fallit or fallit in intentats:
+            # Sense cap commit per arreglar, les fonts que no es poden llegir.
+            comprova_fonts(estat)
             return
         vist = estat.setdefault("vist", {})
         vist.setdefault(fallit, ara)

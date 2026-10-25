@@ -186,6 +186,7 @@ Umbrales y lugares, en `config.py`. El porqué, en los ADR.
 | `montflorit.py`, `montflorit/` | Genera la web pública a partir de `web/` y sus datos sin lo privado; manifiesto, iconos y README propios (ADR 0024), y `es.js`, los textos del programa en castellano (ADR 0025) |
 | `i18n/` | `es.json`, la traducción de los textos fijos, y `claus.js`, que saca del programa los textos por traducir (ADR 0025) |
 | `publica.sh` | Calcula y publica (lo usa el NAS) |
+| `fonts_falla.py` | Desde cuándo falla cada fuente de la web, para que la página lo diga; si dura 3 horas, aviso a Juanjo o arreglo del reparador (ADR 0031) |
 | `hora.py` | La hora del programa: el «ahora» y las claves en UTC, la lectura de las formas de antes y la hora de Madrid para lo que se publica y se muestra (ADR 0128) |
 | `migra_utc.py` | La migración, una sola vez, de los registros del NAS a UTC, con copia de antes (ADR 0128) |
 | `lluna.py` | La Luna: la fase, las fases principales y la salida y la puesta, con Astronomy Engine (`tercers/astronomy.py`, MIT), para «Ara», la gráfica y «Sol i lluna» (ADR 0127) |

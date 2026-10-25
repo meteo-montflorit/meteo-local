@@ -430,10 +430,14 @@ function textSol(sol, ara = new Date()) {
 // no cal: el cel només canvia amb les dades.
 let CEL_ARA = null;
 
-// La fase de la Lluna, amb el seu dibuix: «Lluna plena: demà, 5:12».
+// La fase de la Lluna, amb el seu dibuix: «Lluna plena: demà, 5:12». Porta a
+// la Lluna de «Consultes» (Juanjo, 25-10-2026).
 function liniaFase(fase) {
   const p = element('p', 'heroi-lluna');
-  p.append(dibuixLluna(ANGLE_FASE[fase.fase]), document.createTextNode(`${NOM_FASE_LLUNA()[fase.fase]}: ${quanFase(fase.hora)}`));
+  const a = element('a', null);
+  a.href = 'consultes.html#lluna';
+  a.append(dibuixLluna(ANGLE_FASE[fase.fase]), document.createTextNode(`${NOM_FASE_LLUNA()[fase.fase]}: ${quanFase(fase.hora)}`));
+  p.append(a);
   return p;
 }
 

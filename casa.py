@@ -33,6 +33,7 @@ import hora as H
 import ecowitt as E
 import entorn as EN
 import estacions as ES
+import fonts_falla as FF
 import fi_pluja as FP
 import nowcast as N
 import nuvols as NV
@@ -1149,6 +1150,14 @@ def recoger(anterior=None):
             RF.apunta(P.AHORA, nc, salida)
         except Exception as ex:
             print("No he podido apuntar los radares:", ex, file=sys.stderr)
+    # Des de quan falla cada font (fonts_falla.py, ADR 0031), perquè la web ho
+    # digui i, si dura, s'avisi Juanjo o s'encarregui al reparador. Només al
+    # NAS, que té l'estat; a la reserva, des d'ara.
+    try:
+        salida["fonts_falla"] = (FF.vigila(salida["errors"], P.AHORA) if R.hay_registro()
+                                 else {FF.font(e): H.clau(P.AHORA) for e in salida["errors"]})
+    except Exception as ex:
+        print("No he pogut vigilar les fonts:", ex, file=sys.stderr)
     # Tot casa.json en UTC, també els moments que les fonts donen amb
     # desfasament (ADR 0128): així es compara i s'ordena bé com a text i no hi
     # ha dues formes al mateix fitxer. La web i el bot el reben amb l'hora de
