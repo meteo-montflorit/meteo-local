@@ -94,5 +94,9 @@ lectura esperaba minutos (la de la riera, solo dentro de cada pasada). Ahora
 cada 15 segundos (`respostes_rapides`), y `confirmacio.respostes` lleva un
 candado para que dos lecturas a la vez no apunten la misma respuesta dos
 veces. Sin preguntas pendientes de las últimas 24 horas no se consulta
-Telegram.
+Telegram. Leerlas tan a menudo es también lo que evita perderlas: Telegram
+solo guarda cada pulsación unos dos minutos (141 s en dos pruebas del
+25-10-2026, con un botón pulsado desde la cuenta de Juanjo), no las 24 horas
+que se suponían; desde la 3.204.2 el bucle lee también las del cielo tapado
+(ADR 0126).
 

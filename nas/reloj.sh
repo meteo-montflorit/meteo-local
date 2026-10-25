@@ -65,18 +65,20 @@ prepara() {
 
 # Las respuestas de Juanjo a los botones (niebla, boira.py, ADR 0100;
 # llovizna que solo ve el radar, plugim.py, ADR 0019; desbordamiento de la
-# riera, riera.py, ADR 0027), cada RESPOSTES_S segundos y aparte del bucle de
+# riera, riera.py, ADR 0027; cielo tapado, nuvols_satellit.py, ADR 0126), cada RESPOSTES_S segundos y aparte del bucle de
 # las pasadas, para que el mensaje diga enseguida que se han apuntado. Dentro
 # del bucle esperaban a que acabara la publicación: con lluvia (cada 6
 # minutos) y código nuevo, el «Apuntado» tardaba minutos (Juanjo,
 # 19-10-2026: «he respondido varias veces pero no veo el mensaje de
-# confirmación»). Sin preguntas pendientes, no consultan Telegram;
-# confirmacio.respostes lleva un candado.
+# confirmación»). Además, Telegram solo guarda cada pulsación unos dos
+# minutos (en las pruebas del 25-10-2026, 141 s): leídas una vez por pasada,
+# se perdían todas (las del cielo, hasta el 25-10-2026). Sin preguntas
+# pendientes, no consultan Telegram; confirmacio.respostes lleva un candado.
 RESPOSTES_S=15
 respostes_rapides() {
   while true; do
     if [ -d "$REPO/.git" ]; then
-      for m in boira plugim riera; do
+      for m in boira plugim riera nuvols_satellit; do
         (cd "$REPO" && timeout 60 python3 "$m.py" respostes >/dev/null 2>&1) || true
       done
     fi

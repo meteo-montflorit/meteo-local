@@ -53,6 +53,10 @@ mes y preguntar a Juanjo cuando discrepen; Juanjo: «sí, prepáralo así».
   «Solo nubes altas y finas» dice si el satélite acierta lo que Sabadell no ve.
 - **`respostes`** las apunta en `registre/cel-confirmacions.csv` con lo que
   decían las dos fuentes al preguntar y al responder; **`resum`**, cómo va.
+  El reloj del NAS las lee cada 15 segundos, como las de la niebla (ADR 0100),
+  porque Telegram solo guarda cada pulsación unos dos minutos. Hasta la
+  3.204.2 se leían una vez por pasada y se perdían: la respuesta del
+  25-10-2026 a las 19:25 («Solo nubes altas y finas») se apuntó a mano.
 - Se decide a partir del 24-11-2026: el satélite, Sabadell o una combinación
   (por ejemplo, el satélite para las nubes altas y Sabadell para las bajas).
 
