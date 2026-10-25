@@ -835,7 +835,6 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .lluna-fases { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
 .lluna-fases li { display: flex; align-items: center; gap: .45rem; }
 .lluna-fases svg { width: 1.2rem; height: 1.2rem; flex: none; }
-.g-clau svg.m-lluna { width: 1em; height: 1em; margin-right: .3em; vertical-align: -.15em; }
 .sol-cel { fill: var(--sol-cel); }
 .sol-nit { fill: var(--sol-nit); }
 .sol-horitzo { stroke: var(--text); stroke-width: 1.2; }

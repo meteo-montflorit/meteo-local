@@ -48,7 +48,8 @@ Versión 3.200.0, con el recorrido del sol de «Consultes» (ADR 0054).
   («Lluna plena»), sobre el fondo de la gráfica para que la curva no la tape;
   si no cabe a la derecha, a la izquierda. Va por encima de la curva y las
   barras y por debajo de las zonas de cada hora, que siguen abriendo su ficha.
-  La leyenda la nombra cuando sale. Hasta la 3.203.0 iba pequeña en la fila de
+  La leyenda no la repite desde la 3.204.1: ya lleva el nombre en la gráfica
+  (Juanjo, 25-10-2026). Hasta la 3.203.0 iba pequeña en la fila de
   los días, sin nombre, y quedaba en el borde de arriba (Juanjo, 25-10-2026:
   «preferiría que estuviese por enmedio del grafico … con una etiqueta visible
   indicando la fase»).

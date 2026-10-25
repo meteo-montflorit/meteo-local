@@ -562,14 +562,12 @@ function dibuixaGrafica(fig) {
   // el nom al costat sobre el fons de la gràfica, que no la tapi la corba
   // (Juanjo, 25-10-2026: «por enmedio del grafico … con una etiqueta visible
   // indicando la fase»). Es posa damunt de tot, també de les zones de les hores.
-  const fasesGrafica = [];
   const llunesGrafica = [];
   const ambLluna = opcions.gran ? opcions.lluna !== false : opcions.lluna ?? llunaTriada();
   for (const fase of (ambLluna && LLUNA && LLUNA.fases) || []) {
     const t = new Date(fase.hora);
     const i = files.findIndex((f) => new Date(f.hora) <= t && t < new Date(f.fins));
     if (i < 0) continue;
-    fasesGrafica.push(fase.fase);
     const mida = 14;
     const cx = x(i) + col / 2;
     const cy = yTemp + hTemp / 2;
@@ -1072,15 +1070,9 @@ function dibuixaGrafica(fig) {
   if (hNuvols) ll.append(clau('m-nuvols', T('Núvols')));
   if (hUv) ll.append(clau('m-uv', T('Índex UV')));
   ll.append(clau('m-nit', T('Nit')));
-  // La fase de la Lluna, si n'hi ha alguna a la gràfica: la llegenda diu tot
-  // el que s'hi veu.
-  for (const fase of new Set(fasesGrafica)) {
-    const c = element('span', 'g-clau');
-    const lluna = dibuixLluna(ANGLE_FASE[fase]);
-    lluna.classList.add('m-lluna');
-    c.append(lluna, NOM_FASE_LLUNA()[fase]);
-    ll.append(c);
-  }
+  // La fase de la Lluna, no: ja porta el nom a la mateixa gràfica (Juanjo,
+  // 25-10-2026: «dado que lluna plena ya aparece en el propio gráfico se puede
+  // quitar de la leyenda»).
   if (fig._botoImatge) ll.append(botoImatge(fig, 'g-imatge'));
   if (fig._botoOpcions) ll.append(botoHistorial(), botoOpcions());
   // Els avisos de més enllà de la gràfica, a sobre (avisosMesEnlla).
