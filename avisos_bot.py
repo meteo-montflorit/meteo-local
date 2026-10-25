@@ -346,9 +346,10 @@ def enllac_bombers(idioma):
     return f'<a href="{BOMBERS[idioma]}">{text}</a>'
 
 
-def text_incendi(i, acabat=False):
+def text_incendi(i, acabat=False, parat=None):
     """La distancia va en el título, que es lo que se ve en la notificación y
-    en la ficha plegada de «Perill»; el texto ya no la repite."""
+    en la ficha plegada de «Perill»; el texto ya no la repite. «parat», la hora
+    del último cambio de uno que Bombers deja abierto sin vehículos."""
     lloc = i.get("municipi") or "?"
     parc_ca = ", dins del Parc Natural de Collserola" if i.get("collserola") else ""
     parc_es = ", dentro del Parque Natural de Collserola" if i.get("collserola") else ""
@@ -356,6 +357,13 @@ def text_incendi(i, acabat=False):
         dist = f", a {coma(i['km'])} km de Montflorit" if i.get("km") is not None else ""
         on_ca = (f"al Parc de Collserola ({lloc})" if i.get("collserola") else f"a {lloc}") + dist
         on_es = (f"en el Parque de Collserola ({lloc})" if i.get("collserola") else f"en {lloc}") + dist
+        if parat:
+            return {"ca": negreta(f"Bombers: incendi {on_ca}: probablement ja s'ha apagat", "fi")
+                          + "\nBombers de la Generalitat el mantenen obert, però sense cap vehicle i sense cap "
+                          f"actualització des de les {hhmm(parat)}.",
+                    "es": negreta(f"Bombers: incendio {on_es}: probablemente ya se ha apagado", "fi")
+                          + "\nBombers de la Generalitat lo mantienen abierto, pero sin ningún vehículo y sin ninguna "
+                          f"actualización desde las {hhmm(parat)}."}
         return {"ca": negreta(f"Bombers: incendi {on_ca}: ja no consta com a actiu", "fi")
                       + "\nBombers de la Generalitat ja no el tenen entre les actuacions en curs.",
                 "es": negreta(f"Bombers: incendio {on_es}: ya no consta como activo", "fi")
@@ -770,6 +778,7 @@ def decideix(estat, salida, ahora):
     if entorn.get("incendis") is not None:
         ara_ids = {i["id"]: i for i in entorn["incendis"]}
         fora = set(entorn.get("incendis_fora") or [])
+        parats = entorn.get("incendis_parats") or {}
         apartats = set((e or {}).get("fora") or [])
         abans = dict((e or {}).get("incendis") or {})
         if e is not None:
@@ -778,7 +787,8 @@ def decideix(estat, salida, ahora):
                     afegeix("perill", f"incendi:{i['id']}", text_incendi(i), "incendi", episodi=f"incendi:{i['id']}")
             for iid, i in e["incendis"].items():
                 if iid not in ara_ids and iid not in fora:
-                    afegeix("perill", f"incendi:{iid}:fi", text_incendi(i, acabat=True), "fi", episodi=f"incendi:{iid}")
+                    afegeix("perill", f"incendi:{iid}:fi", text_incendi(i, acabat=True, parat=parats.get(iid)), "fi",
+                            episodi=f"incendi:{iid}")
         estat.setdefault("entorn", {"incendis": {}})["incendis"] = ara_ids
         estat["entorn"]["fora"] = sorted((apartats | set(abans)) & fora)
         estat["entorn"]["en_curs_fora"] = sorted(fora)

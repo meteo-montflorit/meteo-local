@@ -3,6 +3,23 @@
 Fecha: 2026-10-11 · Estado: aceptado
 
 
+**25-10-2026 (3.198.1): abierto sin vehículos, apagado.** El 24-10-2026 un
+incendio forestal de Montcada i Reixac (Collserola, 4,1 km) entró a las
+17:15 en la capa de Bombers y siguió en ella más de 12 horas sin hora de
+cierre, con 0 vehículos y sin ningún cambio desde el alta. No salió en
+ninguna noticia; los tres anteriores del historial duraron entre 6 minutos y
+1 hora, y en la capa había otro igual en Puiggròs. Juanjo lo vio en la web:
+«aparentemente sigue activo pero en realidad no lo creo». Desde ahora, uno
+con 0 vehículos y sin cambios (`ACT_DAT_ACTUAL`) desde hace más de
+`INCENDI_PARAT_H` (3) horas se da por apagado: sale de los activos y su
+cierre lo dice tal cual, «probablement ja s'ha apagat: Bombers de la
+Generalitat el mantenen obert, però sense cap vehicle i sense cap
+actualització des de les 17:15». El umbral, el triple del más largo de los
+anteriores, deja pasar las primeras horas de uno real aunque aún no tenga
+vehículos. Si Bombers vuelve a tocarlo (le asigna vehículos o lo actualiza),
+reaparece y se avisa como nuevo. Lo explica también «Com es decideixen els
+avisos».
+
 **16-10-2026 (3.98.1):** fuera del parque, cualquier incendio forestal a
 `ENTORN_RADI_KM` (2 km) o menos, sea cual sea el municipio, y los de
 Collserola a cualquier distancia. Juanjo: «bájalo a 2 km esté donde esté y
@@ -231,6 +248,9 @@ propusieron dos y aprobó los dos («de acuerdo, hazlo así»):
 - Los nombres de municipio de Bombers se comparan sin distinguir mayúsculas;
   si Bombers escribe uno de otra manera («Papiol, el»), ese municipio solo
   avisaría dentro del parque.
+- El umbral de 3 horas sale de cuatro incendios. Si uno real pasara más de
+  3 horas abierto sin que Bombers le asigne vehículos ni lo toque, la web lo
+  daría por apagado antes de tiempo; con vehículos, nunca.
 - La fecha del «Nou!» (18-10-2026) supone publicar el 11-10-2026: si se
   publica más tarde, hay que moverla.
 
@@ -239,6 +259,11 @@ propusieron dos y aprobó los dos («de acuerdo, hazlo así»):
 - `tests/test_entorn.py`: qué incendios interesan (Ripollet y Badia no;
   Montcada a 2,5 km sí y a 3,8 km no; Molins de Rei dentro del parque sí;
   Cerdanyola sí), el 🔥, el enlace a Bombers y el texto del parque.
+- `tests/test_entorn.py`, también el abierto sin vehículos: fuera de los
+  activos a las 4 horas, no a la primera; con vehículos, sigue; y su cierre.
+  Comprobado el 25-10-2026 con la capa real y una copia del estado del NAS:
+  el de Montcada sale como «probablement ja s'ha apagat» y su ficha del
+  historial queda cerrada.
 - `tests/test_historial.py`: comienzo y final en una entrada, subida de nivel,
   episodio nuevo tras uno acabado, plan oculto que se cierra, un año, y la
   unión con el historial del otro servidor.

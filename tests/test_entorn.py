@@ -30,6 +30,20 @@ class Fonts(unittest.TestCase):
         self.assertAlmostEqual(r[0]["km"], 3.9, delta=0.3)
         self.assertTrue(r[0]["collserola"])
 
+    def test_obert_sense_vehicles_ni_canvis_es_dona_per_apagat(self):
+        # 25-10-2026: un de Montcada va quedar obert amb 0 vehicles i sense cap
+        # canvi des de les 17:15 del dia abans (ADR 0071).
+        def foc(gid, vehicles, hores):
+            f = feature("Incendi vegetació forestal", "Sant Cugat del Vallès", 41.47, 2.09, gid=gid)
+            f["attributes"].update(ACT_NUM_VEH=vehicles,
+                                   ACT_DAT_ACTUAL=int((ARA - dt.timedelta(hours=hores)).timestamp() * 1000))
+            return f
+        d = {"features": [foc("parat", 0, 4), foc("nou", 0, 1), foc("amb-vehicles", 3, 12)]}
+        parats = {}
+        r = EN.incendis(d, collserola=lambda y, x: True, parats=parats, ara=ARA)
+        self.assertEqual(sorted(i["id"] for i in r), ["amb-vehicles", "nou"])
+        self.assertEqual(parats, {"parat": (ARA - dt.timedelta(hours=4)).isoformat(timespec="minutes")})
+
     def test_nomes_els_que_interessen_al_barri(self):
         # ADR 0071 (Juanjo, 16-10-2026): Collserola a qualsevol distància i,
         # fora del parc, a 2 km o menys, sigui quin sigui el municipi.
@@ -109,6 +123,20 @@ class Avisos(unittest.TestCase):
         fi = self.passada(estat, [], 18)
         self.assertIn("ja no consta com a actiu", fi[0]["ca"])
         self.assertTrue(fi[0]["ca"].startswith("🟢"))
+
+    def test_parat_es_diu_que_probablement_s_ha_apagat(self):
+        estat = {}
+        foc = [{"id": "x", "municipi": "Montcada i Reixac", "km": 4.1, "collserola": True, "inici": ARA.isoformat(),
+                "vehicles": 0}]
+        self.passada(estat, [])
+        self.assertEqual(len(self.passada(estat, foc, 6)), 1)
+        salida = {"entorn": {"incendis": [], "incendis_parats": {"x": ARA.isoformat()}, "pla_alfa": {}}}
+        fi = [a for a in AB.decideix(estat, salida, ARA + dt.timedelta(hours=4)) if a["tipus"] == "perill"]
+        self.assertTrue(fi[0]["ca"].startswith(
+            "🟢 <b>Bombers: incendi al Parc de Collserola (Montcada i Reixac), a 4,1 km de Montflorit: "
+            "probablement ja s'ha apagat</b>"))
+        self.assertIn("sense cap vehicle i sense cap actualització des de les 13:00", fi[0]["ca"])
+        self.assertIn("probablemente ya se ha apagado", fi[0]["es"])
 
     def test_sortir_de_la_zona_no_es_acabar(self):
         # 16-10-2026: en baixar a 2 km, un incendi de Cerdanyola a 2,6 km es va

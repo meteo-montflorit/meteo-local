@@ -138,17 +138,21 @@ def interessa(municipi, dist, collserola):
     return bool(collserola) or (dist is not None and dist <= C.ENTORN_RADI_KM)
 
 
-def incendis(dades=None, collserola=None, fora=None):
+def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None):
     """Incendios de vegetación forestal en curso que interesan al barrio
     (interessa), del más cercano al más lejano. En «fora», si se pasa, los
     identificadores de los que siguen en curso pero quedan fuera de la zona:
-    salir de ella no es acabar (16-10-2026, ADR 0071)."""
+    salir de ella no es acabar (16-10-2026, ADR 0071). En «parats», los que
+    Bombers deja abiertos sin ningún vehículo ni cambio desde hace
+    INCENDI_PARAT_H horas, con la hora del último cambio: se dan por apagados
+    (25-10-2026, ADR 0071)."""
+    ara = ara or dt.datetime.now().astimezone()
     xmin, ymin, xmax, ymax = C.INCENDIS_CAIXA
     d = dades or get(BOMBERS + "/query", {
         "where": "TAL_COD_ALARMA1='IV'", "geometry": f"{xmin},{ymin},{xmax},{ymax}",
         "geometryType": "esriGeometryEnvelope", "inSR": 4326, "spatialRel": "esriSpatialRelIntersects",
         "outSR": 4326,
-        "outFields": "GlobalID,TAL_DESC_ALARMA2,MUNICIPI_SIG,ACT_DAT_INICI,ACT_DAT_FI,ACT_NUM_VEH,COM_FASE",
+        "outFields": "GlobalID,TAL_DESC_ALARMA2,MUNICIPI_SIG,ACT_DAT_INICI,ACT_DAT_FI,ACT_DAT_ACTUAL,ACT_NUM_VEH,COM_FASE",
         "returnGeometry": "true", "f": "json"})
     if "error" in d:
         raise RuntimeError(d["error"].get("message"))
@@ -167,6 +171,15 @@ def incendis(dades=None, collserola=None, fora=None):
         if not interessa(municipi, dist, al_parc):
             if fora is not None:
                 fora.append(a["GlobalID"])
+            continue
+        # Uno de Montcada se quedó abierto el 24-10-2026 con 0 vehículos y sin
+        # ningún cambio desde que se dio de alta; los de antes duraron una hora
+        # como mucho. Si Bombers vuelve a tocarlo, reaparece.
+        canvi = a.get("ACT_DAT_ACTUAL") or a.get("ACT_DAT_INICI")
+        if a.get("ACT_NUM_VEH") == 0 and canvi and \
+                ara - dt.datetime.fromtimestamp(canvi / 1000).astimezone() > dt.timedelta(hours=C.INCENDI_PARAT_H):
+            if parats is not None:
+                parats[a["GlobalID"]] = hora_iso(canvi)
             continue
         res.append({"id": a["GlobalID"], "municipi": municipi, "km": round(dist, 1),
                     "collserola": al_parc, "inici": hora_iso(a.get("ACT_DAT_INICI")),
@@ -209,14 +222,15 @@ def calcula(ara=None):
     """Para casa.json y los datos públicos. Cada parte, None si su fuente falla."""
     ara = ara or dt.datetime.now().astimezone()
     res = {"hora": ara.isoformat(timespec="minutes"), "errors": []}
-    fora = []
-    for clau, funcio in (("incendis", lambda: incendis(fora=fora)), ("pla_alfa", lambda: pla_alfa(ara))):
+    fora, parats = [], {}
+    for clau, funcio in (("incendis", lambda: incendis(fora=fora, parats=parats, ara=ara)), ("pla_alfa", lambda: pla_alfa(ara))):
         try:
             res[clau] = funcio()
         except Exception as ex:
             res[clau] = None
             res["errors"].append(f"{clau}: {ex}")
     res["incendis_fora"] = None if res["incendis"] is None else fora
+    res["incendis_parats"] = None if res["incendis"] is None else parats
     return res
 
 

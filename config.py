@@ -2,7 +2,7 @@
 """Datos fijos de «Temps a Montflorit»: lugares, horario, fuentes y umbrales.
 Se cambian aquí, no en los programas."""
 
-VERSION = "3.198.0"
+VERSION = "3.198.1"
 
 # Coordenadas con tres decimales (unos 100 m), no las exactas: para el tiempo
 # da igual una calle u otra, y el repositorio es público.
@@ -332,6 +332,10 @@ MUNICIPIS_COLLSEROLA = ("Barcelona", "Cerdanyola del Vallès", "Esplugues de Llo
                         "Sant Just Desvern")
 INCENDIS_CAIXA = (1.99, 41.375, 2.21, 41.54)
 COLLSEROLA_MARGE_KM = 0.2
+# Un incendio que Bombers deja abierto sin ningún vehículo ni cambio durante
+# más de INCENDI_PARAT_H horas se da por apagado (25-10-2026, ADR 0071): los
+# anteriores duraron entre 6 minutos y 1 hora.
+INCENDI_PARAT_H = 3
 ALFA_MUNICIPI = "082665"            # Cerdanyola del Vallès
 ALFA_ACTUAL_H = 36
 ALFA_NIVELL_MOSTRAR = 3
