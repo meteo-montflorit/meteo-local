@@ -147,3 +147,24 @@ registro del 04 al 22-10-2026, la corrección del 23-10 va de −0,5 a +0,7 °C.
 - Con datos reales del 23-10-2026 en un servidor local: Chromium, Firefox y
   WebKit, a 360, 393 y 1280 px, en tema claro y oscuro, catalán y castellano,
   sin desbordamiento; axe-core sin incidencias.
+
+## Cambio del 25-10-2026 (3.203.0): los litros si llueve y la ayuda de cada dato
+
+Para saber si sería poca o mucha lluvia (Juanjo, 25-10-2026: «es para saber si
+es una pequeña o gran lluvia»), debajo de la probabilidad, en los días con
+lluvia posible, los litros por metro cuadrado más probables **si llueve**: la
+mediana de las variantes del conjunto ECMWF que dan lluvia ese día
+(`pluja_si_plou`) y, al pasar el ratón o mantenerlo pulsado, hasta dónde puede
+llegar (`pluja_fins`, el percentil 90 de esas variantes). Hoy y mañana, la
+suma de las horas con lluvia de la tabla. Sin decimales, porque la previsión a
+varios días no da tanta precisión: «<1 mm», «3 mm».
+
+No se usa la media de todas las variantes (`pluja_mm`, que se sigue
+guardando): las secas la diluyen. El 25-10-2026, para el 31-10, la media daba
+0,3 mm con una probabilidad del 14 %, cuando las variantes que veían lluvia
+daban 1 mm y hasta 5.
+
+La probabilidad, el dibujo del cielo y los litros llevan su explicación en el
+`title` (el ratón, o el toque largo en el móvil): «Probabilitat que plogui en
+algun moment del dia: 25 %», el nombre del cielo, «Si plou, el més probable:
+3 mm; fins a 9 mm». Las temperaturas ya la tienen en «màx» y «mín».

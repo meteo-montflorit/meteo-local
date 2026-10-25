@@ -464,13 +464,14 @@ def icona_cel(f):
         return "i-moon-cel" if nit else "i-sun"
     if n < 45:
         return "i-cloud-moon" if nit else "i-cloud-sun"
-    return "i-cloud" if n < 70 else "i-cloudy"
+    # Cobert, el mateix dibuix ple i més fosc a la web (grafica.js celNuvols).
+    return "i-cloud" if n < 70 else "i-cloudy" if n < 85 else "i-cloudy-cobert"
 
 
 # Mig ennuvolat: de dia, el sol rere el núvol, que és com tothom el coneix; de
 # nit no hi ha emoji de lluna amb núvol, i amb pocs núvols es queda la lluna.
 EMOJI_CEL = {"i-sun": "☀️", "i-moon-cel": "🌙", "i-cloud-sun": "🌤️", "i-cloud-moon": "🌙", "i-cloud": "⛅",
-             "i-cloudy": "☁️", "i-cloud-fog": "🌫️", "i-cloud-sun-rain": "🌦️", "i-cloud-moon-rain": "🌧️",
+             "i-cloudy": "☁️", "i-cloudy-cobert": "☁️", "i-cloud-fog": "🌫️", "i-cloud-sun-rain": "🌦️", "i-cloud-moon-rain": "🌧️",
              "i-cloud-drizzle": "🌧️", "i-cloud-rain": "🌧️", "i-cloud-rain-wind": "🌧️", "i-cloud-snow": "🌨️",
              "i-cloud-lightning": "⛈️", "i-cloud-hail": "⛈️", "i-umbrella": "☔"}
 # De menys a més: la icona de la línia de la pluja és la de l'hora pitjor.

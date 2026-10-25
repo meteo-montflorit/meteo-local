@@ -549,6 +549,9 @@ function diaDeLaPagina(hores, mesurada, iso, ara, lectura = null) {
     pluja: plujes.includes('pluja') ? 'pluja' : plujes.includes('possible') ? 'possible' : null,
     probabilitat: Math.max(...files.map((f) => (f.plou_ara ? 1 : f.probabilitat || 0))),
     pluja_mm: files.reduce((s, f) => s + probHora(f) * (f.pluja_mm || 0), 0),
+    // Si plou: els litres de les hores amb pluja de la taula, com els de la
+    // resta de dies, que són els de les variants que hi veuen pluja.
+    pluja_si_plou: files.filter((f, i) => plujes[i]).reduce((s, f) => s + (f.pluja_mm || 0), 0),
     tempesta: files.some((f) => plujaHora(f) && f.codi >= 95),
     neu: files.some((f) => plujaHora(f) && esNeu(f.codi)),
   };
@@ -570,6 +573,7 @@ function diesSetmana(dades, ara = new Date()) {
     res.push({
       dia: d.dia, max: alta ? d.max_alta ?? d.max : d.max, min: alta ? d.min_alta ?? d.min : d.min,
       nuvols: d.nuvols, boira: false, probabilitat: p, pluja_mm: d.pluja_mm,
+      pluja_si_plou: d.pluja_si_plou, pluja_fins: d.pluja_fins,
       pluja: p == null ? null : p >= PROB_PLUJA ? 'pluja' : p >= PROB_POSSIBLE ? 'possible' : null,
       tempesta: d.codi >= 95, neu: esNeu(d.codi),
     });
@@ -601,6 +605,21 @@ const DIES_CURTS = {
 // 23-10-2026: «algo parecido a esto pero sin la gráfica»): el dia, la data,
 // el cel, la màxima en vermell i la mínima en blau (ADR 0063) i, només si
 // arriba a possible, la probabilitat de pluja.
+// Els litres d'un dia de la setmana si plou, sense decimals (la previsió a
+// uns dies no en dona tants): «<1 mm», «3 mm».
+function mmSetmana(v) {
+  return v < 1 ? '<1\u00a0mm' : `${Math.round(v)}\u00a0mm`;
+}
+
+// La frase sencera, per al rètol i els lectors de pantalla: el més probable i,
+// si és prou més, fins on pot arribar.
+function textMmSetmana(d) {
+  const quant = (v) => (v < 1 ? T('menys d’1\u00a0mm') : `${Math.round(v)}\u00a0mm`);
+  const fins = d.pluja_fins != null && Math.round(d.pluja_fins) > Math.max(1, Math.round(d.pluja_si_plou));
+  return fins ? T`Si plou, el més probable: ${quant(d.pluja_si_plou)}; fins a ${quant(d.pluja_fins)}`
+    : T`Si plou, el més probable: ${quant(d.pluja_si_plou)}`;
+}
+
 function blocSetmana(dades, ara = new Date()) {
   const dies = diesSetmana(dades, ara);
   if (dies.length < 3) return null;
@@ -609,6 +628,10 @@ function blocSetmana(dades, ara = new Date()) {
   const llista = element('ol', 'setmana-dies');
   const codi = IDIOMA.codi === 'es' ? 'es' : 'ca';
   const ambPluja = dies.some((d) => d.pluja);
+  // Quanta pluja, si plou: per saber si seria poca o molta (Juanjo,
+  // 25-10-2026: «es para saber si es una pequeña o gran lluvia»).
+  const teMm = (d) => d.pluja && d.pluja_si_plou != null && d.pluja_si_plou > 0;
+  const ambMm = dies.some(teMm);
   // Una columna de símbols al principi, perquè se sàpiga què és cada fila
   // (Juanjo, 23-10-2026: «el % de abajo no se sabe lo que es»): «màx» i «mín»
   // del color de les xifres i el paraigua dels trams, només si hi ha pluja.
@@ -625,7 +648,8 @@ function blocSetmana(dades, ara = new Date()) {
   claus.append(clau('setmana-nom'), clau('setmana-data'), clau('setmana-cel'),
     clau('setmana-max temp-max', T('màx'), T('Temperatura màxima')),
     clau('setmana-min temp-min', T('mín'), T('Temperatura mínima')));
-  if (ambPluja) claus.append(clau('setmana-pluja', icona('i-umbrella'), T('Probabilitat de pluja')));
+  if (ambPluja) claus.append(clau('setmana-pluja', icona('i-umbrella'), T('Probabilitat que plogui en algun moment del dia')));
+  if (ambMm) claus.append(clau('setmana-mm', 'mm', T('Si plou, els litres per metre quadrat més probables')));
   llista.append(claus);
   dies.forEach((d, i) => {
     const data = llegeixHora(`${d.dia}T12:00`);
@@ -636,13 +660,28 @@ function blocSetmana(dades, ara = new Date()) {
     const pct = d.pluja ? `${Math.round(d.probabilitat * 100)} %` : '';
     // Tot el dia en una frase, per als lectors de pantalla.
     li.setAttribute('aria-label', [data.toLocaleDateString(codi, { weekday: 'long', day: 'numeric', timeZone: ZONA_HORA }),
-      cel && cel[0], T`màxima ${max} °C, mínima ${min} °C`, pct && T`pluja ${pct}`].filter(Boolean).join(', '));
+      cel && cel[0], T`màxima ${max} °C, mínima ${min} °C`, pct && T`pluja ${pct}`,
+      teMm(d) && textMmSetmana(d).replace(/^./, (c) => c.toLowerCase())].filter(Boolean).join(', '));
     li.append(element('span', 'setmana-nom', nom),
       element('span', 'setmana-data', `${partsHora(data).dia}/${partsHora(data).mes}`));
     const ic = cel ? icona(cel[1]) : element('span');
     ic.classList.add('setmana-cel');
-    li.append(ic, element('span', 'setmana-max temp-max', `${max}°`), element('span', 'setmana-min temp-min', `${min}°`));
-    if (ambPluja) li.append(element('span', 'setmana-pluja', pct));
+    // Què vol dir el dibuix, en passar-hi el ratolí o mantenint-lo premut
+    // (Juanjo, 25-10-2026): en un span, que un svg no mostra el «title».
+    const caixa = element('span', 'setmana-cel-caixa');
+    caixa.append(ic);
+    if (cel) caixa.title = cel[0];
+    li.append(caixa, element('span', 'setmana-max temp-max', `${max}°`), element('span', 'setmana-min temp-min', `${min}°`));
+    if (ambPluja) {
+      const pl = element('span', 'setmana-pluja', pct);
+      if (pct) pl.title = T`Probabilitat que plogui en algun moment del dia: ${pct}`;
+      li.append(pl);
+    }
+    if (ambMm) {
+      const mm = element('span', 'setmana-mm', teMm(d) ? mmSetmana(d.pluja_si_plou) : '');
+      if (teMm(d)) mm.title = textMmSetmana(d);
+      li.append(mm);
+    }
     llista.append(li);
   });
   sec.append(llista);

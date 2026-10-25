@@ -43,10 +43,15 @@ Versión 3.200.0, con el recorrido del sol de «Consultes» (ADR 0054).
   (el sol de día, la lluvia, la niebla) se reducen al 84 % desde arriba para
   que el texto no pise los rayos; el alba y la puesta, no, porque tienen la
   parte de abajo vacía.
-- **La gráfica horaria**: la fase, pequeña, en la fila de los días y solo en
-  la columna de la hora en que pasa; al tocarla, qué fase es y cuándo. Si
-  coincide con el nombre de un día, el nombre se corre a la derecha. La
-  leyenda la nombra cuando sale.
+- **La gráfica horaria**: la fase solo en la columna de la hora en que pasa,
+  a media altura de la zona de la temperatura y con su nombre al lado
+  («Lluna plena»), sobre el fondo de la gráfica para que la curva no la tape;
+  si no cabe a la derecha, a la izquierda. Va por encima de la curva y las
+  barras y por debajo de las zonas de cada hora, que siguen abriendo su ficha.
+  La leyenda la nombra cuando sale. Hasta la 3.203.0 iba pequeña en la fila de
+  los días, sin nombre, y quedaba en el borde de arriba (Juanjo, 25-10-2026:
+  «preferiría que estuviese por enmedio del grafico … con una etiqueta visible
+  indicando la fase»).
 - **«Consultes»**: la pestaña «Sol» pasa a «Sol i lluna» (la dirección sigue
   siendo `consultes.html#sol`). Debajo del sol, «La lluna avui a Montflorit»:
   la Luna dibujada como se ve, la fase de ahora y la parte iluminada («Lluna

@@ -1676,7 +1676,7 @@ const MARCA = /⟦([a-z-]+)⟧ ?/;
 const ALTA = / ?\(((?:fins a|hasta) [^()]*? (?:a la part alta|en la parte alta))\)/;
 const NOM_CEL = () => ({
   'i-sun': T('Serè'), 'i-moon-cel': T('Serè'), 'i-cloud-sun': T('Poc ennuvolat'), 'i-cloud-moon': T('Poc ennuvolat'),
-  'i-cloud': T('Mig ennuvolat'), 'i-cloudy': T('Molt ennuvolat'), 'i-cloud-fog': T('Boira'),
+  'i-cloud': T('Mig ennuvolat'), 'i-cloudy': T('Molt ennuvolat'), 'i-cloudy-cobert': T('Cobert'), 'i-cloud-fog': T('Boira'),
   'i-cloud-sun-rain': T('Possible pluja'), 'i-cloud-moon-rain': T('Possible pluja'), 'i-cloud-drizzle': T('Pluja feble'),
   'i-cloud-rain': T('Pluja'), 'i-cloud-rain-wind': T('Pluja forta'), 'i-cloud-snow': T('Neu'),
   'i-cloud-lightning': T('Tempesta'), 'i-cloud-hail': T('Tempesta amb calamarsa'), 'i-umbrella': T('Plou ara'),

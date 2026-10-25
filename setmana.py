@@ -148,6 +148,16 @@ def dies(avui, model, ensemble, corr, taula=None, ajust=None):
         if totals:
             dia["probabilitat"] = round(sum(x >= C.UMBRAL_MM for x in totals) / len(totals), 2)
             dia["pluja_mm"] = round(max(statistics.fmean(totals), 0), 1)
+            # La mitjana ho barreja amb els membres secs: amb un 14 % de
+            # probabilitat, 0,3 mm quan els que plouen en donen 1 (i fins a 5).
+            # Per saber si seria poca o molta pluja (Juanjo, 25-10-2026: «es para
+            # saber si es una pequeña o gran lluvia»), la dels que plouen: la
+            # mediana i el percentil 90.
+            molls = sorted(x for x in totals if x >= C.UMBRAL_MM)
+            if molls:
+                dia["pluja_si_plou"] = round(statistics.median(molls), 1)
+                dia["pluja_fins"] = round(statistics.quantiles(molls, n=10, method="inclusive")[8]
+                                          if len(molls) > 1 else molls[0], 1)
             dia["membres"] = len(totals)
         res.append(dia)
     return res
