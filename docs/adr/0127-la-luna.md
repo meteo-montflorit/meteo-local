@@ -36,7 +36,13 @@ Versión 3.200.0, con el recorrido del sol de «Consultes» (ADR 0054).
   Medido en Chromium, Firefox y WebKit: con una línea, la tarjeta mide lo
   mismo; con dos, unos 8 px más a 393 px y 13 a 360. Fuera del margen de 12
   horas, nada (`FASE_A_PROP_H`, `faseAProp`). Solo si no hay dibujo del
-  cielo, va en una pastilla.
+  cielo, va en una pastilla. El dibujo y lo que lleva debajo suben unos 6 px
+  en el móvil y 8 en el ordenador, con la misma altura total («un poco más
+  arriba, así no toca el margen inferior»): el texto queda a 11-12 px del
+  borde en vez de 2-6. Con texto debajo, los dibujos que llegan hasta abajo
+  (el sol de día, la lluvia, la niebla) se reducen al 84 % desde arriba para
+  que el texto no pise los rayos; el alba y la puesta, no, porque tienen la
+  parte de abajo vacía.
 - **La gráfica horaria**: la fase, pequeña, en la fila de los días y solo en
   la columna de la hora en que pasa; al tocarla, qué fase es y cuándo. Si
   coincide con el nombre de un día, el nombre se corre a la derecha. La

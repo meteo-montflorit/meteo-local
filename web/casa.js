@@ -450,6 +450,10 @@ function posaCel(cel) {
   horaSol.textContent = textHora;
   horaSol.hidden = !textHora;
   sota.hidden = !textHora && !ambFase;
+  // Amb text a sota, els dibuixos que arriben fins a baix (el sol de dia, la
+  // pluja, la boira) es fan una mica més petits des de dalt, perquè el text no
+  // els trepitgi; l'alba i la posta tenen la part de baix buida.
+  dibuix.parentElement.classList.toggle('amb-sota', !sota.hidden && !['sunrise', 'sunset'].includes(cel.dibuix));
   sec.classList.remove(...[...sec.classList].filter((c) => c.startsWith('cel-')));
   sec.classList.add(`cel-${cel.fons}`);
   const src = `${ARREL}img/meteocons/${cel.dibuix}.svg`;
