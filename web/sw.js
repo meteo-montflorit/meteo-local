@@ -62,10 +62,14 @@ self.addEventListener('push', (e) => {
   ]));
 });
 
-// El dia d'avui al rellotge del dispositiu, «AAAA-MM-DD».
+// El dia d'un moment a Madrid, «AAAA-MM-DD», sigui quina sigui la zona del
+// dispositiu (ADR 0128): el «dia» de l'avís és el de Madrid. El service
+// worker no carrega comu.js: el mateix compte que comu.diaLocal.
+const DIA_MADRID = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' });
 function diaLocal(t) {
-  const dos = (n) => String(n).padStart(2, '0');
-  return `${t.getFullYear()}-${dos(t.getMonth() + 1)}-${dos(t.getDate())}`;
+  const v = {};
+  for (const { type, value } of DIA_MADRID.formatToParts(t)) v[type] = value;
+  return `${v.year}-${v.month}-${v.day}`;
 }
 
 // On porta una notificació en tocar-la: la previsió de demà es toca de

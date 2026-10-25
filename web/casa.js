@@ -48,13 +48,11 @@ const NOM_FENOMEN = {
 };
 
 function tramDe(f) {
-  const d = new Date(f.hora);
-  const h = d.getHours();
+  const h = horaLocal(f.hora);
   const [ini, fi, nom] = TRAMS.find(([a, b]) => (a < b ? h >= a && h < b : h >= a || h < b));
-  // La nit comença el dia anterior si som a la matinada.
-  const dia = new Date(d);
-  if (nom === 'Nit' && h < 7) dia.setDate(dia.getDate() - 1);
-  return { clau: `${dia.toDateString()}|${nom}`, nom, ini, fi, dia };
+  // La nit comença el dia anterior si som a la matinada. El dia, «AAAA-MM-DD» de Madrid.
+  const dia = sumaDies(f.hora, nom === 'Nit' && h < 7 ? -1 : 0);
+  return { clau: `${dia}|${nom}`, nom, ini, fi, dia };
 }
 
 // El cel del tram: boira si n'hi ha la major part de les hores; si no, la
@@ -80,11 +78,7 @@ function diaAbans(clau) {
   // Sense el desfase de l'hora que es repeteix a l'octubre («T02:00+01:00»):
   // el dia abans, aquella hora només hi és una vegada.
   const [dia, resta] = clau.split('T');
-  const hora = resta.slice(0, 5);
-  const t = new Date(`${dia}T12:00`);
-  t.setDate(t.getDate() - 1);
-  const dos = (n) => String(n).padStart(2, '0');
-  return `${t.getFullYear()}-${dos(t.getMonth() + 1)}-${dos(t.getDate())}T${hora}`;
+  return `${sumaDies(dia, -1)}T${resta.slice(0, 5)}`;
 }
 
 function comparaTemp(files, nit, mesura, totes) {
@@ -137,13 +131,11 @@ function mesuradaZona(dades) {
 }
 
 function comparaDia(hores, mesurada, ara = new Date()) {
-  const dema = ara.getHours() >= HORA_DEMA;
-  const dia = new Date(ara);
-  if (dema) dia.setDate(dia.getDate() + 1);
+  const dema = horaLocal(ara) >= HORA_DEMA;
+  const dia = sumaDies(ara, dema ? 1 : 0);
   const files = (hores || []).filter((f) => {
-    const h = new Date(f.hora);
-    return new Date(f.fins) > ara && h.toDateString() === dia.toDateString()
-      && h.getHours() >= TRAM_DIA[0] && h.getHours() < TRAM_DIA[1];
+    const h = partsHora(f.hora);
+    return new Date(f.fins) > ara && h.data === dia && h.hora >= TRAM_DIA[0] && h.hora < TRAM_DIA[1];
   });
   const text = textComparacio(comparaTemp(ambTempZona(files), false, mesurada, ambTempZona(hores)), dema);
   if (!text) return null;
@@ -193,8 +185,7 @@ function resumTrams(hores, ara, mesurada) {
     if (!g) grups.push(g = { ...t, files: [] });
     g.files.push(f);
   }
-  const dema = new Date(ara);
-  dema.setDate(dema.getDate() + 1);
+  const dema = sumaDies(ara, 1);
   return grups.map((g) => {
     // Les temperatures de la zona triada amb el botó de dalt (ADR 0123): la
     // riera o la part alta, amb la diferència de cada hora (ADR 0087).
@@ -219,9 +210,9 @@ function resumTrams(hores, ara, mesurada) {
     else if (riera.length && Math.min(...riera) <= FENOMENS.glaçada) {
       fenomens.push([NOM_FENOMEN.glaçadaRiera(), 'i-thermometer-snowflake']);
     }
-    const esDema = g.dia.toDateString() === dema.toDateString();
+    const esDema = g.dia === dema;
     const actual = new Date(g.files[0].hora) <= ara;
-    const fi = new Date(g.files[g.files.length - 1].fins).getHours();
+    const fi = horaLocal(g.files[g.files.length - 1].fins);
     return {
       clau: g.clau,
       nom: (esDema ? NOM_TRAM_DEMA : NOM_TRAM)[g.nom](),
@@ -345,11 +336,10 @@ function tramsFrase(hores, ara = new Date()) {
 
 function fraseCelAra(hores, ara = new Date()) {
   const trams = tramsFrase(hores, ara);
-  const dema = new Date(ara);
-  dema.setDate(dema.getDate() + 1);
+  const dema = sumaDies(ara, 1);
   const parts = trams.map((t) => {
     const nom = t.clau.split('|')[1];
-    const quan = (t.files[0] && new Date(t.files[0].hora).toDateString() === dema.toDateString()
+    const quan = (t.files[0] && diaLocal(t.files[0].hora) === dema
       && nom !== 'Nit' ? QUAN_TRAM_DEMA : QUAN_TRAM)[nom]();
     return [quan, t.cel[0].toLowerCase(), sensacioTram(t)];
   });
@@ -415,7 +405,7 @@ function celPortada(hores, plou, radarDades, ara = new Date()) {
   const moment = altura < -6 ? 'nit' : altura < 6 ? 'alba' : 'dia';
   const fons = moment === 'nit' ? FONS_NIT[cel] || cel : moment === 'alba' ? FONS_ALBA[cel] || cel : cel;
   let dibuix = DIBUIX_CEL[moment === 'nit' ? 'nit' : 'dia'][cel];
-  if (moment === 'alba' && (cel === 'sere' || cel === 'poc')) dibuix = ara.getHours() < 12 ? 'sunrise' : 'sunset';
+  if (moment === 'alba' && (cel === 'sere' || cel === 'poc')) dibuix = horaLocal(ara) < 12 ? 'sunrise' : 'sunset';
   return { fons, dibuix, moment };
 }
 
@@ -425,11 +415,11 @@ function celPortada(hores, plou, radarDades, ara = new Date()) {
 // no canvia quan ja ha sortit i cap en una línia al mòbil. Sense el zero de
 // davant, com a la taula (marcaSol).
 function textSol(sol, ara = new Date()) {
-  const dia = (sol || []).find((d) => new Date(`${d.dia}T12:00`).toDateString() === ara.toDateString());
-  const mati = ara.getHours() < 12;
+  const dia = (sol || []).find((d) => d.dia === diaLocal(ara));
+  const mati = horaLocal(ara) < 12;
   const quan = dia && (mati ? dia.sortida : dia.posta);
   if (!quan) return '';
-  const h = new Date(quan).toLocaleTimeString(IDIOMA.codi, { hour: 'numeric', minute: '2-digit' });
+  const h = llegeixHora(quan).toLocaleTimeString(IDIOMA.codi, { hour: 'numeric', minute: '2-digit', timeZone: ZONA_HORA });
   return mati ? T`Sortida del sol: ${h}` : T`Posta del sol: ${h}`;
 }
 
@@ -541,15 +531,15 @@ function diaDeLaPagina(hores, mesurada, iso, ara, lectura = null) {
   if (!files.length) return null;
   const temps = files.map(tempZona).filter((v) => v != null);
   for (const [clau, v] of Object.entries(mesurada || {})) {
-    if (clau.slice(0, 10) === iso && new Date(clau) <= ara && v != null) temps.push(v);
+    if (clau.slice(0, 10) === iso && llegeixHora(clau) <= ara && v != null) temps.push(v);
   }
   // La lectura d'«Ara», la de cada actualització: el registre només té les
   // hores en punt, i un màxim entre dues hores no hi sortia, mentre «Ara» el
   // marcava (Juanjo, 23-10-2026: «si se alcanzan 21, se rectificará?»).
   if (lectura != null) temps.push(lectura);
   if (!temps.length) return null;
-  const deDia = files.filter((f) => f.nuvols != null && new Date(f.hora).getHours() >= TRAM_DIA[0]
-    && new Date(f.hora).getHours() < TRAM_DIA[1]);
+  const deDia = files.filter((f) => f.nuvols != null && horaLocal(f.hora) >= TRAM_DIA[0]
+    && horaLocal(f.hora) < TRAM_DIA[1]);
   const ambNuvols = deDia.length ? deDia : files.filter((f) => f.nuvols != null);
   const plujes = files.map(plujaHora);
   return {
@@ -565,8 +555,7 @@ function diaDeLaPagina(hores, mesurada, iso, ara, lectura = null) {
 }
 
 function diesSetmana(dades, ara = new Date()) {
-  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const avui = iso(ara);
+  const avui = diaLocal(ara);
   const alta = zonaTriada() === 'alta';
   const c = dades.ara_casa;
   const lectura = c && c.hora && c.hora.slice(0, 10) === avui ? tempAra(c) : null;
@@ -639,17 +628,17 @@ function blocSetmana(dades, ara = new Date()) {
   if (ambPluja) claus.append(clau('setmana-pluja', icona('i-umbrella'), T('Probabilitat de pluja')));
   llista.append(claus);
   dies.forEach((d, i) => {
-    const data = new Date(`${d.dia}T12:00`);
-    const nom = i ? DIES_CURTS[codi][data.getDay()] : T('Avui');
+    const data = llegeixHora(`${d.dia}T12:00`);
+    const nom = i ? DIES_CURTS[codi][partsHora(data).setmana] : T('Avui');
     const [max, min] = [Math.round(d.max), Math.round(d.min)];
     const cel = celDia(d);
     const li = element('li');
     const pct = d.pluja ? `${Math.round(d.probabilitat * 100)} %` : '';
     // Tot el dia en una frase, per als lectors de pantalla.
-    li.setAttribute('aria-label', [data.toLocaleDateString(codi, { weekday: 'long', day: 'numeric' }),
+    li.setAttribute('aria-label', [data.toLocaleDateString(codi, { weekday: 'long', day: 'numeric', timeZone: ZONA_HORA }),
       cel && cel[0], T`màxima ${max} °C, mínima ${min} °C`, pct && T`pluja ${pct}`].filter(Boolean).join(', '));
     li.append(element('span', 'setmana-nom', nom),
-      element('span', 'setmana-data', `${data.getDate()}/${data.getMonth() + 1}`));
+      element('span', 'setmana-data', `${partsHora(data).dia}/${partsHora(data).mes}`));
     const ic = cel ? icona(cel[1]) : element('span');
     ic.classList.add('setmana-cel');
     li.append(ic, element('span', 'setmana-max temp-max', `${max}°`), element('span', 'setmana-min temp-min', `${min}°`));
@@ -866,7 +855,7 @@ function liniaPlujaPrevista(hores, ara = new Date()) {
   const etiqueta = element('span', 'comenca-pluja');
   etiqueta.append(compte(f.hora, true));
   text.append(segura ? T('Pluja prevista ') : T('Possible pluja '), etiqueta,
-    T`, cap a les ${new Date(f.hora).getHours()}\u00a0h` + (pct == null ? '' : ` (${pct}\u00a0%)`) + '.');
+    T`, cap a les ${horaLocal(f.hora)}\u00a0h` + (pct == null ? '' : ` (${pct}\u00a0%)`) + '.');
   p.append(icona('i-cloud-rain'), text);
   return p;
 }
@@ -888,14 +877,14 @@ function textResum(dades, clau) {
 }
 
 function textosResum(dades) {
-  const claus = new Date(dades.generat).getHours() >= HORA_DEMA ? ['avui', 'dema'] : ['avui'];
+  const claus = horaLocal(dades.generat) >= HORA_DEMA ? ['avui', 'dema'] : ['avui'];
   return claus.map((c) => textResum(dades, c)).filter(Boolean);
 }
 
 // Les targetes del resum que no van dins «Ara»: la de demà, des de HORA_DEMA,
 // i la d'avui si no hi ha dades d'ara.
 function blocsResum(dades, ambAvui) {
-  const claus = (new Date(dades.generat).getHours() >= HORA_DEMA ? ['avui', 'dema'] : ['avui'])
+  const claus = (horaLocal(dades.generat) >= HORA_DEMA ? ['avui', 'dema'] : ['avui'])
     .filter((c) => c !== 'avui' || ambAvui);
   const blocs = claus.map((c) => textResum(dades, c)).filter(Boolean).map((text) => {
     const sec = element('section', 'targeta resum-dia');
@@ -1021,7 +1010,7 @@ function blocRadar(r, plou, hores) {
     if (g) cos.append(element('p', 'radar-propera', T('La previsió per hores sí que dona pluja per a aquesta hora') + resta(g)));
     else if (f && new Date(f.hora) < new Date(ara.getTime() + 2 * 3600e3)) {
       cos.append(element('p', 'radar-propera',
-        T`La previsió per hores sí que dona pluja a partir de les ${new Date(f.hora).getHours()}\u00a0h` + resta(f)));
+        T`La previsió per hores sí que dona pluja a partir de les ${horaLocal(f.hora)}\u00a0h` + resta(f)));
     }
   }
   // La pluja més propera, si no és a sobre (Juanjo, 17-10-2026), i si no és
@@ -1362,20 +1351,21 @@ function obertDeSortida(t) {
 // La sortida i la posta del sol, a la fila de l'hora en què passen, al costat
 // del cel: discretes, en gris (Juanjo, 13-10-2026).
 function solPerHora(sol) {
-  const clau = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
+  // La clau, l'hora de rellotge en punt: el moment, sense els minuts.
+  const clau = (d) => { const t = llegeixHora(d).getTime(); return t - partsHora(t).minut * 60000 - (t % 60000); };
   const res = new Map();
   for (const dia of sol || []) {
-    if (dia.sortida) res.set(clau(new Date(dia.sortida)), ['i-sunrise', T('Surt el sol a les'), dia.sortida]);
-    if (dia.posta) res.set(clau(new Date(dia.posta)), ['i-sunset', T('Es pon el sol a les'), dia.posta]);
+    if (dia.sortida) res.set(clau(dia.sortida), ['i-sunrise', T('Surt el sol a les'), dia.sortida]);
+    if (dia.posta) res.set(clau(dia.posta), ['i-sunset', T('Es pon el sol a les'), dia.posta]);
   }
-  return (hora) => res.get(clau(new Date(hora)));
+  return (hora) => res.get(clau(hora));
 }
 
 function marcaSol([id, text, quan]) {
   const m = element('span', 'sol-fila');
   // Sense el zero de davant (8:02), com les hores de la taula (8–9): al mòbil
   // ha de cabre al costat de la icona del cel.
-  const hora = new Date(quan).toLocaleTimeString(IDIOMA.codi, { hour: 'numeric', minute: '2-digit' });
+  const hora = llegeixHora(quan).toLocaleTimeString(IDIOMA.codi, { hour: 'numeric', minute: '2-digit', timeZone: ZONA_HORA });
   m.append(icona(id), element('span', 'visualment-amagat', text + ' '), hora);
   return m;
 }
@@ -1468,7 +1458,7 @@ function taulaTram(t, obert, solHora) {
   const avisos = tramsAvis(t.files);
   t.files.forEach((f, i) => {
     const tr = element('tr', { pluja: 'amb-pluja', possible: 'pluja-possible' }[plujaHora(f)] || '');
-    const h0 = new Date(f.hora).getHours();
+    const h0 = horaLocal(f.hora);
     const hora = element('th', 'hora', `${h0}–${(h0 + 1) % 24}`);
     hora.scope = 'row';
     tr.append(hora);
@@ -1603,9 +1593,10 @@ function taula(hores, mesurada, riscos, sol) {
   }
   // Si la taula travessa un canvi d'hora, la franja de 2 a 3 surt dues
   // vegades (octubre) o no hi és (març): es diu per què (Juanjo, 13-10-2026).
-  const desfasos = visibles.map((f) => new Date(f.hora).getTimezoneOffset());
+  // El desfasament, el que porta cada hora a les dades («+02:00»), no el del dispositiu.
+  const desfasos = visibles.map((f) => desfasDe(f.hora));
   if (new Set(desfasos).size > 1) {
-    terme(T('Canvi d’hora'), desfasos[desfasos.length - 1] > desfasos[0]
+    terme(T('Canvi d’hora'), desfasos[desfasos.length - 1] < desfasos[0]
       ? T('Aquesta nit el rellotge es retarda una hora: a les 3 tornen a ser les 2, i la franja de 2 a 3 surt dues vegades.')
       : T('Aquesta nit el rellotge s’avança una hora: a les 2 passen a ser les 3, i la franja de 2 a 3 no hi és.'));
   }

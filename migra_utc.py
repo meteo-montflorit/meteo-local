@@ -23,7 +23,6 @@ import fcntl
 import glob
 import json
 import os
-import re
 import sys
 import tarfile
 
@@ -31,24 +30,12 @@ import hora as H
 
 REGISTRE = os.environ.get("REGISTRE_DIR", "/estat/registre")
 MARCA = ".utc"
-# Una hora de les d'abans: amb minuts i, si de cas, segons i desfasament.
-HORA = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?([+-]\d{2}:\d{2})?$")
-
-
 def valor(v):
     """Una hora de les d'abans, en UTC; la resta, igual."""
-    if isinstance(v, str) and HORA.match(v):
-        t = H.utc(v)
-        return t.strftime("%Y-%m-%dT%H:%M:%SZ" if t.second else "%Y-%m-%dT%H:%MZ")
-    return v
+    return H.interna(v) if isinstance(v, str) else v
 
 
-def objecte(x):
-    if isinstance(x, dict):
-        return {valor(k): objecte(v) for k, v in x.items()}
-    if isinstance(x, list):
-        return [objecte(v) for v in x]
-    return valor(x)
+objecte = H.interna
 
 
 def migra_csv(ruta):
@@ -107,6 +94,41 @@ def migra(carpeta=REGISTRE, ara=None):
         with open(os.path.join(carpeta, MARCA), "w", encoding="utf-8") as f:
             json.dump({"fet": H.clau(ara), "copia": os.path.basename(copia), "fitxers": fet}, f, ensure_ascii=False)
         return fet
+
+
+MARCA_AEMET = ".utc-aemet"
+
+
+def corregeix_elaborat_aemet(carpeta=REGISTRE):
+    """Una sola vegada: l'hora d'elaboració de les previsions d'AEMET ja desades
+    (previsio-oficial-*.jsonl). AEMET la dona en UTC sense zona i fins a la
+    3.201.0 es llegia com a hora de Madrid: la correcta és la de rellotge de
+    Madrid de la desada, presa com a UTC. Torna les línies corregides, o None
+    si ja estava fet."""
+    if not os.path.isdir(carpeta) or os.path.exists(os.path.join(carpeta, MARCA_AEMET)):
+        return None
+    fetes = 0
+    for ruta in sorted(glob.glob(os.path.join(carpeta, "previsio-oficial-*.jsonl"))):
+        linies = []
+        with open(ruta, encoding="utf-8") as f:
+            for l in f:
+                if not l.strip():
+                    continue
+                try:
+                    d = json.loads(l)
+                except ValueError:
+                    linies.append(l.rstrip("\n"))
+                    continue
+                if d.get("font") == "aemet" and d.get("elaborat"):
+                    d["elaborat"] = H.clau(H.local(d["elaborat"]).replace(tzinfo=H.UTC))
+                    fetes += 1
+                linies.append(json.dumps(d, ensure_ascii=False, separators=(",", ":")))
+        with open(ruta + ".tmp", "w", encoding="utf-8") as f:
+            f.write("".join(l + "\n" for l in linies))
+        os.replace(ruta + ".tmp", ruta)
+    with open(os.path.join(carpeta, MARCA_AEMET), "w", encoding="utf-8") as f:
+        f.write(str(fetes))
+    return fetes
 
 
 if __name__ == "__main__":

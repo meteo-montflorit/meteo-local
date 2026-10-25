@@ -133,6 +133,10 @@ def per_hora(files):
             # Les hores de la XVPCA són de rellotge de Madrid; la clau, en UTC
             # com les del model (ADR 0128).
             moment = (dt.datetime.combine(dia, dt.time()) + dt.timedelta(hours=h)).replace(tzinfo=H.ZONA)
+            # L'hora que no existeix (les 2 del darrer diumenge de març) cauria
+            # a la mateixa clau que les 3 i la trepitjaria: no hi és.
+            if moment.astimezone(H.UTC).astimezone(H.ZONA).hour != moment.hour:
+                continue
             res[(f["nom_estacio"], c, P.clau_hora(moment))] = float(v)
     return res
 

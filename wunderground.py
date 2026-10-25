@@ -197,7 +197,7 @@ def veina_ara(estacio, filas, ahora=None):
         raise RuntimeError("sense lectures d'avui")
     ultima = filas[-1]
     if ahora - ultima["t"] > dt.timedelta(minutes=ARA_MAX_MIN):
-        raise RuntimeError(f"l'última lectura és de les {ultima['t']:%H:%M}")
+        raise RuntimeError(f"l'última lectura és de les {H.local(ultima['t']):%H:%M}")
     hora = ultima["t"]
     # Toda la lluvia sale de las mismas lecturas y hasta el mismo instante
     # (hora, con sus segundos), también la de hoy: la suma de lo que sube el

@@ -194,6 +194,9 @@ def resum_nit(ruta=None, casa_hores=None, veines_hores=None):
         casa_hores = SE._llegeix_hores(os.path.join(DIR, "estacio-casa.csv"))
     if veines_hores is None:
         veines_hores = {e: SE._llegeix_hores(os.path.join(DIR, f"veina-{e}.csv")) for e in ALTES}
+    # Totes les claus en UTC, vinguin d'on vinguin (ADR 0128).
+    casa_hores = {H.clau(k): v for k, v in casa_hores.items()}
+    veines_hores = {e: {H.clau(k): v for k, v in h.items()} for e, h in veines_hores.items()}
 
     def mesura(c):
         m = mediana_alta([veines_hores.get(e, {}).get(c) for e in ALTES])
@@ -201,7 +204,9 @@ def resum_nit(ruta=None, casa_hores=None, veines_hores=None):
 
     try:
         with open(ruta, encoding="utf-8") as f:
-            files = list(csv.DictReader(f))
+            # Les hores, en UTC com les de les estacions, si el registre fos
+            # d'abans de la migració (ADR 0128).
+            files = [{**f_, "hora": H.clau(f_["hora"]), "fins": H.clau(f_["fins"])} for f_ in csv.DictReader(f)]
     except OSError:
         return "Encara no hi ha registre de les nits."
     grups = {"totes": [], "gelada": []}

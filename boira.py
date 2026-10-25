@@ -90,13 +90,14 @@ def resum():
     def llegeix(nom):
         ruta = os.path.join(REGISTRE, nom)
         return list(csv.DictReader(open(ruta, encoding="utf-8"))) if os.path.exists(ruta) else []
-    obs = {r["fins"]: r["metars"] for r in llegeix("nuvols-sabadell.csv")}
-    casa = {r["fins"]: r for r in llegeix("estacio-casa.csv")}
+    # Les claus, en UTC, encara que el registre fos d'abans de la migració (ADR 0128).
+    obs = {H.clau(r["fins"]): r["metars"] for r in llegeix("nuvols-sabadell.csv")}
+    casa = {H.clau(r["fins"]): r for r in llegeix("estacio-casa.csv")}
     # Para cada hora, la previsión de ICON más reciente con 1 a 6 h de antelación.
     prev = {}
     for r in llegeix("boira-icon.csv"):
         if 1 <= float(r["antelacio_h"]) <= 6:
-            prev[r["fins"]] = r
+            prev[H.clau(r["fins"])] = r
     def saturada(r):
         try:
             return (float(r["humitat"]) >= 98 and float(r["temperatura"]) - float(r["rosada"]) <= 0.5

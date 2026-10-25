@@ -35,12 +35,12 @@ function textFitxa(e, ara) {
   const idioma = idiomaText();
   const text = e[idioma] || e.ca;
   const escrit = new Date(e.escrit || e.darrer || e.inici);
-  if (!text || escrit.toDateString() === ara.toDateString()) return text;
+  if (!text || mateixDia(escrit, ara)) return text;
   const r = RELATIUS[e[idioma] ? idioma : 'ca'];
   const loc = e[idioma] ? locale() : 'ca-ES';
   return text.replace(r.re, (tot, des, paraula) => {
-    const d = new Date(escrit.getFullYear(), escrit.getMonth(), escrit.getDate() + (r.dema.test(paraula) ? 1 : 0));
-    let nou = (des ? r.article : '') + `${d.toLocaleDateString(loc, { weekday: 'long' })} ${d.getDate()}`;
+    const d = llegeixHora(`${sumaDies(escrit, r.dema.test(paraula) ? 1 : 0)}T12:00`);
+    let nou = (des ? r.article : '') + `${d.toLocaleDateString(loc, { weekday: 'long', timeZone: ZONA_HORA })} ${partsHora(d).dia}`;
     if (tot[0] !== tot[0].toLowerCase()) nou = nou[0].toUpperCase() + nou.slice(1);
     return nou;
   });
@@ -55,7 +55,7 @@ function finalDe(e, ara) {
 }
 
 function dia(iso) {
-  return new Date(iso).toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', month: 'numeric' });
+  return llegeixHora(iso).toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', month: 'numeric', timeZone: ZONA_HORA });
 }
 
 function moment(iso) {
@@ -310,8 +310,8 @@ function fitxaPla(p) {
 }
 
 function nomMes(iso) {
-  const t = new Date(iso);
-  return `${MESOS[idiomaText()][t.getMonth()]} de ${t.getFullYear()}`;
+  const t = partsHora(iso);
+  return `${MESOS[idiomaText()][t.mes - 1]} de ${t.any}`;
 }
 
 // Els avisos actius de l'AEMET, agrupats com les línies d'«Avisos actius» de
@@ -460,7 +460,7 @@ let ARXIUS = null;
 function llegeixArxius() {
   if (!ARXIUS) {
     const anys = [];
-    for (let a = PRIMER_ANY; a <= new Date().getFullYear(); a++) anys.push(a);
+    for (let a = PRIMER_ANY; a <= partsHora(new Date()).any; a++) anys.push(a);
     // Com l'historial de la gràfica: a IONOS i, en local, al costat de la pàgina.
     const llegeixAny = (a) => baixa(`${DADES_URL}avisos-${a}.json`).catch(() => baixa(`avisos-${a}.json`));
     ARXIUS = Promise.all(anys.map((a) => llegeixAny(a).then((d) => d.historial || [], () => [])))

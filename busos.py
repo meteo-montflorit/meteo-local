@@ -136,20 +136,28 @@ def horari(zip_bytes, dies):
     return {"rutes": rutes, "viatges": passos}
 
 
+# La forma de calcular l'horari desat: si canvia, el desat d'abans no val. El
+# 25-10-2026 el desat a les 0 h amb el càlcul anterior a la 3.199.1 duia tot
+# el dia els busos sense temps real una hora avançats.
+FORMAT_HORARI = 2
+
+
 def horari_desat(avui):
-    """L'horari d'avui en endavant: el desat si és d'avui; si no, es baixa i
-    es desa. Si no es pot baixar, el desat, si encara arriba a avui."""
+    """L'horari d'avui en endavant: el desat si és d'avui i amb el càlcul
+    d'ara; si no, es baixa i es desa. Si no es pot baixar, el desat, si encara
+    arriba a avui (el d'abans de la 3.199.1 només s'equivocava els dies del
+    canvi d'hora: sense xarxa, millor que res)."""
     desat = None
     try:
         with open(CAU, encoding="utf-8") as f:
             desat = json.load(f)
-        if desat.get("dia") == avui.isoformat():
+        if desat.get("dia") == avui.isoformat() and desat.get("format") == FORMAT_HORARI:
             return desat
     except (OSError, ValueError):
         pass
     try:
         nou = horari(baixa(HORARI, 120), [avui + dt.timedelta(days=n) for n in range(DIES_HORARI)])
-        nou["dia"] = avui.isoformat()
+        nou["dia"], nou["format"] = avui.isoformat(), FORMAT_HORARI
         try:
             os.makedirs(os.path.dirname(CAU), exist_ok=True)
             with open(CAU + ".tmp", "w", encoding="utf-8") as f:

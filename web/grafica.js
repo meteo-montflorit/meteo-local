@@ -356,7 +356,7 @@ const HORA_DEMA = 18;
 // bot (bot.resum), de la nit d'avui (des de HORA_DEMA) al final de demà.
 // Amb menys de 3 hores, cap.
 function graficaDia(hores, riscos, dia, ara = new Date()) {
-  const dies = (n, h = 0) => new Date(ara.getFullYear(), ara.getMonth(), ara.getDate() + n, h);
+  const dies = (n, h = 0) => horaDelDia(ara, n, h);
   const [des, fins] = dia === 'dema' ? [dies(0, HORA_DEMA), dies(2)] : [ara, dies(1)];
   const files = (hores || []).filter((f) => new Date(f.fins) > ara && new Date(f.fins) > des
     && new Date(f.hora) < fins && f.temperatura != null);
@@ -396,7 +396,7 @@ function dibuixaGrafica(fig) {
   // hi caben totes; si no, de dues en dues (Juanjo, 20-10-2026: «en 24h y en
   // avui, ¿no caben todas las h en el eje x?»). Abans seguien el pas del cel.
   const pasEix = col >= 18 ? 1 : col >= 9 ? 2 : 3;
-  const hora = (f) => new Date(f.hora).getHours();
+  const hora = (f) => horaLocal(f.hora);
   // A la pàgina des del principi: el text dels avisos s'ha de poder mesurar.
   // Dins d'una caixa que es desplaça de costat; en tornar a dibuixar, es
   // queda on era.
@@ -536,11 +536,9 @@ function dibuixaGrafica(fig) {
   // s'entén («si avui no cabe no se escriba nada»).
   const nomDia = (f) => {
     const d = new Date(f.hora);
-    const avui = new Date();
-    const dies = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate())
-      - new Date(avui.getFullYear(), avui.getMonth(), avui.getDate())) / 864e5);
+    const dies = diesEntre(new Date(), d);
     // Els dies de l'historial (enrere), «Ahir» o el nom del dia de la setmana.
-    if (dies < -1) return d.toLocaleDateString(IDIOMA.codi === 'es' ? 'es' : 'ca', { weekday: 'long' });
+    if (dies < -1) return d.toLocaleDateString(IDIOMA.codi === 'es' ? 'es' : 'ca', { weekday: 'long', timeZone: ZONA_HORA });
     return dies === -1 ? T('Ahir') : dies === 0 ? T('Avui') : dies === 1 ? T('Demà') : T('Demà passat');
   };
   const mitjanits = files.map((f, i) => (i && hora(f) === 0 ? i : null)).filter((i) => i != null);
@@ -1187,8 +1185,9 @@ function llegeixDiaHistorial(d) {
   return DIES_HISTORIAL.get(d);
 }
 
+// El dia de Madrid d'un moment, «AAAA-MM-DD».
 function isoDia(data) {
-  return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
+  return diaLocal(data);
 }
 const avuiIso = () => isoDia(new Date());
 
@@ -1238,7 +1237,7 @@ function resumMesurat(files, vint4 = false, ara = vint4) {
   if (temps.length) {
     const avui = avuiIso();
     const quan = (f) => {
-      const h = new Date(f.hora).getHours();
+      const h = horaLocal(f.hora);
       if (!vint4) return T`a les ${h}\u00a0h`;
       return f.hora.slice(0, 10) === avui ? T`avui a les ${h}\u00a0h` : T`ahir a les ${h}\u00a0h`;
     };
@@ -1265,12 +1264,10 @@ function ambZonaHistorial(files, zona = zonaTriada()) {
 // El nom del que es veu: «Darreres 24 h», «Avui», «Ahir» o la data.
 function nomHistorial(pos) {
   if (pos === '24h') return T('Darreres 24 h');
-  const ahir = new Date();
-  ahir.setDate(ahir.getDate() - 1);
   if (pos === avuiIso()) return T('Avui');
-  if (pos === isoDia(ahir)) return T('Ahir');
-  const nom = new Date(`${pos}T12:00`).toLocaleDateString(IDIOMA.codi === 'es' ? 'es' : 'ca',
-    { weekday: 'long', day: 'numeric', month: 'long' });
+  if (pos === sumaDies(new Date(), -1)) return T('Ahir');
+  const nom = llegeixHora(`${pos}T12:00`).toLocaleDateString(IDIOMA.codi === 'es' ? 'es' : 'ca',
+    { weekday: 'long', day: 'numeric', month: 'long', timeZone: ZONA_HORA });
   return nom.charAt(0).toUpperCase() + nom.slice(1);
 }
 
@@ -1384,9 +1381,7 @@ function vistaGrafica(historialInicial = null) {
     nomDia.setAttribute('aria-label', T`${nomHistorial(pos)}: tria un altre dia al calendari`);
     let files;
     if (pos === '24h') {
-      const ahir = new Date();
-      ahir.setDate(ahir.getDate() - 1);
-      const [a, b] = await Promise.all([llegeixDiaHistorial(isoDia(ahir)), llegeixDiaHistorial(avuiIso())]);
+      const [a, b] = await Promise.all([llegeixDiaHistorial(sumaDies(new Date(), -1)), llegeixDiaHistorial(avuiIso())]);
       files = darreres24(a, b);
     } else {
       files = horesMesurades((await llegeixDiaHistorial(pos) || {}).hores);
@@ -1569,7 +1564,7 @@ function avisosMesEnlla(fiIso) {
   };
   for (const a of (d.smp && d.smp.avisos) || []) {
     for (const [dia, franges] of Object.entries(a.dies || {})) {
-      if (franges.some(([h]) => new Date(`${dia}T${String(h).padStart(2, '0')}:00`) >= fi)) {
+      if (franges.some(([h]) => llegeixHora(`${dia}T${String(h).padStart(2, '0')}:00`) >= fi)) {
         const fenomen = fenomenSmp(a.meteor);
         afegeix(dia, { nivell: nivellSmp(a.perill), nom: TD(fenomen), font: 'meteocat', fenomen });
       }
@@ -1583,7 +1578,7 @@ function avisosMesEnlla(fiIso) {
   const codi = IDIOMA.codi === 'es' ? 'es' : 'ca';
   return [...perDia.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([dia, elements]) => {
     const p = delNivellMesAlt(elements);
-    const nom = new Date(`${dia}T12:00`).toLocaleDateString(codi, { weekday: 'long', day: 'numeric' });
+    const nom = llegeixHora(`${dia}T12:00`).toLocaleDateString(codi, { weekday: 'long', day: 'numeric', timeZone: ZONA_HORA });
     const text = `${nom.charAt(0).toUpperCase()}${nom.slice(1)}: ${textPerillCurt(p, true, true)}`;
     const a = element('a', `g-mes-enlla-avis ${p.nivell}`);
     // La fitxa, en tocar-lo: l'historial de «Perill» pot arribar després de dibuixar.
@@ -1603,8 +1598,8 @@ function creditsGrafica(fig = null) {
   }
   const g = GENERAT_GRAFICA ? new Date(GENERAT_GRAFICA) : new Date();
   const codi = IDIOMA.codi === 'es' ? 'es' : 'ca';
-  const dia = `${g.toLocaleDateString(codi, { weekday: 'long' })} ${g.toLocaleDateString(codi, { day: 'numeric', month: 'long' })}`;
-  const hora = g.toLocaleTimeString(codi, { hour: '2-digit', minute: '2-digit' });
+  const dia = `${g.toLocaleDateString(codi, { weekday: 'long', timeZone: ZONA_HORA })} ${g.toLocaleDateString(codi, { day: 'numeric', month: 'long', timeZone: ZONA_HORA })}`;
+  const hora = g.toLocaleTimeString(codi, { hour: '2-digit', minute: '2-digit', timeZone: ZONA_HORA });
   return [T`Temps a Montflorit (Cerdanyola del Vallès) · previsió de ${dia}, ${hora} · meteo-montflorit.github.io`,
     T('No és oficial: si l’AEMET, Meteocat o Protecció Civil donen un avís, mana el seu.')];
 }
@@ -1754,7 +1749,8 @@ function pngDeLaGrafica(fig, escala = 2) {
 function nomImatge() {
   const g = GENERAT_GRAFICA ? new Date(GENERAT_GRAFICA) : new Date();
   const dos = (n) => String(n).padStart(2, '0');
-  return `temps-montflorit-${g.getFullYear()}-${dos(g.getMonth() + 1)}-${dos(g.getDate())}-${dos(g.getHours())}${dos(g.getMinutes())}.png`;
+  const p = partsHora(g);
+  return `temps-montflorit-${p.data}-${dos(p.hora)}${dos(p.minut)}.png`;
 }
 
 function potCompartirImatges() {

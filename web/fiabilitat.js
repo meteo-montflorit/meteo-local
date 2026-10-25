@@ -32,11 +32,11 @@ function codiData() {
 }
 
 function nomData(iso, opcions = { day: 'numeric', month: 'long' }) {
-  return new Date(`${iso}T12:00`).toLocaleDateString(codiData(), opcions);
+  return llegeixHora(`${iso}T12:00`).toLocaleDateString(codiData(), { ...opcions, timeZone: ZONA_HORA });
 }
 
 function dataCurta(iso) {
-  return new Date(`${iso}T12:00`).toLocaleDateString(codiData(), { day: 'numeric', month: 'short' });
+  return llegeixHora(`${iso}T12:00`).toLocaleDateString(codiData(), { day: 'numeric', month: 'short', timeZone: ZONA_HORA });
 }
 
 // --- L'adreça ---

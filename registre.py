@@ -47,7 +47,7 @@ def apunta_radar_a_prop(ahora, radar, motius, obs):
                                 if (o.get("mm_ultima_media_hora") or 0) > 0 or (o.get("intensitat") or 0) > 0],
              "radars": radar.get("a_prop") or {}}
     with open(os.path.join(DIR, f"radar-a-prop-{H.local(ahora):%Y-%m}.jsonl"), "a", encoding="utf-8") as f:
-        f.write(json.dumps(linia, ensure_ascii=False) + "\n")
+        f.write(json.dumps(H.interna(linia), ensure_ascii=False) + "\n")
 
 
 # --- Página de casa: previsiones y lo que pasó -----------------------------------
@@ -353,7 +353,8 @@ def apunta_casa(emes, hores, ara_casa=None, sant_cugat=None, veines=None):
     linea = {"emes": H.clau(emes), "ara_casa": ara_casa, "hores": hores,
              "sant_cugat": sant_cugat, "veines": veines}
     with open(os.path.join(DIR, f"casa-{H.local(emes):%Y-%m}.jsonl"), "a", encoding="utf-8") as f:
-        f.write(json.dumps(linea, ensure_ascii=False) + "\n")
+        # Les hores, totes en UTC (ADR 0128).
+        f.write(json.dumps(H.interna(linea), ensure_ascii=False) + "\n")
     with open(CASA_DARRERA, "w") as f:
         f.write(hora)
 

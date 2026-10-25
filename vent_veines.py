@@ -115,7 +115,9 @@ def apunta(columnes, ruta=None):
     files = {}
     if os.path.exists(ruta):
         with open(ruta, encoding="utf-8") as f:
-            files = {r["fins"]: r for r in csv.DictReader(f)}
+            # Amb la clau en UTC, com la que s'hi afegeix (ADR 0128): si no, una
+            # fila d'abans de la migració es duplicaria.
+            files = {H.clau(r["fins"]): {**r, "fins": H.clau(r["fins"])} for r in csv.DictReader(f)}
     for est, valors in columnes.items():
         for fin, (mitja, ratxa) in valors.items():
             clau = P.clau_hora(fin)

@@ -46,6 +46,17 @@ class Protobuf(unittest.TestCase):
         self.assertEqual(T.iso(1791350000), "2026-10-07T05:13Z")       # en UTC (ADR 0128)
         self.assertIsNone(T.iso(None))
 
+    def test_el_fitxer_d_fgc_amb_avisos_de_php_davant(self):
+        # Des del 25-10-2026 el servidor de FGC hi posa davant els seus avisos de
+        # PHP, i fins a la 3.202.0 la S2 sortia «sense dades» («tipus de camp
+        # desconegut: 4»). El binari comença amb un salt de línia (camp 1).
+        alerta = camp(5, camp(2, "S2")) + camp(11, traduccio("Obres a Bellaterra.", "ca"))
+        feed = camp(1, camp(1, "1.0")) + camp(2, camp(1, "a1") + camp(5, alerta))
+        php = (b"<br />\n<b>Warning</b>:  Undefined property: stdClass::$language in <b>/var/www/html/www/feed/"
+               b"Alerts.php</b> on line <b>87</b><br />\n") * 3
+        self.assertEqual(T.avisos_pb(T.sense_avisos_php(php + feed))[0]["rutes"], ["S2"])
+        self.assertEqual(T.sense_avisos_php(feed), feed)
+
     def test_avisos_renfe_amb_inici(self):
         # Formato real de alerts.json (08-10-2026): activePeriod con start en segundos.
         dades = {"entity": [{"alert": {"activePeriod": [{"start": "1791354540"}],

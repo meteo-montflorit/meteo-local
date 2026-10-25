@@ -36,6 +36,18 @@ class Migra(unittest.TestCase):
             self.assertTrue(any(n.startswith("registre-abans-utc-") for n in os.listdir(d)))
             self.assertIsNone(M.migra(reg))
 
+    def test_l_hora_d_elaboracio_d_aemet_era_utc(self):
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "previsio-oficial-2026-10.jsonl"), "w", encoding="utf-8") as f:
+                # AEMET deia 08:00 (UTC) i es va desar com si fossin les 8 de Madrid.
+                f.write(json.dumps({"font": "aemet", "elaborat": "2026-10-20T06:00Z", "t": {}}) + "\n")
+                f.write(json.dumps({"font": "meteocat", "elaborat": "2026-10-20T06:00Z", "t": {}}) + "\n")
+            self.assertEqual(M.corregeix_elaborat_aemet(d), 1)
+            with open(os.path.join(d, "previsio-oficial-2026-10.jsonl"), encoding="utf-8") as f:
+                ls = [json.loads(l) for l in f]
+            self.assertEqual([l["elaborat"] for l in ls], ["2026-10-20T08:00Z", "2026-10-20T06:00Z"])
+            self.assertIsNone(M.corregeix_elaborat_aemet(d))
+
     def test_els_segons_es_conserven(self):
         self.assertEqual(M.valor("2026-10-18T03:59:59+02:00"), "2026-10-18T01:59:59Z")
         self.assertEqual(M.valor("2026-10-18T04:00:00+02:00"), "2026-10-18T02:00Z")

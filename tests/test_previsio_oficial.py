@@ -33,7 +33,8 @@ class Llegeix(unittest.TestCase):
 
     def test_aemet_amb_inapreciable_i_trams_que_passen_de_mitjanit(self):
         d = O.llegeix_aemet(AEMET)
-        self.assertEqual(d["elaborat"], "2026-10-20T04:13Z")       # les 6:13 de Madrid, en UTC (ADR 0128)
+        # AEMET la dona en UTC sense zona (ADR 0128).
+        self.assertEqual(d["elaborat"], "2026-10-20T06:13Z")
         self.assertEqual(d["t"][O.P.clau_hora("2026-10-20T09:00")], 16.0)
         self.assertEqual(d["mm"][O.P.clau_hora("2026-10-20T07:00")], 0.0)
         self.assertEqual(d["p6"][O.P.clau_hora("2026-10-20T02:00")], [O.P.clau_hora("2026-10-20T08:00"), 30.0])

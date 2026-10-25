@@ -75,8 +75,15 @@ avisar por fenómeno y AEMET queda de reserva (ADR 0092).
 
 - No es una API: si Meteocat cambia su página, la lectura falla hasta que se
   arregle (lo detecta la prueba diaria).
-- **Hipótesis sin comprobar**: que las franjas («12-18») son horas locales,
-  como las muestra meteo.cat; se reproducen tal cual, sin convertir. Que
+- **Hipótesis descartada el 25-10-2026 (3.202.0)**: las franjas («12-18»)
+  no son horas locales, sino horas UTC del día UTC («…T00:00Z»). El aviso de
+  acumulación del 19-10-2026 iba de `dataInici` 06:00Z a `dataFi` 05:59Z del
+  20, justo de la franja 06-12 a la 00-06, y la prensa daba esas franjas
+  desplazadas el desfase de cada época. Hasta la 3.201.0 se reproducían tal
+  cual y cada aviso de previsión salía 1 h antes en invierno y 2 h en verano
+  (el 20-10, «ja no hi ha cap avís» a las 6:03 con el aviso vigente hasta las
+  7:59). Desde la 3.202.0 cada franja pasa a su intervalo UTC y de ahí a horas
+  de Madrid (`smp.hores`, ADR 0128). Sigue sin comprobar que
   `auxiliar` no cambia nada: se cuentan todas las afectaciones de la
   comarca. No había ningún aviso vigente el 10-10-2026 para verlo con datos
   reales: las pruebas usan el ejemplo de la documentación de la API.

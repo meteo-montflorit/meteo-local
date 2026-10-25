@@ -138,7 +138,12 @@ def llegeix_aemet(text):
         raise ValueError("AEMET no torna temperatures")
     elaborat = d.get("elaborado")
     if elaborat:
-        elaborat = P.clau_hora(H.llegeix(elaborat))   # sense zona: hora de Madrid
+        # Sense zona, però en UTC: llegida com a hora de Madrid, la diferència
+        # amb l'hora de baixada saltava just una hora amb el canvi d'hora (de
+        # 127 min com a mínim a 75); com a UTC queda entre 7 i 71 min tot l'any
+        # (registre d'octubre de 2026, ADR 0128).
+        quan = dt.datetime.fromisoformat(elaborat)
+        elaborat = P.clau_hora(quan if quan.tzinfo else quan.replace(tzinfo=H.UTC))
     return {"elaborat": elaborat, "t": t, "mm": mm, "p6": p6}
 
 

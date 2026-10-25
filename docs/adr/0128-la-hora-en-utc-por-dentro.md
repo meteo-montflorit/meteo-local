@@ -48,7 +48,8 @@ Versión 3.201.0.
 
 - **Un módulo común, `hora.py`**: el «ahora» en UTC (`ara`); la clave de un
   momento en UTC, «AAAA-MM-DDTHH:MMZ» (`clau`); la lectura de cualquier forma
-  de antes, sin zona como hora de Madrid (`llegeix`), que devuelve UTC; la hora
+  de antes, sin zona como hora de Madrid (`llegeix`), que devuelve siempre UTC;
+  la conversión de un dato entero a claves UTC (`interna`, desde la 3.202.0); la hora
   de Madrid para leer la hora, el día o el texto (`local`, `hora_local`,
   `dia_local`, `iso_local`); la medianoche de un día de Madrid (`mitjanit`) y
   las horas de reloj de un día (`de_rellotge`, para las franjas «de 0 a 24 h»).
@@ -82,6 +83,69 @@ Versión 3.201.0.
   antes sigue sirviendo.
 - **El enlace de cada aviso a su ficha** (`avisos_bot.id_fitxa`) se forma con
   la hora como se publica, la misma con la que la web hace el id de la ficha.
+
+## Revisión del mismo día (3.202.0)
+
+Juanjo pidió no dar nada por bueno sin revisarlo todo («no quiero que el uso
+de utc provoque a corto o medio plazo problemas por no haberlo revisado todo
+bien. especialmente datos que se leen de apis»). Cuatro revisiones completas,
+cada una de una parte (las fuentes externas una a una, contra su
+documentación, una consulta real y los registros; el guardado, las
+comparaciones y los cálculos; la web, el bot y los avisos; y cada hora que se
+formatea para la gente), con cada hallazgo comprobado en el código antes de
+corregirlo:
+
+- **De lo publicado hoy**:
+  - «Perill» habría duplicado cada ficha nueva: el historial interno, en UTC,
+    se unía con el `avisos.json` publicado, en hora de Madrid, comparando el
+    comienzo como texto.
+  - Las correcciones del revisor no se habrían aplicado nunca, por lo mismo en
+    la clave `clau|inici` (`revisor.clau_fitxa`).
+  - La web pasaba las horas, ahora con desfase, a la zona del dispositivo.
+  - `hora.llegeix` solo convertía a UTC las horas sin zona.
+- **De las fuentes, de antes de la 3.201.0**:
+  - Las franjas de los avisos de previsión de Meteocat son horas UTC y se
+    leían como de Madrid (ADR 0067).
+  - La hora de elaboración de AEMET es UTC y se leía como de Madrid; se
+    corrigen una vez las ya guardadas (`migra_utc.corregeix_elaborat_aemet`).
+  - El horario de autobuses guardado con el cálculo anterior (ADR 0120).
+  - Y, sin relación con la hora, el archivo de avisos de FGC con avisos de PHP
+    delante (ADR 0079).
+- **Los días del cambio**: franjas partidas o duplicadas (`smp.junta` y las del
+  bot, ahora unidas por el momento), la hora en curso del bot en la primera
+  de 2 a 3, «d'aquí a N hores», el desfase de las franjas visibles de AEMET, el
+  aviso de «demà» en «Consultes» la víspera y la hora de marzo que no existe en
+  la calidad del aire.
+
+Lo que cambia en la regla:
+
+- **`hora.llegeix` devuelve siempre UTC**, venga con «Z», con desfase, sin zona
+  o con `ZoneInfo`; para mostrar, `hora.local`.
+- **`hora.interna`, el contrario de `hora.publica`**: pasa a clave UTC toda
+  hora con desfase o sin zona. Se aplica a lo que se lee de lo publicado
+  (`avisos_bot.anterior_publicat`, `llegeix_arxiu`) y al estado de antes
+  (`bot-avisos.json`), y a lo que se escribe: `casa.json` entero
+  (`casa.recoger`) y cada línea de los JSONL del registro. Así un archivo
+  interno no mezcla formas y se compara bien como texto.
+- **Lo que se compara, se compara como momento** (`H.utc`, `H.clau`) cuando
+  puede venir de dos sitios: la unión del historial, las claves del revisor,
+  los máximos de horas.
+- Los lectores del registro que no normalizaban (`boira`, `nuvols`,
+  `part_alta`, `vent_veines`) pasan también las claves a UTC al leer.
+- **La web, siempre en hora de Madrid**, sea cual sea la zona del dispositivo:
+  hasta la 3.200.0 casi todas las horas llegaban sin zona y el navegador las
+  enseñaba tal cual; desde la 3.201.0 llevan el desfase y el navegador las
+  pasaba a la zona del dispositivo (en Nueva York, la tabla «5–6» en lugar de
+  «10–11»). Unas pocas (la hora de actualización, las fases de la Luna,
+  «Perill») ya fallaban así antes. Ahora todo pasa por las funciones de
+  `web/comu.js` (`ZONA_HORA`, `llegeixHora`, `partsHora`, `diaLocal`,
+  `horaLocal`, `deRellotge`, `mitjanit`…), y `baixa()` pone el desfase a las
+  horas sin zona de los datos de antes (`ambDesfas`, los días del historial
+  hasta el 23-10). La web habla de un lugar: «plourà cap a les 15 h» es la
+  hora de Montflorit, como en los horarios de trenes, el bot y las imágenes.
+  `tests/test_web_zona.py` lo comprueba con el dispositivo en cinco zonas y
+  las dos noches del cambio; con Playwright, cada página dio el mismo texto en
+  Madrid, Nueva York, UTC, Canarias y Tokio, en Chromium, Firefox y WebKit.
 
 ## Alternativas descartadas
 
@@ -146,4 +210,4 @@ Versión 3.201.0.
   de antes que se migra al guardar sin duplicarse.
 - `tests/test_migra_utc.py`: la migración, la copia, que no se repite, los
   segundos y las fechas solas.
-- La batería entera (726 pruebas), ruff y ESLint.
+- La batería entera (726 pruebas en la 3.201.0; 743 en la 3.202.0), ruff y ESLint.
