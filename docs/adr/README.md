@@ -128,5 +128,6 @@
 | [0124](0124-historial-de-lo-medido-en-la-grafica.md) | Historial de lo medido en la gráfica | aceptado |
 | [0125](0125-el-acierto-de-la-parte-alta.md) | El acierto de la parte alta | aceptado |
 | [0126](0126-el-cielo-tapado-segun-el-satelite-en-observacion.md) | El cielo tapado según el satélite, en observación | aceptado |
+| [0127](0127-la-luna.md) | La Luna: la fase en «Ara» y en la gráfica, y sus datos en «Sol i lluna» | aceptado |
 
 Plantilla: [0000-plantilla.md](0000-plantilla.md). Para crear uno: `nuevo-adr "Título"`.

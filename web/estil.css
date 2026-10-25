@@ -413,6 +413,13 @@ h1 { margin: 0; font-size: 1.6rem; line-height: 1.2; }
   stroke-linejoin: round;
 }
 .dades-ara svg { color: var(--suau); }
+/* La Lluna (dibuixLluna): la part fosca, grisa i amb la vora, perquè es vegi
+   també la lluna nova; la il·luminada, d'un blanc càlid perquè la plena no sembli
+   un cercle buit sobre el fons clar. */
+svg.lluna .lluna-fosca { fill: #475569; stroke: none; }
+svg.lluna .lluna-vora { fill: none; stroke: #94a3b8; stroke-width: 1; }
+svg.lluna .lluna-clara { fill: #fef3c7; stroke: none; }
+.dades-ara svg.lluna, .titol-risc svg.lluna { stroke: none; }
 
 /* Previsió per trams del dia (matí, tarda i nit), cadascun plegable amb el
    resum a la capçalera. Les columnes, amb la mateixa amplada a tots els trams. */
@@ -813,6 +820,18 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .sol-bloc-ample .sol-dibuix { flex: none; }
 .sol-bloc-ample .sol-text { flex: 1; min-width: 0; padding-top: .6rem; }
 .sol-text > p:first-child { margin-top: 0; }
+/* La Lluna, a sota del sol: el dibuix gran a l'esquerra i el text al costat. */
+.lluna-bloc { margin-top: 1.2rem; padding-top: .9rem; border-top: 1px solid var(--vora); }
+.lluna-titol { margin: 0 0 .5rem !important; }
+.lluna-fila { display: flex; gap: 1rem; align-items: flex-start; }
+.lluna-gran { flex: none; width: 4.5rem; height: 4.5rem; }
+.lluna-text { flex: 1; min-width: 0; }
+.lluna-text > p:first-child { margin-top: 0; }
+.lluna-properes-titol { margin-bottom: .2rem !important; }
+.lluna-fases { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
+.lluna-fases li { display: flex; align-items: center; gap: .45rem; }
+.lluna-fases svg { width: 1.2rem; height: 1.2rem; flex: none; }
+.g-clau svg.m-lluna { width: 1em; height: 1em; margin-right: .3em; vertical-align: -.15em; }
 .sol-cel { fill: var(--sol-cel); }
 .sol-nit { fill: var(--sol-nit); }
 .sol-horitzo { stroke: var(--text); stroke-width: 1.2; }

@@ -677,6 +677,20 @@ class Web(unittest.TestCase):
                                          "consultes.js")
         self.assertEqual([migdia("2026-10-25") // 60, migdia("2026-06-21") // 60, migdia("2026-12-21") // 60], [12, 12, 12])
 
+    def test_la_fase_de_la_lluna_12_hores_abans_i_despres(self):
+        # Juanjo, 25-10-2026 (ADR 0127): a «Ara», de 12 hores abans a 12 després.
+        lluna = json.dumps({"angle": 175, "fases": [{"fase": "plena", "hora": "2026-10-26T05:12+01:00"}]})
+        fase = lambda ara: self.avalua(ara, f"(faseAProp({lluna}, new Date()) || {{}}).fase || null")  # noqa: E731
+        self.assertIsNone(fase("2026-10-25T17:00:00+01:00"))
+        self.assertEqual(fase("2026-10-25T17:20:00+01:00"), "plena")
+        self.assertEqual(fase("2026-10-26T17:05:00+01:00"), "plena")
+        self.assertIsNone(fase("2026-10-26T17:20:00+01:00"))
+        r = self.avalua("2026-10-25T20:00:00+01:00",
+                        f"[quanFase('2026-10-26T05:12+01:00', new Date()), nomFaseLluna({lluna}, new Date()),"
+                        " nomFaseLluna({angle: 120, fases: []}, new Date()), nomFaseLluna({angle: 300, fases: []}, new Date())]",
+                        "consultes.js")
+        self.assertEqual(r, ["dem\u00e0, 5:12", "Lluna plena", "Gibosa creixent", "Lluna minvant"])
+
     def test_hores_de_si_surts_amb_el_dia(self):
         # La previsió pot arribar a l'endemà de demà al matí (ADR 0041): no és «demà».
         hores = ["2026-10-08T23:00", "2026-10-09T17:00", "2026-10-10T06:00"]

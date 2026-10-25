@@ -546,10 +546,40 @@ function dibuixaGrafica(fig) {
   const mitjanits = files.map((f, i) => (i && hora(f) === 0 ? i : null)).filter((i) => i != null);
   const primer = svg('text', { class: 'g-dia', x: 2, y: yDia + 11 }, nomDia(files[0]));
   g.append(primer);
-  if (mitjanits.length && 2 + primer.getComputedTextLength() + 8 > x(mitjanits[0])) primer.remove();
+  const etiquetesDia = [primer];
+  if (mitjanits.length && 2 + primer.getComputedTextLength() + 8 > x(mitjanits[0])) {
+    primer.remove();
+    etiquetesDia.pop();
+  }
   for (const i of mitjanits) {
     g.append(svg('line', { class: 'g-mitjanit', x1: x(i), x2: x(i), y1: yDia, y2: baix }));
-    g.append(svg('text', { class: 'g-dia', x: x(i) + 4, y: yDia + 11 }, nomDia(files[i])));
+    const t = svg('text', { class: 'g-dia', x: x(i) + 4, y: yDia + 11 }, nomDia(files[i]));
+    g.append(t);
+    etiquetesDia.push(t);
+  }
+  // La fase principal de la Lluna, només a l'hora en què passa (Juanjo,
+  // 25-10-2026; ADR 0127), a la fila dels dies; si hi ha el nom d'un dia, el
+  // nom es corre a la dreta de la lluna.
+  const fasesGrafica = [];
+  for (const fase of (LLUNA && LLUNA.fases) || []) {
+    const t = new Date(fase.hora);
+    const i = files.findIndex((f) => new Date(f.hora) <= t && t < new Date(f.fins));
+    if (i < 0) continue;
+    fasesGrafica.push(fase.fase);
+    const mida = 13;
+    const cx = x(i) + col / 2;
+    const lluna = dibuixLluna(ANGLE_FASE[fase.fase]);
+    for (const [k, v] of Object.entries({ x: cx - mida / 2, y: yDia + 1.5, width: mida, height: mida })) lluna.setAttribute(k, v);
+    const text = `${NOM_FASE_LLUNA()[fase.fase]}: ${quanFase(fase.hora)}`;
+    const grup = svg('g', { class: 'g-lluna' });
+    grup.append(svg('rect', { x: cx - col / 2, y: yDia, width: col, height: 16, fill: 'transparent' }), lluna,
+      svg('title', {}, text));
+    grup.addEventListener('click', () => avisBreu(`${text}.`));
+    g.append(grup);
+    for (const e of etiquetesDia) {
+      const x0 = Number(e.getAttribute('x'));
+      if (cx - mida / 2 - 2 < x0 + e.getComputedTextLength() && cx + mida / 2 + 2 > x0) e.setAttribute('x', cx + mida / 2 + 3);
+    }
   }
 
   // Les files dels avisos: el nom (davant o a sobre) i els trams de cada
@@ -1021,6 +1051,15 @@ function dibuixaGrafica(fig) {
   if (hNuvols) ll.append(clau('m-nuvols', T('Núvols')));
   if (hUv) ll.append(clau('m-uv', T('Índex UV')));
   ll.append(clau('m-nit', T('Nit')));
+  // La fase de la Lluna, si n'hi ha alguna a la gràfica: la llegenda diu tot
+  // el que s'hi veu.
+  for (const fase of new Set(fasesGrafica)) {
+    const c = element('span', 'g-clau');
+    const lluna = dibuixLluna(ANGLE_FASE[fase]);
+    lluna.classList.add('m-lluna');
+    c.append(lluna, NOM_FASE_LLUNA()[fase]);
+    ll.append(c);
+  }
   if (fig._botoImatge) ll.append(botoImatge(fig, 'g-imatge'));
   if (fig._botoOpcions) ll.append(botoHistorial(), botoOpcions());
   // Els avisos de més enllà de la gràfica, a sobre (avisosMesEnlla).

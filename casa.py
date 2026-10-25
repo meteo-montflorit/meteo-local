@@ -45,6 +45,7 @@ import riscos as RS
 import smp as SMP
 import vent_veines as VV
 import llum as LL
+import lluna as LU
 import setmana as SM
 import sol_estacio as SE
 import transit as TT
@@ -1035,8 +1036,10 @@ def recoger(anterior=None):
     except Exception as ex:
         salida["setmana"] = (anterior or {}).get("setmana")
         salida["errors"].append(f"setmana: {ex}")
-    # El sol y la calidad del aire, para «Consultes», /sol y /aire (ADR 0054).
-    for clau, funcio in (("sol", lambda: sol(P.AHORA)), ("aire", lambda: AI.calcula(P.AHORA))):
+    # El sol y la calidad del aire, para «Consultes», /sol y /aire (ADR 0054), y
+    # la Luna, para «Consultes», «Ara» y la gráfica (ADR 0127).
+    for clau, funcio in (("sol", lambda: sol(P.AHORA)), ("aire", lambda: AI.calcula(P.AHORA)),
+                         ("lluna", lambda: LU.calcula(P.AHORA))):
         try:
             salida[clau] = funcio()
         except Exception as ex:

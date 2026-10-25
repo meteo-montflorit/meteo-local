@@ -695,7 +695,7 @@ function tempAra(casa) {
   return casa.dif_alta == null ? null : Math.round(casa.temperatura + casa.dif_alta);
 }
 
-function blocAra(casa, radarDades, vent, veines, hores, mesurada, sol) {
+function blocAra(casa, radarDades, vent, veines, hores, mesurada, sol, lluna) {
   const sec = element('section', 'decisio targeta ara heroi');
   sec.setAttribute('aria-label', T`El temps avui a ${LLOC}`);
   // Sense l'hora de la mesura: la de «Actualitzat a les…», a dalt, ja la diu, i
@@ -769,7 +769,15 @@ function blocAra(casa, radarDades, vent, veines, hores, mesurada, sol) {
     const veines = vent.font === 'veines' ? T(', estacions veïnes') : '';
     llista.append(dada('i-wind', T`Vent ${coma(vent.mitja, 0)} km/h${ratxa}` + veines));
   }
-  // Sense pluja ni vent que molesti, cap pastilla: sense la llista buida.
+  // Una fase principal de la Lluna, de 12 hores abans a 12 després (ADR 0127).
+  const fase = faseAProp(lluna);
+  if (fase) {
+    const li = element('li', 'fase-lluna');
+    li.append(dibuixLluna(ANGLE_FASE[fase.fase]), document.createTextNode(`${NOM_FASE_LLUNA()[fase.fase]}: ${quanFase(fase.hora)}`));
+    llista.append(li);
+  }
+  // Sense pluja, vent que molesti ni fase de la Lluna, cap pastilla: sense la
+  // llista buida.
   if (llista.childElementCount !== 0) sec.append(llista);
   // Sense la línia de la humitat i la pressió, perquè la targeta no creixi
   // amb la part alta a sota de la temperatura (Juanjo, 22-10-2026: «podemos
@@ -1629,6 +1637,7 @@ function repintaAvisos() {
 // subtítol, com a «Si surts» i «Consultes» (Juanjo, 17-10-2026: «está oculto
 // en medio del texto… que se vea nada más entrar»; ADR 0094).
 function pinta(dades) {
+  LLUNA = dades.lluna || null;
   const cont = $('casa');
   cont.replaceChildren();
   // Dades de fa massa: només l'avís i on mirar (ADR 0031).
@@ -1654,7 +1663,7 @@ function pinta(dades) {
   // El radar porta l'estat únic de la pluja (ADR 0101), per dir el mateix que «Ara».
   const radarAmbPluja = dades.radar && dades.pluja_ara ? { ...dades.radar, pluja: dades.pluja_ara } : dades.radar;
   const ara = dades.ara_casa && blocAra(dades.ara_casa, radarAmbPluja, dades.vent, dades.veines, dades.hores,
-    mesuradaZona(dades), dades.sol);
+    mesuradaZona(dades), dades.sol, dades.lluna);
   if (ara) cont.append(ara);
   const estat = estatPortada(dades);
   if (estat) cont.append(estat);

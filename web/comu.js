@@ -91,6 +91,73 @@ function alturaSol(data) {
   return posicioSol(data).altura;
 }
 
+// --- La Lluna (lluna.py, ADR 0127): les fases, calculades al NAS amb
+// Astronomy Engine. Una fase principal es diu fins a FASE_A_PROP_H hores abans
+// i després (Juanjo, 25-10-2026: «12h antes y después de una fase de la luna
+// salga en la tarjeta de avui»), a «Ara» i a «Consultes» igual.
+const FASE_A_PROP_H = 12;
+// Les dades de la Lluna de la pàgina, per a la gràfica (les posa qui les llegeix).
+let LLUNA = null;
+const ANGLE_FASE = { nova: 0, quart_creixent: 90, plena: 180, quart_minvant: 270 };
+const NOM_FASE_LLUNA = () => ({ nova: T('Lluna nova'), quart_creixent: T('Quart creixent'), plena: T('Lluna plena'),
+  quart_minvant: T('Quart minvant') });
+
+function faseAProp(lluna, ara = new Date()) {
+  return ((lluna && lluna.fases) || []).find((f) => Math.abs(new Date(f.hora) - ara) <= FASE_A_PROP_H * 36e5) || null;
+}
+
+// El nom de la fase d'ara: la principal, si és a prop; si no, la de pas.
+function nomFaseLluna(lluna, ara = new Date()) {
+  const f = faseAProp(lluna, ara);
+  if (f) return NOM_FASE_LLUNA()[f.fase];
+  const a = lluna.angle;
+  return a < 90 ? T('Lluna creixent') : a < 180 ? T('Gibosa creixent') : a < 270 ? T('Gibosa minvant') : T('Lluna minvant');
+}
+
+// «5:12», «demà, 5:12» o «ahir, 23:40»; amb el dia de la setmana si és més
+// lluny («dilluns 2, 21:28»).
+function quanFase(iso, ara = new Date()) {
+  const d = new Date(iso);
+  const hora = d.toLocaleTimeString(IDIOMA.codi, { hour: 'numeric', minute: '2-digit' });
+  const dies = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate())
+    - new Date(ara.getFullYear(), ara.getMonth(), ara.getDate())) / 864e5);
+  if (dies === 0) return hora;
+  if (dies === 1) return T`demà, ${hora}`;
+  if (dies === -1) return T`ahir, ${hora}`;
+  return `${d.toLocaleDateString(IDIOMA.codi, { weekday: 'long', day: 'numeric' })}, ${hora}`;
+}
+
+// La Lluna tal com es veu des d'aquí, amb la part il·luminada de veritat: el
+// costat il·luminat (a la dreta quan creix, a l'hemisferi nord) és mig disc, i
+// el terminador, mitja el·lipse d'amplada |cos angle|. Sense els dibuixos de
+// Meteocons, que no hi són fidels (el quart creixent hi és una falç).
+function dibuixLluna(angle) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svgL = document.createElementNS(ns, 'svg');
+  svgL.setAttribute('viewBox', '-12 -12 24 24');
+  svgL.setAttribute('aria-hidden', 'true');
+  svgL.setAttribute('class', 'lluna');
+  const r = 10;
+  const fi = angle * Math.PI / 180;
+  const rx = (Math.abs(Math.cos(fi)) * r).toFixed(2);
+  const creix = angle < 180;
+  const gibosa = Math.cos(fi) < 0;
+  const vora = creix ? 1 : 0;
+  const terminador = creix ? (gibosa ? 1 : 0) : (gibosa ? 0 : 1);
+  const fosca = document.createElementNS(ns, 'circle');
+  fosca.setAttribute('r', r);
+  fosca.setAttribute('class', 'lluna-fosca');
+  const clara = document.createElementNS(ns, 'path');
+  clara.setAttribute('d', `M0 ${-r}A${r} ${r} 0 0 ${vora} 0 ${r}A${rx} ${r} 0 0 ${terminador} 0 ${-r}Z`);
+  clara.setAttribute('class', 'lluna-clara');
+  // La vora, a sobre, perquè la plena es vegi també sobre un fons clar.
+  const vora2 = document.createElementNS(ns, 'circle');
+  vora2.setAttribute('r', r);
+  vora2.setAttribute('class', 'lluna-vora');
+  svgL.append(fosca, clara, vora2);
+  return svgL;
+}
+
 // Amb dades de més de DADES_VELLES_H hores, la previsió, els veredictes i els
 // trens ja no es mostren: algú que no llegeixi l'avís s'hi podria fiar
 // (ADR 0031). Es diu de quan són i on mirar mentrestant.

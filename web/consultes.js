@@ -13,7 +13,10 @@ const FITXER_DADES = document.documentElement.dataset.dades || 'casa.json';
 const OPCIONS = [
   ['avui', () => T('Avui'), 'i-calendar-check', () => T('La previsió d’avui, amb els avisos i l’estat dels trens.')],
   ['dema', () => T('Demà'), 'i-calendar-plus', () => T('La previsió de demà.')],
-  ['sol', () => T('Sol'), 'i-sunrise', () => T('La sortida i la posta del sol, les hores de llum i l’índex UV.')],
+  // El sol i la Lluna (Juanjo, 25-10-2026: «datos de la luna en la pestaña de
+  // sol, que deberá cambiar de nombre»; ADR 0127). La clau, «sol», no canvia:
+  // els enllaços d'abans (consultes.html#sol) hi segueixen portant.
+  ['sol', () => T('Sol i lluna'), 'i-sunrise', () => T('La sortida i la posta del sol i de la lluna, les fases de la lluna, les hores de llum i l’índex UV.')],
   ['aire', () => T('Aire'), 'i-factory', () => T('La qualitat de l’aire.')],
   ['pollen', () => T('Pol·len'), 'i-flower', () => T('El nivell de cada tipus de pol·len.')],
   ['trens', () => T('Trens'), 'i-train-front', () => T('L’estat de les línies de Rodalies i FGC de la zona.')],
@@ -366,7 +369,7 @@ function graficaSol(avui, ara, ample = 340) {
   return { svg, minMig, altMig };
 }
 
-function pintaSol(dies, ara = new Date()) {
+function pintaSol(dies, ara = new Date(), lluna = null) {
   const avui = dies[0];
   const peces = [element('p', null, '')];
   peces[0].append(element('strong', null, T('El sol avui a Montflorit')));
@@ -412,7 +415,42 @@ function pintaSol(dies, ara = new Date()) {
     text.append(linia);
   }
   if (dies[1]) text.append(element('p', 'nota', T`Demà surt a les ${horaCurta(dies[1].sortida)} i es pon a les ${horaCurta(dies[1].posta)}.`));
+  if (lluna) peces.push(blocLluna(lluna, ara));
   return peces;
+}
+
+// La Lluna avui (ADR 0127): com es veu, quina fase és i quina part en surt
+// il·luminada, quan surt i es pon, i les fases que vénen.
+function blocLluna(lluna, ara = new Date()) {
+  const bloc = element('section', 'lluna-bloc');
+  const titol = element('p', 'lluna-titol');
+  titol.append(element('strong', null, T('La lluna avui a Montflorit')));
+  const fila = element('div', 'lluna-fila');
+  const gran = dibuixLluna(lluna.angle);
+  gran.classList.add('lluna-gran');
+  const text = element('div', 'lluna-text');
+  text.append(element('p', null, T`${nomFaseLluna(lluna, ara)}, il·luminada al ${lluna.il_luminacio} %.`));
+  // La sortida i la posta, per ordre; un dia al mes no surt o no es pon.
+  const { sortida, posta } = lluna.avui || {};
+  const h = (iso) => horaCurta(iso);
+  const quan = sortida && posta ? (sortida < posta ? T`Surt a les ${h(sortida)} i es pon a les ${h(posta)}.`
+    : T`Es pon a les ${h(posta)} i surt a les ${h(sortida)}.`)
+    : sortida ? T`Surt a les ${h(sortida)}; avui no es pon.` : posta ? T`Es pon a les ${h(posta)}; avui no surt.` : '';
+  if (quan) text.append(element('p', null, quan));
+  const properes = (lluna.fases || []).filter((f) => new Date(f.hora) - ara > -FASE_A_PROP_H * 36e5).slice(0, 4);
+  if (properes.length) {
+    text.append(element('p', 'lluna-properes-titol', T('Les fases que vénen:')));
+    const llista = element('ul', 'lluna-fases');
+    for (const f of properes) {
+      const li = element('li');
+      li.append(dibuixLluna(ANGLE_FASE[f.fase]), `${NOM_FASE_LLUNA()[f.fase]}: ${quanFase(f.hora, ara)}`);
+      llista.append(li);
+    }
+    text.append(llista);
+  }
+  fila.append(gran, text);
+  bloc.append(titol, fila);
+  return bloc;
 }
 
 // El títol de la fitxa, com al bot.
@@ -447,7 +485,7 @@ function pintaConsulta() {
   let peces = null;
   if (triada === 'pollen' && DADES.pollen) peces = pintaPollen(DADES.pollen);
   else if (triada === 'aire' && DADES.aire && DADES.aire.index != null) peces = pintaAire(DADES.aire);
-  else if (triada === 'sol' && DADES.sol && DADES.sol.length) peces = pintaSol(DADES.sol);
+  else if (triada === 'sol' && DADES.sol && DADES.sol.length) peces = pintaSol(DADES.sol, new Date(), DADES.lluna);
   else if (triada === 'trens' && DADES.trens && (DADES.trens.linies || []).length) {
     peces = [titol(T('Trens de Cerdanyola')), ...blocTrens(DADES.trens)];
   } else if (triada === 'busos' && DADES.busos) {
@@ -675,6 +713,7 @@ function mapaTall(t, m) {
 let assenyalada = !OPCIONS.some(([c]) => c === location.hash.slice(1));
 function pinta(dades) {
   DADES = dades;
+  LLUNA = dades.lluna || null;
   GENERAT_GRAFICA = dades.generat;
   AVISOS_GRAFICA = dades;
   // Dades de fa massa: només l'avís i on mirar (ADR 0031).

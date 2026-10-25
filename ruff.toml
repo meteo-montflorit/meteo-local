@@ -3,6 +3,8 @@
 # (pyflakes: noms sense definir, importacions i variables que sobren;
 # bugbear: paranys habituals; E9: errors de sintaxi), no les d'estil.
 target-version = "py311"
+# Els programes d'altres, tal com són (tercers/README.md).
+extend-exclude = ["tercers"]
 
 [lint]
 select = ["F", "B", "E9"]
