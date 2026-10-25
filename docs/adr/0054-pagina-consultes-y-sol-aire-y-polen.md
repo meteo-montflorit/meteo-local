@@ -63,10 +63,44 @@ el resto de fichas. En la web, ya no todas son el texto del bot:
   de Medio Ambiente y una marca donde está ahora, una barra por contaminante y
   la evolución hora a hora del resto del día (`aire.py` guarda ahora el índice
   de cada contaminante y de cada hora).
-- **Sol**: una barra del día de 0 a 24 h con la luz entre la salida y la puesta
-  y una marca en «ara»; debajo, «0 h», la salida y la puesta justo donde empieza
-  y acaba la luz, y «24 h» (con las horas en los extremos «no se entiende»).
-  El índice UV, en una pastilla con los colores de la OMS.
+- **Sol**: desde el 25-10-2026 (3.200.0), el recorrido del sol de hoy sobre
+  el horizonte de Montflorit, en un cuadrado (Juanjo, tras pedirlo más alto
+  dos veces: «para evitar problemas, hazlo cuadrado»): en el móvil, de todo
+  el ancho de la ficha («que la gráfica ocupe todo el ancho»); desde 640 px,
+  no («y en pantallas anchas que no ocupe el 100%»): el cuadrado a la
+  izquierda, del 55 % del ancho y 560 px como mucho, y el texto al lado, como
+  pide su criterio de que lo apilado en el móvil vaya en fila en el
+  ordenador. De
+  7° bajo el horizonte a 76° sobre él (la franja de la noche, «a la mitad»;
+  arriba, los 72° de junio y el sitio justo para su cifra: «sobra mucho
+  espacio por arriba»), con el sol donde está ahora (de noche, hueco y al fondo de la
+  franja de la noche). Juanjo enseñó el de la app LunaSolCal: «algo parecido
+  a esto … adáptalo como quieras … centrado en Montflorit». Como allí, las
+  líneas de la salida, el mediodía y la puesta con su hora arriba, la altura
+  máxima y, finos, el 21 de junio (rayas) y el 21 de diciembre (puntos) para
+  comparar, con el nombre en la leyenda: en el dibujo no cabía sin tocar las
+  curvas. Las curvas se calculan en tiempo universal y se dibujan todas con
+  la hora oficial de hoy (Juanjo: «el cambio horario no debe nunca
+  distorsionar resultados … internamente siempre utc»): las tres culminan
+  juntas, como en la app, y la de junio no sale una hora más tarde por el
+  horario de verano; las horas que se leen, las de hoy, son las del reloj. El
+  eje va centrado en el mediodía de hoy, con tanto a cada lado como hay del
+  mediodía a la salida o la puesta del 21 de junio, la más lejana, y media
+  hora más: de 0 a 24 h «sobra mucho espacio por los lados», y redondeado a la
+  media hora el día de hoy no quedaba simétrico. Las curvas de junio y
+  diciembre culminan hacia las 12:50 y la de hoy, en octubre, a las 12:35: es
+  la ecuación del tiempo, real, y no se corrige. El dibujo se hace al ancho
+  de la ficha en píxeles (y se rehace si cambia), para que la ocupe entera
+  con la letra siempre del mismo tamaño. A diferencia de la app, la dirección va en palabras en el texto,
+  no en grados: «Surt a les 7:14 per
+  l'est i es pon a les 17:55 per l'oest: 10 h 41 min de llum. A les 12:35, el
+  migdia, puja fins a 36° sobre l'horitzó.» La posición sale de la fórmula
+  de la NOAA que ya usaba `alturaSol` (`posicioSol`, en `comu.js`, que ahora
+  da también el azimut); comprobada con la app el mismo día: a las 7:37, 3,1°
+  de altura y 109,2° de azimut en las dos, y 36,3° a mediodía. La salida y
+  la puesta siguen siendo las de los datos, como en la tabla. Sustituye a la
+  barra del día, que decía lo mismo con menos. El índice UV, en una pastilla
+  con los colores de la OMS.
 - **Avui y Demà**: el texto del bot con un icono por línea (temperatura,
   lluvia, avisos, trenes, ropa).
 - **Trens y Trànsit**: las mismas fichas de color que «Si surts»; esas piezas

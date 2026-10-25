@@ -659,6 +659,24 @@ class Web(unittest.TestCase):
         self.assertEqual([consulta(t, ["trens: 500"]) for t in ("avui", "dema", "trens")], [True, False, False])
         self.assertEqual([consulta(t, ["radar: x"]) for t in ("avui", "dema", "aire")], [True, True, False])
 
+    def test_recorregut_del_sol(self):
+        # Juanjo, 25-10-2026: com el de LunaSolCal, que a les 7:37 donava 3,1° d'alçada i 109,2° d'azimut.
+        r = self.avalua("2026-10-25T07:37:00+01:00",
+                        "[[posicioSol(new Date()).altura, posicioSol(new Date()).azimut],"
+                        " Math.max(...recorregutSol('2026-10-25', 60).map(([, a]) => a)),"
+                        " Math.max(...recorregutSol('2026-06-21', 60).map(([, a]) => a)),"
+                        " [60, 106, 254, 300].map(direccioSol)]", "consultes.js")
+        self.assertAlmostEqual(r[0][0], 3.1, delta=0.1)
+        self.assertAlmostEqual(r[0][1], 109.2, delta=0.1)
+        self.assertAlmostEqual(r[1], 36.3, delta=0.2)
+        self.assertAlmostEqual(r[2], 71.9, delta=0.2)
+        self.assertEqual(r[3], ["pel nord-est", "per l\u2019est", "per l\u2019oest", "pel nord-oest"])
+        # Totes amb l'hora oficial d'avui (UTC+1): el migdia del 21 de juny, a les 12:5x i no a les 13:5x.
+        migdia = lambda dia: self.avalua("2026-10-25T07:37:00+01:00",  # noqa: E731
+                                         f"recorregutSol('{dia}', 60).reduce((a, b) => (b[1] > a[1] ? b : a))[0]",
+                                         "consultes.js")
+        self.assertEqual([migdia("2026-10-25") // 60, migdia("2026-06-21") // 60, migdia("2026-12-21") // 60], [12, 12, 12])
+
     def test_hores_de_si_surts_amb_el_dia(self):
         # La previsió pot arribar a l'endemà de demà al matí (ADR 0041): no és «demà».
         hores = ["2026-10-08T23:00", "2026-10-09T17:00", "2026-10-10T06:00"]

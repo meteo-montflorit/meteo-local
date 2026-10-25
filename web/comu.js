@@ -66,9 +66,11 @@ function esNota(t, kmh) {
 }
 
 // Altura del sol (graus) a Cerdanyola en un moment donat, amb la fórmula
-// aproximada de la NOAA: n'hi ha prou per saber si és de dia o de nit.
+// aproximada de la NOAA: n'hi ha prou per saber si és de dia o de nit. I cap
+// on és (azimut, en graus des del nord cap a l'est), per al recorregut del
+// sol de «Consultes».
 const CASA_COORD = [41.5, 2.1];
-function alturaSol(data) {
+function posicioSol(data) {
   const rad = Math.PI / 180;
   const dies = data.getTime() / 864e5 + 2440587.5 - 2451545;
   const l = (280.46 + 0.9856474 * dies) % 360;
@@ -80,7 +82,13 @@ function alturaSol(data) {
   const gmst = (18.697374558 + 24.06570982441908 * dies) % 24;
   const angle = (gmst * 15 + CASA_COORD[1]) * rad - ar;
   const lat = CASA_COORD[0] * rad;
-  return Math.asin(Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(angle)) / rad;
+  const altura = Math.asin(Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(angle)) / rad;
+  const azimut = (Math.atan2(Math.sin(angle), Math.cos(angle) * Math.sin(lat) - Math.tan(dec) * Math.cos(lat)) / rad + 540) % 360;
+  return { altura, azimut };
+}
+
+function alturaSol(data) {
+  return posicioSol(data).altura;
 }
 
 // Amb dades de més de DADES_VELLES_H hores, la previsió, els veredictes i els

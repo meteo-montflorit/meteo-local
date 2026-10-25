@@ -801,19 +801,41 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .aire-hores { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(1.2rem, 1fr); gap: 2px; }
 .aire-hora { display: grid; gap: .15rem; text-align: center; font-size: .75rem; color: var(--suau); }
 .aire-hora > span:first-child { height: 1.2rem; background: var(--c); border-radius: 2px; }
-/* El sol: el dia de 0 a 24 h, la llum entre la sortida i la posta, i ara. */
-.sol-dia { position: relative; height: .9rem; margin: .7rem 0 .2rem; border-radius: 999px; background: #1e293b; overflow: hidden; }
-.sol-llum { position: absolute; top: 0; bottom: 0; background: linear-gradient(90deg, #fb923c, #fde047 20%, #fde047 80%, #fb923c); }
-.sol-ara { position: absolute; top: 0; bottom: 0; width: .2rem; margin-left: -.1rem; background: var(--text); }
-:root[data-theme="dark"] .sol-ara { background: #fff; }
-.sol-hores, .sol-sobre { position: relative; height: 1.3rem; font-size: .9rem; color: var(--suau); }
-.sol-sobre { margin-top: .6rem; height: 1.2rem; }
-.sol-sobre + .sol-dia { margin-top: .15rem; }
-.sol-hores span, .sol-sobre span { position: absolute; top: 0; white-space: nowrap; }
-.sol-punt { transform: translateX(-50%); }
-.sol-extrem { left: 0; }
-.sol-extrem.sol-fi { left: auto; right: 0; }
-.sol-hores + p { margin-top: .5rem !important; }
+/* El sol: el recorregut d'avui sobre l'horitzó, el del 21 de juny i el del 21
+   de desembre, fins, i on és ara. El cel i la nit, del color de la barra que
+   hi havia abans. */
+:root { --sol-cel: #dbeafe; --sol-nit: rgb(30 41 59 / .82); --sol-avui: #f59e0b; --sol-ref: #64748b; --sol-guia: #94a3b8; }
+:root[data-theme="dark"] { --sol-cel: #1e3a5f; --sol-nit: rgb(2 6 23 / .72); --sol-avui: #fbbf24; --sol-ref: #94a3b8; --sol-guia: #64748b; }
+/* Quadrat i de tota l'amplada: el dibuix es fa a la mida de la fitxa (pintaSol). */
+.sol-grafica { display: block; width: 100%; height: auto; margin: .6rem 0 .3rem; border-radius: .6rem; overflow: hidden; }
+/* En una pantalla ampla, el dibuix a l'esquerra i el text al costat. */
+.sol-bloc-ample { display: flex; gap: 1.5rem; align-items: flex-start; }
+.sol-bloc-ample .sol-dibuix { flex: none; }
+.sol-bloc-ample .sol-text { flex: 1; min-width: 0; padding-top: .6rem; }
+.sol-text > p:first-child { margin-top: 0; }
+.sol-cel { fill: var(--sol-cel); }
+.sol-nit { fill: var(--sol-nit); }
+.sol-horitzo { stroke: var(--text); stroke-width: 1.2; }
+.sol-ref { fill: none; stroke: var(--sol-ref); stroke-width: 1.4; }
+.sol-juny { stroke-dasharray: 6 4; }
+.sol-desembre { stroke-dasharray: .1 4; stroke-linecap: round; stroke-width: 2.4; }
+.sol-avui { fill: none; stroke: var(--sol-avui); stroke-width: 3; stroke-linecap: round; }
+.sol-guia { stroke: var(--sol-guia); stroke-width: 1; stroke-dasharray: 2 3; }
+.sol-etiqueta { font-size: 12px; fill: var(--text); }
+.sol-eix { font-size: 11px; fill: var(--suau); }
+.sol-ara-halo { fill: #fde047; opacity: .45; }
+.sol-ara-disc { fill: #facc15; stroke: #f59e0b; stroke-width: 1.5; }
+.sol-ara-nit .sol-ara-halo { opacity: 0; }
+.sol-ara-nit .sol-ara-disc { fill: none; stroke: #fde68a; stroke-dasharray: 2 2; }
+/* La llegenda, una peça per línia si no caben: la mostra no se separa mai
+   del seu nom. */
+.sol-llegenda { display: flex; flex-wrap: wrap; column-gap: 1rem; row-gap: .1rem; margin: 0 0 .5rem !important;
+  font-size: .85rem; color: var(--suau); line-height: 1.5; }
+.sol-peca { white-space: nowrap; }
+.sol-mostra { display: inline-block; width: 1.4rem; height: 0; margin: 0 .35rem 0 0; vertical-align: middle; }
+.sol-mostra-avui { border-top: 3px solid var(--sol-avui); }
+.sol-mostra-juny { border-top: 2px dashed var(--sol-ref); }
+.sol-mostra-desembre { border-top: 3px dotted var(--sol-ref); }
 .sol-uv { line-height: 1.9; }
 .uv-xip { display: inline-block; padding: 0 .6rem; border-radius: 999px; font-weight: 700; color: #111; line-height: 1.6; }
 .uv-baix { background: #3ea72d; color: #fff; } .uv-moderat { background: #fff300; } .uv-alt { background: #f18b00; }

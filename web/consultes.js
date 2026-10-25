@@ -238,63 +238,180 @@ const ORDRE_AIRE = ['nitrogen_dioxide', 'ozone', 'pm10', 'pm2_5', 'sulphur_dioxi
 const CURT_AIRE = () => ({ nitrogen_dioxide: 'NO₂', ozone: T('ozó'), pm10: 'PM10', pm2_5: 'PM2,5', sulphur_dioxide: 'SO₂' });
 
 
-// --- Sol: el dia en una barra (la llum entre la sortida i la posta, i ara), i
-// l'índex UV amb els colors de l'OMS (UV, a grafica.js). ---
+// --- Sol: el recorregut del sol avui sobre l'horitzó de Montflorit, amb el
+// del dia més llarg i el del més curt per comparar, on és ara, i l'índex UV
+// amb els colors de l'OMS (UV, a grafica.js). Com el de l'app LunaSolCal que
+// va ensenyar Juanjo (25-10-2026: «algo parecido a esto … adáptalo como
+// quieras»), però amb les hores del rellotge i les direccions en paraules.
 const minutsDelDia = (iso) => Number(iso.slice(11, 13)) * 60 + Number(iso.slice(14, 16));
+// Dibuix: alçades de -7° a 76°: sota l'horitzó, prou per veure com hi entra
+// i en surt (Juanjo, 25-10-2026: «la base oscura redúcela a la mitad»), i a
+// dalt, els 72° del migdia del 21 de juny i just el lloc de la xifra de
+// l'alçada màxima («sobra mucho espacio por arriba»). I les hores del dia més
+// llarg, centrades en el migdia d'avui: tant a cada costat com del migdia a
+// la sortida o a la posta del 21 de juny, la més allunyada, i mitja hora més.
+// Hi cap la llum de qualsevol dia de l'any, sense els costats buits de 0 a
+// 24 h (Juanjo, 25-10-2026: «sobra mucho espacio por los lados»), i el dia
+// d'avui queda simètric. L'amplada, la de la fitxa en píxels, perquè el
+// dibuix l'ocupi tota amb la lletra sempre de la mateixa mida. Les fixa
+// graficaSol.
+// A partir de SOL_FILA píxels d'amplada, el dibuix i el text, en fila.
+const SOL_FILA = 640;
+const SOL_AMPLE = 0.55;
+const SOL_MAX = 560;
+const SOL_DIB = { ample: 340, alt: 200, esq: 6, dre: 6, dalt: 24, baix: 20, max: 76, min: -7, ini: 0, fi: 1440 };
+const solX = (minuts) => SOL_DIB.esq + (minuts - SOL_DIB.ini) / (SOL_DIB.fi - SOL_DIB.ini) * (SOL_DIB.ample - SOL_DIB.esq - SOL_DIB.dre);
+const solY = (graus) => SOL_DIB.dalt + (SOL_DIB.max - graus) / (SOL_DIB.max - SOL_DIB.min) * (SOL_DIB.alt - SOL_DIB.dalt - SOL_DIB.baix);
 
-function pintaSol(dies) {
+// El recorregut d'un dia (AAAA-MM-DD), cada 5 minuts: es calcula en UTC i
+// es dibuixa amb el desfasament (minuts sobre UTC) de l'hora oficial d'avui,
+// el mateix per a totes les corbes. El canvi d'hora no les mou: el 21 de juny
+// no surt una hora més tard per l'horari d'estiu, i el dia que canvia l'hora
+// la corba no fa cap salt (Juanjo, 25-10-2026: «el cambio horario no debe
+// nunca distorsionar resultados … internamente siempre utc»).
+function recorregutSol(dia, desfas) {
+  const [a, m, d] = dia.split('-').map(Number);
+  const punts = [];
+  for (let min = 0; min <= 1440; min += 5) {
+    punts.push([min, posicioSol(new Date(Date.UTC(a, m - 1, d, 0, min - desfas))).altura]);
+  }
+  return punts;
+}
+
+function camiSol(punts) {
+  return punts.map(([min, alt], n) => `${n ? 'L' : 'M'}${solX(min).toFixed(1)} ${solY(alt).toFixed(1)}`).join('');
+}
+
+// Per on surt o es pon, en paraules: de les vuit direccions, la més propera.
+function direccioSol(azimut) {
+  const noms = [T('pel nord'), T('pel nord-est'), T('per l’est'), T('pel sud-est'), T('pel sud'), T('pel sud-oest'),
+    T('per l’oest'), T('pel nord-oest')];
+  return noms[Math.round(azimut / 45) % 8];
+}
+
+let numSol = 0;
+function graficaSol(avui, ara, ample = 340) {
+  const any = avui.dia.slice(0, 4);
+  const [a, m, d] = avui.dia.split('-').map(Number);
+  const desfas = -new Date(a, m - 1, d, 12).getTimezoneOffset();
+  SOL_DIB.ample = ample;
+  // Quadrat (Juanjo, 25-10-2026: «para evitar problemas, hazlo cuadrado»,
+  // després de demanar-lo més alt dues vegades): les corbes no queden mai
+  // aixafades, sigui quina sigui l'amplada.
+  SOL_DIB.alt = ample;
+  const svg = nodeSvg('svg', { viewBox: `0 0 ${SOL_DIB.ample} ${SOL_DIB.alt}`, class: 'sol-grafica', 'aria-hidden': 'true' });
+  const y0 = solY(0);
+  const fons = SOL_DIB.alt - SOL_DIB.baix;
+  // De nit el sol baixa fins a 70° sota l'horitzó: les corbes, retallades
+  // a la part dibuixada, perquè no tapin les hores de sota.
+  const retall = `sol-retall-${numSol += 1}`;
+  const defs = nodeSvg('defs');
+  const clip = nodeSvg('clipPath', { id: retall });
+  clip.append(nodeSvg('rect', { x: 0, y: 0, width: SOL_DIB.ample, height: fons }));
+  defs.append(clip);
+  svg.append(defs, nodeSvg('rect', { x: 0, y: 0, width: SOL_DIB.ample, height: y0, class: 'sol-cel' }));
+  const text = (x, y, contingut, classe, ancora = 'middle') => {
+    const t = nodeSvg('text', { x: x.toFixed(1), y: y.toFixed(1), class: classe, 'text-anchor': ancora });
+    t.textContent = contingut;
+    return t;
+  };
+  // El dia més llarg (ratlles) i el més curt (punts), fins, per comparar: el
+  // nom, a la llegenda, perquè al dibuix no hi cap sense tocar les corbes.
+  const punts = recorregutSol(avui.dia, desfas);
+  const [minMig, altMig] = punts.reduce((x, y) => (y[1] > x[1] ? y : x));
+  const juny = recorregutSol(`${any}-06-21`, desfas);
+  const deDia = juny.filter(([, alt]) => alt > 0).map(([min]) => min);
+  const mig = Math.max(minMig - deDia[0], deDia[deDia.length - 1] - minMig) + 30;
+  SOL_DIB.ini = Math.max(0, minMig - mig);
+  SOL_DIB.fi = Math.min(1440, minMig + mig);
+  for (const [punts, classe] of [[juny, 'sol-ref sol-juny'], [recorregutSol(`${any}-12-21`, desfas), 'sol-ref sol-desembre']]) {
+    svg.append(nodeSvg('path', { d: camiSol(punts), class: classe, 'clip-path': `url(#${retall})` }));
+  }
+  svg.append(nodeSvg('path', { d: camiSol(punts), class: 'sol-avui', 'clip-path': `url(#${retall})` }));
+  // La nit, a sobre, perquè la part de sota l'horitzó quedi apagada.
+  svg.append(nodeSvg('rect', { x: 0, y: y0, width: SOL_DIB.ample, height: fons - y0, class: 'sol-nit' }));
+  svg.append(nodeSvg('line', { x1: 0, x2: SOL_DIB.ample, y1: y0, y2: y0, class: 'sol-horitzo' }));
+  const sortida = minutsDelDia(avui.sortida);
+  const posta = minutsDelDia(avui.posta);
+  // Les guies de la sortida, el migdia i la posta, amb l'hora a dalt.
+  const hora = (min) => horaCurta(new Date(2000, 0, 1, 0, min));
+  // Prop de la vora, l'hora s'alinea amb la vora perquè no quedi tallada (al
+  // juny, el sol surt i es pon gairebé als extrems).
+  const marge = 22;
+  for (const [min, etiqueta] of [[sortida, `↑ ${horaCurta(avui.sortida)}`], [minMig, hora(minMig)], [posta, `↓ ${horaCurta(avui.posta)}`]]) {
+    const x = solX(min);
+    const [xt, ancora] = x < marge ? [2, 'start'] : x > SOL_DIB.ample - marge ? [SOL_DIB.ample - 2, 'end'] : [x, 'middle'];
+    svg.append(nodeSvg('line', { x1: x, x2: x, y1: SOL_DIB.dalt - 6, y2: y0, class: 'sol-guia' }),
+      text(xt, SOL_DIB.dalt - 10, etiqueta, 'sol-etiqueta', ancora));
+  }
+  svg.append(text(solX(minMig) + 12, solY(altMig) - 7, `${Math.round(altMig)}°`, 'sol-etiqueta', 'start'));
+  // Les hores, a sota, cada tres; a la vora, alineades amb la vora.
+  for (let h = Math.ceil(SOL_DIB.ini / 180) * 3; h * 60 <= SOL_DIB.fi; h += 3) {
+    const x = solX(h * 60);
+    const [xt, ancora] = x < 14 ? [2, 'start'] : x > SOL_DIB.ample - 14 ? [SOL_DIB.ample - 2, 'end'] : [x, 'middle'];
+    svg.append(text(xt, SOL_DIB.alt - 5, `${h} h`, 'sol-eix', ancora));
+  }
+  // On és ara, si és avui.
+  const dataLocal = `${ara.getFullYear()}-${String(ara.getMonth() + 1).padStart(2, '0')}-${String(ara.getDate()).padStart(2, '0')}`;
+  const minAra = ara.getHours() * 60 + ara.getMinutes();
+  if (dataLocal === avui.dia && minAra >= SOL_DIB.ini && minAra <= SOL_DIB.fi) {
+    const alt = posicioSol(ara).altura;
+    const g = nodeSvg('g', { class: alt > -0.8 ? 'sol-ara' : 'sol-ara sol-ara-nit' });
+    // De nit, si baixa més del que es dibuixa, al fons de la franja de la nit.
+    const y = Math.min(solY(alt), fons - 8);
+    g.append(nodeSvg('circle', { cx: solX(minAra), cy: y, r: 11, class: 'sol-ara-halo' }),
+      nodeSvg('circle', { cx: solX(minAra), cy: y, r: 6.5, class: 'sol-ara-disc' }));
+    svg.append(g);
+  }
+  return { svg, minMig, altMig };
+}
+
+function pintaSol(dies, ara = new Date()) {
   const avui = dies[0];
   const peces = [element('p', null, '')];
   peces[0].append(element('strong', null, T('El sol avui a Montflorit')));
-  const s = minutsDelDia(avui.sortida);
-  const p = minutsDelDia(avui.posta);
-  const dia = element('div', 'sol-dia');
-  dia.setAttribute('aria-hidden', 'true');
-  const llum = element('span', 'sol-llum');
-  llum.style.left = `${s / 1440 * 100}%`;
-  llum.style.width = `${(p - s) / 1440 * 100}%`;
-  dia.append(llum);
-  dia.title = T`Hores de llum: de ${horaCurta(avui.sortida)} a ${horaCurta(avui.posta)}`;
-  // A sota, l'escala del dia: 0 h, la sortida i la posta just on comença i
-  // acaba la llum, i 24 h; a sobre, «ara» (Juanjo, 09-10-2026: amb les hores
-  // als extrems «no se entiende»).
-  const posa = (classe, text, minuts) => {
-    const e = element('span', classe, text);
-    if (minuts != null) e.style.left = `${minuts / 1440 * 100}%`;
+  // L'amplada de dins de la fitxa, en píxels.
+  const caixa = $('consulta');
+  const estil = caixa && getComputedStyle(caixa);
+  const dins = caixa ? caixa.clientWidth - parseFloat(estil.paddingLeft) - parseFloat(estil.paddingRight) : 340;
+  // Quadrat i de tota l'amplada al mòbil (Juanjo, 25-10-2026: «que la gráfica
+  // ocupe todo el ancho, debe ser cuadrada»); en una pantalla ampla, no («y en
+  // pantallas anchas que no ocupe el 100%»): el quadrat, a l'esquerra, del
+  // SOL_AMPLE de l'amplada i SOL_MAX píxels com a molt, i el text al costat.
+  const ampla = dins >= SOL_FILA;
+  const costat = ampla ? Math.min(SOL_MAX, Math.round(dins * SOL_AMPLE)) : Math.max(280, Math.round(dins) || 340);
+  const { svg, minMig, altMig } = graficaSol(avui, ara, costat);
+  const [a, m, d] = avui.dia.split('-').map(Number);
+  const per = (iso) => direccioSol(posicioSol(new Date(iso)).azimut);
+  const mig = horaCurta(new Date(a, m - 1, d, 0, minMig));
+  const dibuix = element('div', 'sol-dibuix');
+  const text = element('div', 'sol-text');
+  const fila = element('div', ampla ? 'sol-bloc sol-bloc-ample' : 'sol-bloc');
+  if (ampla) dibuix.style.width = `${costat}px`;
+  fila.append(dibuix, text);
+  peces.push(fila);
+  dibuix.append(svg);
+  const llegenda = element('p', 'sol-llegenda');
+  const peca = (classe, nom) => {
+    const e = element('span', 'sol-peca');
+    e.append(element('span', `sol-mostra ${classe}`), nom);
     return e;
   };
-  const hores = element('div', 'sol-hores');
-  hores.setAttribute('aria-hidden', 'true');
-  // «0 h» i «24 h» només si no toquen la sortida o la posta (a l'estiu, la
-  // posta és cap a les 21:30, prop del final).
-  if (s > 1440 * 0.14) hores.append(posa('sol-extrem', '0 h'));
-  hores.append(posa('sol-punt', `↑ ${horaCurta(avui.sortida)}`, s), posa('sol-punt', `↓ ${horaCurta(avui.posta)}`, p));
-  if (p < 1440 * 0.84) hores.append(posa('sol-extrem sol-fi', '24 h'));
-  const sobre = element('div', 'sol-sobre');
-  sobre.setAttribute('aria-hidden', 'true');
-  const ara = new Date();
-  const dataLocal = `${ara.getFullYear()}-${String(ara.getMonth() + 1).padStart(2, '0')}-${String(ara.getDate()).padStart(2, '0')}`;
-  if (dataLocal === avui.dia) {
-    const minuts = ara.getHours() * 60 + ara.getMinutes();
-    const m = element('span', 'sol-ara');
-    m.style.left = `${minuts / 1440 * 100}%`;
-    dia.append(m);
-    sobre.append(posa('sol-punt', T('ara'), minuts));
-  }
-  peces.push(sobre);
-  // Per als lectors de pantalla, en text.
-  peces.push(element('p', 'visualment-amagat', T`Surt a les ${horaCurta(avui.sortida)} i es pon a les ${horaCurta(avui.posta)}.`));
-  const llumMin = p - s;
-  peces.push(dia, hores, element('p', null, T`${Math.floor(llumMin / 60)} h ${llumMin % 60} min de llum.`));
+  llegenda.append(peca('sol-mostra-avui', T('avui')), peca('sol-mostra-juny', T('21 de juny, el dia més llarg')),
+    peca('sol-mostra-desembre', T('21 de desembre, el més curt')));
+  llegenda.setAttribute('aria-hidden', 'true');
+  dibuix.append(llegenda);
+  const llumMin = minutsDelDia(avui.posta) - minutsDelDia(avui.sortida);
+  text.append(element('p', null, T`Surt a les ${horaCurta(avui.sortida)} ${per(avui.sortida)} i es pon a les ${horaCurta(avui.posta)} ${per(avui.posta)}: ${Math.floor(llumMin / 60)} h ${llumMin % 60} min de llum. A les ${mig}, el migdia, puja fins a ${Math.round(altMig)}° sobre l’horitzó.`));
   if (avui.uv_max != null) {
     const uv = Math.round(avui.uv_max);
     const [, classe, nom] = UV().find(([lim]) => uv <= lim);
     const linia = element('p', 'sol-uv');
     linia.append(element('span', 'uv-xip ' + classe, T`UV ${uv}`), ' ', T`Índex UV màxim ${nom}.`);
     if (uv >= 3) linia.append(' ', T('A les hores centrals, protector solar, gorra i ulleres de sol.'));
-    peces.push(linia);
+    text.append(linia);
   }
-  if (dies[1]) peces.push(element('p', 'nota', T`Demà surt a les ${horaCurta(dies[1].sortida)} i es pon a les ${horaCurta(dies[1].posta)}.`));
+  if (dies[1]) text.append(element('p', 'nota', T`Demà surt a les ${horaCurta(dies[1].sortida)} i es pon a les ${horaCurta(dies[1].posta)}.`));
   return peces;
 }
 
@@ -311,6 +428,16 @@ function titol(text) {
 function fontsConsulta() {
   if (triada === 'avui') return [...FONTS_TEMPS, 'trens'];
   return triada === 'dema' ? FONTS_TEMPS : [];
+}
+
+// El dibuix del sol es fa a l'amplada de la fitxa: si canvia (girar el mòbil,
+// fer la finestra més ampla), es torna a fer.
+let esperaMida = null;
+if (typeof window !== 'undefined' && window.addEventListener) {
+  window.addEventListener('resize', () => {
+    clearTimeout(esperaMida);
+    esperaMida = setTimeout(() => { if (triada === 'sol') pintaConsulta(); }, 200);
+  });
 }
 
 function pintaConsulta() {
