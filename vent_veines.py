@@ -38,6 +38,7 @@ import urllib.parse
 import urllib.request
 
 import config as C
+import hora as H
 import registre as R
 
 CSV = os.path.join(R.DIR, "vent-mitges-hores.csv")
@@ -99,7 +100,7 @@ def mitges_hores_meteocat(files):
     for ini, fila in files:
         mitja = P._columna(fila, "VVM")
         if mitja is not None:
-            res[(ini + dt.timedelta(minutes=30)).astimezone()] = (mitja, P._columna(fila, "VVX"))
+            res[H.utc(ini + dt.timedelta(minutes=30))] = (mitja, P._columna(fila, "VVX"))
     return res
 
 
@@ -140,7 +141,7 @@ def portal(codi, desde, lector=None):
     res = {}
     for r in leer(f"{PORTAL}?{q}"):
         ini = dt.datetime.fromisoformat(r["data_lectura"][:19]).replace(tzinfo=dt.timezone.utc)
-        fin = (ini + dt.timedelta(minutes=30)).astimezone()
+        fin = H.utc(ini + dt.timedelta(minutes=30))
         v = res.setdefault(fin, {})
         v[PORTAL_VAR[r["codi_variable"]]] = round(float(r["valor_lectura"]) * 3.6, 1)
     return {fin: (v.get("mitja"), v.get("ratxa")) for fin, v in res.items() if v.get("mitja") is not None}
@@ -150,12 +151,12 @@ def omple(dies=7, ara=None):
     """Rellena el registro con lo que aún dan las fuentes: 7 días de las
     vecinas (Weather Underground no da más) y lo mismo de Meteocat."""
     import wunderground as WU
-    ara = ara or dt.datetime.now().astimezone()
+    ara = ara or H.ara()
     columnes = {}
     for est in C.VEINES:
         files = []
         for d in range(dies, -1, -1):
-            dia = (ara - dt.timedelta(days=d)).strftime("%Y%m%d")
+            dia = (H.dia_local(ara) - dt.timedelta(days=d)).strftime("%Y%m%d")
             try:
                 files += WU.files(WU._consulta("history/all", {"stationId": est, "date": dia}, None))
             except Exception as ex:
@@ -176,9 +177,11 @@ def llegeix(ruta=None, desde=None):
     res = []
     with open(ruta, encoding="utf-8") as f:
         for r in csv.DictReader(f):
-            if desde and r["fins"] < desde:
+            # En UTC, també les files d'abans de la migració (ADR 0128).
+            fins = H.clau(r["fins"])
+            if desde and fins < desde:
                 continue
-            fila = {"fins": r["fins"]}
+            fila = {"fins": fins}
             for k, v in r.items():
                 if k != "fins":
                     fila[k] = float(v) if v not in (None, "") else None
@@ -246,7 +249,7 @@ def valida(files, var="mitja"):
     mismas medias horas."""
     import prevision as P
     ref, con = _clau(REFERENCIA, var), _clau(CONTRAST, var)
-    per_fins = {f["fins"]: f for f in files}
+    per_fins = {H.clau(f["fins"]): f for f in files}
     dies = sorted({f["fins"][:10] for f in files})
     err = {"estimacio": [], "sabadell": [], "abans": []}
     ventoses = 0
@@ -256,7 +259,7 @@ def valida(files, var="mitja"):
             if f["fins"][:10] != dia or f.get(ref) is None or f.get(con) is None:
                 continue
             est, _ = estima(ajust, {e: f.get(_clau(e, var)) for e in C.VEINES})
-            abans = per_fins.get(P.clau_hora(dt.datetime.fromisoformat(f["fins"]).astimezone()
+            abans = per_fins.get(P.clau_hora(H.utc(f["fins"])
                                              - dt.timedelta(minutes=30)), {}).get(ref)
             if est is None or abans is None:
                 continue
@@ -273,7 +276,7 @@ def apren(ara=None, avisa=True, registre=None, directori=None):
     """Ajusta con los últimos DIES_APREN días (completando antes Meteocat con
     el portal), guarda lo aprendido y avisa una vez si ya se puede decidir.
     Sin registro todavía, no hace nada."""
-    ara = ara or dt.datetime.now().astimezone()
+    ara = ara or H.ara()
     ruta = os.path.join(registre, os.path.basename(CSV)) if registre else CSV
     directori = directori or DIR
     if not os.path.exists(ruta):
@@ -282,8 +285,8 @@ def apren(ara=None, avisa=True, registre=None, directori=None):
         apunta({c: portal(c, ara - dt.timedelta(days=3)) for c in OFICIALS}, ruta)
     except Exception as ex:
         print("No he pogut llegir Meteocat al portal:", ex, file=sys.stderr)
-    files = llegeix(ruta, (ara - dt.timedelta(days=DIES_APREN)).strftime("%Y-%m-%dT%H:%M"))
-    model = {"dia": ara.date().isoformat(),
+    files = llegeix(ruta, H.clau(ara - dt.timedelta(days=DIES_APREN)))
+    model = {"dia": H.dia_local(ara).isoformat(),
              **{var: {"veines": ajusta(files, var), "validacio": valida(files, var)} for var in VARIABLES}}
     os.makedirs(directori, exist_ok=True)
     desti = os.path.join(directori, os.path.basename(MODEL))
@@ -335,7 +338,7 @@ def ara(veines, model=None, ahora=None):
     model = model if model is not None else carrega()
     if not model:
         return None
-    ahora = ahora or dt.datetime.now().astimezone()
+    ahora = ahora or H.ara()
     darrera, valors = None, {"mitja": {}, "ratxa": {}}
     for v in veines:
         fs = [f for f in v.get("files") or [] if f.get("vent") is not None
@@ -352,7 +355,7 @@ def ara(veines, model=None, ahora=None):
         return None
     ratxa, _ = estima(model["ratxa"]["veines"], valors["ratxa"])
     return {"estacio": "estacions veïnes", "font": "veines", "mitja": mitja, "ratxa": ratxa,
-            "estacions": usades, "fins": darrera.isoformat(timespec="minutes")}
+            "estacions": usades, "fins": H.clau(darrera)}
 
 
 def estat():

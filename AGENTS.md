@@ -24,11 +24,16 @@ Al cambiar algo:
   `RESTAURAR.md` al revés (`tar czf - … | gpg --symmetric --cipher-algo AES256`).
   La contraseña la escribe Juanjo en la ventana de gpg; avísale antes. Nada
   lo hace solo (ADR 0044 y 0045). Los suscriptores del bot no se copian.
-- **La hora del día** (ADR 0090): lo que depende del sol (calentamiento,
-  parte alta, señales de los modelos aprendidos) va en hora solar
-  (`prevision.hora_solar`, tiempo universal); lo que depende de las personas
-  (lo que se muestra, las horas de salir, la ropa, los horarios), en hora
-  local. Lo que se guarda, en hora local.
+- **La hora, en UTC por dentro** (ADR 0128): todo se calcula y se guarda en
+  tiempo universal, con las claves «AAAA-MM-DDTHH:MMZ» (`hora.clau`,
+  `prevision.clau_hora`), y se lee cualquier forma de antes (`hora.llegeix`).
+  La hora de Madrid, solo en la frontera: lo que se publica (`hora.publica`
+  pasa cada «…Z» a la hora de Madrid con su desfase: `montflorit.json`,
+  `avisos.json`, el historial), lo que se escribe a la gente y las reglas de
+  las personas (`hora.local`, `hora.hora_local`, `hora.dia_local`,
+  `hora.de_rellotge`). Nada de `.astimezone()` sin zona ni de restar horas de
+  Madrid: Python las resta como horas de reloj. Lo que depende del sol, en
+  hora solar (`prevision.hora_solar`, ADR 0090).
 - **Las alertas de peligro van todas juntas en todas partes** (ADR 0093): la
   portada, «Perill», /avisos_actius y el resumen del día (bot y «Consultes»).
   «Si surts» no las repite: una línea dice cuántas pueden afectar la

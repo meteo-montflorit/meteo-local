@@ -32,6 +32,7 @@ from collections import defaultdict
 from zoneinfo import ZoneInfo
 
 import config as C
+import hora as H
 from trens import camps
 
 ZONA = ZoneInfo("Europe/Madrid")
@@ -164,7 +165,8 @@ def horari_desat(avui):
 
 
 def hora_iso(t):
-    return dt.datetime.fromtimestamp(t).isoformat(timespec="minutes")
+    """Segons des de 1970 → clau en UTC (ADR 0128); es publica en hora de Madrid."""
+    return H.clau(dt.datetime.fromtimestamp(t, dt.timezone.utc))
 
 
 def linies(hor, real, ara):
@@ -211,8 +213,9 @@ def incidencies(feed, rutes, ara):
     """Els avisos de l'AMB (GTFS-RT) per a les línies del barri, vigents o
     futurs. Les hores del període hi són en hora local escrita com si fos UTC
     (el 22-10-2026, «dijous a les 8:00» arribava com a 08:00Z)."""
-    local = lambda t: dt.datetime.fromtimestamp(t, dt.timezone.utc).replace(tzinfo=None)  # noqa: E731
-    ara_local = dt.datetime.fromtimestamp(ara)
+    # L'hora que escriu l'AMB és la de Madrid: se li posa aquesta zona.
+    local = lambda t: dt.datetime.fromtimestamp(t, dt.timezone.utc).replace(tzinfo=ZONA)  # noqa: E731
+    ara_local = dt.datetime.fromtimestamp(ara, dt.timezone.utc)
     noms = {k: r["linia"] for k, r in rutes.items()}
     res = []
     for num, e in camps(feed):
@@ -232,16 +235,16 @@ def incidencies(feed, rutes, ara):
             if fi and local(fi) < ara_local:
                 continue
             res.append({"linies": afectades, "titol": _text(al, 10), "url": _text(al, 8),
-                        "inici": inici and local(inici).isoformat(timespec="minutes"),
-                        "fi": fi and local(fi).isoformat(timespec="minutes")})
+                        "inici": inici and H.clau(local(inici)),
+                        "fi": fi and H.clau(local(fi))})
     return res
 
 
 def calcula(ahora=None):
     """{temps_real_de, incidencies, linies}. Sense temps real, les hores de
     l'horari (temps_real_de buit); sense avisos, la llista buida i l'error."""
-    ara = (ahora or dt.datetime.now()).timestamp()
-    hor = horari_desat(dt.date.fromtimestamp(ara))
+    ara = (ahora or H.ara()).timestamp()
+    hor = horari_desat(H.dia_local(dt.datetime.fromtimestamp(ara, dt.timezone.utc)))
     errors = []
     capcalera, real = 0, {}
     try:

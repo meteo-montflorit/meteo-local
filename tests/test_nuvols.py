@@ -45,7 +45,7 @@ class Metar(unittest.TestCase):
         dades = [metar("14:30", ["BKN"]), metar("13:30", ["SCT"]), metar("14:00", ["OVC"])]
         obs = NV.llegeix(lambda url: json.dumps(dades))
         self.assertEqual([o["nuvols"] for o in obs], [44, 100, 75])       # ordenadas
-        h = {fin.strftime("%H:%M"): pct for fin, (pct, _, _) in NV.hores(obs).items()}
+        h = {NV.H.local(fin).strftime("%H:%M"): pct for fin, (pct, _, _) in NV.hores(obs).items()}
         # La hora que acaba a las 16 h (locales) junta las 15:30 y las 16:00.
         self.assertEqual(h, {"16:00": 72, "17:00": 75})
 
@@ -247,7 +247,7 @@ class Aprenentatge(unittest.TestCase):
         with open(NV.OBSERVATS, encoding="utf-8") as f:
             linies = f.read().splitlines()
         self.assertEqual(linies[0], "fins,nuvols,capes,metars")
-        self.assertEqual([l.split(",")[:3] for l in linies[1:]], [["2026-10-13T16:00", "72", "1"]])
+        self.assertEqual([l.split(",")[:3] for l in linies[1:]], [["2026-10-13T14:00Z", "72", "1"]])   # les 16 de Madrid
 
 
 if __name__ == "__main__":

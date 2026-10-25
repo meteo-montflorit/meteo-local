@@ -36,7 +36,6 @@ Uso:
   python3 reparador.py comprova     lo que hace el reloj del NAS cada minuto
   python3 reparador.py estat        el estado y los últimos intentos
 """
-import datetime as dt
 import fcntl
 import json
 import os
@@ -46,6 +45,7 @@ import sys
 import time
 
 import config as C
+import hora as H
 from desplegament import llegeix, desa
 
 ARREL = os.path.dirname(os.path.abspath(__file__))
@@ -85,7 +85,7 @@ def git(repo, *args, timeout=300):
 
 def apunta(registre):
     os.makedirs(REGISTRE_DIR, exist_ok=True)
-    registre = {"hora": dt.datetime.now().astimezone().isoformat(timespec="seconds"), **registre}
+    registre = {"hora": H.iso_local(H.ara(), segons=True), **registre}
     with open(ruta("registre"), "a", encoding="utf-8") as f:
         f.write(json.dumps(registre, ensure_ascii=False) + "\n")
     print(f"{registre.get('sha', '')[:7]}: {registre['resultat']}"

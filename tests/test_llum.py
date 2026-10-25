@@ -37,7 +37,7 @@ class Llum(unittest.TestCase):
         self.assertEqual(sorted(t["clients"] for t in r["talls"]), [3, 7, 45])
         self.assertEqual({t["clients"]: t["on"] for t in r["talls"]}, {3: "dins", 45: "dins", 7: "vora"})
         self.assertTrue(next(t for t in r["talls"] if t["clients"] == 3)["programat"])
-        self.assertEqual(next(t for t in r["talls"] if t["clients"] == 45)["inici"][:16], "2026-10-10T23:12")
+        self.assertEqual(next(t for t in r["talls"] if t["clients"] == 45)["inici"], "2026-10-10T21:12Z")  # 23:12 de Madrid
 
     def test_text_del_bot(self):
         d = {"features": [tall("MV", 45, 41.4800, 2.1330,

@@ -29,6 +29,7 @@ import os
 import subprocess
 import sys
 
+import hora as H
 import nowcast as N
 import remostreig as R
 
@@ -58,9 +59,9 @@ def plou(salida):
 
 def apunta(ahora, nc, salida):
     """Una línea por pasada en radar-fonts-AAAA-MM.jsonl."""
-    linia = {"t": ahora.isoformat(timespec="minutes"), "plou": plou(salida),
+    linia = {"t": H.clau(ahora), "plou": plou(salida),
              "triada": nc and nc.get("imatge"), "fonts": (nc or {}).get("fonts") or {}}
-    with open(os.path.join(DIR, f"radar-fonts-{ahora:%Y-%m}.jsonl"), "a", encoding="utf-8") as f:
+    with open(os.path.join(DIR, f"radar-fonts-{H.local(ahora):%Y-%m}.jsonl"), "a", encoding="utf-8") as f:
         f.write(json.dumps(linia, ensure_ascii=False) + "\n")
 
 
@@ -70,13 +71,13 @@ def llegeix(avui):
         with open(ruta, encoding="utf-8") as f:
             files += [json.loads(l) for l in f if l.strip()]
     des_de = avui - dt.timedelta(days=DIES)
-    return [l for l in files if dt.datetime.fromisoformat(l["t"]).date() >= des_de]
+    return [l for l in files if H.dia_local(l["t"]) >= des_de]
 
 
 def parelles(files):
     """(prob Meteocat, prob RainViewer, llovió) para cada hora prevista por
     las dos fuentes en la misma pasada, con una observación cerca."""
-    obs = sorted((dt.datetime.fromisoformat(l["t"]), l["plou"]) for l in files if l.get("plou") is not None)
+    obs = sorted((H.llegeix(l["t"]), l["plou"]) for l in files if l.get("plou") is not None)
     if not obs:
         return []
     res = []
@@ -84,10 +85,10 @@ def parelles(files):
         fs = l["fonts"]
         if "meteocat" not in fs or "rainviewer" not in fs:
             continue
-        t = dt.datetime.fromisoformat(l["t"])
+        t = H.llegeix(l["t"])
         prev = {}
         for nom in ("meteocat", "rainviewer"):
-            hora = dt.datetime.fromisoformat(fs[nom]["hora"])
+            hora = H.llegeix(fs[nom]["hora"])
             for k, p in enumerate(fs[nom]["prob"]):
                 v = hora + dt.timedelta(minutes=k * N.PAS_MIN)
                 if dt.timedelta(minutes=DE_MIN) <= v - t <= dt.timedelta(minutes=FINS_MIN):
@@ -97,7 +98,7 @@ def parelles(files):
                 continue
             prop = min(obs, key=lambda o: abs(o[0] - v))
             if abs(prop[0] - v) <= dt.timedelta(minutes=TOLERANCIA_MIN):
-                res.append((ps["meteocat"], ps["rainviewer"], prop[1], v.date()))
+                res.append((ps["meteocat"], ps["rainviewer"], prop[1], H.dia_local(v)))
     return res
 
 
@@ -125,7 +126,7 @@ def decideix(c, actual):
 
 
 def verifica(avui=None, avisa=True):
-    avui = avui or dt.date.today()
+    avui = avui or H.dia_local(H.ara())
     actual = N.font_preferida()
     c = compara(llegeix(avui))
     nova = decideix(c, actual)
@@ -161,6 +162,6 @@ if __name__ == "__main__":
         verifica()
     elif orden == "estat":
         print(N.font_preferida())
-        print(json.dumps(compara(llegeix(dt.date.today())), ensure_ascii=False))
+        print(json.dumps(compara(llegeix(H.dia_local(H.ara()))), ensure_ascii=False))
     else:
         print(__doc__)

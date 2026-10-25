@@ -27,6 +27,7 @@ import urllib.parse
 import urllib.request
 
 import config as C
+import hora as H
 
 API = "https://api.ecowitt.net/api/v3/device/"
 UNIDADES = {"temp_unitid": 1, "pressure_unitid": 3, "rainfall_unitid": 12,
@@ -105,7 +106,7 @@ def ara():
     d = consulta("real_time", call_back=CAMPOS)
     t = int(d["outdoor"]["temperature"]["time"])
     temperatura = _valor(d, "outdoor", "temperature")
-    return {"hora": dt.datetime.fromtimestamp(t).astimezone().isoformat(timespec="minutes"),
+    return {"hora": H.iso_local(dt.datetime.fromtimestamp(t, H.UTC)),
             "temperatura": temperatura,
             "humitat": _valor(d, "outdoor", "humidity"),
             "rosada": _valor(d, "outdoor", "dew_point"),
@@ -129,7 +130,7 @@ def _filas(d):
     for f in filas.values():
         if "pressio" in f:
             f["pressio"] = pressio_mar(f["pressio"], f.get("temperatura"))
-    return [{"t": dt.datetime.fromtimestamp(t).astimezone(), **filas[t]} for t in sorted(filas)]
+    return [{"t": dt.datetime.fromtimestamp(t, H.UTC), **filas[t]} for t in sorted(filas)]
 
 
 def historial(inici, fi, cicle="5min"):
@@ -143,8 +144,9 @@ def historial(inici, fi, cicle="5min"):
         # si corta, espera y vuelve a probar.
         for intento in range(6):
             try:
-                d = consulta("history", start_date=a.strftime("%Y-%m-%d %H:%M:%S"),
-                             end_date=b.strftime("%Y-%m-%d %H:%M:%S"), cycle_type=cicle,
+                # L'API vol l'hora de rellotge de l'estació, la de Madrid.
+                d = consulta("history", start_date=H.local(a).strftime("%Y-%m-%d %H:%M:%S"),
+                             end_date=H.local(b).strftime("%Y-%m-%d %H:%M:%S"), cycle_type=cicle,
                              call_back="outdoor.temperature,outdoor.humidity,outdoor.dew_point,"
                                        "pressure.absolute,solar_and_uvi.solar,rainfall.rain_rate,"
                                        "rainfall.daily")
@@ -189,9 +191,9 @@ def resum_ara(ahora=None):
     """Lo que mide ahora la estación, con la lluvia de la última media hora y
     de la última hora y el cambio de presión en tres horas. Dos consultas:
     la lectura de ahora (cada minuto) y las tres últimas horas (cada cinco)."""
-    ahora = ahora or dt.datetime.now().astimezone()
+    ahora = ahora or H.ara()
     a = ara()
-    hora = dt.datetime.fromisoformat(a["hora"])
+    hora = H.llegeix(a["hora"])
     filas = historial(ahora - dt.timedelta(hours=3, minutes=15), ahora, "5min")
     if a["pluja_avui"] is not None:
         filas.append({"t": hora, "pluja_avui": a["pluja_avui"], "pressio": a["pressio"]})
@@ -265,7 +267,7 @@ def guarda_csv(filas, ruta):
 
 def lee_csv(ruta):
     with open(ruta, encoding="utf-8") as f:
-        return [{k: (dt.datetime.fromisoformat(v) if k == "t" else _num(v)) for k, v in r.items()}
+        return [{k: (H.llegeix(v) if k == "t" else _num(v)) for k, v in r.items()}
                 for r in csv.DictReader(f)]
 
 
@@ -274,9 +276,9 @@ if __name__ == "__main__":
     if orden == "ara":
         print(json.dumps(ara(), ensure_ascii=False))
     elif orden == "historial":
-        ini = dt.datetime.fromisoformat(sys.argv[2]).astimezone()
-        fin = dt.datetime.fromisoformat(sys.argv[3]).astimezone() + dt.timedelta(days=1)
-        hace = (dt.datetime.now().astimezone() - ini).days
+        ini = H.llegeix(sys.argv[2])
+        fin = H.llegeix(sys.argv[3]) + dt.timedelta(days=1)
+        hace = (H.ara() - ini).days
         filas = historial(ini, fin, "5min" if hace < TRAMOS["5min"][1] else "30min")
         guarda_csv(filas, sys.argv[4])
         print(len(filas), "lectures")

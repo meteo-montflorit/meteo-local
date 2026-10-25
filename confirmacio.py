@@ -31,7 +31,8 @@ def capcalera(text):
     """La pregunta, amb la capçalera dels altres avisos d'un programa (la
     d'avisar-juanjo): qui escriu i quan. Juanjo, 19-10-2026: «cualquier ia que
     me escriba debe identificarse de algún modo, así conozco el contexto»."""
-    return f"⚙️ Temps a Montflorit · {dt.datetime.now():%Y-%m-%d %H:%M}\n\n{text}"
+    import hora as H
+    return f"⚙️ Temps a Montflorit · {H.local(H.ara()):%Y-%m-%d %H:%M}\n\n{text}"
 
 
 def files(ruta):
@@ -110,7 +111,8 @@ def _respostes(prefix, preguntes, confirmacions, textos, camps, telegram, ara, e
     la confirmació arribi de seguida."""
     pendents = {int(p["missatge"]): p for p in files(preguntes)}
     fetes = {int(r["missatge"]) for r in files(confirmacions)}
-    if not any(m not in fetes and ara - dt.datetime.fromisoformat(p["t"]) < dt.timedelta(hours=24)
+    import hora as H
+    if not any(m not in fetes and ara - H.llegeix(p["t"]) < dt.timedelta(hours=24)
                for m, p in pendents.items()):
         return 0
     updates, cfg = telegram("getUpdates", allowed_updates=["callback_query"])
@@ -132,7 +134,7 @@ def _respostes(prefix, preguntes, confirmacions, textos, camps, telegram, ara, e
             except Exception:
                 ara_dades = {}
         afegeix(confirmacions, camps_confirmacio(camps),
-                {"missatge": m, "pregunta": p["t"], "resposta": clau, "resposta_t": ara.isoformat(timespec="minutes"),
+                {"missatge": m, "pregunta": p["t"], "resposta": clau, "resposta_t": H.clau(ara),
                  **{k: ara_dades.get(k) for k in camps}, **{f"pregunta_{k}": p.get(k) for k in camps}})
         fetes.add(m)
         n += 1
@@ -141,7 +143,7 @@ def _respostes(prefix, preguntes, confirmacions, textos, camps, telegram, ara, e
         # l'accepta, i abans això deixava el missatge sense canviar (17-10-2026).
         try:
             telegram("editMessageReplyMarkup", chat_id=cfg["chat_id"], message_id=m,
-                     reply_markup={"inline_keyboard": [[{"text": f"Apuntado a las {ara:%H:%M}: {textos.get(clau, clau)}",
+                     reply_markup={"inline_keyboard": [[{"text": f"Apuntado a las {H.local(ara):%H:%M}: {textos.get(clau, clau)}",
                                                          "callback_data": f"{prefix}:fet"}]]})
         except Exception:
             pass

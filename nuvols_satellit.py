@@ -36,6 +36,7 @@ import sys
 import urllib.request
 
 import config as C
+import hora as H
 import confirmacio as CF
 import prevision as P
 
@@ -152,7 +153,7 @@ def ultim(ruta, camp_t, ara, camp="nuvols"):
     if not fs:
         return None
     f = fs[-1]
-    t = dt.datetime.fromisoformat(f[camp_t].replace("Z", "+00:00"))
+    t = H.llegeix(f[camp_t].replace("Z", "+00:00"))
     if t.tzinfo is None:
         t = t.replace(tzinfo=P.ZONA)
     if ara - t > dt.timedelta(minutes=VIGENT_MIN) or f.get(camp) in (None, ""):
@@ -161,7 +162,7 @@ def ultim(ruta, camp_t, ara, camp="nuvols"):
 
 
 def estat(ara=None):
-    ara = ara or dt.datetime.now(P.ZONA)
+    ara = ara or H.ara()
     return {"satellit": ultim(OBSERVATS, "t", ara), "sabadell": ultim(SABADELL, "fins", ara)}
 
 
@@ -179,19 +180,19 @@ def pregunta(ara=None):
     os.makedirs(os.path.dirname(PREGUNTES) or ".", exist_ok=True)
     with open(PREGUNTES + ".lock", "w") as cadenat:
         fcntl.flock(cadenat, fcntl.LOCK_EX)
-        return _pregunta(ara or dt.datetime.now(P.ZONA))
+        return _pregunta(ara or H.ara())
 
 
 def _pregunta(ara):
-    if ara.hour not in HORES_PREGUNTA:
+    if H.hora_local(ara) not in HORES_PREGUNTA:
         return None
     e = estat(ara)
     if not discrepen(e["satellit"], e["sabadell"]):
         return None
-    fetes = [dt.datetime.fromisoformat(f["t"]) for f in files(PREGUNTES)]
+    fetes = [H.llegeix(f["t"]) for f in files(PREGUNTES)]
     if fetes and ara - fetes[-1] < dt.timedelta(hours=CADA_H):
         return None
-    if sum(f.date() == ara.date() for f in fetes) >= MAX_DIA:
+    if sum(H.dia_local(f) == H.dia_local(ara) for f in fetes) >= MAX_DIA:
         return None
     sat, sab = round(e["satellit"]), round(e["sabadell"])
     text = ("¿Cómo está el cielo sobre Montflorit ahora? El satélite lo ve "
@@ -206,7 +207,7 @@ def _pregunta(ara):
         xat = json.load(f)["chat_id"]
     r, cfg = telegram("sendMessage", chat_id=xat, text=CF.capcalera(text), reply_markup=teclat)
     CF.afegeix(PREGUNTES, ["t", "missatge"] + CAMPS,
-               {"t": ara.isoformat(timespec="minutes"), "missatge": r["message_id"], "satellit": sat, "sabadell": sab})
+               {"t": H.clau(ara), "missatge": r["message_id"], "satellit": sat, "sabadell": sab})
     return r["message_id"]
 
 
@@ -214,7 +215,7 @@ def respostes(ara=None):
     """Les respostes als botons, una vegada cadascuna, amb les dades del moment
     en què es respon."""
     return CF.respostes("cel", PREGUNTES, CONFIRMACIONS, RESPOSTES, CAMPS, telegram,
-                        ara or dt.datetime.now(P.ZONA), estat)
+                        ara or H.ara(), estat)
 
 
 def resum():

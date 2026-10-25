@@ -54,6 +54,7 @@ import tempfile
 import threading
 
 import config as C
+import hora as H
 
 ARREL = os.path.dirname(os.path.abspath(__file__))
 DIR = os.path.dirname(os.environ.get("REGISTRE_DIR", "/estat/registre"))
@@ -71,7 +72,8 @@ DIES = ("dilluns", "dimarts", "dimecres", "dijous", "divendres", "dissabte", "di
 
 
 def ara():
-    return dt.datetime.now().astimezone()
+    # L'hora de Madrid, sigui quina sigui la del sistema (ADR 0128).
+    return H.local(H.ara())
 
 
 def llegeix(ruta, defecte):
@@ -125,9 +127,10 @@ def franja_passada(text, moment):
         dia, fi = int(m.group(2)), int(m.group(4))
         # El día del mes, en los 7 días de antes o de después de hoy.
         for delta in range(-7, 8):
-            d = (moment + dt.timedelta(days=delta)).date()
+            d = H.dia_local(moment) + dt.timedelta(days=delta)
             if d.day == dia and DIES[d.weekday()] == m.group(1):
-                final = dt.datetime.combine(d, dt.time()).astimezone() + dt.timedelta(hours=fi)
+                # Hores de rellotge de Madrid (ADR 0128).
+                final = H.de_rellotge(d, fi)
                 if final <= moment:
                     res.append(m.group(0))
                 break
@@ -291,7 +294,7 @@ def toca(estat, casa, avisos, moment, problemes_regles):
                 and moment.strftime("%H:%M") < f"{int(hora[:2]) + 1:02d}{hora[2:]}":
             return f"resum {hora}"
     darrera = estat.get("darrera")
-    espera = darrera and moment - dt.datetime.fromisoformat(darrera) < dt.timedelta(minutes=C.REVISOR_MIN_MIN)
+    espera = darrera and moment - H.llegeix(darrera) < dt.timedelta(minutes=C.REVISOR_MIN_MIN)
     noves = [p for p in problemes_regles if empremta(p) not in (estat.get("regles_vistes") or {})]
     if noves and not espera:
         return "regla"
@@ -327,7 +330,7 @@ def context(casa, avisos, textos, moment, motiu, problemes_regles, resum=None, i
     # missatge de final (revisor, 21-10-2026: les creia obertes).
     fitxes = [{k: e.get(k) for k in ("clau", "inici", "nivell", "ca", "fi", "fins")}
               for e in avisos.get("historial") or []
-              if not e.get("fi") and not (e.get("fins") and dt.datetime.fromisoformat(e["fins"]) <= moment)]
+              if not e.get("fi") and not (e.get("fins") and H.llegeix(e["fins"]) <= moment)]
     enviats = [{k: a.get(k) for k in ("id", "hora", "ca")} for a in (avisos.get("avisos") or [])[-6:]]
     trossos = [f"Motiu de la revisió: {motiu}.", "",
                "## Ja informats a Juanjo (no els repeteixis si no han canviat)",
@@ -517,7 +520,7 @@ def revisa(casa_json, avisos_json, moment=None, prova=False, demana_=None, pagin
             resum = B.resum(llegeix_publiques(casa_json, avisos_json), "ca", moment, avui=moment.hour < 12)
         except Exception as ex:
             resum = f"(no s'ha pogut generar el resum: {ex})"
-    informats = [v for v in (estat.get("informats") or []) if v["hora"] > (moment - dt.timedelta(days=2)).isoformat()]
+    informats = [v for v in (estat.get("informats") or []) if H.llegeix(v["hora"]) > moment - dt.timedelta(days=2)]
     resposta, cost = (demana_ or demana)(context(casa, avisos, textos, moment, motiu, problemes_regles, resum,
                                                  [{k: v[k] for k in ("on", "que")} for v in informats]))
     problemes = resposta.get("problemes") or []
@@ -568,9 +571,9 @@ def revisa(casa_json, avisos_json, moment=None, prova=False, demana_=None, pagin
         estat["informats"] = (estat.get("informats") or []) + [
             {"on": p.get("on"), "que": p.get("que"), "hora": moment.isoformat(timespec="minutes")} for p in problemes]
         # Lo que se recuerda: dos días.
-        limit = (moment - dt.timedelta(days=2)).isoformat()
-        estat["informats"] = [v for v in estat["informats"] if v["hora"] > limit]
-        estat["preguntes"] = {k: v for k, v in preguntes.items() if v["t"] > limit}
+        limit = moment - dt.timedelta(days=2)
+        estat["informats"] = [v for v in estat["informats"] if H.llegeix(v["hora"]) > limit]
+        estat["preguntes"] = {k: v for k, v in preguntes.items() if H.llegeix(v["t"]) > limit}
         estat["regles_vistes"] = {empremta(p): moment.isoformat(timespec="minutes") for p in problemes_regles}
         estat["conclusions"] = empremta(conclusions(casa, avisos))
         estat["darrera"] = moment.isoformat(timespec="minutes")

@@ -23,6 +23,7 @@ import urllib.request
 from zoneinfo import ZoneInfo
 
 import config as C
+import hora as H
 import nowcast as N
 import moviment_registre as MR
 import ecowitt
@@ -31,29 +32,21 @@ UA = {"User-Agent": "meteo-local/" + C.VERSION}
 DIR = os.path.dirname(os.path.abspath(__file__))
 TZ = "Europe/Madrid"
 ZONA = ZoneInfo(TZ)
-AHORA = dt.datetime.now().astimezone()
+# Ara, en UTC (ADR 0128): les hores i els dies de la gent, amb H.local.
+AHORA = H.ara()
 
 
 def clau_hora(t):
-    """La hora (con zona) como texto, en hora de Madrid: «AAAA-MM-DDTHH:MM»,
-    como en todo el programa y los registros. La que se repite cuando el
-    reloj se atrasa en octubre (de 2 a 3, dos veces) lleva el desfase
-    («…T02:00+02:00» y «…T02:00+01:00»): sin él serían la misma hora."""
-    t = t.astimezone(ZONA)
-    if t.replace(fold=0).utcoffset() != t.replace(fold=1).utcoffset():
-        return t.isoformat(timespec="minutes")
-    return t.strftime("%Y-%m-%dT%H:%M")
+    """La clau d'una hora (ADR 0128): en UTC, «AAAA-MM-DDTHH:MMZ», en tot el
+    programa i els registres. Fins a la 3.201.0 era l'hora de Madrid sense
+    zona, amb el desfasament només a l'hora que es repeteix a l'octubre: es
+    llegeix igual (H.llegeix)."""
+    return H.clau(t)
 
 
 def hora_universal(t):
-    """Una clave de hora del programa («…T15:00», hora de Madrid, o
-    «…T02:00+01:00» la que se repite en octubre) o un datetime, en tiempo
-    universal."""
-    if isinstance(t, str):
-        t = dt.datetime.fromisoformat(t)
-    if t.tzinfo is None:
-        t = t.replace(tzinfo=ZONA)
-    return t.astimezone(dt.timezone.utc)
+    """Una clau d'hora del programa (de qualsevol època) o un datetime, en UTC."""
+    return H.utc(t)
 
 
 def hora_solar(t):
@@ -66,20 +59,19 @@ def hora_solar(t):
 
 
 def ordre_hora(clau):
-    """Para ordenar claves de clau_hora por el momento real: como texto,
-    «…T02:00+01:00» iría antes que «…T02:00+02:00»."""
-    return dt.datetime.fromisoformat(clau).astimezone().timestamp()
+    """Per ordenar claus pel moment real, també les d'abans de la migració."""
+    return H.utc(clau).timestamp()
 
 
 def horas_locales(resposta):
-    """Pasa a hora de Madrid las horas de una respuesta de Open-Meteo, en el
-    sitio. Open-Meteo pone a toda la serie el desfase del momento de la
-    consulta (utc_offset_seconds), no el de cada hora: el 13-10-2026, el
-    25-10 a las 22 h de invierno salía como «T23:00» (GMT+2). Las fechas
-    solas (daily) se quedan como están."""
+    """Passa a claus en UTC (clau_hora) les hores d'una resposta d'Open-Meteo,
+    al mateix lloc. Open-Meteo posa a tota la sèrie el desfasament del moment
+    de la consulta (utc_offset_seconds), no el de cada hora: el 13-10-2026, el
+    25-10 a les 22 h d'hivern sortia com «T23:00» (GMT+2). Les dates soles
+    (daily) es queden com són."""
     desfase = dt.timezone(dt.timedelta(seconds=resposta.get("utc_offset_seconds") or 0))
     local = lambda t: clau_hora(dt.datetime.fromisoformat(t).replace(tzinfo=desfase)) if t and len(t) > 10 else t
-    for bloc in ("hourly", "daily"):
+    for bloc in ("hourly", "daily", "minutely_15"):
         b = resposta.get(bloc)
         if not b:
             continue
@@ -182,7 +174,7 @@ def files_meteocat(codi, dia_utc=None, lector=None):
     s = (lector or get_recent)(url)
     t = re.search(r"<table[^>]*tblperiode.*?</table>", s, re.S)
     cab, res = None, []
-    dia_utc = dia_utc or AHORA.astimezone(dt.timezone.utc).date()
+    dia_utc = dia_utc or AHORA.astimezone(H.UTC).date()
     for f in re.findall(r"<tr.*?</tr>", t.group(0), re.S) if t else []:
         celdas = [html.unescape(re.sub("<[^>]+>", "", c)).strip()
                   for c in re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", f, re.S)]
@@ -226,7 +218,7 @@ def vent_meteocat(codi, lector=None):
         if mitja is not None:
             nom = C.ESTACIONES.get(codi, codi)
             return {"estacio": nom.split(" (")[0], "mitja": mitja, "ratxa": ratxa,
-                    "fins": (ini + dt.timedelta(minutes=30)).astimezone().isoformat(timespec="minutes")}
+                    "fins": H.iso_local(ini + dt.timedelta(minutes=30))}
     return None
 
 
@@ -239,7 +231,7 @@ def observaciones_web(codi, nom):
     return {"estacion": nom, "font": "meteo.cat",
             "mm_hoy": round(sum(mm for _, mm in filas), 1),
             "mm_ultima_media_hora": filas[-1][1],
-            "hasta": hasta.astimezone().isoformat()}
+            "hasta": H.iso_local(hasta, segons=True)}
 
 
 def observaciones_portal(codi, nom):
@@ -258,7 +250,7 @@ def observaciones_portal(codi, nom):
     return {"estacion": nom, "font": "portal de dades obertes",
             "mm_hoy": round(sum(float(f["valor_lectura"]) for f in filas), 1),
             "mm_ultima_media_hora": float(filas[-1]["valor_lectura"]),
-            "hasta": (ultima + dt.timedelta(minutes=30)).astimezone().isoformat()}
+            "hasta": H.iso_local(ultima + dt.timedelta(minutes=30), segons=True)}
 
 
 def resumen_minutal(filas, nom, font):
@@ -268,9 +260,9 @@ def resumen_minutal(filas, nom, font):
     filas = [f for f in filas if f.get("PREC") is not None]
     if not filas:
         return None
-    ultima = dt.datetime.fromisoformat(filas[-1]["dt_local"]).astimezone()
+    ultima = H.llegeix(filas[-1]["dt_local"])
     desde = ultima - dt.timedelta(minutes=30)
-    recientes = [f for f in filas if dt.datetime.fromisoformat(f["dt_local"]).astimezone() >= desde]
+    recientes = [f for f in filas if H.llegeix(f["dt_local"]) >= desde]
     mm = 0.0
     for antes, despues in zip(recientes, recientes[1:]):
         salto = despues["PREC"] - antes["PREC"]
@@ -279,7 +271,7 @@ def resumen_minutal(filas, nom, font):
             "mm_hoy": round(filas[-1]["PREC"], 1),
             "mm_ultima_media_hora": round(mm, 1),
             "intensitat": filas[-1].get("PINT"),
-            "hasta": ultima.isoformat()}
+            "hasta": H.iso_local(ultima, segons=True)}
 
 
 def observaciones():
@@ -333,7 +325,7 @@ def radar():
     # mm/h a 14,6 km y decía que la lluvia más cercana estaba a 36 km (Juanjo:
     # «por qué se actualiza cada 6 minutos si no hay ningun aviso?»).
     pluja = ara >= N.PLOU_MMH
-    res = {"hora": hora.isoformat(), "imatge": origen,
+    res = {"hora": H.iso_local(hora, segons=True), "imatge": origen,
            "km_lluvia": round(float(dist[pluja].min()), 1) if pluja.any() else None,
            "km2_50km_ahora": round(float((lluvia & cerca).sum() * r["km_px"] ** 2)),
            "km2_50km_antes": None, "nowcast": N.resum(r), "a_prop": {},
@@ -358,7 +350,7 @@ def radar():
             dy, dx = (f - fila) * r["km_px"], (c - col) * r["km_px"]
             px.append([round(float(dist[f, c]), 1), round((math.degrees(math.atan2(dx, -dy)) + 360) % 360),
                        round(float(mm[f, c]), 2)])
-        res["a_prop"][nom] = {"hora": t.isoformat(timespec="minutes"), "px": sorted(px)[:PX_A_PROP]}
+        res["a_prop"][nom] = {"hora": H.iso_local(t), "px": sorted(px)[:PX_A_PROP]}
     # Si crece: la misma comparación de siempre, con RainViewer (una hora antes).
     rv = r.get("rainviewer")
     if rv and len(rv["mm_h"]) >= 7:
@@ -418,12 +410,12 @@ def avisos():
         nivel = {"Moderate": "groc", "Severe": "taronja", "Extreme": "vermell"}.get(
             evento.split()[0], evento)
         aviso = {"zona": zona, "tipo": tipo, "nivel": nivel,
-                 "inicio": dt.datetime.fromisoformat(campo("onset")).astimezone().isoformat(),
-                 "fin": dt.datetime.fromisoformat(campo("expires")).astimezone().isoformat()}
+                 "inicio": H.iso_local(campo("onset"), segons=True),
+                 "fin": H.iso_local(campo("expires"), segons=True)}
         # El texto del aviso («Pueden ir acompañadas de granizo…») está en su
         # ficha, no en el resumen (ADR 0033).
         ficha = re.search(r'href="(https://feeds\.meteoalarm\.org/api/v1/warnings/[^"]+)"', ent)
-        if ficha and zona == C.ZONA_AVISOS and aviso["fin"] > AHORA.isoformat():
+        if ficha and zona == C.ZONA_AVISOS and H.llegeix(aviso["fin"]) > AHORA:
             try:
                 aviso["descripcio"] = descripcion_aviso(ficha.group(1))
             except Exception:
@@ -431,7 +423,7 @@ def avisos():
         res.append(aviso)
     # El feed repite entradas idénticas.
     unicos = {tuple(sorted(a.items())) for a in res}
-    return sorted((dict(t) for t in unicos), key=lambda a: (a["inicio"], a["zona"], a["tipo"]))
+    return sorted((dict(t) for t in unicos), key=lambda a: (H.utc(a["inicio"]), a["zona"], a["tipo"]))
 
 
 PLANES_PC_URL = "https://analisi.transparenciacatalunya.cat/resource/wj9c-j6vf.json"
@@ -497,7 +489,7 @@ PLA_AVIS_H = 24
 def data_fase(text):
     """«08/10/2026 17:14» (hora local) de los datos de Protección Civil."""
     try:
-        return dt.datetime.strptime(text, "%d/%m/%Y %H:%M").astimezone()
+        return dt.datetime.strptime(text, "%d/%m/%Y %H:%M").replace(tzinfo=ZONA)
     except (TypeError, ValueError):
         return None
 
@@ -537,9 +529,9 @@ def pla_per_temps(p, avisos_, ahora=None, smp=None):
            for a in avisos_ or []):
         return True
     hores = set()
-    h = ahora.astimezone().replace(minute=0, second=0, microsecond=0)
+    h = H.utc(ahora).replace(minute=0, second=0, microsecond=0)
     while h < limit:
-        hores.add(f"{h.date().isoformat()}:{h.hour}")
+        hores.add(SMP.clau_hora(h))
         h += dt.timedelta(hours=1)
     return any(SMP.fenomen(m["meteor"]) in motiu and hores & SMP.hores_avis(m)
                for m in (smp or {}).get("avisos") or [])
@@ -555,8 +547,7 @@ def motivos_modo_aviso(avisos_, planes, obs, radar_, smp=None):
     Meteocat cuenta aunque AEMET no tenga ninguno (Juanjo, 16-10-2026)."""
     import smp as SMP
     res = []
-    hora = AHORA.astimezone()
-    if any(f"{hora.date().isoformat()}:{hora.hour}" in SMP.hores_avis(m)
+    if any(SMP.clau_hora(AHORA) in SMP.hores_avis(m)
            for m in (smp or {}).get("avisos") or []):
         res.append("avís del Meteocat")
     if any(a["zona"] == C.ZONA_AVISOS
@@ -598,7 +589,7 @@ if __name__ == "__main__":
             d[clave] = funcion()
         except Exception as ex:
             errores.append(f"{clave}: {ex}")
-    print(f"Recollit {AHORA.isoformat(timespec='minutes')}")
+    print(f"Recollit {H.iso_local(AHORA)}")
     for error in errores:
         print("  fallo:", error)
     for a in d.get("avisos") or []:

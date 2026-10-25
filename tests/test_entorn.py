@@ -42,7 +42,7 @@ class Fonts(unittest.TestCase):
         parats = {}
         r = EN.incendis(d, collserola=lambda y, x: True, parats=parats, ara=ARA)
         self.assertEqual(sorted(i["id"] for i in r), ["amb-vehicles", "nou"])
-        self.assertEqual(parats, {"parat": (ARA - dt.timedelta(hours=4)).isoformat(timespec="minutes")})
+        self.assertEqual(parats, {"parat": EN.H.clau(ARA - dt.timedelta(hours=4))})
 
     def test_nomes_els_que_interessen_al_barri(self):
         # ADR 0071 (Juanjo, 16-10-2026): Collserola a qualsevol distància i,

@@ -126,7 +126,8 @@ T = {
 
 
 def ara():
-    return dt.datetime.now().astimezone()
+    # L'hora de Madrid, sigui quina sigui la del sistema (ADR 0128).
+    return dt.datetime.now(ZONA)
 
 
 def llegeix(ruta, defecte):
@@ -685,17 +686,23 @@ def text_pluja(tram, idioma, icona=True, avis=None):
 COMPARA_MIN = 2
 
 
+def _rellotge(clau):
+    """La clau en hora de rellotge de Madrid, sense zona: «2026-10-25T07:00»
+    (les dades porten el desfasament, ADR 0128)."""
+    return hora_local(clau).strftime("%Y-%m-%dT%H:%M")
+
+
 def _dia_abans(clau):
-    return (dt.datetime.fromisoformat(clau) - dt.timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
+    return (hora_local(clau) - dt.timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
 
 
 def compara_temp(dades, files, nit=False):
     """Grados de diferencia (redondeados) entre lo previsto en «files» y las
     mismas horas del día antes; None si falta algún dato."""
-    mesurada = dades.get("temperatura_mesurada")
+    mesurada = {_rellotge(k): v for k, v in (dades.get("temperatura_mesurada") or {}).items()}
     if not mesurada or not files:
         return None
-    previstes = {f["hora"]: f for f in dades.get("hores") or []}
+    previstes = {_rellotge(f["hora"]): f for f in dades.get("hores") or []}
     abans, ara = [], []
     for f in files:
         a, b = mesurada.get(_dia_abans(f["hora"])), mesurada.get(_dia_abans(f["fins"]))
@@ -1234,7 +1241,8 @@ def _dia_bus(d, idioma):
 
 
 def hores_parada(hores, des, idioma):
-    futures = [h for h in (dt.datetime.fromisoformat(x) for x in hores) if h >= des]
+    # En hora de Madrid sense zona, com des (ADR 0128).
+    futures = [h for h in (hora_local(x) for x in hores) if h >= des]
     properes = [h for h in futures if h <= des + dt.timedelta(hours=2)][:2]
     if properes:
         return (" y " if idioma == "es" else " i ").join(_hora_bus(h) for h in properes)
@@ -1251,8 +1259,8 @@ def linia_incidencia_bus(inc, des, idioma):
     titol = (inc.get("titol") or {}).get(idioma) or (inc.get("titol") or {}).get("ca") or ""
     url = (inc.get("url") or {}).get(idioma) or (inc.get("url") or {}).get("ca")
     text = enllac(url, titol) if url else html.escape(titol, quote=False)
-    inici = inc.get("inici") and dt.datetime.fromisoformat(inc["inici"])
-    fi = inc.get("fi") and dt.datetime.fromisoformat(inc["fi"])
+    inici = inc.get("inici") and hora_local(inc["inici"])
+    fi = inc.get("fi") and hora_local(inc["fi"])
     if inici and inici > des:
         quan = (f", a partir de las {_hora_bus(inici)}" if es else f", a partir de les {_hora_bus(inici)}") \
             if inici.date() == des.date() else \
@@ -1279,7 +1287,7 @@ def text_busos_bot(dades, idioma, moment):
     for l in busos["linies"]:
         files = [f"<b>{html.escape(l['linia'])}</b> {html.escape(l.get('nom', ''))}"]
         for inc in busos.get("incidencies") or []:
-            fi = inc.get("fi") and dt.datetime.fromisoformat(inc["fi"])
+            fi = inc.get("fi") and hora_local(inc["fi"])
             if l["linia"] in inc.get("linies", []) and not (fi and fi < des):
                 files.append(linia_incidencia_bus(inc, des, idioma))
         for s in l.get("sentits") or []:
@@ -1289,7 +1297,7 @@ def text_busos_bot(dades, idioma, moment):
             files.append(enllac(l["horari"], "Horario completo (PDF)" if es else "Horari complet (PDF)"))
         blocs.append("\n".join(files))
     if busos.get("temps_real_de"):
-        h = dt.datetime.fromisoformat(busos["temps_real_de"]).strftime("%H:%M")
+        h = hora_local(busos["temps_real_de"]).strftime("%H:%M")
         peu = (f"<i>Hora de llegada estimada, con datos del AMB de las {h}.</i>" if es
                else f"<i>Hora d'arribada estimada, amb dades de l'AMB de les {h}.</i>")
     else:
@@ -1337,7 +1345,7 @@ def text_transit_bot(dades, idioma, moment):
     if not files:
         files = ["Ninguna incidencia a menos de 5\u00a0km de Montflorit." if es
                  else "Cap incidència a menys de 5\u00a0km de Montflorit."]
-    h = dt.datetime.fromisoformat(transit["hora"]).strftime("%H:%M") if transit.get("hora") else "?"
+    h = hora_local(transit["hora"]).strftime("%H:%M") if transit.get("hora") else "?"
     return (f"<b>{cap}</b>\n" + "\n".join(files) + "\n"
             + enllac(TRANSIT.format("es" if es else "ca"), f"Servei Català de Trànsit, {h}"))
 
@@ -1426,7 +1434,7 @@ def text_llum_bot(dades, idioma, moment):
         files.append(NOTA_CARRERS["es" if es else "ca"])
     else:
         files = ["Ningún corte de luz en Montflorit." if es else "Cap tall de llum a Montflorit."]
-    h = dt.datetime.fromisoformat(llum["hora"]).strftime("%H:%M") if llum.get("hora") else "?"
+    h = hora_local(llum["hora"]).strftime("%H:%M") if llum.get("hora") else "?"
     return (f"<b>{cap}</b>\n" + "\n".join(files) + "\n"
             + enllac(MAPA_LLUM.format("es" if es else "ca"), ("Mapa de e-distribución" if es else "Mapa d'e-distribució") + f", {h}")
             # El cercador només llista els municipis amb talls programats els 7 dies
@@ -1439,7 +1447,7 @@ def text_llum_bot(dades, idioma, moment):
 # --- Sol, aire i pol·len (ADR 0054) -------------------------------------------------
 
 def hm(iso):
-    return dt.datetime.fromisoformat(iso).strftime("%H:%M")
+    return hora_local(iso).strftime("%H:%M")
 
 
 UV_NIVELLS = ((2, "baix", "bajo"), (5, "moderat", "moderado"), (7, "alt", "alto"), (10, "molt alt", "muy alto"),
@@ -1615,7 +1623,7 @@ def text_radar_bot(dades, idioma, moment):
     r = dades.get("radar")
     if not r:
         return "Ahora no hay datos del radar." if idioma == "es" else "Ara no hi ha dades del radar."
-    h = lambda t: dt.datetime.fromisoformat(t).strftime("%H:%M")
+    h = lambda t: hora_local(t).strftime("%H:%M")
     es = idioma == "es"
     # El que es mesura mana, com a la web: si ja plou, «pluja a sobre», amb
     # l'hora en què pararia si el radar la veu (ADR 0049).
@@ -1792,7 +1800,7 @@ def blocs_entorn(entorn, idioma):
     blocs = []
     focs = []
     for i in entorn.get("incendis") or []:
-        h = dt.datetime.fromisoformat(i["inici"]).strftime("%H:%M") if i.get("inici") else "?"
+        h = hora_local(i["inici"]).strftime("%H:%M") if i.get("inici") else "?"
         dist = f", a {str(i['km']).replace('.', ',')} km de Montflorit" if i.get("km") is not None else ""
         # Dins del parc, dit clarament (Juanjo, 11-10-2026; ADR 0071).
         lloc = ((f"dentro del Parque de Collserola ({i['municipi']})" if es else

@@ -9,7 +9,8 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import casa  # noqa: E402
 
-H = {"time": ["2026-10-21T18:00", "2026-10-21T19:00", "2026-10-21T20:00"],
+# Les 18, les 19 i les 20 de Madrid, com les dona prevision.horas_locales (ADR 0128).
+H = {"time": ["2026-10-21T16:00Z", "2026-10-21T17:00Z", "2026-10-21T18:00Z"],
      "pressure_msl_meteofrance_seamless": [1019.0, 1020.0, 1022.0]}
 
 

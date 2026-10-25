@@ -42,7 +42,8 @@ def pollen():
         return PO.llegeix(ca.read(), es.read())
 
 
-HORES = [f"2026-10-09T{h:02d}:00" for h in range(24)]
+# Les claus, en UTC com les dona prevision.horas_locales (ADR 0128).
+HORES = [__import__("prevision").clau_hora(f"2026-10-09T{h:02d}:00") for h in range(24)]
 # Hora a hora d'avui, del model (µg/m³): el NO₂ puja al vespre.
 AIRE = {"hourly": {"time": HORES,
                    "nitrogen_dioxide": [20.0] * 19 + [40.0, 70.0, 80.0, 60.0, 50.0],
@@ -101,11 +102,12 @@ class Aire(unittest.TestCase):
         a = AI.llegeix(AIRE, ARA, corr)
         # 11:40: el NO₂ de 20 passa a 10 (índex 20); l'ozó, sense corregir, 50 µg/m³ (índex 17).
         self.assertEqual((a["hora"], a["index"], a["contaminant"], a["corregit"]),
-                         ("2026-10-09T11:00", 20, "nitrogen_dioxide", True))
-        self.assertEqual(a["pitjor"], {"hora": "2026-10-09T21:00", "index": 49, "categoria": "regular"})
+                         ("2026-10-09T09:00Z", 20, "nitrogen_dioxide", True))      # les 11 de Madrid
+        self.assertEqual(a["pitjor"], {"hora": "2026-10-09T19:00Z", "index": 49, "categoria": "regular"})
         sense = AI.llegeix(AIRE, ARA)
         self.assertEqual((sense["index"], sense["corregit"]), (33, False))
-        t = B.text_aire_bot({"generat": ARA.isoformat(), "aire": a}, "ca", ARA)
+        # El bot llegeix les dades publicades, amb l'hora de Madrid (ADR 0128).
+        t = B.text_aire_bot(__import__("hora").publica({"generat": ARA.isoformat(), "aire": a}), "ca", ARA)
         self.assertIn("Ara: bona (índex europeu 20).", t)
         self.assertIn("El pitjor d'avui: regular cap a les 21:00.", t)
         self.assertIn("no mesurada a Montflorit; NO₂, corregits amb les mesures", t)

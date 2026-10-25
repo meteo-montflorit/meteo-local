@@ -15,6 +15,7 @@ import json
 import sys
 
 import config as C
+import hora as H
 
 
 def leer_horario(ruta, por_defecto):
@@ -22,7 +23,7 @@ def leer_horario(ruta, por_defecto):
         with open(ruta, encoding="utf-8") as f:
             datos = json.load(f)
         # Solo vale el horario de hoy: el modo aviso de ayer no cuenta.
-        if datos["generat"][:10] == dt.date.today().isoformat():
+        if H.dia_local(datos["generat"]) == H.dia_local(H.ara()):
             return datos["horari"]
     except (OSError, ValueError, KeyError, TypeError):
         pass

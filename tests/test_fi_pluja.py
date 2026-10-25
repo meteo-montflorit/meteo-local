@@ -102,9 +102,9 @@ class Final(unittest.TestCase):
               "llocs": {"casa": [{"min": 5 * k, "prob": p} for k, p in enumerate([1, 1, 0.9, 0.1, 0.1, 0.1, 0.0])]}}
         with tempfile.TemporaryDirectory() as d:
             F.REGLA = os.path.join(d, "fi-pluja.json")
-            self.assertEqual(F.fi_radar(nc, t("19:00", 8)), {"fi": "2026-10-08T19:15+02:00", "sense_fi": False})
+            self.assertEqual(F.fi_radar(nc, t("19:00", 8)), {"fi": "2026-10-08T17:15Z", "sense_fi": False})
             # La pluja encara no ha arribat: el final es busca des que arriba.
-            self.assertEqual(F.fi_radar(nc, t("18:40", 8), "2026-10-08T19:20+02:00")["fi"], "2026-10-08T19:20+02:00")
+            self.assertEqual(F.fi_radar(nc, t("18:40", 8), "2026-10-08T19:20+02:00")["fi"], "2026-10-08T17:20Z")
             self.assertTrue(F.fi_radar({**nc, "llocs": {"casa": [{"min": 0, "prob": 1}] * 4}}, t("19:00", 8))["sense_fi"])
             self.assertIsNone(F.fi_radar(None, t("19:00", 8)))
 

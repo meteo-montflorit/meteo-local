@@ -44,6 +44,7 @@ import sys
 import numpy as np
 
 import config as C
+import hora as H
 import prevision as P
 import remostreig as R
 import sol_estacio
@@ -354,12 +355,22 @@ def resum_pagina(model):
 
 # --- Datos propios ----------------------------------------------------------------------
 
+def _en_utc(text):
+    """Una línia de casa-AAAA-MM.jsonl amb «emes» i cada «fins» en UTC (ADR
+    0128), també les d'abans de la migració."""
+    linea = json.loads(text)
+    linea["emes"] = H.clau(linea["emes"])
+    linea["hores"] = [{**h, "fins": H.clau(h["fins"])} for h in linea.get("hores") or []]
+    return linea
+
+
 def _llegeix(nom):
     ruta = os.path.join(REGISTRE, nom)
     if not os.path.exists(ruta):
         return {}
     with open(ruta, encoding="utf-8") as f:
-        return {r["fins"]: r for r in csv.DictReader(f)}
+        # En UTC, també les files d'abans de la migració (ADR 0128).
+        return {H.clau(r["fins"]): {**r, "fins": H.clau(r["fins"])} for r in csv.DictReader(f)}
 
 
 def _num(x):
@@ -479,7 +490,7 @@ def mostres():
     res = []
     for arxiu in sorted(glob.glob(os.path.join(REGISTRE, "casa-*.jsonl"))):
         with open(arxiu, encoding="utf-8") as f:
-            for linea in map(json.loads, f):
+            for linea in map(_en_utc, f):
                 ara_casa = linea.get("ara_casa") or {}
                 plujas = [x for x in (ara_casa.get("pluja_1h"),) if x is not None]
                 for h in linea["hores"]:
@@ -789,7 +800,7 @@ def apunta_historial_humitat(avui, model):
 
 
 def diari(avui=None, avisa=True):
-    avui = avui or dt.date.today().isoformat()
+    avui = avui or H.dia_local(H.ara()).isoformat()
     os.makedirs(DIR, exist_ok=True)
     # Qué radar acierta más en casa (radar_fonts.py, ADR 0026).
     try:
@@ -1021,7 +1032,7 @@ def ratxa_observada(vent, fins):
     """La racha máxima de la estación del viento (C.VENT_ESTACIO) en la hora que
     acaba en fins: las dos medias horas (vent-mitges-hores.csv)."""
     import prevision as P
-    t = dt.datetime.fromisoformat(fins).astimezone()
+    t = H.utc(fins)
     vals = [_num((vent.get(P.clau_hora(t - dt.timedelta(minutes=m))) or {}).get(f"{C.VENT_ESTACIO}_ratxa"))
             for m in (0, 30)]
     vals = [v for v in vals if v is not None]
@@ -1032,22 +1043,22 @@ def verifica_sortir(ahora=None):
     """Apunta en sortir.csv, de cada hora pasada que aún no esté, lo que mostró
     la página (al salir y la vuelta decidida por la mañana) y lo que se midió:
     lluvia, racha y temperatura. Devuelve cuántas horas ha añadido."""
-    ahora = ahora or dt.datetime.now().astimezone()
+    ahora = ahora or H.ara()
     if os.path.exists(MOTO_VELL):                 # sustituido por sortir.csv (ADR 0068)
         os.remove(MOTO_VELL)
     fetes = set()
     if os.path.exists(SORTIR):
         with open(SORTIR, encoding="utf-8") as f:
-            fetes = {(r["fins"], r["termini"]) for r in csv.DictReader(f)}
+            fetes = {(H.clau(r["fins"]), r["termini"]) for r in csv.DictReader(f)}
     casa, meteocat, vent = _llegeix("estacio-casa.csv"), _meteocat(), _llegeix("vent-mitges-hores.csv")
     veines = _veines()
     millor = {}
     for arxiu in sorted(glob.glob(os.path.join(REGISTRE, "casa-*.jsonl"))):
         with open(arxiu, encoding="utf-8") as f:
-            for linea in map(json.loads, f):
+            for linea in map(_en_utc, f):
                 for idx, h in enumerate(linea["hores"]):
                     # Sin el aviso registrado (antes del 08-10-2026) no se sabe qué dijo.
-                    if not h.get("mostrat") or h.get("avis_pluja") is None or int(h["fins"][11:13]) not in HORES_SORTIR:
+                    if not h.get("mostrat") or h.get("avis_pluja") is None or H.hora_local(h["fins"]) not in HORES_SORTIR:
                         continue
                     for termini, (a, b) in TERMINIS_SORTIR.items():
                         clau = (h["fins"], termini)
@@ -1057,7 +1068,7 @@ def verifica_sortir(ahora=None):
                                             pluja_3h([x.get("mostrat") or {} for x in linea["hores"]], idx))
     noves = []
     for (fins, termini), (emes, h, mm3) in sorted(millor.items()):
-        if (fins, termini) in fetes or dt.datetime.fromisoformat(fins).astimezone() > ahora:
+        if (fins, termini) in fetes or H.utc(fins) > ahora:
             continue
         obs = observada(casa, meteocat, veines, fins)
         ratxa_obs, temp_obs = ratxa_observada(vent, fins), _num((casa.get(fins) or {}).get("temperatura"))
@@ -1119,7 +1130,7 @@ def resum_sortir():
         files = list(csv.DictReader(f))
     if not files:
         return None
-    dies = sorted({r["fins"][:10] for r in files})
+    dies = sorted({H.dia_local(r["fins"]).isoformat() for r in files})
     res = {"dies": len(dies), "des_de": dies[0], "fins": dies[-1], "mitjans": {}}
     llindars = llindars_sortir()
     for mitja in MITJANS_SORTIR:

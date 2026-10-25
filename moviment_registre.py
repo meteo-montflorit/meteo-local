@@ -39,6 +39,7 @@ import os
 import sys
 
 import config as C
+import hora as H
 import nowcast as N
 
 REGISTRE = os.environ.get("REGISTRE_DIR", "/estat/registre")
@@ -88,7 +89,7 @@ def apunta(r, nc, ara=None):
     import numpy as np
     if not os.path.isdir(REGISTRE):
         return 0
-    ara = ara or dt.datetime.now().astimezone()
+    ara = ara or H.ara()
     os.makedirs(TROSSOS, exist_ok=True)
     fila, col = N.pixel(C.CASA[0], C.CASA[1], r["tx"], r["ty"])
     k = r["km_px"]
@@ -105,16 +106,18 @@ def apunta(r, nc, ara=None):
     zona = np.hypot(yy, xx) * k <= AVALUA_KM
     files = []
     for radar, hora, camp in imatges:
-        ruta = os.path.join(TROSSOS, f"{radar}-{hora:%Y%m%d%H%M}.npz")
+        # El nom, amb l'hora en UTC: la nit d'octubre, les dues imatges de les
+        # 2:30 tenien el mateix nom (ADR 0128).
+        ruta = os.path.join(TROSSOS, f"{radar}-{H.utc(hora):%Y%m%d%H%M}Z.npz")
         ara_t = tros(camp, fila, col, n)
         if not os.path.exists(ruta):
-            np.savez_compressed(ruta, mm=ara_t, km_px=k, hora=hora.isoformat(),
+            np.savez_compressed(ruta, mm=ara_t, km_px=k, hora=H.clau(hora),
                                 v=np.array(v if v else (np.nan, np.nan)), font=font if v else "cap")
         vista = (ara_t >= N.PLOU_MMH * 10) & zona
         for antelacio in ANTELACIONS:
             for vell in glob.glob(os.path.join(TROSSOS, f"{radar}-*.npz")):
                 d = np.load(vell)
-                hora_v = dt.datetime.fromisoformat(str(d["hora"]))
+                hora_v = H.llegeix(str(d["hora"]))
                 minuts = (hora - hora_v).total_seconds() / 60
                 if abs(minuts - antelacio) > MARGE_MIN or ja_avaluat(radar, hora_v, antelacio):
                     continue
@@ -129,7 +132,7 @@ def apunta(r, nc, ara=None):
                 prevista, quieta = prevista & zona, antiga & zona
                 if vista.sum() < PX_MIN and prevista.sum() < PX_MIN and quieta.sum() < PX_MIN:
                     continue
-                files.append({"emes": hora_v.isoformat(timespec="minutes"), "radar": radar,
+                files.append({"emes": H.clau(hora_v), "radar": radar,
                               "antelacio_min": antelacio, "font_moviment": str(d["font"]), "kmh": kmh,
                               "graus": graus, "csi_moviment": csi(prevista, vista), "csi_quieta": csi(quieta, vista),
                               "px_vista": int(vista.sum()), "px_prevista": int(prevista.sum()),
@@ -175,8 +178,8 @@ def ja_avaluat(radar, hora, antelacio):
         _avaluats = set()
         if os.path.exists(FITXER):
             with open(FITXER, encoding="utf-8") as f:
-                _avaluats = {(x["radar"], x["emes"], int(x["antelacio_min"])) for x in csv.DictReader(f)}
-    clau = (radar, hora.isoformat(timespec="minutes"), antelacio)
+                _avaluats = {(x["radar"], H.clau(x["emes"]), int(x["antelacio_min"])) for x in csv.DictReader(f)}
+    clau = (radar, H.clau(hora), antelacio)
     if clau in _avaluats:
         return True
     _avaluats.add(clau)
@@ -191,11 +194,17 @@ def neteja(ara):
 
 def vent_700(dies, get):
     """El viento a 700 hPa en casa, hora a hora, de Open-Meteo (previsión
-    histórica): {«AAAA-MM-DDTHH»: (km/h, grados de donde viene)}."""
+    histórica): {«AAAA-MM-DDTHH» en UTC: (km/h, grados de donde viene)}. En
+    UTC (timezone=GMT): con la hora de Madrid, Open-Meteo ponía a toda la serie
+    el desfase del día de la consulta, y los casos de la otra mitad del año
+    salían una hora desplazados (ADR 0128). Un día más a cada lado, porque los
+    días de dies son de UTC."""
     lat, lon = C.CASA
     url = ("https://historical-forecast-api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
-           "&hourly=wind_speed_700hPa,wind_direction_700hPa&start_date={ini}&end_date={fi}&timezone=Europe%2FMadrid")
-    h = json.loads(get(url.format(lat=lat, lon=lon, ini=min(dies), fi=max(dies))))["hourly"]
+           "&hourly=wind_speed_700hPa,wind_direction_700hPa&start_date={ini}&end_date={fi}&timezone=GMT")
+    ini = (dt.date.fromisoformat(min(dies)) - dt.timedelta(days=1)).isoformat()
+    fi = (dt.date.fromisoformat(max(dies)) + dt.timedelta(days=1)).isoformat()
+    h = json.loads(get(url.format(lat=lat, lon=lon, ini=ini, fi=fi)))["hourly"]
     return {t[:13]: (s, d) for t, s, d in zip(h["time"], h["wind_speed_700hPa"], h["wind_direction_700hPa"])
             if s is not None and d is not None}
 
@@ -226,13 +235,13 @@ def resum(get=None):
         return
     try:
         import prevision as P
-        vent = vent_700({x["emes"][:10] for x in amb}, get or P.get)
+        vent = vent_700({H.clau(x["emes"])[:10] for x in amb}, get or P.get)
     except Exception as ex:
         print(f"\nSense el vent a 700 hPa: {ex}")
         return
     difs, rati = [], []
     for x in amb:
-        w = vent.get(x["emes"][:13])
+        w = vent.get(H.clau(x["emes"])[:13])
         if not w or w[0] < 5:
             continue
         cap = (w[1] + 180) % 360

@@ -35,6 +35,7 @@ import re
 import urllib.request
 
 import config as C
+import hora as H
 
 URL = "https://www.meteo.cat/prediccio/general"
 DIES = {"ca": ("dilluns", "dimarts", "dimecres", "dijous", "divendres", "dissabte", "diumenge"),
@@ -146,16 +147,19 @@ TIPUS = {"avís vigilància": "observacio", "avís d'observació": "observacio",
 def hores(inici, fi):
     """Un aviso de observación, de «2026-10-17T13:20Z» a «…T15:00Z», en
     franjas de hora local: {"2026-10-17": [(15, 17)]} (la hora de inicio, por
-    abajo; la de fin, por arriba)."""
-    t0 = dt.datetime.fromisoformat(inici.replace("Z", "+00:00")).astimezone()
-    t1 = dt.datetime.fromisoformat(fi.replace("Z", "+00:00")).astimezone()
+    abajo; la de fin, por arriba). Los días, de medianoche a medianoche de
+    Madrid, calculados en UTC (ADR 0128): el día del cambio de hora tiene 23 o
+    25 horas."""
+    t0, t1 = H.utc(inici), H.utc(fi)
     res = {}
-    t = t0.replace(minute=0, second=0, microsecond=0)
-    while t < t1:
-        f = min(t1, (t + dt.timedelta(days=1)).replace(hour=0))
-        fi_h = 24 if f.date() > t.date() else f.hour + (1 if f.minute or f.second else 0)
-        res.setdefault(t.date().isoformat(), []).append((t.hour, fi_h))
-        t = (t + dt.timedelta(days=1)).replace(hour=0)
+    dia = H.dia_local(t0)
+    while H.mitjanit(dia) < t1:
+        ini, fin = max(t0, H.mitjanit(dia)), min(t1, H.mitjanit(dia + dt.timedelta(days=1)))
+        if ini < fin:
+            lf = H.local(fin)
+            fi_h = 24 if fin == H.mitjanit(dia + dt.timedelta(days=1)) else lf.hour + (1 if lf.minute or lf.second else 0)
+            res.setdefault(dia.isoformat(), []).append((H.local(ini).hour, fi_h))
+        dia += dt.timedelta(days=1)
     return res
 
 
@@ -174,8 +178,7 @@ def hora_local(iso):
     """«2026-10-10T08:09Z» → «10:09» (hora de Montflorit)."""
     if not iso:
         return None
-    t = dt.datetime.fromisoformat(iso.replace("Z", "+00:00"))
-    return t.astimezone().strftime("%H:%M")
+    return H.local(iso).strftime("%H:%M")
 
 
 def quan(dies, idioma):
@@ -238,14 +241,27 @@ def fenomen(meteor):
 
 
 def hores_avis(a):
-    """Les hores que cobreix un avís de Meteocat: {"AAAA-MM-DD:H", …}, hora local."""
-    return {f"{d}:{h}" for d, franges in a["dies"].items() for i, fi in franges for h in range(i, fi)}
+    """Les hores que cobreix un avís de Meteocat, com a claus en UTC de l'inici
+    de cada hora (clau_hora, ADR 0128). Les franges de l'avís són d'hora de
+    Madrid: la nit d'octubre, «de 2 a 3» són dues hores, i la de març no n'hi
+    ha cap."""
+    res = set()
+    for d, franges in a["dies"].items():
+        dia = dt.date.fromisoformat(d)
+        for i, fi in franges:
+            for h in range(i, fi):
+                for fold in (0, 1):
+                    t = dt.datetime.combine(dia, dt.time(h), tzinfo=H.ZONA).replace(fold=fold)
+                    # Una hora que no existeix (la de març) no torna igual.
+                    if H.local(H.utc(t)).replace(tzinfo=None) == t.replace(tzinfo=None):
+                        res.add(clau_hora(t))
+    return res
 
 
 def _hores_aemet(a):
-    """L'inici de cada hora d'un avís de l'AEMET, en hora local, en ordre."""
-    t = dt.datetime.fromisoformat(a["inicio"]).astimezone().replace(minute=0, second=0, microsecond=0)
-    fi = dt.datetime.fromisoformat(a["fin"]).astimezone()
+    """L'inici de cada hora d'un avís de l'AEMET, en UTC, en ordre."""
+    t = H.utc(a["inicio"]).replace(minute=0, second=0, microsecond=0)
+    fi = H.utc(a["fin"])
     res = []
     while t < fi:
         res.append(t)
@@ -254,7 +270,8 @@ def _hores_aemet(a):
 
 
 def clau_hora(t):
-    return f"{t.date().isoformat()}:{t.hour}"
+    """La clau de l'hora que comença en t (en UTC; ADR 0128)."""
+    return H.clau(H.utc(t).replace(minute=0, second=0, microsecond=0))
 
 
 def hores_aemet(a):
@@ -325,8 +342,7 @@ def graus_pluja(ini, smp):
     aprendizaje (ADR 0097). None sin lectura de Meteocat."""
     if smp is None:
         return None
-    t = ini.astimezone()
-    hora = f"{t.date().isoformat()}:{t.hour}"
+    hora = clau_hora(ini)
     return [a["perill"] for a in smp.get("avisos") or []
             if fenomen(a["meteor"]) in ("pluja", "temps_violent") and hora in hores_avis(a)]
 
@@ -336,9 +352,9 @@ def per_hora(ini, fin, smp):
     [{nivell (groc, taronja, vermell), tipus: [fenomen], font}]."""
     res = {}
     hores = set()
-    t = ini.astimezone().replace(minute=0, second=0, microsecond=0)
-    while t < fin:
-        hores.add(f"{t.date().isoformat()}:{t.hour}")
+    t = H.utc(ini).replace(minute=0, second=0, microsecond=0)
+    while t < H.utc(fin):
+        hores.add(clau_hora(t))
         t += dt.timedelta(hours=1)
     for a in (smp or {}).get("avisos") or []:
         if hores & hores_avis(a):
@@ -353,7 +369,7 @@ def pendents(avisos, ahora):
     franges ja passades: el diumenge 18-10-2026 la fitxa de «Perill» encara
     deia «Observat ara» i les hores del dissabte (Juanjo: «no está una parte
     ya pasada?»)."""
-    ara = ahora.astimezone()
+    ara = H.local(ahora)
     avui, h = ara.date().isoformat(), ara.hour
     res = []
     for a in avisos:
@@ -394,8 +410,9 @@ def per_fenomen(avisos, ahora=None):
             dies = {}
             for hora, nh in h.items():
                 if nh == n:
-                    d, hh = hora.split(":")
-                    dies.setdefault(d, []).append((int(hh), int(hh) + 1))
+                    # Les franges, en hora de Madrid (per mostrar).
+                    lh = H.local(hora)
+                    dies.setdefault(lh.date().isoformat(), []).append((lh.hour, lh.hour + 1))
             res.append({"fenomen": f, "nivell": n,
                         "dies": {d: [list(x) for x in junta(sorted(fr))] for d, fr in sorted(dies.items())},
                         "ca": f"Meteocat: avís de perill {GRAU['ca'][n]} per {nca} al {nom}",
@@ -445,7 +462,7 @@ def episodis_api(ahora, clau=None, baixa=baixa_api, cache=CACHE_API):
     clau = clau or clau_api()
     if not clau:
         raise ValueError("sense clau de l'API de Meteocat")
-    llista = json.loads(baixa(URL_API.format(ahora.date().isoformat()), clau))
+    llista = json.loads(baixa(URL_API.format(H.utc(ahora).date().isoformat()), clau))
     if not isinstance(llista, list):
         raise ValueError("l'API de Meteocat no torna la llista d'episodis")
     try:
@@ -478,8 +495,8 @@ def llegeix(get, ahora, api=episodis_api):
     textos, solo con lo que queda), fenomens (el resumen por fenómeno)} y, si
     se ha leído de la API, falla_pagina (por qué no se ha podido de la página)."""
     avisos, falla = avisos_de(get, ahora, api)
-    hora = ahora.strftime("%H:%M")
-    res = {"hora": ahora.isoformat(timespec="minutes"), "avisos": avisos,
+    hora = H.local(ahora).strftime("%H:%M")
+    res = {"hora": H.iso_local(ahora), "avisos": avisos,
            "linies": textos(pendents(avisos, ahora), hora),
            "fenomens": per_fenomen(avisos, ahora)}
     if falla:
@@ -493,7 +510,7 @@ def comprova(get, marca, avisa=True, api=episodis_api):
     vez a Juanjo, y otra cuando vuelve. Desde la 3.87.0 lo mismo se mira en
     cada pasada (avisos_bot.py), con la misma marca, y se le dice en el momento."""
     try:
-        _, error = avisos_de(get, dt.datetime.now().astimezone(), api)
+        _, error = avisos_de(get, H.ara(), api)
         reserva = error is not None
     except Exception as ex:
         error, reserva = str(ex) or type(ex).__name__, False

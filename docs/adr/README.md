@@ -129,5 +129,6 @@
 | [0125](0125-el-acierto-de-la-parte-alta.md) | El acierto de la parte alta | aceptado |
 | [0126](0126-el-cielo-tapado-segun-el-satelite-en-observacion.md) | El cielo tapado según el satélite, en observación | aceptado |
 | [0127](0127-la-luna.md) | La Luna: la fase en «Ara» y en la gráfica, y sus datos en «Sol i lluna» | aceptado |
+| [0128](0128-la-hora-en-utc-por-dentro.md) | La hora, en UTC por dentro y en hora de Madrid solo en la frontera | aceptado |
 
 Plantilla: [0000-plantilla.md](0000-plantilla.md). Para crear uno: `nuevo-adr "Título"`.

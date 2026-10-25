@@ -38,6 +38,7 @@ import os
 import sys
 
 import config as C
+import hora as H
 import confirmacio as CF
 import nuvols as NV
 import prevision as P
@@ -48,26 +49,28 @@ CAMPS = ["emes", "fins", "antelacio_h", "codi", "visibilitat"]
 HORES = 12
 CADA_MIN = 50
 URL = ("https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
-       "&hourly=weather_code,visibility&models=icon_seamless&timezone=Europe%2FMadrid&forecast_hours=13")
+       "&hourly=weather_code,visibility&models=icon_seamless&timezone=GMT&forecast_hours=13")
 CODIS_BOIRA = (45, 48)
 
 
 def apunta(ara=None, get=None):
     """Lo que dice ICON para las próximas horas; una vez por hora como mucho."""
-    ara = ara or dt.datetime.now(P.ZONA)
+    ara = ara or H.ara()
     if os.path.exists(FITXER):
         with open(FITXER, encoding="utf-8") as f:
             ultima = list(csv.DictReader(f))[-1:] or [None]
-        if ultima[0] and ara - dt.datetime.fromisoformat(ultima[0]["emes"]) < dt.timedelta(minutes=CADA_MIN):
+        if ultima[0] and ara - H.llegeix(ultima[0]["emes"]) < dt.timedelta(minutes=CADA_MIN):
             return 0
     lat, lon = C.CASA
     h = json.loads((get or P.get)(URL.format(lat=lat, lon=lon)))["hourly"]
     files = []
     for t, codi, vis in zip(h["time"], h["weather_code"], h["visibility"]):
-        fins = dt.datetime.fromisoformat(t).replace(tzinfo=P.ZONA)
+        # En UTC (timezone=GMT): amb l'hora de Madrid, Open-Meteo posava a tota
+        # la sèrie el desfasament del moment de la consulta (ADR 0128).
+        fins = dt.datetime.fromisoformat(t).replace(tzinfo=H.UTC)
         antelacio = (fins - ara).total_seconds() / 3600
         if 0 < antelacio <= HORES:
-            files.append({"emes": ara.isoformat(timespec="minutes"), "fins": P.clau_hora(fins),
+            files.append({"emes": H.clau(ara), "fins": P.clau_hora(fins),
                           "antelacio_h": round(antelacio, 2), "codi": codi, "visibilitat": vis})
     nou = not os.path.exists(FITXER)
     with open(FITXER, "a", newline="", encoding="utf-8") as f:
@@ -153,15 +156,15 @@ def pregunta(ara=None, casa_json=CASA_JSON):
 
 
 def _pregunta(ara, casa_json):
-    ara = ara or dt.datetime.now(P.ZONA)
-    if ara.hour not in HORES_PREGUNTA:
+    ara = ara or H.ara()
+    if H.hora_local(ara) not in HORES_PREGUNTA:
         return None
     c = (json.load(open(casa_json, encoding="utf-8")).get("ara_casa") or {})
     hum = c.get("humitat_estacio", c.get("humitat"))
     if hum is None or hum < HUMITAT_PREGUNTA or c.get("plou"):
         return None
     ultima = CF.files(PREGUNTES)[-1:]
-    if ultima and ara - dt.datetime.fromisoformat(ultima[0]["t"]) < dt.timedelta(hours=CADA_H):
+    if ultima and ara - H.llegeix(ultima[0]["t"]) < dt.timedelta(hours=CADA_H):
         return None
     sabadell = ""
     try:
@@ -175,7 +178,7 @@ def _pregunta(ara, casa_json):
     teclat = {"inline_keyboard": [[{"text": t, "callback_data": f"boira:{k}"} for k, t in RESPOSTES.items()]]}
     r, cfg = telegram("sendMessage", chat_id=json.load(open(CONFIG_BOT))["chat_id"], text=CF.capcalera(text), reply_markup=teclat)
     CF.afegeix(PREGUNTES, ["t", "missatge", "humitat", "sabadell"],
-             {"t": ara.isoformat(timespec="minutes"), "missatge": r["message_id"], "humitat": hum,
+             {"t": H.clau(ara), "missatge": r["message_id"], "humitat": hum,
               "sabadell": int(bool(sabadell))})
     return r["message_id"]
 
@@ -187,7 +190,7 @@ def estat(casa_json=None):
         c = json.load(f).get("ara_casa") or {}
     res = {"humitat": c.get("humitat_estacio", c.get("humitat")), "sabadell": None}
     try:
-        res["sabadell"] = int(bool(NV.boira_ara(NV.llegeix(P.get), dt.datetime.now(P.ZONA))))
+        res["sabadell"] = int(bool(NV.boira_ara(NV.llegeix(P.get), H.ara())))
     except Exception:
         pass
     return res
@@ -197,7 +200,7 @@ def respostes(ara=None):
     """Las respuestas a los botones, una vez cada una, en boira-confirmacions.csv,
     con los datos del momento en que se responde."""
     return CF.respostes("boira", PREGUNTES, CONFIRMACIONS, RESPOSTES, ["humitat", "sabadell"], telegram,
-                        ara or dt.datetime.now(P.ZONA), estat)
+                        ara or H.ara(), estat)
 
 
 if __name__ == "__main__":

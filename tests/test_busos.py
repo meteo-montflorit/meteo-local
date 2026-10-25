@@ -91,18 +91,19 @@ class Linies(unittest.TestCase):
 
     def test_sense_temps_real_hores_de_l_horari(self):
         linies = BU.linies(self.hor, {}, MITJANIT + 8 * 3600)
-        self.assertEqual(self.parada(linies, "Flor de Maig", BU.BANDERES), ["2026-10-22T09:00", "2026-10-22T10:00"])
-        self.assertEqual(self.parada(linies, "Canaletes", "Canaletes - Av. Flor de Maig"), ["2026-10-22T14:00"])
+        # Les claus, en UTC (ADR 0128): les 9 i les 10 de Madrid.
+        self.assertEqual(self.parada(linies, "Flor de Maig", BU.BANDERES), ["2026-10-22T07:00Z", "2026-10-22T08:00Z"])
+        self.assertEqual(self.parada(linies, "Canaletes", "Canaletes - Av. Flor de Maig"), ["2026-10-22T12:00Z"])
 
     def test_el_temps_real_mana_i_el_retard_passa_a_les_parades_que_no_porta(self):
         real = {"508.1": {"201243": MITJANIT + 9 * 3600 + 300}}  # 5 minuts tard a la primera
         linies = BU.linies(self.hor, real, MITJANIT + 8 * 3600)
-        self.assertEqual(self.parada(linies, "Flor de Maig", BU.BANDERES)[0], "2026-10-22T09:05")
-        self.assertEqual(self.parada(linies, "Flor de Maig", "Av. Flor de Maig - Pl. Olivé"), ["2026-10-22T09:08"])
+        self.assertEqual(self.parada(linies, "Flor de Maig", BU.BANDERES)[0], "2026-10-22T07:05Z")
+        self.assertEqual(self.parada(linies, "Flor de Maig", "Av. Flor de Maig - Pl. Olivé"), ["2026-10-22T07:08Z"])
 
     def test_els_busos_que_ja_han_passat_no_surten(self):
         linies = BU.linies(self.hor, {}, MITJANIT + 9 * 3600 + 30 * 60)
-        self.assertEqual(self.parada(linies, "Flor de Maig", BU.BANDERES), ["2026-10-22T10:00"])
+        self.assertEqual(self.parada(linies, "Flor de Maig", BU.BANDERES), ["2026-10-22T08:00Z"])
 
 
 class TempsReal(unittest.TestCase):
@@ -130,7 +131,7 @@ class Incidencies(unittest.TestCase):
         feed = self.avis("508", inici, fi) + self.avis("999", inici, fi)
         incs = BU.incidencies(feed, rutes, MITJANIT + 12 * 3600)
         self.assertEqual(incs, [{"linies": ["CV1"], "titol": {"ca": "Desviament", "es": "Desvío"},
-                                 "url": {"ca": "https://amb/avis"}, "inici": "2026-10-20T08:00", "fi": "2026-10-23T23:59"}])
+                                 "url": {"ca": "https://amb/avis"}, "inici": "2026-10-20T06:00Z", "fi": "2026-10-23T21:59Z"}])
 
     def test_les_acabades_no_surten(self):
         rutes = BU.horari(ZIP, [DIA])["rutes"]

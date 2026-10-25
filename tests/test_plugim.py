@@ -89,9 +89,9 @@ class Confirmacio(unittest.TestCase):
         self.assertEqual(PG.respostes(tard), 0)
         fila = __import__("confirmacio").files(PG.CONFIRMACIONS)[0]
         self.assertEqual((fila["resposta"], fila["resposta_t"], fila["meteocat"], fila["plugim"]),
-                         ("si", tard.isoformat(timespec="minutes"), "5", "0"))
+                         ("si", __import__("hora").clau(tard), "5", "0"))
         self.assertEqual((fila["pregunta"], fila["pregunta_meteocat"], fila["pregunta_plugim"]),
-                         (ARA.isoformat(timespec="minutes"), "31", "1"))
+                         (__import__("hora").clau(ARA), "31", "1"))
         edit = [p for m, p in self.crides if m == "editMessageReplyMarkup"][0]
         self.assertEqual(edit["reply_markup"]["inline_keyboard"][0][0]["text"], "Apuntado a las 19:25: Sí, llueve")
 

@@ -70,10 +70,13 @@ def episodis(moments, plou, buit_h=EPISODI_BUIT_H):
     episodi. moments: l'hora observada de cada cas (ISO); plou: si hi va
     ploure."""
     import datetime as dt
-    hores = sorted({m for m, p in zip(moments, plou) if p})
+    import hora as H
+    # Per moment de debò i amb zona (ADR 0128): la nit del canvi d'hora, una
+    # clau amb desfasament i una sense feien caure l'aprenentatge.
+    hores = sorted({m for m, p in zip(moments, plou) if p}, key=H.utc)
     de, k, anterior = {}, 0, None
     for h in hores:
-        t = dt.datetime.fromisoformat(h)
+        t = H.utc(h)
         if anterior is None or t - anterior > dt.timedelta(hours=buit_h):
             k += 1
         de[h], anterior = k, t

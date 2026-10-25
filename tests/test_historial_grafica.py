@@ -12,6 +12,7 @@ import unittest
 ARREL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ARREL)
 import historial as H  # noqa: E402
+import hora as HR  # noqa: E402
 
 
 class Historial(unittest.TestCase):
@@ -55,7 +56,8 @@ class Historial(unittest.TestCase):
         # La temperatura del tram és la mitjana de les lectures de les 9 (24 °C) i
         # de les 10 (15 °C), que és el que anuncia la previsió (auditoria del
         # 18-10-2026: abans es comparava amb la lectura del final).
-        self.assertEqual((f["hora"], f["temperatura"]), ("2026-10-16T09:00", 19.5))
+        # Les claus, en UTC (ADR 0128); els registres d'abans, en hora de Madrid, s'entenen igual.
+        self.assertEqual((f["hora"], f["temperatura"]), ("2026-10-16T07:00Z", 19.5))
         self.assertIsNone(d["hores"][0]["temperatura"])     # de 0 a 1: sense lectura de les 0
         # Les hores tocades pel sol porten la marca; les altres, no.
         self.assertTrue(d["hores"][12].get("sol") and d["hores"][13].get("sol"))
@@ -173,7 +175,7 @@ class Historial(unittest.TestCase):
                 {"clau": "prealerta:INUNCAT", "inici": "2026-10-16T07:10+02:00", "nivell": "prealerta",
                  "fi": "2026-10-16T09:30+02:00"}]}, f)
         d = next(x for x in H.tots(dt.date(2026, 10, 17), reg, avisos=avisos) if x["dia"] == dia)
-        h = {f["hora"][11:13]: f for f in d["hores"]}
+        h = {HR.local(f["hora"]).strftime("%H"): f for f in d["hores"]}
         aemet = {"font": "aemet", "nivell": "groc", "tipus": ["tempestes"]}
         pre = {"font": "pc", "nivell": "groc", "tipus": ["INUNCAT"], "fase": "prealerta"}
         alerta = {"font": "pc", "nivell": "taronja", "tipus": ["INUNCAT"], "fase": "alerta"}
@@ -311,8 +313,8 @@ class Historial(unittest.TestCase):
         # Una previsió oficial llegida a les 7:20: es compara amb la de la web de
         # les 7:03 (a menys de 35 minuts). De 9 a 10, 2 h d'antelació; l'oficial
         # diu 18 i 20 °C a les 9 i a les 10 (19 de mitjana) i la mesura és 19,5.
-        oficial = {"t": {f"2026-10-16T{h:02d}:00": (18.0 if h == 9 else 20.0) for h in range(8, 24)},
-                   "mm": {f"2026-10-16T{h:02d}:00": 0.0 for h in range(8, 24)}}
+        oficial = {"t": {HR.clau(f"2026-10-16T{h:02d}:00"): (18.0 if h == 9 else 20.0) for h in range(8, 24)},
+                   "mm": {HR.clau(f"2026-10-16T{h:02d}:00"): 0.0 for h in range(8, 24)}}
         s = dt.datetime(2026, 10, 16, 7, 20, tzinfo=H.P.ZONA)
         emes = H.emissions(self.dir.name)
         comp = H.comparacio(self.dies, emes, {"aemet": [(s, oficial)]})

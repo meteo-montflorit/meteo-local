@@ -88,8 +88,9 @@ class Ecotop(unittest.TestCase):
             with open(E.FITXER) as f:
                 files = f.read().splitlines()
             self.assertEqual(len(files), 2)
-            self.assertTrue(files[1].startswith("2026-10-19T16:20+02:00,2026-10-19T16:30+02:00,2026-10-19T16:45+02:00,10,"))
-            self.assertTrue(os.path.exists(os.path.join(E.TROSSOS, "GLD-202610191620.png")))
+            # En UTC (ADR 0128): les 16:20 de Madrid són les 14:20Z.
+            self.assertTrue(files[1].startswith("2026-10-19T14:20Z,2026-10-19T14:30Z,2026-10-19T14:45Z,10,"))
+            self.assertTrue(os.path.exists(os.path.join(E.TROSSOS, "GLD-202610191420Z.png")))
 
 
 if __name__ == "__main__":

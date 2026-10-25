@@ -24,6 +24,8 @@ import os
 import subprocess
 import sys
 
+import hora as H
+
 DIR = os.path.dirname(os.environ.get("REGISTRE_DIR", "/estat/registre"))
 PENDENTS = os.path.join(DIR, "avisos-pendents.jsonl")
 ORDRE = os.environ.get("AVISAR_JUANJO", "avisar-juanjo")
@@ -32,7 +34,7 @@ VIGENCIA_MIN = 180
 
 
 def ara_():
-    return dt.datetime.now().astimezone()
+    return H.ara()
 
 
 def _executa(text, assumpte):
@@ -70,8 +72,8 @@ def envia(text, assumpte=ASSUMPTE, vigencia_min=VIGENCIA_MIN, ara=None):
         return True
     ara = ara or ara_()
     llista = pendents()
-    llista.append({"hora": ara.isoformat(timespec="minutes"),
-                   "fins": (ara + dt.timedelta(minutes=vigencia_min)).isoformat(timespec="minutes"),
+    llista.append({"hora": H.clau(ara),
+                   "fins": H.clau(ara + dt.timedelta(minutes=vigencia_min)),
                    "assumpte": assumpte, "text": text})
     _desa(llista)
     return False
@@ -86,7 +88,7 @@ def reintenta(ara=None):
     ara = ara or ara_()
     entregats, caducats, queden = [], [], []
     for p in llista:
-        if dt.datetime.fromisoformat(p["fins"]) < ara:
+        if H.llegeix(p["fins"]) < ara:
             caducats.append(p)
         elif _executa(p["text"], p["assumpte"]):
             entregats.append(p)
@@ -101,9 +103,9 @@ if __name__ == "__main__":
     if ordre == "reintenta":
         entregats, caducats, queden = reintenta()
         for p in entregats:
-            print(f"aviso privado entregado al reintentar (de las {p['hora'][11:16]}): {p['text'][:80]}")
+            print(f"aviso privado entregado al reintentar (de las {H.local(p['hora']):%H:%M}): {p['text'][:80]}")
         for p in caducats:
-            print(f"aviso privado caducado sin entregar (de las {p['hora'][11:16]}): {p['text'][:80]}")
+            print(f"aviso privado caducado sin entregar (de las {H.local(p['hora']):%H:%M}): {p['text'][:80]}")
         if queden:
             print(f"{len(queden)} aviso(s) privado(s) pendiente(s) de entregar")
     elif ordre == "estat":

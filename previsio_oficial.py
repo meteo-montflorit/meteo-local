@@ -41,6 +41,7 @@ import os
 import sys
 import urllib.request
 
+import hora as H
 import prevision as P
 
 REGISTRE = os.environ.get("REGISTRE_DIR", "/estat/registre")
@@ -98,7 +99,7 @@ def llegeix_meteocat(text):
                 valor = _num(x.get("valor"))
                 if valor is None or not x.get("data"):
                     continue
-                hora = dt.datetime.fromisoformat(x["data"].replace("Z", "+00:00"))
+                hora = H.llegeix(x["data"].replace("Z", "+00:00"))
                 desti[P.clau_hora(hora)] = valor
     if not t:
         raise ValueError("Meteocat no torna temperatures")
@@ -137,7 +138,7 @@ def llegeix_aemet(text):
         raise ValueError("AEMET no torna temperatures")
     elaborat = d.get("elaborado")
     if elaborat:
-        elaborat = P.clau_hora(dt.datetime.fromisoformat(elaborat).replace(tzinfo=P.ZONA))
+        elaborat = P.clau_hora(H.llegeix(elaborat))   # sense zona: hora de Madrid
     return {"elaborat": elaborat, "t": t, "mm": mm, "p6": p6}
 
 
@@ -177,16 +178,16 @@ def reserva_en_us(ara, cache=CACHE_SMP):
 
 def toca(estat, font, ara, cada_min):
     ultima = (estat.get(font) or {}).get("llegit")
-    return not ultima or ara - dt.datetime.fromisoformat(ultima) >= dt.timedelta(minutes=cada_min) - dt.timedelta(seconds=90)
+    return not ultima or ara - H.llegeix(ultima) >= dt.timedelta(minutes=cada_min) - dt.timedelta(seconds=90)
 
 
 def apunta(ara=None, consultes=None, reserva=reserva_en_us):
     """Consulta las fuentes que toca y las apunta. Devuelve lo hecho, por fuente."""
-    ara = ara or dt.datetime.now(P.ZONA)
+    ara = ara or H.ara()
     consultes = consultes or {"meteocat": lambda: consulta_meteocat(clau("meteocat", "METEOCAT_API_KEY")),
                               "aemet": lambda: consulta_aemet(clau("aemet", "AEMET_API_KEY"))}
     estat = _llegeix_estat()
-    mes = ara.strftime("%Y-%m")
+    mes = H.local(ara).strftime("%Y-%m")
     fet = {}
     for font, cada in (("meteocat", METEOCAT_CADA_MIN), ("aemet", AEMET_CADA_MIN)):
         e = estat.setdefault(font, {})
@@ -199,11 +200,11 @@ def apunta(ara=None, consultes=None, reserva=reserva_en_us):
                 fet[font] = "saltada"
                 continue
             e["consultes"] += 1
-        e["llegit"] = ara.isoformat(timespec="minutes")
+        e["llegit"] = H.clau(ara)
         try:
             dades = consultes[font]()
         except Exception as ex:          # que una fuente no pare la otra ni la publicación
-            e["error"] = f"{ara.isoformat(timespec='minutes')} {str(ex)[:200] or type(ex).__name__}"
+            e["error"] = f"{H.iso_local(ara)} {str(ex)[:200] or type(ex).__name__}"
             fet[font] = "error"
             continue
         e.pop("error", None)
@@ -236,10 +237,13 @@ def registre(carpeta=None):
                 llista = res.setdefault(e.get("font"), [])
                 if e.get("repetit"):
                     if llista:
-                        llista.append((dt.datetime.fromisoformat(e["llegit"]), llista[-1][1]))
+                        llista.append((H.llegeix(e["llegit"]), llista[-1][1]))
                     continue
-                llista.append((dt.datetime.fromisoformat(e["llegit"]),
-                               {"t": e.get("t") or {}, "mm": e.get("mm") or {}, "p6": e.get("p6") or {}}))
+                # Les claus, en UTC també les d'abans de la migració (ADR 0128).
+                hores = lambda d: {H.clau(k): v for k, v in (d or {}).items()}  # noqa: E731
+                llista.append((H.llegeix(e["llegit"]),
+                               {"t": hores(e.get("t")), "mm": hores(e.get("mm")),
+                                "p6": {H.clau(k): [H.clau(v[0]), v[1]] for k, v in (e.get("p6") or {}).items()}}))
     for llista in res.values():
         llista.sort(key=lambda x: x[0])
     return res
@@ -253,7 +257,7 @@ def estat():
         canvis = sum(1 for i, (_, d) in enumerate(llista) if i == 0 or d is not llista[i - 1][1])
         linia = f"{font}: {len(llista)} consultes, {canvis} amb previsió nova"
         if llista:
-            linia += f"; la primera, {llista[0][0]:%d-%m %H:%M}; l'última, {llista[-1][0]:%d-%m %H:%M}"
+            linia += f"; la primera, {H.local(llista[0][0]):%d-%m %H:%M}; l'última, {H.local(llista[-1][0]):%d-%m %H:%M}"
         if font == "meteocat" and e.get(font, {}).get("mes"):
             linia += f"; aquest mes, {e[font].get('consultes', 0)} de {METEOCAT_MES}"
         if (e.get(font) or {}).get("error"):

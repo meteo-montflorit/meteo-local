@@ -17,7 +17,6 @@ son recientes; si falta alguna, el resumen sale solo con texto.
 
   python3 grafica_imatge.py montflorit.json CARPETA   las cuatro, en CARPETA
 """
-import datetime as dt
 import html as html_mod
 import json
 import os
@@ -28,6 +27,8 @@ import sys
 import tempfile
 
 from PIL import Image, ImageChops
+
+import hora as H
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.join(AQUI, "web")
@@ -64,7 +65,7 @@ def credits(dades, idioma):
     pega no sale la web… breve pero suficiente para saber lo que es»): qué es,
     de dónde, de cuándo y dónde verla; y que lo oficial manda, con la frase de
     «Perill»."""
-    g = dt.datetime.fromisoformat(dades["generat"])
+    g = H.local(dades["generat"])
     mes = MESOS[idioma][g.month - 1]
     if idioma == "es":
         quan = f"previsión del {DIES['es'][g.weekday()]} {g.day} de {mes}, {g:%H:%M}"

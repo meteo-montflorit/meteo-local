@@ -9,7 +9,13 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import casa  # noqa: E402
+import hora as H  # noqa: E402
 import prevision as P  # noqa: E402
+
+
+def local(t):
+    """Una clau (UTC) en hora de Madrid sense zona, per comparar."""
+    return H.local(t).strftime("%Y-%m-%dT%H:%M")
 
 
 def guarda(datos):
@@ -36,7 +42,8 @@ class PrevisioAnterior(unittest.TestCase):
         antes = {"generat": "2026-10-05T19:27+02:00",
                  "hores": [fila("2026-10-05T19:00"), fila("2026-10-05T20:00"), fila("2026-10-05T21:00")]}
         r = casa.previsio_anterior(guarda(antes), [], {"plou": True})
-        self.assertEqual([f["fins"] for f in r["hores"]], ["2026-10-05T20:00", "2026-10-05T21:00"])
+        # La previsió publicada (sense zona, d'abans de la 3.201.0) passa a claus en UTC.
+        self.assertEqual([f["fins"] for f in r["hores"]], ["2026-10-05T18:00Z", "2026-10-05T19:00Z"])
         self.assertEqual(r["previsio_de"], "2026-10-05T19:27+02:00")
         # Llueve ahora: la primera hora lo dice, aunque la previsión no lo viera.
         self.assertTrue(r["hores"][0]["plou_ara"])
@@ -62,12 +69,12 @@ class TemperaturaDelTram(unittest.TestCase):
         # les 18 i les 19 (abans, la de les 19).
         import config as C
         desde = dt.datetime(2026, 10, 7, 18, 3).astimezone()
-        h = {"time": [f"2026-10-07T{x:02d}:00" for x in range(24)],
+        h = {"time": [P.clau_hora(f"2026-10-07T{x:02d}:00") for x in range(24)],
              "temperature_2m_meteofrance_seamless": [float(x) for x in range(24)]}
         for m in C.MODELOS_FINOS:
             h[f"precipitation_{m}"] = [0.0] * 24
         files = casa.previsio(desde, h, {}, [])
-        self.assertEqual([(f["hora"][11:16], f["temperatura"]) for f in files[:2]],
+        self.assertEqual([(local(f["hora"])[11:16], f["temperatura"]) for f in files[:2]],
                          [("18:00", 18.5), ("19:00", 19.5)])
 
     def test_el_radar_nomes_marca_l_hora_amb_un_20_per_cent(self):
@@ -76,7 +83,7 @@ class TemperaturaDelTram(unittest.TestCase):
         import config as C
         import nowcast as N
         desde = dt.datetime(2026, 10, 18, 15, 3).astimezone()
-        h = {"time": [f"2026-10-18T{x:02d}:00" for x in range(24)],
+        h = {"time": [P.clau_hora(f"2026-10-18T{x:02d}:00") for x in range(24)],
              "temperature_2m_meteofrance_seamless": [17.0] * 24}
         for m in C.MODELOS_FINOS:
             h[f"precipitation_{m}"] = [0.0] * 24
@@ -95,7 +102,7 @@ class TemperaturaDelTram(unittest.TestCase):
         # a les 21 h de demà, i acaba sempre amb un tram (matí, tarda o nit).
         import config as C
         t0 = dt.datetime(2026, 10, 9, 0)
-        temps = [(t0 + dt.timedelta(hours=x)).strftime("%Y-%m-%dT%H:%M") for x in range(72)]
+        temps = [P.clau_hora((t0 + dt.timedelta(hours=x)).strftime("%Y-%m-%dT%H:%M")) for x in range(72)]
         h = {"time": temps, "temperature_2m_meteofrance_seamless": [15.0] * 72}
         for m in C.MODELOS_FINOS:
             h[f"precipitation_{m}"] = [0.0] * 72
@@ -113,7 +120,7 @@ class TemperaturaDelTram(unittest.TestCase):
                              (dt.datetime(2026, 10, 9, 0, 30), "2026-10-10T21:00", 45),
                              (dt.datetime(2026, 10, 9, 5, 30), "2026-10-10T21:00", 40)):
             files = casa.previsio(minut.astimezone(), h, {}, [])
-            self.assertEqual((files[-1]["fins"], len(files)), (fi, n))
+            self.assertEqual((local(files[-1]["fins"]), len(files)), (fi, n))
 
 
 class SantCugatAlPreveure(unittest.TestCase):

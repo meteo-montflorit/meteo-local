@@ -61,7 +61,7 @@ def obs(hhmm, tot, temp=12.0, vent=1, dia="2026-10-10"):
 class Veines(unittest.TestCase):
     def test_lectures_amb_la_forma_de_les_d_ecowitt(self):
         f = W.files([obs("04:05", 0.5), obs("04:00", 0.0)])
-        self.assertEqual([x["t"].strftime("%H:%M") for x in f], ["06:00", "06:05"])   # ordenades, hora local
+        self.assertEqual([W.H.local(x["t"]).strftime("%H:%M") for x in f], ["06:00", "06:05"])   # ordenades, hora local
         self.assertEqual(f[1]["pluja_avui"], 0.5)
         self.assertEqual((f[1]["temperatura"], f[1]["humitat"], f[1]["rosada"]), (12.0, 90, 11.0))
         self.assertEqual((f[1]["pressio"], f[1]["vent"], f[1]["ratxa"]), (1018.1, 1, 2))

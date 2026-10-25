@@ -38,8 +38,9 @@ class Registre(unittest.TestCase):
                     self.assertEqual(R.rehaz_pluja_casa(dt.datetime(2026, 10, 8, 20, 0, tzinfo=tz)), 1)
                 with open(R.ESTACIO_CASA) as f:
                     filas = f.read().splitlines()
-                self.assertEqual(filas[1], "2026-10-06T21:00,3.5,20.1,99,19.9,1015,0")
-                self.assertEqual(filas[2], "2026-10-06T22:00,5.6,19.8,99,19.6,1014.7,0")
+                # El fitxer d'abans, en hora de Madrid, queda migrat a UTC (ADR 0128).
+                self.assertEqual(filas[1], "2026-10-06T19:00Z,3.5,20.1,99,19.9,1015,0")
+                self.assertEqual(filas[2], "2026-10-06T20:00Z,5.6,19.8,99,19.6,1014.7,0")
                 self.assertEqual(len([n for n in os.listdir(d) if ".bak-pluja-" in n]), 1)
             finally:
                 R.ESTACIO_CASA = vell
@@ -135,7 +136,7 @@ class Registre(unittest.TestCase):
                 with open(os.path.join(d, "veina-ICERDA6.csv")) as f:
                     linies = f.read().splitlines()
                 self.assertEqual(linies[0], "fins,pluja_mm,temperatura,humitat,rosada,pressio,vent,ratxa")
-                self.assertEqual(linies[1], "2026-10-05T07:00,1.0,17.5,90.0,16.5,1010.0,5,10")
+                self.assertEqual(linies[1], "2026-10-05T05:00Z,1.0,17.5,90.0,16.5,1010.0,5,10")
                 self.assertTrue(R.falta_ahir_veina("ICERDA6", ara))       # falta la de 23 a 24
                 R.apunta_veina("ICERDA6", {dt.datetime(2026, 10, 6, 0, 0, tzinfo=TZ): {"pluja_mm": 0.0, "temperatura": 15.0}})
                 self.assertFalse(R.falta_ahir_veina("ICERDA6", ara))
@@ -153,10 +154,10 @@ class Registre(unittest.TestCase):
                                          dt.datetime(2026, 10, 5, 9, 0, tzinfo=TZ): 0.5})
                 with open(os.path.join(d, "meteocat-XV.csv")) as f:
                     self.assertEqual(f.read().splitlines(),
-                                     ["fins,pluja_mm", "2026-10-05T09:00,0.5", "2026-10-05T10:00,1.2"])
+                                     ["fins,pluja_mm", "2026-10-05T07:00Z,0.5", "2026-10-05T08:00Z,1.2"])
                 R.apunta_casa_5min({lectura("00:05", 0)["t"]: 0.24})
                 with open(R.ESTACIO_CASA_5MIN) as f:
-                    self.assertEqual(f.read().splitlines(), ["fins,pluja_mm", "2026-10-05T00:05,0.2"])
+                    self.assertEqual(f.read().splitlines(), ["fins,pluja_mm", "2026-10-04T22:05Z,0.2"])
             finally:
                 R.DIR, R.ESTACIO_CASA_5MIN = vell
 
@@ -170,8 +171,8 @@ class VeinesCincMinuts(unittest.TestCase):
         # Una columna per veïna (ADR 0102); una passada en què falta una estació
         # conserva el que tenia apuntat.
         with tempfile.TemporaryDirectory() as d:
-            vell = R.VEINES_5MIN
-            R.VEINES_5MIN = os.path.join(d, "veines-5min.csv")
+            vell = R.VEINES_5MIN, R.DIR
+            R.VEINES_5MIN, R.DIR = os.path.join(d, "veines-5min.csv"), d
             try:
                 fin = dt.datetime(2026, 10, 5, 20, 10, tzinfo=TZ)
                 R.apunta_veines_5min({"ICERDA6": {fin: 0.2}, "ICERDA18": {fin: 0.0}, "ALTRA": {fin: 9}})
@@ -179,10 +180,10 @@ class VeinesCincMinuts(unittest.TestCase):
                 import csv
                 with open(R.VEINES_5MIN, encoding="utf-8") as f:
                     files = list(csv.DictReader(f))
-                self.assertEqual(files[0]["fins"], "2026-10-05T20:10")
+                self.assertEqual(files[0]["fins"], "2026-10-05T18:10Z")
                 self.assertEqual((files[0]["ICERDA6"], files[0]["ICERDA18"], files[0]["ICERDA28"]), ("0.3", "0.0", ""))
                 self.assertEqual((files[1]["ICERDA6"], files[1]["ICERDA18"]), ("0.1", ""))
                 self.assertNotIn("ALTRA", files[0])
             finally:
-                R.VEINES_5MIN = vell
+                R.VEINES_5MIN, R.DIR = vell
 

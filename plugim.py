@@ -23,7 +23,7 @@ import os
 import sys
 
 import confirmacio as CF
-import prevision as P
+import hora as H
 
 REGISTRE = os.environ.get("REGISTRE_DIR", "/estat/registre")
 PREGUNTES = os.path.join(REGISTRE, "plugim-preguntes.csv")
@@ -64,14 +64,14 @@ def pregunta(ara=None, casa_json=CASA_JSON):
 
 
 def _pregunta(ara, casa_json):
-    ara = ara or dt.datetime.now(P.ZONA)
-    if ara.hour not in HORES_PREGUNTA:
+    ara = ara or H.ara()
+    if H.hora_local(ara) not in HORES_PREGUNTA:
         return None
     casa = json.load(open(casa_json, encoding="utf-8"))
     if not (casa.get("pluja_ara") or {}).get("plugim"):
         return None
     ultima = CF.files(PREGUNTES)[-1:]
-    if ultima and ara - dt.datetime.fromisoformat(ultima[0]["t"]) < dt.timedelta(hours=CADA_H):
+    if ultima and ara - H.llegeix(ultima[0]["t"]) < dt.timedelta(hours=CADA_H):
         return None
     px = estat(casa_json)
     text = ("¿Llueve en casa ahora? Los dos radares ven lluvia muy débil encima del barrio "
@@ -80,7 +80,7 @@ def _pregunta(ara, casa_json):
     teclat = {"inline_keyboard": [[{"text": t, "callback_data": f"plugim:{k}"} for k, t in RESPOSTES.items()]]}
     r, cfg = telegram("sendMessage", chat_id=json.load(open(CONFIG_BOT))["chat_id"], text=CF.capcalera(text), reply_markup=teclat)
     CF.afegeix(PREGUNTES, ["t", "missatge"] + CAMPS,
-               {"t": ara.isoformat(timespec="minutes"), "missatge": r["message_id"], **{k: px.get(k) for k in CAMPS}})
+               {"t": H.clau(ara), "missatge": r["message_id"], **{k: px.get(k) for k in CAMPS}})
     return r["message_id"]
 
 
@@ -88,7 +88,7 @@ def respostes(ara=None):
     """Les respostes als botons, una vegada cadascuna, a plugim-confirmacions.csv,
     amb les dades del moment en què es respon."""
     return CF.respostes("plugim", PREGUNTES, CONFIRMACIONS, RESPOSTES, CAMPS, telegram,
-                        ara or dt.datetime.now(P.ZONA), estat)
+                        ara or H.ara(), estat)
 
 
 def resum():

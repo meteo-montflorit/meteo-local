@@ -123,7 +123,7 @@ class Ara(unittest.TestCase):
         v = VV.ara(veines, self.model, ahora=t("14:36"))
         self.assertEqual((v["font"], v["estacions"]), ("veines", ["ICERDA18"]))
         self.assertAlmostEqual(v["mitja"], 10.0, delta=0.5)
-        self.assertEqual(v["fins"], t("14:35").isoformat(timespec="minutes"))
+        self.assertEqual(v["fins"], VV.H.clau(t("14:35")))
 
     def test_sense_lectures_recents_ni_model(self):
         veines = [{"estacio": "ICERDA18", "files": lectures(t("12:00"), 6, 5.0)}]

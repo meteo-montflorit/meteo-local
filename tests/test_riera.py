@@ -490,7 +490,8 @@ class Previsio(unittest.TestCase):
         ecmwf = [None] * len(hores)                                      # sense dades
         p = RI.previsio_models(hores, {"meteofrance_arome_france_hd": arome, "icon_eu": icon, "ecmwf_ifs": ecmwf}, ara)
         self.assertEqual((p["model_max"], p["mm_3h_max"], p["nivell"]), ("meteofrance_arome_france_hd", 23.1, "possible"))
-        self.assertEqual((p["finestra_3h"]["ini"][11:16], p["finestra_3h"]["fi"][11:16]), ("16:00", "19:00"))
+        hm = lambda t: __import__("hora").local(t).strftime("%H:%M")  # noqa: E731
+        self.assertEqual((hm(p["finestra_3h"]["ini"]), hm(p["finestra_3h"]["fi"])), ("16:00", "19:00"))
         self.assertAlmostEqual(p["mm_3h_mitjana"], round(23.1 / 2, 1), places=1)     # dos models amb dades
         self.assertEqual(p["per_model"], {"meteofrance_arome_france_hd": 23.1, "icon_eu": 0.0})
         self.assertEqual(p["models"], ["meteofrance_arome_france_hd", "icon_eu"])
@@ -515,10 +516,10 @@ class Previsio(unittest.TestCase):
             RI.ESTAT_PREVISIO, RI.REGISTRE_PREVISIO = os.path.join(d, "riera-previsio.json"), os.path.join(RI.DIR, "riera-previsio.csv")
             try:
                 p = RI.previsio(ara, get=lambda url: resposta, lector=lambda url: "")
-                self.assertEqual((p["nivell"], p["mm_3h_max"], p["inici"]), ("possible", 25.0, ara.isoformat(timespec="minutes")))
+                self.assertEqual((p["nivell"], p["mm_3h_max"], p["inici"]), ("possible", 25.0, __import__("hora").clau(ara)))
                 # Una passada després, el «possible» continua des de la mateixa hora (per al punt de la pestanya).
                 p2 = RI.previsio(ara + dt.timedelta(minutes=15), get=lambda url: resposta, lector=lambda url: "")
-                self.assertEqual(p2["inici"], ara.isoformat(timespec="minutes"))
+                self.assertEqual(p2["inici"], __import__("hora").clau(ara))
                 with open(RI.REGISTRE_PREVISIO, encoding="utf-8") as f:
                     files_ = list(csv.DictReader(f))
                 self.assertEqual([r["mm_3h_max"] for r in files_], ["25.0", "25.0"])

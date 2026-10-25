@@ -26,6 +26,7 @@ import json
 import os
 
 import config as C
+import hora as H
 import part_alta as PA
 
 DIR = os.environ.get("REGISTRE_DIR", "/estat/registre")
@@ -84,19 +85,19 @@ def vigila(casa_ok, veines_ok, ahora, envia=None, ruta=None):
             estat.pop(clau, None)
             continue
         if not s:
-            estat[clau] = s = {"des_de": ahora.isoformat(timespec="minutes"), "avisat": False}
+            estat[clau] = s = {"des_de": H.clau(ahora), "avisat": False}
         if s["avisat"]:
             continue
         # Sin Weather Underground, ni la parte alta ni cada vecina: ya lo dice «xarxa».
         if clau != "xarxa" and clau != "casa" and falles.get("xarxa"):
             continue
-        des_de = dt.datetime.fromisoformat(s["des_de"])
+        des_de = H.llegeix(s["des_de"])
         llindar = LLINDAR_MIN.get(clau, LLINDAR_VEINA_MIN)
         if ahora - des_de < dt.timedelta(minutes=llindar):
             continue
         s["avisat"] = True
         if clau in FALLA:
-            missatges.append(FALLA[clau].format(h=f"{des_de:%H:%M}"))
+            missatges.append(FALLA[clau].format(h=f"{H.local(des_de):%H:%M}"))
         else:
             missatges.append(VEINA.format(e=clau, nom=C.VEINES[clau]["nom"], d=f"{des_de:%d/%m %H:%M}"))
     os.makedirs(os.path.dirname(ruta), exist_ok=True)

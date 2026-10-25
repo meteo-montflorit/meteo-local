@@ -43,7 +43,7 @@ class Protobuf(unittest.TestCase):
             "ca": "Obres a Bellaterra.", "es": "Obras en Bellaterra."}, "inici": T.iso(1791350000), "fi": None}])
         amb_fi = feed.replace(camp(1, camp(1, 1791350000)), camp(1, camp(1, 1791350000) + camp(2, 1791353600)))
         self.assertEqual(T.avisos_pb(amb_fi)[0]["fi"], T.iso(1791353600))
-        self.assertEqual(T.iso(1791350000), "2026-10-07T07:13+02:00")
+        self.assertEqual(T.iso(1791350000), "2026-10-07T05:13Z")       # en UTC (ADR 0128)
         self.assertIsNone(T.iso(None))
 
     def test_avisos_renfe_amb_inici(self):
@@ -57,11 +57,11 @@ class Protobuf(unittest.TestCase):
                                        "descriptionText": {"translation": [{"text": "Sense data.", "language": "es"}]}}}]}
         r = T.avisos_renfe(dades)
         self.assertEqual([a["linies"] for a in r], [{"R8"}, {"R8"}])
-        self.assertEqual(r[0]["inici"], "2026-10-07T08:29+02:00")
+        self.assertEqual(r[0]["inici"], "2026-10-07T06:29Z")
         self.assertIsNone(r[0]["fi"])          # sense end: obert
         self.assertIsNone(r[1]["inici"])
         dades["entity"][0]["alert"]["activePeriod"][0]["end"] = "1791358140"
-        self.assertEqual(T.avisos_renfe(dades)[0]["fi"], "2026-10-07T09:29+02:00")
+        self.assertEqual(T.avisos_renfe(dades)[0]["fi"], "2026-10-07T07:29Z")
 
     def test_un_avis_futur_o_acabat_no_decideix(self):
         # Auditoria del 08-10-2026: un avís de carretera per a demà posava «bus» avui.
@@ -176,7 +176,7 @@ class Estat(unittest.TestCase):
         self.assertEqual(len(a), 1)
         self.assertEqual(a[0]["linies"], {"R1", "R4", "R7"})
         self.assertEqual(a[0]["text"]["es"], "Servicio ferroviario en todo su recorrido.")
-        self.assertTrue(a[0]["inici"].startswith("2026-10-12T07:34"))
+        self.assertEqual(a[0]["inici"], "2026-10-12T05:34Z")     # les 7:34 de Madrid
         self.assertIsNone(T.prova(lambda url: api))
         self.assertIn("llista", T.prova(lambda url: {"total": 0}))
 

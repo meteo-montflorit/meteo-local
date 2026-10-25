@@ -2,6 +2,12 @@
 
 Fecha: 2026-10-13 · Estado: aceptado
 
+**25-10-2026 (3.201.0): sustituido en parte por el ADR 0128.** Desde entonces
+las horas se guardan y se calculan en UTC («…Z») y solo lo que se publica va
+en hora de Madrid, siempre con el desfase; `prevision.clau_hora` da la clave
+en UTC. Lo de este ADR que sigue valiendo: Open-Meteo pone a toda la serie el
+desfase del momento de la consulta, y `prevision.horas_locales` lo corrige.
+
 ## Contexto
 
 Juanjo preguntó el 13-10-2026 cómo trataba la web el paso de la hora de
