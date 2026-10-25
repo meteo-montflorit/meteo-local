@@ -2,6 +2,11 @@
 
 Fecha: 2026-10-14 · Estado: aceptado
 
+**25-10-2026 (3.201.0):** la regla «lo que se guarda, en hora local» queda
+sustituida por el ADR 0128: se guarda y se calcula en UTC, y la hora de
+Madrid se usa solo para lo que se muestra y para las reglas de las personas.
+Lo demás de este ADR sigue igual.
+
 ## Contexto
 
 Tras el ADR 0089 (el cambio de hora) quedaban dos cálculos agrupados por la

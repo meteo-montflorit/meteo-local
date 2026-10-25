@@ -25,6 +25,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 import config as C
+import hora as H
 
 API = "https://aerobiologia.cat/api/v0/forecast/bellaterra/{}/xml"
 UA = {"User-Agent": "Temps a Montflorit (https://meteo-montflorit.github.io/)"}
@@ -65,18 +66,18 @@ def llegeix(xml_ca, xml_es):
 
 
 def calcula(ara=None):
-    ara = ara or dt.datetime.now().astimezone()
+    ara = ara or H.ara()
     try:
         with open(CACHE, encoding="utf-8") as f:
             desat = json.load(f)
-        if ara - dt.datetime.fromisoformat(desat["hora"]) < dt.timedelta(hours=CACHE_H):
+        if ara - H.llegeix(desat["hora"]) < dt.timedelta(hours=CACHE_H):
             return desat["pollen"]
     except (OSError, ValueError, KeyError):
         pass
     res = llegeix(get(API.format("ca")), get(API.format("es")))
     if os.path.isdir(os.path.dirname(CACHE)):
         with open(CACHE + ".tmp", "w", encoding="utf-8") as f:
-            json.dump({"hora": ara.isoformat(timespec="minutes"), "pollen": res}, f, ensure_ascii=False)
+            json.dump({"hora": H.clau(ara), "pollen": res}, f, ensure_ascii=False)
         os.replace(CACHE + ".tmp", CACHE)
     return res
 

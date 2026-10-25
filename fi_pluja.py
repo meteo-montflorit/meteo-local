@@ -43,6 +43,7 @@ import os
 import subprocess
 import sys
 
+import hora as H
 import remostreig as R
 
 DIR = os.environ.get("REGISTRE_DIR", "/estat/registre")
@@ -77,12 +78,13 @@ def pluja_5min():
     minutos; None si no se sabe (una sola vecina con lluvia y casa a cero,
     o casa a cero sin vecina que lo confirme)."""
     import aprenentatge as A
-    casa = {r["fins"]: r for r in _llegeix("estacio-casa-5min.csv")}
-    veines = {r["fins"]: r for r in _llegeix("veines-5min.csv")}
+    # Les claus, en UTC també les d'abans de la migració (ADR 0128).
+    casa = {H.clau(r["fins"]): r for r in _llegeix("estacio-casa-5min.csv")}
+    veines = {H.clau(r["fins"]): r for r in _llegeix("veines-5min.csv")}
     res = {}
     for fins in set(casa) | set(veines):
         v = {k: {"pluja_mm": x} for k, x in veines.get(fins, {}).items() if k != "fins" and x not in ("", None)}
-        res[dt.datetime.fromisoformat(fins).astimezone()] = A.pluja_observada(casa.get(fins), (), v, llindar=0.1)
+        res[H.utc(fins)] = A.pluja_observada(casa.get(fins), (), v, llindar=0.1)
     return res
 
 
@@ -129,10 +131,10 @@ def fi_radar(nc, ahora, arriba=None):
     serie = ((nc or {}).get("llocs") or {}).get("casa")
     if not serie:
         return None
-    t0 = dt.datetime.fromisoformat(nc["hora"])
-    des_de = max(ahora, dt.datetime.fromisoformat(arriba)) if arriba else ahora
+    t0 = H.llegeix(nc["hora"])
+    des_de = max(ahora, H.llegeix(arriba)) if arriba else ahora
     fi = fi_previst(t0, [p["prob"] for p in serie], des_de)
-    return {"fi": fi and fi.isoformat(timespec="minutes"), "sense_fi": fi is None}
+    return {"fi": fi and H.clau(fi), "sense_fi": fi is None}
 
 
 def passades():
@@ -149,12 +151,12 @@ def compara(pluja, regs, r=None):
     eps = episodis(pluja)
     res = []
     for reg in regs:
-        t = dt.datetime.fromisoformat(reg["t"])
+        t = H.llegeix(reg["t"])
         ep = next((e for e in eps if e[0] <= t <= e[1]), None)
         f = (reg.get("fonts") or {}).get(reg.get("triada"))
         if not ep or not f:
             continue
-        t0 = dt.datetime.fromisoformat(f["hora"])
+        t0 = H.llegeix(f["hora"])
         res.append({"t": t, "episodi": ep[0], "real": ep[1], "previst": fi_previst(t0, f["prob"], t, r),
                     "horitzo": t0 + dt.timedelta(minutes=PAS_MIN * (len(f["prob"]) - 1))})
     return res, len(eps)
@@ -224,7 +226,7 @@ def llegeix_proposta():
 def aplica_proposta(avui=None):
     """Una propuesta de un día anterior que nadie ha parado pasa a ser la
     regla (como las del aprendizaje de la lluvia). Devuelve qué ha hecho."""
-    avui = avui or dt.date.today().isoformat()
+    avui = avui or H.dia_local(H.ara()).isoformat()
     p = llegeix_proposta()
     if not p:
         return None
@@ -246,7 +248,7 @@ def aprèn(pluja, regs, avisa=True, avui=None):
     """Prueba las variantes y, si elegir la mejor se equivoca bastante menos
     que la regla en uso en episodios que no han servido para elegirla, la
     propone para el día siguiente."""
-    avui = avui or dt.date.today().isoformat()
+    avui = avui or H.dia_local(H.ara()).isoformat()
     eps = episodis(pluja)
     if len(eps) < MIN_EPISODIS_CANVI or os.path.exists(ATURA):
         return None

@@ -1285,7 +1285,8 @@ class FitxesDelRevisor(unittest.TestCase):
         AB.decideix(estat, {"smp": {"avisos": [a]}}, t1 + dt.timedelta(minutes=5))
         self.assertNotIn("pausa", estat["oficials"]["smp"])
         AB.decideix(estat, {"smp": {"avisos": []}}, t1 + dt.timedelta(minutes=15))
-        self.assertEqual(estat["oficials"]["smp"]["pausa"], "2026-10-20T05:15+02:00")
+        import hora as HR
+        self.assertEqual(HR.utc(estat["oficials"]["smp"]["pausa"]), HR.utc("2026-10-20T05:15+02:00"))
 
     def test_dos_avisos_de_l_aemet_amb_la_mateixa_clau(self):
         # Revisor, 19-10-2026 19:58: pluja de 40 mm/1 h (19-23:59, la cobreix Meteocat) i de 80 mm/12 h

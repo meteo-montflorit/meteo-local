@@ -85,6 +85,7 @@ import sys
 
 import aprenentatge as A
 import config as C
+import hora as H
 import previsio_oficial as O
 import prevision as P
 import remostreig as R
@@ -154,10 +155,11 @@ def emissions(registre=None):
                     continue
                 # Les marques de Meteocat de l'hora (senyals_avis), per a
                 # l'historial dels dies d'abans que es desés el que pintava.
-                hores = {h["fins"]: {**h["mostrat"], **{k: h[k] for k in ("avis_meteocat", "avis_meteocat_alt") if k in h}}
+                # Les claus, en UTC també les d'abans de la migració (ADR 0128).
+                hores = {H.clau(h["fins"]): {**h["mostrat"], **{k: h[k] for k in ("avis_meteocat", "avis_meteocat_alt") if k in h}}
                          for h in e.get("hores") or [] if h.get("mostrat")}
                 if hores:
-                    res[e["emes"]] = hores
+                    res[H.clau(e["emes"])] = hores
     return res
 
 
@@ -175,7 +177,7 @@ def difs_alta(emes, registre=None):
     part-alta-nit.csv, si la hay. Las publicaciones de antes de ALTA_DES_DE, sin
     nada."""
     dir_ = registre or A.REGISTRE
-    falten = [k for k in emes if k[:16] >= ALTA_DES_DE and any("dif_alta" not in m for m in emes[k].values())]
+    falten = [k for k in emes if H.utc(k) >= H.llegeix(ALTA_DES_DE) and any("dif_alta" not in m for m in emes[k].values())]
     if not falten:
         return emes
     casa = SE._llegeix_hores(os.path.join(dir_, "estacio-casa.csv"))
@@ -184,20 +186,19 @@ def difs_alta(emes, registre=None):
     nit = {}
     try:
         with open(os.path.join(dir_, "part-alta-nit.csv"), encoding="utf-8") as f:
-            nit = {(r["fins"], r["emes"]): A._num(r["dif_ajust"]) for r in csv.DictReader(f)}
+            nit = {(H.clau(r["fins"]), H.clau(r["emes"])): A._num(r["dif_ajust"]) for r in csv.DictReader(f)}
     except OSError:
         pass
     for k in falten:
-        abans = k[:16]
-        taula = PA.per_hores(dt.datetime.fromisoformat(k), {c: v for c, v in casa.items() if c < abans},
+        abans = H.clau(k)
+        taula = PA.per_hores(H.llegeix(k), {c: v for c, v in casa.items() if c < abans},
                              {e: {c: v for c, v in h.items() if c < abans} for e, h in veines.items()}, eps)
         for fins, m in emes[k].items():
             if "dif_alta" in m:
                 continue
             d = nit.get((fins, k))
             if d is None:
-                hora = P.clau_hora(dt.datetime.fromisoformat(fins).replace(tzinfo=P.ZONA) - dt.timedelta(hours=1)) \
-                    if len(fins) == 16 else P.clau_hora(dt.datetime.fromisoformat(fins) - dt.timedelta(hours=1))
+                hora = P.clau_hora(H.utc(fins) - dt.timedelta(hours=1))
                 vals = [taula.get(PA.hora_solar(c)) for c in (hora, fins)]
                 vals = [v for v in vals if v is not None]
                 d = round(sum(vals) / len(vals), 1) if vals else None
@@ -210,10 +211,13 @@ def per_hora(emes):
     unas N horas antes de que empezara (la más reciente de las que caen entre
     N h y media y N h menos media hora antes)."""
     res = {}
-    for k in sorted(emes):
-        t = dt.datetime.fromisoformat(k)
+    for k in sorted(emes, key=H.utc):
+        t = H.utc(k)
         for fins, m in emes[k].items():
-            ini = dt.datetime.fromisoformat(fins).replace(tzinfo=t.tzinfo) - dt.timedelta(hours=1)
+            # Fins a la 3.200.0, l'hora es llegia amb el desfasament de la
+            # publicació, i passat un canvi d'hora l'antelació sortia d'una hora
+            # de més o de menys (ADR 0128).
+            ini = H.utc(fins) - dt.timedelta(hours=1)
             n = round((ini - t).total_seconds() / 3600)
             if n in ANTELACIONS:
                 res.setdefault(fins, {})[n] = m
@@ -254,13 +258,13 @@ def vent_tram(vent, fins):
     """(viento medio, racha) de la estación del viento en la hora que acaba en
     fins: la media de las dos medias horas y la racha mayor; None si falta
     alguna."""
-    t = dt.datetime.fromisoformat(fins).astimezone()
+    t = H.utc(fins)
     mitges = [A._num((vent.get(P.clau_hora(t - dt.timedelta(minutes=m))) or {}).get(C.VENT_ESTACIO)) for m in (0, 30)]
     return (round(sum(mitges) / 2) if None not in mitges else None), A.ratxa_observada(vent, fins)
 
 
 def _moment(iso):
-    return dt.datetime.fromisoformat(iso) if iso else None
+    return H.llegeix(iso) if iso else None
 
 
 def trams_perill(hist, ahora=None):
@@ -270,7 +274,7 @@ def trams_perill(hist, ahora=None):
     hasta que acabaron (para los días sin `mostrat.avisos`, con la clave
     `aemet`); los planes, la prealerta, los incendios y la riera, siempre.
     Meteocat y los riesgos propios no: sus franjas no se guardaban."""
-    ahora = ahora or dt.datetime.now().astimezone()
+    ahora = ahora or H.ara()
     res = []
     for e in hist or []:
         clau = e.get("clau") or ""
@@ -301,7 +305,7 @@ def alertes_hora(hora, fins, m, trams):
     """(avisos, riscos_hora) de la hora: lo que pintaba la gráfica (`mostrat`)
     o, si es de antes de guardarlo, AEMET del historial y Meteocat de su
     marca; y siempre los planes, los incendios y la riera."""
-    ini = dt.datetime.fromisoformat(hora).replace(tzinfo=P.ZONA) if len(hora) == 16 else dt.datetime.fromisoformat(hora)
+    ini = H.utc(hora)
     fi = ini + dt.timedelta(hours=1)
     dins = [(t, a) for i, f, t, a in trams if i < fi and f > ini]
     m = m or {}
@@ -501,7 +505,7 @@ def comparacio(dies, emes, oficials):
     que acaba al final del tramo, y su Brier es el de una previsión de sí o no.
     Sin las horas con sol sobre el termómetro para la temperatura."""
     obs = {f["fins"]: (d["dia"], f) for d in dies for f in d["hores"]}
-    ordenades = sorted((dt.datetime.fromisoformat(k), v) for k, v in emes.items())
+    ordenades = sorted((H.utc(k), v) for k, v in emes.items())
     temps, valors = [t for t, _ in ordenades], [v for _, v in ordenades]
     res = {}
     for font in FONTS_OFICIALS:
@@ -514,8 +518,7 @@ def comparacio(dies, emes, oficials):
                 if fins not in obs:
                     continue
                 dia, f = obs[fins]
-                ini = dt.datetime.fromisoformat(f["hora"])
-                ini = ini if ini.tzinfo else ini.replace(tzinfo=P.ZONA)
+                ini = H.utc(f["hora"])
                 n = round((ini - s).total_seconds() / 3600)
                 if n not in ANTELACIONS:
                     continue
@@ -719,7 +722,7 @@ def historial_perill(avisos):
 def tots(avui=None, registre=None, emes=None, avisos=None):
     """Todos los días del registro, del primero a hoy. avisos: la ruta del
     historial de «Perill» (avisos.json), para las alertas de cada hora."""
-    avui = avui or dt.date.today()
+    avui = avui or H.dia_local(H.ara())
     if registre:
         A.REGISTRE = registre
     casa = A._llegeix("estacio-casa.csv")
@@ -802,7 +805,7 @@ def index(dies, avui, comp=None):
                 "pluja": pluja, "setmanes": setmanes,
                 "millora": millora([(d["dia"], d["encert"][str(n)]) for d in complets], avui),
                 "oficial": oficial}
-    return {"generat": dt.datetime.now(P.ZONA).isoformat(timespec="minutes"),
+    return {"generat": H.clau(H.ara()),
             "dies": [d["dia"] for d in dies],
             "minims": {"temperatura_hores": MIN_HORES_TEMP, "pluja_casos": MIN_CASOS_PLUJA},
             "franges": list(FRANGES),
@@ -812,13 +815,14 @@ def index(dies, avui, comp=None):
 
 def fes(carpeta, ultims=None, avui=None, registre=None, avisos=None):
     """Escribe historial.json y los días (todos o los `ultims`). Devuelve los nombres."""
-    avui = avui or dt.date.today()
+    avui = avui or H.dia_local(H.ara())
     emes = emissions(registre)
     dies = tots(avui, registre, emes, avisos)
     comp = comparacio(dies, emes, O.registre(registre or A.REGISTRE))
     os.makedirs(carpeta, exist_ok=True)
     noms = ["historial.json"]
-    escriu = lambda nom, dades: json.dump(dades, open(os.path.join(carpeta, nom), "w", encoding="utf-8"),
+    # Es publica: les hores, en hora de Madrid amb el desfasament (ADR 0128).
+    escriu = lambda nom, dades: json.dump(H.publica(dades), open(os.path.join(carpeta, nom), "w", encoding="utf-8"),
                                           ensure_ascii=False, separators=(",", ":"))
     i = index(dies, avui, comp)
     i["aprenentatge"] = aprenentatge()

@@ -262,7 +262,8 @@ class Smp(unittest.TestCase):
                          "És un avís oficial: segueix les indicacions de Protecció Civil.")
         self.assertTrue(fitxa()["es"].startswith("🟡 <b>Meteocat: aviso de peligro moderado por lluvia"))
         # I diu quan comença el que queda: la fitxa en surt «Previst» (ADR 0101).
-        self.assertEqual(fitxa()["comenca"], dt.datetime(2026, 10, 19, 12).astimezone().isoformat(timespec="minutes"))
+        import hora as HR
+        self.assertEqual(HR.utc(fitxa()["comenca"]), dt.datetime(2026, 10, 19, 12).astimezone())
         self.assertNotIn("fi", fitxa())
         # Passat el dilluns, el final, encara que Meteocat no l'hagi retirat.
         self.assertEqual(passa(avisos, dt.datetime(2026, 10, 19, 23, 55).astimezone()), [])

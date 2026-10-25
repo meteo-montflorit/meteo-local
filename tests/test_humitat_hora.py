@@ -74,7 +74,7 @@ class HumitatHora(unittest.TestCase):
 
 class AlPrever(unittest.TestCase):
     def test_error_del_rosada_amb_la_mediana_del_barri(self):
-        h = {"time": ["2026-10-21T05:00", "2026-10-21T06:00"],
+        h = {"time": ["2026-10-21T03:00Z", "2026-10-21T04:00Z"],   # les 5 i les 6 de Madrid (ADR 0128)
              "temperature_2m_meteofrance_seamless": [9.0, 9.0],
              "relative_humidity_2m_meteofrance_seamless": [80, 80]}
         casa_ = {"hora": "2026-10-21T05:30+02:00", "temperatura": 9.1, "rosada": 8.4}
@@ -83,7 +83,7 @@ class AlPrever(unittest.TestCase):
         self.assertAlmostEqual(d["error_rosada_ara"], round(SE.rosada(9.0, 80) - 8.0, 2))
 
     def test_sense_mesura(self):
-        h = {"time": ["2026-10-21T05:00", "2026-10-21T06:00"],
+        h = {"time": ["2026-10-21T03:00Z", "2026-10-21T04:00Z"],   # les 5 i les 6 de Madrid (ADR 0128)
              "temperature_2m_meteofrance_seamless": [9.0, 9.0],
              "relative_humidity_2m_meteofrance_seamless": [80, 80]}
         self.assertIsNone(casa.al_prever(None, h, None, None, [])["error_rosada_ara"])

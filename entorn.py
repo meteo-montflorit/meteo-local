@@ -29,6 +29,7 @@ import urllib.parse
 import urllib.request
 
 import config as C
+import hora as H
 
 ARCGIS = "https://services7.arcgis.com/ZCqVt1fRXwwK6GF4/arcgis/rest/services"
 BOMBERS = ARCGIS + "/ACTUACIONS_URGENTS_online_PRO_AMB_FASE_VIEW/FeatureServer/0"
@@ -54,7 +55,7 @@ def km(a, b):
 
 
 def hora_iso(ms):
-    return dt.datetime.fromtimestamp(ms / 1000).astimezone().isoformat(timespec="minutes") if ms else None
+    return H.clau(dt.datetime.fromtimestamp(ms / 1000, H.UTC)) if ms else None
 
 
 # El contorno exterior del parque, sin los agujeros de su límite oficial (Les
@@ -146,7 +147,7 @@ def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None):
     Bombers deja abiertos sin ningún vehículo ni cambio desde hace
     INCENDI_PARAT_H horas, con la hora del último cambio: se dan por apagados
     (25-10-2026, ADR 0071)."""
-    ara = ara or dt.datetime.now().astimezone()
+    ara = ara or H.ara()
     xmin, ymin, xmax, ymax = C.INCENDIS_CAIXA
     d = dades or get(BOMBERS + "/query", {
         "where": "TAL_COD_ALARMA1='IV'", "geometry": f"{xmin},{ymin},{xmax},{ymax}",
@@ -177,7 +178,7 @@ def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None):
         # como mucho. Si Bombers vuelve a tocarlo, reaparece.
         canvi = a.get("ACT_DAT_ACTUAL") or a.get("ACT_DAT_INICI")
         if a.get("ACT_NUM_VEH") == 0 and canvi and \
-                ara - dt.datetime.fromtimestamp(canvi / 1000).astimezone() > dt.timedelta(hours=C.INCENDI_PARAT_H):
+                ara - dt.datetime.fromtimestamp(canvi / 1000, H.UTC) > dt.timedelta(hours=C.INCENDI_PARAT_H):
             if parats is not None:
                 parats[a["GlobalID"]] = hora_iso(canvi)
             continue
@@ -191,7 +192,7 @@ def actualitzada(url, ara, hores):
     """Si la capa se ha editado en las últimas `hores`: fuera de campaña, la
     del Pla Alfa municipal se queda con el último valor y no vale."""
     edit = ((get(url, {"f": "json"}).get("editingInfo") or {}).get("lastEditDate"))
-    return bool(edit) and ara - dt.datetime.fromtimestamp(edit / 1000).astimezone() <= dt.timedelta(hours=hores)
+    return bool(edit) and ara - dt.datetime.fromtimestamp(edit / 1000, H.UTC) <= dt.timedelta(hours=hores)
 
 
 def pla_alfa(ara):
@@ -220,8 +221,8 @@ def pla_alfa(ara):
 
 def calcula(ara=None):
     """Para casa.json y los datos públicos. Cada parte, None si su fuente falla."""
-    ara = ara or dt.datetime.now().astimezone()
-    res = {"hora": ara.isoformat(timespec="minutes"), "errors": []}
+    ara = ara or H.ara()
+    res = {"hora": H.clau(ara), "errors": []}
     fora, parats = [], {}
     for clau, funcio in (("incendis", lambda: incendis(fora=fora, parats=parats, ara=ara)), ("pla_alfa", lambda: pla_alfa(ara))):
         try:

@@ -227,7 +227,9 @@ class Rasgos(unittest.TestCase):
                     with open(os.path.join(d, nom + ".csv"), "w") as f:
                         f.write("fins,pluja_mm\n2026-10-07T03:00," + ("0.6" if nom.startswith("meteocat") else "0.0") + "\n")
                 self.assertEqual(len(A._meteocat()), 2)
-                self.assertEqual(A.observada({"2026-10-07T03:00": z}, A._meteocat(), A._veines(), "2026-10-07T03:00"), 0.0)
+                # Els registres sense zona (d'abans de la migració) es llegeixen en UTC (ADR 0128).
+                clau = A.H.clau("2026-10-07T03:00")
+                self.assertEqual(A.observada({clau: z}, A._meteocat(), A._veines(), clau), 0.0)
             finally:
                 A.REGISTRE = vell
 

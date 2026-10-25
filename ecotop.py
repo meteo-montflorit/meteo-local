@@ -47,7 +47,9 @@ import numpy as np
 from PIL import Image
 
 import config as C
-from prevision import ZONA
+import hora as H
+
+ZONA = H.ZONA
 
 REGISTRE = os.environ.get("REGISTRE_DIR", "/estat/registre")
 FITXER = os.path.join(REGISTRE, "ecotop.csv")
@@ -79,12 +81,9 @@ def cal(casa, ara):
         return True
     fins = ara + dt.timedelta(hours=HORES_PREVISIO)
     for h in casa.get("hores") or []:
-        # Les hores de casa.json són locals i sense zona («2026-10-20T17:00»):
-        # comparades amb ara, amb zona, fallava cada vegada que no plovia
-        # (20-10-2026).
-        t = dt.datetime.fromisoformat(h["hora"])
-        if t.tzinfo is None:
-            t = t.replace(tzinfo=ZONA)
+        # Les hores de casa.json són claus en UTC (ADR 0128); H.llegeix entén
+        # també les d'abans, locals i sense zona.
+        t = H.llegeix(h["hora"])
         if ara - dt.timedelta(hours=1) < t <= fins and (h.get("probabilitat") or 0) >= PROB_MIN:
             return True
     return False
@@ -144,25 +143,25 @@ def tros(im):
 
 
 def hora_dades(nom):
-    """«down_GLD261019142000.TOP…» → las 14:20 UTC del 19-10-2026, en hora local."""
+    """«down_GLD261019142000.TOP…» → las 14:20 UTC del 19-10-2026."""
     m = re.search(rf"down_{RADAR}(\d{{12}})\.", nom)
-    return dt.datetime.strptime(m.group(1), "%y%m%d%H%M%S").replace(tzinfo=dt.timezone.utc).astimezone(ZONA)
+    return dt.datetime.strptime(m.group(1), "%y%m%d%H%M%S").replace(tzinfo=dt.timezone.utc)
 
 
 def ja_apuntades():
     if not os.path.exists(FITXER):
         return set()
     with open(FITXER, encoding="utf-8") as f:
-        return {r["dades"] for r in csv.DictReader(f)}
+        return {H.clau(r["dades"]) for r in csv.DictReader(f)}
 
 
 def apunta(casa_json, ara=None, baixa=None):
-    ara = ara or dt.datetime.now(ZONA)
+    ara = ara or H.ara()
     # La hora de la última bajada, aparte del CSV: una bajada sin imágenes
     # nuevas no deja fila y se repetiría en cada pasada.
     try:
         with open(BAIXADA, encoding="utf-8") as f:
-            darrera = dt.datetime.fromisoformat(f.read().strip())
+            darrera = H.llegeix(f.read().strip())
         if ara - darrera < dt.timedelta(minutes=CADA_MIN):
             return 0
     except (OSError, ValueError):
@@ -173,7 +172,7 @@ def apunta(casa_json, ara=None, baixa=None):
     dades = (baixa or baixa_paquet)()
     os.makedirs(TROSSOS, exist_ok=True)
     with open(BAIXADA, "w", encoding="utf-8") as f:
-        f.write(ara.isoformat(timespec="minutes"))
+        f.write(H.clau(ara))
     vistes = ja_apuntades()
     files, mes_nova = [], None
     with tarfile.open(fileobj=io.BytesIO(dades), mode="r:gz") as tar:
@@ -182,14 +181,14 @@ def apunta(casa_json, ara=None, baixa=None):
                 continue
             hora = hora_dades(m.name)
             mes_nova = max(mes_nova or hora, hora)
-            clau = hora.isoformat(timespec="minutes")
+            clau = H.clau(hora)
             if clau in vistes:
                 continue
             im = Image.open(io.BytesIO(tar.extractfile(m).read()))
             classes, fila, col, km_x, km_y = tros(im)
-            Image.fromarray(classes, "L").save(os.path.join(TROSSOS, f"{RADAR}-{hora:%Y%m%d%H%M}.png"), optimize=True)
-            publicat = dt.datetime.fromtimestamp(m.mtime, ZONA).isoformat(timespec="minutes")
-            files.append({"dades": clau, "publicat": publicat, "baixat": ara.isoformat(timespec="minutes"),
+            Image.fromarray(classes, "L").save(os.path.join(TROSSOS, f"{RADAR}-{hora:%Y%m%d%H%M}Z.png"), optimize=True)
+            publicat = H.clau(dt.datetime.fromtimestamp(m.mtime, dt.timezone.utc))
+            files.append({"dades": clau, "publicat": publicat, "baixat": H.clau(ara),
                           **mesura(classes, fila, col, km_x, km_y)})
     files.sort(key=lambda r: r["dades"])
     nou = not os.path.exists(FITXER)
@@ -221,7 +220,7 @@ def estat():
     if not files:
         print("encara no hi ha cap imatge")
         return
-    retard = [(dt.datetime.fromisoformat(r["publicat"]) - dt.datetime.fromisoformat(r["dades"])).total_seconds() / 60
+    retard = [(H.utc(r["publicat"]) - H.utc(r["dades"])).total_seconds() / 60
               for r in files]
     altes = sum(1 for r in files if int(r["max_30"]) >= 8)
     print(f"{len(files)} imatges, de {files[0]['dades']} a {files[-1]['dades']}; "

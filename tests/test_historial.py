@@ -8,6 +8,12 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import avisos_bot as AB  # noqa: E402
+import hora as HR  # noqa: E402
+
+
+def hm(t):
+    """L'hora de Madrid d'un moment desat (en UTC des de l'ADR 0128)."""
+    return HR.local(t).strftime("%H:%M")
 
 ARA = dt.datetime(2026, 10, 11, 12, 0).astimezone()
 
@@ -24,7 +30,7 @@ class Historial(unittest.TestCase):
         AB.historial(estat, [avis(0, "incendi:x", "incendi", "🔥 foc")], ARA)
         h = AB.historial(estat, [avis(60, "incendi:x", "fi", "🟢 acabat")], ARA)
         self.assertEqual(len(h), 1)
-        self.assertEqual((h[0]["inici"][11:16], h[0]["fi"][11:16]), ("12:00", "13:00"))
+        self.assertEqual((hm(h[0]["inici"]), hm(h[0]["fi"])), ("12:00", "13:00"))
         self.assertEqual((h[0]["ca"], h[0]["fi_ca"]), ("🔥 foc", "🟢 acabat"))
 
     def test_si_puja_de_nivell_es_queda_el_pitjor_i_el_text_nou(self):
@@ -41,7 +47,7 @@ class Historial(unittest.TestCase):
         AB.historial(estat, [avis(0, "propi", "groc", "🟡 títol\nVent fort.")], ARA)
         estat.update(perill_text=None, perill_buit=True)
         h = AB.historial(estat, [], ARA + dt.timedelta(minutes=30))
-        self.assertEqual(h[0]["en_pausa"][11:16], "12:30")
+        self.assertEqual(hm(h[0]["en_pausa"]), "12:30")
         # Sense dades no es decideix res; si el risc torna, deixa d'estar en pausa.
         estat.update(perill_buit=False)
         self.assertIn("en_pausa", AB.historial(estat, [], ARA + dt.timedelta(minutes=45))[0])
@@ -86,7 +92,7 @@ class Historial(unittest.TestCase):
         self.assertIn("Origen: Météo-France.", h[0]["ca"])
         self.assertNotIn("darrer", h[0])
         # Però sí quan es va escriure el text, per al dia d'«avui» quan es rellegeix (20-10-2026).
-        self.assertEqual(h[0]["escrit"], (ARA + dt.timedelta(minutes=15)).isoformat(timespec="minutes"))
+        self.assertEqual(HR.utc(h[0]["escrit"]), ARA + dt.timedelta(minutes=15))
         # Sense riscos ara (falta la previsió), es queda com estava.
         estat["perill_text"] = None
         self.assertIn("Origen: Météo-France.", AB.historial(estat, [], ARA + dt.timedelta(minutes=30))[0]["ca"])
@@ -109,7 +115,7 @@ class Historial(unittest.TestCase):
         self.assertFalse(estat["historial"][0].get("fi"))
         estat["oficials"]["plans"]["INUNCAT"]["ocult"] = True
         h = AB.historial(estat, [], ARA + dt.timedelta(hours=2))
-        self.assertEqual(h[0]["fi"][11:16], "14:00")
+        self.assertEqual(hm(h[0]["fi"]), "14:00")
 
     def test_el_pla_porta_el_comunicat_mes_recent(self):
         # L'INUNCAT del 15-10-2026: alerta a les 19:09 sense comunicat; el PDF surt
@@ -176,11 +182,11 @@ class Historial(unittest.TestCase):
         AB.historial(estat, [avis(-600, "propi", "groc")], ARA)
         h = AB.historial(estat, [], ARA + dt.timedelta(hours=1), reserva)
         self.assertEqual([e["clau"] for e in h], ["propi", "incendi:r"])
-        self.assertEqual(h[1]["fi"][11:16], "12:30")
+        self.assertEqual(hm(h[1]["fi"]), "12:30")
         # Si l'altre ja l'ha tancat, val el final.
         obert = AB.historial({}, [avis(0, "riera:a", "atencio")], ARA)
         tancat = AB.historial({}, [avis(0, "riera:a", "atencio"), avis(60, "riera:a", "fi")], ARA)
-        self.assertEqual(AB.fusiona(obert, tancat)[0]["fi"][11:16], "13:00")
+        self.assertEqual(hm(AB.fusiona(obert, tancat)[0]["fi"]), "13:00")
 
     def test_un_avis_nou_continua_l_episodi_obert_de_l_altre(self):
         reserva = AB.historial({}, [avis(0, "incendi:x", "incendi", "primer")], ARA)
@@ -225,6 +231,9 @@ class Historial(unittest.TestCase):
             + ".map(idFitxa)));"
         r = json.loads(subprocess.run(["node", "-e", codi], capture_output=True, text=True, check=True).stdout)
         self.assertEqual(r, [AB.id_fitxa(c, i) for c, i in casos])
+        # Amb l'hora interna, en UTC (ADR 0128), l'enllaç és el mateix que fa la
+        # web amb l'hora publicada: el de l'avís porta a la seva fitxa.
+        self.assertEqual(AB.id_fitxa("pla:INUNCAT", "2026-10-11T07:00Z"), r[2])
 
 
     def test_la_prealerta_queda_a_l_historial_quan_acaba(self):
@@ -242,7 +251,8 @@ class Historial(unittest.TestCase):
         h = AB.prealertes(estat, {"plans": []}, [], ARA + dt.timedelta(hours=1))
         self.assertEqual(len(h), 1)
         e = h[0]
-        self.assertEqual((e["clau"], e["inici"], e["fi"][11:16]), ("prealerta:INUNCAT", "2026-10-23T22:10+02:00", "13:00"))
+        self.assertEqual((e["clau"], HR.utc(e["inici"]), hm(e["fi"])),
+                         ("prealerta:INUNCAT", HR.utc("2026-10-23T22:10+02:00"), "13:00"))
         self.assertEqual(e["nivell"], "prealerta")
         self.assertEqual(e["comunicat"], pdf)
         self.assertTrue(e["ca"].startswith("🟡 <b>Protecció Civil: pla d'inundacions (INUNCAT) en fase de prealerta</b>"))

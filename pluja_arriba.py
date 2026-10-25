@@ -32,6 +32,7 @@ import os
 import sys
 
 import config as C
+import hora as H
 
 DIR = os.environ.get("REGISTRE_DIR", "/estat/registre")
 ESTADO = os.path.join(os.path.dirname(DIR), "avis-pluja.json")
@@ -58,7 +59,7 @@ def falta_min(salida, ahora):
     arriba = (salida.get("radar") or {}).get("arriba")
     if not arriba:
         return None
-    return (dt.datetime.fromisoformat(arriba) - ahora).total_seconds() / 60
+    return (H.llegeix(arriba) - ahora).total_seconds() / 60
 
 
 def intensitat(mm_h):
@@ -72,11 +73,11 @@ def missatge(salida, ahora):
     r = salida["radar"]
     falta = round(falta_min(salida, ahora))
     font = FONTS.get(r.get("imatge"), "radar")
-    imatge = dt.datetime.fromisoformat(r["hora"]).strftime("%H:%M")
+    imatge = H.local(r["hora"]).strftime("%H:%M")
     if falta <= 2:
         return (f"El radar ja veu pluja a sobre de casa: pot començar en qualsevol moment."
                 f"{intensitat(r.get('arriba_mm_h'))} (Radar de {font} de les {imatge}.)")
-    hora = dt.datetime.fromisoformat(r["arriba"]).strftime("%H:%M")
+    hora = H.local(r["arriba"]).strftime("%H:%M")
     return (f"Plourà a casa d'aquí a uns {falta} minuts, cap a les {hora}."
             f"{intensitat(r.get('arriba_mm_h'))} (Radar de {font} de les {imatge}.)")
 
@@ -87,11 +88,11 @@ def fila_registro(ep):
     fila = dict.fromkeys(CAMPOS, "")
     fila["inici"], fila["pluja_mesurada"] = ep["inici"], pluja or ""
     if avis:
-        enviat = dt.datetime.fromisoformat(avis["enviat"])
+        enviat = H.llegeix(avis["enviat"])
         fila.update(avisat=avis["enviat"], arribada_prevista=avis["arribada"], imatge=avis["imatge"],
                     mm_h="" if avis.get("mm_h") is None else avis["mm_h"],
-                    minuts_previstos=round((dt.datetime.fromisoformat(avis["arribada"]) - enviat).total_seconds() / 60))
-        reals = pluja and (dt.datetime.fromisoformat(pluja) - enviat).total_seconds() / 60
+                    minuts_previstos=round((H.llegeix(avis["arribada"]) - enviat).total_seconds() / 60))
+        reals = pluja and (H.llegeix(pluja) - enviat).total_seconds() / 60
         if pluja:
             fila["minuts_reals"] = round(reals)
         fila["resultat"] = ("encert" if pluja and reals <= C.AVIS_PLUJA_VERIFICA_MIN
@@ -104,7 +105,7 @@ def fila_registro(ep):
 def compara(estat, salida, ahora):
     """Pone al día el episodio y devuelve (mensaje o None, fila del registro
     del episodio que acaba o None)."""
-    ara = ahora.isoformat(timespec="minutes")
+    ara = H.clau(ahora)
     ep = estat.get("episodi")
     falta = falta_min(salida, ahora)
     mullat = plou(salida)
@@ -112,7 +113,7 @@ def compara(estat, salida, ahora):
     senyal = mullat or (falta is not None and falta <= limit)
     fila = text = None
     if ep and not senyal:
-        vist = dt.datetime.fromisoformat(ep["vist"])
+        vist = H.llegeix(ep["vist"])
         if ahora - vist >= dt.timedelta(minutes=C.AVIS_PLUJA_REPOS_MIN):
             fila = fila_registro(ep)
             ep = None
@@ -158,11 +159,11 @@ def apunta(fila):
 
 
 def avisa(ruta, ahora=None):
-    ahora = ahora or dt.datetime.now().astimezone()
+    ahora = ahora or H.ara()
     with open(ruta, encoding="utf-8") as f:
         salida = json.load(f)
     # Con datos viejos (la pasada ha fallado), la llegada ya no vale.
-    if ahora - dt.datetime.fromisoformat(salida["generat"]) > dt.timedelta(minutes=C.INTERVALO_CASA_MIN):
+    if ahora - H.llegeix(salida["generat"]) > dt.timedelta(minutes=C.INTERVALO_CASA_MIN):
         return None
     estat = llegeix_estat()
     text, fila = compara(estat, salida, ahora)

@@ -40,6 +40,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from zoneinfo import ZoneInfo
 
 # La hora local de Montflorit, pase lo que pase con la del hosting: casa.py
 # compara horas locales de Open-Meteo con la del sistema.
@@ -74,7 +75,8 @@ ENTORN = dict(os.environ,
 
 
 def ara():
-    return dt.datetime.now().astimezone()
+    # L'hora de Madrid, sigui quina sigui la del sistema (ADR 0128).
+    return dt.datetime.now(ZoneInfo("Europe/Madrid"))
 
 
 def cadenat():
@@ -112,9 +114,9 @@ def reintenta_avisos():
         return
     entregats, caducats, queden = AP.reintenta()
     for p in entregats:
-        apunta(f"avís entregat en reintentar (de les {p['hora'][11:16]}): {p['text'][:60]}")
+        apunta(f"avís entregat en reintentar (de les {AP.H.local(p['hora']):%H:%M}): {p['text'][:60]}")
     for p in caducats:
-        apunta(f"avís caducat sense entregar (de les {p['hora'][11:16]}): {p['text'][:60]}")
+        apunta(f"avís caducat sense entregar (de les {AP.H.local(p['hora']):%H:%M}): {p['text'][:60]}")
 
 
 def llegeix_estat():

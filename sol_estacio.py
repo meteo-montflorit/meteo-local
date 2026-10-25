@@ -43,6 +43,7 @@ import statistics
 import sys
 
 import config as C
+import hora as H
 
 DIR = os.environ.get("REGISTRE_DIR", "/estat/registre")
 EPISODIS = os.path.join(DIR, "sol-estacio.csv")
@@ -71,7 +72,7 @@ def episodis(ruta=None):
     if not os.path.exists(ruta):
         return []
     with open(ruta, encoding="utf-8") as f:
-        return [(dt.datetime.fromisoformat(r["inici"]), dt.datetime.fromisoformat(r["fi"]))
+        return [(H.llegeix(r["inici"]), H.llegeix(r["fi"]))
                 for r in csv.DictReader(f) if r.get("inici") and r.get("fi")]
 
 
@@ -81,7 +82,7 @@ def hores_tocades(claus, eps=None):
     eps = episodis() if eps is None else eps
     res = set()
     for c in claus:
-        t = dt.datetime.fromisoformat(c).astimezone()
+        t = H.utc(c)
         if any(a <= t <= b for a, b in eps):
             res.add(c)
     return res
@@ -94,9 +95,9 @@ def apunta(inici, fi, exces, ruta=None):
     if os.path.exists(ruta):
         with open(ruta, encoding="utf-8") as f:
             files = [r for r in csv.DictReader(f)]
-    clau = inici.isoformat(timespec="minutes")
-    files = [r for r in files if r["inici"] != clau]
-    files.append({"inici": clau, "fi": fi.isoformat(timespec="minutes"), "exces_max": round(exces, 1)})
+    clau = H.clau(inici)
+    files = [{**r, "inici": H.clau(r["inici"]), "fi": H.clau(r["fi"])} for r in files if H.clau(r["inici"]) != clau]
+    files.append({"inici": clau, "fi": H.clau(fi), "exces_max": round(exces, 1)})
     os.makedirs(os.path.dirname(ruta), exist_ok=True)
     with open(ruta + ".tmp", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=CAMPS)
@@ -114,7 +115,7 @@ def ofset(casa_hores, veines_hores, ara, eps=None):
     """La diferencia habitual casa − vecinas ({fins: °C} de casa; {estacio:
     {fins: °C}}), en las horas de los últimos DIES_OFSET días sin sol directo.
     None si no hay HORES_OFSET_MIN horas comparables."""
-    desde = (ara - dt.timedelta(days=DIES_OFSET)).strftime("%Y-%m-%dT%H:%M")
+    desde = H.clau(ara - dt.timedelta(days=DIES_OFSET))
     claus = [c for c in casa_hores if c >= desde]
     fora = hores_tocades(claus, eps)
     difs = []
@@ -166,14 +167,14 @@ def avalua(lectures, veines_ara, ofs, estat, ara, solar):
     exces = t_ara - esperada
     de_dia = solar is not None and solar > 0
     if estat:
-        inici = dt.datetime.fromisoformat(estat["inici"])
+        inici = H.llegeix(estat["inici"])
         if de_dia and exces >= EXCES_SEGUIR and ara - inici <= dt.timedelta(hours=DURADA_MAX_H):
             return {"inici": estat["inici"], "exces_max": max(estat.get("exces_max", 0), exces)}, esperada, exces
         return None, esperada, exces
     fa = [t for (h, t) in lectures if ara - h <= dt.timedelta(minutes=SALT_MIN_MINUTS) and t is not None]
     salt = t_ara - min(fa) if fa else 0
     if de_dia and salt >= SALT_MIN and exces >= EXCES_INICI:
-        return {"inici": ara.isoformat(timespec="minutes"), "exces_max": exces}, esperada, exces
+        return {"inici": H.clau(ara), "exces_max": exces}, esperada, exces
     return None, esperada, exces
 
 
@@ -196,7 +197,8 @@ def _llegeix_hores(ruta, camp="temperatura"):
     if not os.path.exists(ruta):
         return {}
     with open(ruta, encoding="utf-8") as f:
-        return {r["fins"]: _num(r.get(camp)) for r in csv.DictReader(f)}
+        # Les claus, en UTC també les d'abans de la migració (ADR 0128).
+        return {H.clau(r["fins"]): _num(r.get(camp)) for r in csv.DictReader(f)}
 
 
 def corregeix(ara_casa, files, veines, ara):
@@ -216,15 +218,15 @@ def corregeix(ara_casa, files, veines, ara):
         except (OSError, ValueError):
             estat = None
     lectures = [(f["t"], f["temperatura"]) for f in files or [] if f.get("temperatura") is not None]
-    if ara_casa.get("temperatura") is not None and (not lectures or lectures[-1][0] < dt.datetime.fromisoformat(ara_casa["hora"])):
-        lectures.append((dt.datetime.fromisoformat(ara_casa["hora"]), ara_casa["temperatura"]))
+    if ara_casa.get("temperatura") is not None and (not lectures or lectures[-1][0] < H.llegeix(ara_casa["hora"])):
+        lectures.append((H.llegeix(ara_casa["hora"]), ara_casa["temperatura"]))
     fresques = [v.get("temperatura") for v in veines or []
-                if v.get("hora") and ara - dt.datetime.fromisoformat(v["hora"]) <= dt.timedelta(minutes=30)]
+                if v.get("hora") and ara - H.llegeix(v["hora"]) <= dt.timedelta(minutes=30)]
     nou, esperada, exces = avalua(lectures, fresques, ofs, estat, ara, ara_casa.get("solar"))
     if estat and not nou:
         print(f"Sol directe a l'estació: acabat (des de {estat['inici']}).", file=sys.stderr)
     if nou:
-        apunta(dt.datetime.fromisoformat(nou["inici"]), ara, nou["exces_max"])
+        apunta(H.llegeix(nou["inici"]), ara, nou["exces_max"])
         ara_casa = {**ara_casa, "temperatura_estacio": ara_casa["temperatura"],
                     "temperatura": round(esperada, 1), "sol_directe": True}
         if ara_casa.get("rosada") is not None and ara_casa.get("humitat") is not None:
@@ -240,7 +242,7 @@ def omple(dies=10, ara=None):
     vecinas por horas y apunta los episodios de los últimos días."""
     import ecowitt as E
     import prevision as P
-    ara = ara or dt.datetime.now().astimezone()
+    ara = ara or H.ara()
     casa_hores = _llegeix_hores(os.path.join(DIR, "estacio-casa.csv"))
     veines_hores = {e: _llegeix_hores(os.path.join(DIR, f"veina-{e}.csv")) for e in C.VEINES}
     ofs = ofset(casa_hores, veines_hores, ara, eps=[])
@@ -264,8 +266,8 @@ def omple(dies=10, ara=None):
         ultima = t
     for a, b, e in trobats:
         apunta(a, b, e)
-        print(f"{a:%d/%m %H:%M}–{b:%H:%M}: fins a {e:+.1f} °C sobre l'esperada")
-    print(f"Diferència habitual: {ofs:+.1f} °C. Episodis: {len(trobats)} (fins a {ultima:%d/%m %H:%M}).")
+        print(f"{H.local(a):%d/%m %H:%M}–{H.local(b):%H:%M}: fins a {e:+.1f} °C sobre l'esperada")
+    print(f"Diferència habitual: {ofs:+.1f} °C. Episodis: {len(trobats)} (fins a {H.local(ultima):%d/%m %H:%M}).")
     return trobats
 
 
@@ -274,6 +276,6 @@ if __name__ == "__main__":
         omple(int(sys.argv[2]) if len(sys.argv) > 2 else 10)
     elif len(sys.argv) == 2 and sys.argv[1] == "episodis":
         for a, b in episodis():
-            print(f"{a:%d/%m %H:%M}–{b:%H:%M}")
+            print(f"{H.local(a):%d/%m %H:%M}–{H.local(b):%H:%M}")
     else:
         sys.exit(__doc__)

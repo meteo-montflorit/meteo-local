@@ -45,6 +45,7 @@ import urllib.parse
 import urllib.request
 
 import config as C
+import hora as H
 import prevision as P
 import remostreig as R
 
@@ -129,8 +130,10 @@ def per_hora(files):
             v = f.get(f"h{h:02d}")
             if v in (None, ""):
                 continue
-            moment = dt.datetime.combine(dia, dt.time()) + dt.timedelta(hours=h)
-            res[(f["nom_estacio"], c, moment.strftime("%Y-%m-%dT%H:00"))] = float(v)
+            # Les hores de la XVPCA són de rellotge de Madrid; la clau, en UTC
+            # com les del model (ADR 0128).
+            moment = (dt.datetime.combine(dia, dt.time()) + dt.timedelta(hours=h)).replace(tzinfo=H.ZONA)
+            res[(f["nom_estacio"], c, P.clau_hora(moment))] = float(v)
     return res
 
 
@@ -195,16 +198,16 @@ def correccio(ara):
     try:
         with open(CACHE, encoding="utf-8") as f:
             desat = json.load(f)
-        if desat.get("dia") == ara.date().isoformat() and \
-                ara - dt.datetime.fromisoformat(desat["hora"]) < dt.timedelta(hours=3):
+        if desat.get("dia") == H.dia_local(ara).isoformat() and \
+                ara - H.llegeix(desat["hora"]) < dt.timedelta(hours=3):
             return desat
     except (OSError, ValueError, KeyError):
         pass
-    desde = (ara - dt.timedelta(days=DIES_CORRECCIO + 1)).date().isoformat()
+    desde = (H.dia_local(ara) - dt.timedelta(days=DIES_CORRECCIO + 1)).isoformat()
     mesures = per_hora(mesures_xvpca(desde))
     passat = model(ara, DIES_CORRECCIO)["hourly"]
     adoptats, descartats = factors(passat, mesures, tot=True)
-    res = {"dia": ara.date().isoformat(), "hora": ara.isoformat(timespec="minutes"),
+    res = {"dia": H.dia_local(ara).isoformat(), "hora": H.clau(ara),
            "factors": adoptats, "descartats": descartats}
     if os.path.isdir(os.path.dirname(CACHE)):
         with open(CACHE + ".tmp", "w", encoding="utf-8") as f:
@@ -218,10 +221,10 @@ def llegeix(d, ara, corr=None):
     de lo que queda de hoy y el peor momento, corregidos si hay factores."""
     fs = {c: v["factor"] for c, v in ((corr or {}).get("factors") or {}).items()}
     h = d["hourly"]
-    ara_h = ara.strftime("%Y-%m-%dT%H:00")
+    ara_h = P.clau_hora(H.utc(ara).replace(minute=0, second=0, microsecond=0))
     hores = []
     for n, t in enumerate(h["time"]):
-        if t[:10] != ara.date().isoformat() or t < ara_h:
+        if H.dia_local(t) != H.dia_local(ara) or t < ara_h:
             continue
         per = {c: index_de(c, h[c][n] * fs.get(c, 1)) for c in CONTAMINANTS if h.get(c) and h[c][n] is not None}
         if per:
@@ -238,7 +241,7 @@ def llegeix(d, ara, corr=None):
 
 
 def calcula(ara=None):
-    ara = ara or dt.datetime.now().astimezone()
+    ara = ara or H.ara()
     try:
         corr = correccio(ara)
     except Exception:          # sin la red de la Generalitat, el modelo tal cual

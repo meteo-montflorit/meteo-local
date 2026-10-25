@@ -127,7 +127,7 @@ class Casa(unittest.TestCase):
         self.assertFalse(casa.llueve_ahora_en(None))
 
     def test_error_del_modelo_al_prever(self):
-        h = {"time": ["2026-10-05T10:00", "2026-10-05T11:00"],
+        h = {"time": ["2026-10-05T08:00Z", "2026-10-05T09:00Z"],   # les 10 i les 11, en UTC (ADR 0128)
              "temperature_2m_meteofrance_seamless": [18.0, 20.0]}
         est = {"hora": "2026-10-05T10:30+02:00", "temperatura": 17.0, "rosada": 15.5, "pluja_1h": 0.4}
         d = casa.al_prever(None, h, est)
@@ -150,7 +150,7 @@ class Registre(unittest.TestCase):
             lineas = f.read().splitlines()
         self.assertEqual(lineas[0], ",".join(R.CAMPOS_ESTACIO_CASA))
         self.assertEqual(len(lineas), 2)                 # la hora vacía no se guarda
-        self.assertTrue(lineas[1].startswith("2026-10-05T07:00,0.4,17.2"))
+        self.assertTrue(lineas[1].startswith("2026-10-05T05:00Z,0.4,17.2"))
 
 
 

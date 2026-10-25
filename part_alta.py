@@ -27,6 +27,7 @@ import os
 import statistics
 
 import config as C
+import hora as H
 import prevision as P
 import sol_estacio as SE
 
@@ -50,7 +51,7 @@ def ara(temperatura, veines, ahora):
     if temperatura is None:
         return None
     fresques = [v.get("temperatura") for v in veines or [] if v.get("estacio") in ALTES and v.get("hora")
-                and ahora - dt.datetime.fromisoformat(v["hora"]) <= dt.timedelta(minutes=FRESCA_MIN)]
+                and ahora - H.llegeix(v["hora"]) <= dt.timedelta(minutes=FRESCA_MIN)]
     m = mediana_alta(fresques)
     return None if m is None else round(m - temperatura, 1)
 
@@ -62,7 +63,7 @@ def mesurada(ahora, hores=72, veines_hores=None):
     mira la parte alta (ADR 0123), como temperatura_mesurada para la riera."""
     if veines_hores is None:
         veines_hores = {e: SE._llegeix_hores(os.path.join(DIR, f"veina-{e}.csv")) for e in ALTES}
-    desde = (ahora - dt.timedelta(hours=hores)).strftime("%Y-%m-%dT%H:%M")
+    desde = H.clau(ahora - dt.timedelta(hours=hores))
     claus = sorted({c for h in veines_hores.values() for c in h if c >= desde}, key=P.ordre_hora)
     res = {c: mediana_alta([veines_hores.get(e, {}).get(c) for e in ALTES]) for c in claus}
     return {c: round(v, 1) for c, v in res.items() if v is not None}
@@ -82,7 +83,7 @@ def per_hores(ahora, casa_hores=None, veines_hores=None, eps=None):
         casa_hores = SE._llegeix_hores(os.path.join(DIR, "estacio-casa.csv"))
     if veines_hores is None:
         veines_hores = {e: SE._llegeix_hores(os.path.join(DIR, f"veina-{e}.csv")) for e in ALTES}
-    desde = (ahora - dt.timedelta(days=DIES)).strftime("%Y-%m-%dT%H:%M")
+    desde = H.clau(ahora - dt.timedelta(days=DIES))
     claus = [c for c in casa_hores if c >= desde and casa_hores[c] is not None]
     fora = SE.hores_tocades(claus, eps)
     mostres = {}
@@ -158,16 +159,17 @@ def apunta_nit(hores, ahora, ruta=None):
     files = {}
     try:
         with open(ruta, encoding="utf-8") as f:
-            files = {r["hora"]: r for r in csv.DictReader(f)}
+            files = {H.clau(r["hora"]): {**r, "hora": H.clau(r["hora"]), "fins": H.clau(r["fins"])}
+                     for r in csv.DictReader(f)}
     except OSError:
         pass
     canvi = False
     for f in hores or []:
         if f.get("dif_alta_base") is None or f.get("dif_alta") is None:
             continue
-        if dt.datetime.fromisoformat(f["hora"]).astimezone() - ahora < dt.timedelta(hours=ANTELACIO_H):
+        if H.utc(f["hora"]) - ahora < dt.timedelta(hours=ANTELACIO_H):
             continue
-        files[f["hora"]] = {"hora": f["hora"], "fins": f["fins"], "emes": ahora.isoformat(timespec="minutes"),
+        files[f["hora"]] = {"hora": f["hora"], "fins": f["fins"], "emes": H.clau(ahora),
                             "dif_base": f["dif_alta_base"], "dif_ajust": f["dif_alta"], "nuvols": f.get("nuvols"),
                             "vent": f.get("vent"), "temperatura": f.get("temperatura")}
         canvi = True
@@ -214,7 +216,7 @@ def resum_nit(ruta=None, casa_hores=None, veines_hores=None):
             grups["gelada"].append(e)
     if not grups["totes"]:
         return f"{len(files)} hores de nit apuntades, encara sense mesura per comparar."
-    linies = [f"Hores de nit apuntades: {len(files)} (des de {files[0]['hora'][:10]})."]
+    linies = [f"Hores de nit apuntades: {len(files)} (des de {H.dia_local(files[0]['hora'])})."]
     for nom, text in (("totes", "Totes les hores de nit"), ("gelada", "Hores amb la riera a 0 °C o menys")):
         es = grups[nom]
         if es:

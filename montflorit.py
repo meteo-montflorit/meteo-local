@@ -32,6 +32,7 @@ import shutil
 import sys
 
 from config import VERSION
+import hora as H
 
 ARREL = os.path.dirname(os.path.abspath(__file__))
 REPO = "https://github.com/meteo-montflorit/meteo-montflorit.github.io"
@@ -602,7 +603,8 @@ def dades_publiques(casa, avisos=None):
     """Los datos de casa sin lo que es del trayecto, con los textos de las
     consultas del bot (consultes). avisos: el avisos.json de esta pasada, para
     la riera (perill_riera)."""
-    publiques = {k: v for k, v in casa.items() if k not in PRIVADES}
+    # Les hores internes, en UTC, a l'hora de Madrid amb el desfasament (ADR 0128).
+    publiques = H.publica({k: v for k, v in casa.items() if k not in PRIVADES})
     if avisos is not None:
         publiques["perill_riera"] = perill_riera(avisos)
     # Els talls de llum porten el seu punt (ADR 0077): sense la distància a casa,

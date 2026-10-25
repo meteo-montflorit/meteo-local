@@ -24,7 +24,6 @@ de Trànsit, en catalán, y no se traducen. Sin IA.
 
     python3 transit.py        las de ahora, en JSON
 """
-import datetime as dt
 import json
 import math
 import re
@@ -33,6 +32,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 import config as C
+import hora as H
 
 GML = "https://www.gencat.cat/transit/opendata/incidenciesGML.xml"
 RSS = "https://www.gencat.cat/transit/opendata/incidenciesRSS.xml"
@@ -161,13 +161,13 @@ def llegeix_sencer(url, llegeix, espera=3):
 
 def calcula(ara=None):
     """Per a casa.json i les dades públiques. Sense GML, None (es diu que falla)."""
-    ara = ara or dt.datetime.now().astimezone()
+    ara = ara or H.ara()
     gml = llegeix_sencer(GML, llegeix_gml)
     try:
         rss = llegeix_sencer(RSS, llegeix_rss)
     except Exception:
         rss = None
-    return {"hora": ara.isoformat(timespec="minutes"), "incidencies": filtra(gml, rss)}
+    return {"hora": H.clau(ara), "incidencies": filtra(gml, rss)}
 
 
 if __name__ == "__main__":

@@ -39,6 +39,7 @@ import math
 import os
 
 import config as C
+import hora as H
 
 Z = 7
 MIDA = 768                  # mosaico de 3x3 teselas de 256 píxeles
@@ -189,7 +190,7 @@ def rainviewer(get, tx, ty, fotogrames=7):
     meta = json.loads(get("https://api.rainviewer.com/public/weather-maps.json"))
     claus, valors = llegenda((int(k[1:], 16), v) for k, v in taula_dbz().items())
     past = meta["radar"]["past"][-fotogrames:]
-    return {"hores": [dt.datetime.fromtimestamp(f["time"]).astimezone() for f in past],
+    return {"hores": [dt.datetime.fromtimestamp(f["time"], H.UTC) for f in past],
             "mm_h": [mosaic(get, lambda x, y, f=f: f"{meta['host']}{f['path']}/256/{Z}/{x}/{y}/2/0_0.png",
                             tx, ty, claus, valors) for f in past]}
 
@@ -205,17 +206,17 @@ def en_pausa(ara=None):
     """Hora hasta la que Meteocat está en pausa, o None."""
     try:
         with open(fitxer_pausa(), encoding="utf-8") as f:
-            fins = dt.datetime.fromisoformat(f.read().strip())
+            fins = H.llegeix(f.read().strip())
     except (OSError, ValueError):
         return None
-    return fins if fins > (ara or dt.datetime.now().astimezone()) else None
+    return fins if fins > (ara or H.ara()) else None
 
 
 def posa_pausa(ara=None):
     """Una hora sin pedir nada a Meteocat (solo en el NAS, con /estat)."""
     if not os.path.isdir(os.path.dirname(CACHE)):
         return None
-    fins = (ara or dt.datetime.now().astimezone()) + dt.timedelta(minutes=PAUSA_MIN)
+    fins = (ara or H.ara()) + dt.timedelta(minutes=PAUSA_MIN)
     with open(fitxer_pausa(), "w", encoding="utf-8") as f:
         f.write(fins.isoformat(timespec="minutes"))
     return fins
@@ -244,18 +245,18 @@ def meteocat(get, tx, ty, get_pagina=None):
     if radar:
         mes, dia, any_, h, m = radar.groups()
         t = dt.datetime(int(any_), int(mes), int(dia), int(h), int(m), tzinfo=dt.timezone.utc)
-        res["hora"] = t.astimezone()
+        res["hora"] = t
         res["mm_h"] = mosaic(get, lambda x, y: f"{METEOCAT}/radar/{t:%Y/%m/%d/%H/%M}/{Z:02d}/000/000/{x:03d}/000/000/{tms(y):03d}.png",
                              tx, ty, claus, valors)
     if adv:
-        b = dt.datetime.fromisoformat(adv.group(1)).astimezone(dt.timezone.utc)
+        b = H.llegeix(adv.group(1)).astimezone(dt.timezone.utc)
         prev = []
         for minuts in (6, 60):
             t = b + dt.timedelta(minutes=minuts)
             url = (lambda x, y, t=t: f"{METEOCAT}/adveccio/{b:%Y/%m/%d}/{t:%Y/%m/%d}/{b:%H/%M}/{t:%H/%M}/"
                    f"{Z:02d}/000/000/{x:03d}/000/000/{tms(y):03d}.png")
-            prev.append((t.astimezone(), mosaic(get, url, tx, ty, claus, valors)))
-        res["adveccio"] = {"base": b.astimezone(), "previsions": prev}
+            prev.append((t, mosaic(get, url, tx, ty, claus, valors)))
+        res["adveccio"] = {"base": b, "previsions": prev}
     return res
 
 
@@ -274,7 +275,7 @@ def carrega(get, get_pagina=None):
         r["errors"].append(f"RainViewer: {ex}")
     pausa = en_pausa()
     if pausa:
-        r["errors"].append(f"Meteocat: en pausa fins a les {pausa:%H:%M}")
+        r["errors"].append(f"Meteocat: en pausa fins a les {H.local(pausa):%H:%M}")
     else:
         try:
             r["meteocat"] = meteocat(get, tx, ty, get_pagina)
@@ -283,7 +284,7 @@ def carrega(get, get_pagina=None):
             if es_rebuig(ex):
                 fins = posa_pausa()
                 if fins:
-                    r["errors"].append(f"Meteocat: en pausa fins a les {fins:%H:%M}")
+                    r["errors"].append(f"Meteocat: en pausa fins a les {H.local(fins):%H:%M}")
     return r
 
 
@@ -363,7 +364,7 @@ def moviment(r, ara=None):
     si hay poca, en todo el cuadro); si no, RainViewer si sus pares
     coinciden. None si no hay forma fiable de saberlo."""
     import numpy as np
-    ara = ara or dt.datetime.now().astimezone()
+    ara = ara or H.ara()
     adv = (r.get("meteocat") or {}).get("adveccio")
     if adv and ara - adv["base"] <= dt.timedelta(minutes=ADVECCIO_MAX_MIN):
         (t0, a), (t1, b) = adv["previsions"]
@@ -447,7 +448,7 @@ def resum(r, ahora=None):
         return None
     hora, camp, origen = im
     mov = moviment(r, ahora)
-    res = {"hora": hora.isoformat(timespec="minutes"), "imatge": origen,
+    res = {"hora": H.clau(hora), "imatge": origen,
            "moviment": mov and mov[1], "velocitat_kmh": None, "cap_a": None, "graus": None,
            "llocs": {}}
     v = mov[0] if mov else (0.0, 0.0)   # sin movimiento: la lluvia de ahora, quieta
@@ -471,7 +472,7 @@ def fonts(r, v):
     for nom, hora, camp in (("meteocat", mc.get("hora"), mc.get("mm_h")),
                             ("rainviewer", rv and rv["hores"][-1], rv and rv["mm_h"][-1])):
         if camp is not None:
-            res[nom] = {"hora": hora.isoformat(timespec="minutes"),
+            res[nom] = {"hora": H.clau(hora),
                         "prob": [p["prob"] for p in serie(r, camp, v, *C.CASA)]}
     return res
 
@@ -617,7 +618,7 @@ def creixement(r, fila, col, km_px):
     ara, abans = km2(rv["mm_h"][-1]), km2(rv["mm_h"][j])
     cercle = float(a_prop.sum() * km_px ** 2)
     mc = (r.get("meteocat") or {}).get("mm_h")
-    return {"radar": "rainviewer", "hora": t1.isoformat(timespec="minutes"), "minuts": minuts,
+    return {"radar": "rainviewer", "hora": H.clau(t1), "minuts": minuts,
             "km2": ara, "km2_abans": abans,
             # La part del cercle amb pluja, en %: el que es diu a la pàgina.
             "pct": round(100 * ara / cercle), "pct_abans": round(100 * abans / cercle),
@@ -632,7 +633,7 @@ def en_tram(nc, lloc, ini, fin, minim_min=0):
     menos de minim_min minutos."""
     if not nc or lloc not in (nc.get("llocs") or {}):
         return None
-    t0 = dt.datetime.fromisoformat(nc["hora"])
+    t0 = H.llegeix(nc["hora"])
     passos = [p for p in nc["llocs"][lloc]
               if ini <= t0 + dt.timedelta(minutes=p["min"]) < fin]
     if not passos or len(passos) * PAS_MIN < minim_min:
@@ -646,7 +647,7 @@ def arribada(nc, lloc="casa", prob=0.5):
     lugar (por defecto, la mitad del círculo), o None."""
     if not nc or lloc not in (nc.get("llocs") or {}):
         return None
-    t0 = dt.datetime.fromisoformat(nc["hora"])
+    t0 = H.llegeix(nc["hora"])
     for p in nc["llocs"][lloc]:
         if p["prob"] >= prob:
             return t0 + dt.timedelta(minutes=p["min"])

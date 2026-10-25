@@ -36,6 +36,7 @@ import urllib.parse
 import urllib.request
 
 import config as C
+import hora as H
 import ecowitt as E
 
 URL = "https://weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
@@ -90,8 +91,8 @@ def lectura_disponible():
 
 def dies_fins_caducitat(ahora=None):
     """Días que le quedan a la clave de lectura (config.WU_CLAU_CADUCA)."""
-    ahora = ahora or dt.datetime.now().astimezone()
-    return (dt.date.fromisoformat(C.WU_CLAU_CADUCA) - ahora.date()).days
+    ahora = ahora or H.ara()
+    return (dt.date.fromisoformat(C.WU_CLAU_CADUCA) - H.dia_local(ahora)).days
 
 
 def _f(c):
@@ -105,7 +106,7 @@ def _polzades(mm):
 def parametres(casa, ahora=None):
     """Lo que se manda, en las unidades de Weather Underground (°F, inHg,
     pulgadas), a partir de la lectura de ecowitt.resum_ara o ecowitt.ara."""
-    hora = dt.datetime.fromisoformat(casa["hora"]) if casa.get("hora") else (ahora or dt.datetime.now().astimezone())
+    hora = H.llegeix(casa["hora"]) if casa.get("hora") else (ahora or H.ara())
     d = {"dateutc": hora.astimezone(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
          "tempf": _f(casa.get("temperatura")), "humidity": casa.get("humitat"),
          "dewptf": _f(casa.get("rosada")),
@@ -176,7 +177,7 @@ def files(observacions):
     res = []
     for o in observacions:
         m = o.get("metric") or {}
-        t = dt.datetime.fromisoformat(o["obsTimeUtc"].replace("Z", "+00:00")).astimezone()
+        t = H.utc(o["obsTimeUtc"])
         pressio = [m.get("pressureMax"), m.get("pressureMin")]
         pressio = [p for p in pressio if p is not None]
         res.append({"t": t, "pluja_avui": m.get("precipTotal"), "temperatura": m.get("tempAvg"),
@@ -191,7 +192,7 @@ def veina_ara(estacio, filas, ahora=None):
     """Lo que mide ahora una vecina, con la lluvia de los últimos
     PLOU_ARA_MIN minutos y de la última hora. Solo cuenta el sí, como en casa
     (ADR 0017). Falla si la última lectura es vieja."""
-    ahora = ahora or dt.datetime.now().astimezone()
+    ahora = ahora or H.ara()
     if not filas:
         raise RuntimeError("sense lectures d'avui")
     ultima = filas[-1]
@@ -206,11 +207,13 @@ def veina_ara(estacio, filas, ahora=None):
     # última lectura: el 19-10-2026 a las 06:09, 0,1 mm de hoy con 0,2 en la
     # última hora (ADR 0085).
     v = {"estacio": estacio, "nom": C.VEINES.get(estacio, {}).get("nom", estacio),
-         "hora": hora.isoformat(timespec="minutes"),
+         "hora": H.iso_local(hora),
          **{k: ultima.get(k) for k in ("temperatura", "humitat", "rosada", "pressio", "vent", "ratxa",
                                        "intensitat")},
          "pluja_avui_wu": ultima.get("pluja_avui"),
-         "pluja_avui": E.pluja_entre(filas, hora.replace(hour=0, minute=0, second=0, microsecond=0), hora),
+         # Des de la mitjanit de Madrid (fins a la 3.200.0, el dia del canvi
+         # d'hora es comptava des d'una hora de més o de menys).
+         "pluja_avui": E.pluja_entre(filas, H.mitjanit(H.dia_local(hora)), hora),
          "pluja_15min": E.pluja_entre(filas, hora - dt.timedelta(minutes=C.PLOU_ARA_MIN), hora),
          "pluja_30min": E.pluja_entre(filas, hora - dt.timedelta(minutes=30), hora),
          "pluja_1h": E.pluja_entre(filas, hora - dt.timedelta(hours=1), hora),
@@ -225,7 +228,7 @@ def veines_ara(ahora=None, lector=None):
     """Las vecinas de config.VEINES que se han podido leer y los fallos
     («ICERDA18: l'última lectura és de les 23:52»). Una consulta por
     estación: las lecturas de hoy."""
-    ahora = ahora or dt.datetime.now().astimezone()
+    ahora = ahora or H.ara()
     res, errors = [], []
     for estacio in C.VEINES:
         try:
@@ -239,7 +242,7 @@ def veines_ara(ahora=None, lector=None):
 def hores_ahir(estacio, ahora, lector=None):
     """Las lecturas de ayer (cada 5 minutos), para cerrar en el registro la
     última hora del día, que las de hoy no cubren."""
-    ahir = (ahora - dt.timedelta(days=1)).strftime("%Y%m%d")
+    ahir = (H.dia_local(ahora) - dt.timedelta(days=1)).strftime("%Y%m%d")
     return files(_consulta("history/all", {"stationId": estacio, "date": ahir}, lector))
 
 
@@ -249,8 +252,8 @@ def observacio(v):
     if not v or not v.get("plou") or not v.get("compta"):
         return None
     return {"estacion": v["estacio"], "font": "Weather Underground", "mm_hoy": v.get("pluja_avui"),
-            "mm_ultima_media_hora": E.pluja_entre(v["files"], dt.datetime.fromisoformat(v["hora"]) - dt.timedelta(minutes=30),
-                                                  dt.datetime.fromisoformat(v["hora"])) if v.get("files") else v["pluja_15min"],
+            "mm_ultima_media_hora": E.pluja_entre(v["files"], H.llegeix(v["hora"]) - dt.timedelta(minutes=30),
+                                                  H.llegeix(v["hora"])) if v.get("files") else v["pluja_15min"],
             "intensitat": v.get("intensitat"), "hasta": v["hora"]}
 
 

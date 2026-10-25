@@ -36,6 +36,7 @@ import urllib.request
 import os
 
 import config as C
+import hora as H
 
 CAPA = ("https://dpa-portalgis.enel.com/server/rest/services/Hosted/"
         "ESP_Prod_power_cut_View/FeatureServer/0")
@@ -61,7 +62,7 @@ def hora(text):
     if not m:
         return None
     d, mes, a, h, mi = (int(x) for x in m.groups())
-    return dt.datetime(a, mes, d, h, mi).astimezone().isoformat(timespec="minutes")
+    return H.clau(dt.datetime(a, mes, d, h, mi, tzinfo=H.ZONA))
 
 
 LIMITS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "montflorit-limits.geojson")
@@ -129,7 +130,7 @@ def al_barri(p, anells):
 def calcula(ara=None, dades=None):
     """Los cortes en curso de Montflorit (al_barri), del más cercano a casa
     al más lejano, y la hora de la consulta."""
-    ara = ara or dt.datetime.now().astimezone()
+    ara = ara or H.ara()
     anells = limits()
     vies = carrers()
     marge = C.LLUM_MARGE_KM / 100            # en grados, de sobra
@@ -167,7 +168,7 @@ def calcula(ara=None, dades=None):
             "lat": round(g["y"], 4), "lon": round(g["x"], 4),
             "actualitzat": hora(a.get("update_time")),
         })
-    return {"hora": ara.isoformat(timespec="minutes"), "talls": sorted(talls, key=lambda t: t["km"])}
+    return {"hora": H.clau(ara), "talls": sorted(talls, key=lambda t: t["km"])}
 
 
 # Lo que la consulta necesita de la capa: si falta, ha cambiado.

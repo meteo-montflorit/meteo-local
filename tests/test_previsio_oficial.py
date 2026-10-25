@@ -27,17 +27,17 @@ ARA = dt.datetime(2026, 10, 20, 9, 4, tzinfo=P.ZONA)
 class Llegeix(unittest.TestCase):
     def test_meteocat_en_hora_local_i_sense_menys_zero(self):
         d = O.llegeix_meteocat(METEOCAT)
-        self.assertEqual(d["t"], {"2026-10-20T02:00": 16.0, "2026-10-20T03:00": 15.5})
-        self.assertEqual(d["mm"]["2026-10-20T02:00"], 0.0)
-        self.assertEqual(str(d["mm"]["2026-10-20T02:00"]), "0.0")
+        self.assertEqual(d["t"], {"2026-10-20T00:00Z": 16.0, "2026-10-20T01:00Z": 15.5})
+        self.assertEqual(d["mm"]["2026-10-20T00:00Z"], 0.0)
+        self.assertEqual(str(d["mm"]["2026-10-20T00:00Z"]), "0.0")
 
     def test_aemet_amb_inapreciable_i_trams_que_passen_de_mitjanit(self):
         d = O.llegeix_aemet(AEMET)
-        self.assertEqual(d["elaborat"], "2026-10-20T06:13")
-        self.assertEqual(d["t"]["2026-10-20T09:00"], 16.0)
-        self.assertEqual(d["mm"]["2026-10-20T07:00"], 0.0)
-        self.assertEqual(d["p6"]["2026-10-20T02:00"], ["2026-10-20T08:00", 30.0])
-        self.assertEqual(d["p6"]["2026-10-20T20:00"], ["2026-10-21T02:00", 0.0])
+        self.assertEqual(d["elaborat"], "2026-10-20T04:13Z")       # les 6:13 de Madrid, en UTC (ADR 0128)
+        self.assertEqual(d["t"][O.P.clau_hora("2026-10-20T09:00")], 16.0)
+        self.assertEqual(d["mm"][O.P.clau_hora("2026-10-20T07:00")], 0.0)
+        self.assertEqual(d["p6"][O.P.clau_hora("2026-10-20T02:00")], [O.P.clau_hora("2026-10-20T08:00"), 30.0])
+        self.assertEqual(d["p6"][O.P.clau_hora("2026-10-20T20:00")], [O.P.clau_hora("2026-10-21T02:00"), 0.0])
 
 
 class Apunta(unittest.TestCase):

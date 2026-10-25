@@ -27,6 +27,7 @@ import sys
 
 import config as C
 import ecowitt as E
+import hora as H
 import prevision as P
 
 DIR = os.environ.get("REGISTRE_DIR", "/estat/registre")
@@ -40,12 +41,12 @@ def apunta_radar_a_prop(ahora, radar, motius, obs):
     aviso se encendió y por qué, y qué estaciones medían lluvia. Para decidir
     si los ecos sueltos de Meteocat cerca de casa son lluvia o no (seguimiento
     pedido por Juanjo el 10-10-2026; ADR 0019)."""
-    linia = {"t": ahora.isoformat(timespec="minutes"), "triada": radar.get("imatge"),
+    linia = {"t": H.clau(ahora), "triada": radar.get("imatge"),
              "km": radar.get("km_lluvia"), "mode_avis": motius,
              "pluja_mesurada": [o["estacion"] for o in obs or []
                                 if (o.get("mm_ultima_media_hora") or 0) > 0 or (o.get("intensitat") or 0) > 0],
              "radars": radar.get("a_prop") or {}}
-    with open(os.path.join(DIR, f"radar-a-prop-{ahora:%Y-%m}.jsonl"), "a", encoding="utf-8") as f:
+    with open(os.path.join(DIR, f"radar-a-prop-{H.local(ahora):%Y-%m}.jsonl"), "a", encoding="utf-8") as f:
         f.write(json.dumps(linia, ensure_ascii=False) + "\n")
 
 
@@ -72,15 +73,22 @@ CAMPOS_5MIN = ["fins", "pluja_mm"]
 CAMPOS_METEOCAT = ["fins", "pluja_mm"]
 
 
+def llegeix_per_hores(ruta):
+    """Les files d'un CSV per hores ({«fins»: fila}), amb «fins» en UTC (ADR
+    0128): les d'abans de la 3.201.0, en hora de Madrid, es passen a UTC en
+    llegir-les, i el fitxer queda migrat la primera vegada que es desa."""
+    with open(ruta, encoding="utf-8") as f:
+        return {P.clau_hora(r["fins"]): {**r, "fins": P.clau_hora(r["fins"])} for r in csv.DictReader(f)}
+
+
 def _desa_per_hores(ruta, campos, nuevas):
-    """Añade o sustituye filas ({«fins» local: valores}) en un CSV ordenado."""
+    """Añade o sustituye filas ({«fins» en UTC: valores}) en un CSV ordenado."""
     if not nuevas:
         return
     os.makedirs(DIR, exist_ok=True)
     guardadas = {}
     if os.path.exists(ruta):
-        with open(ruta, encoding="utf-8") as f:
-            guardadas = {r["fins"]: r for r in csv.DictReader(f)}
+        guardadas = llegeix_per_hores(ruta)
     guardadas.update(nuevas)
     with open(ruta + ".tmp", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=campos)
@@ -140,8 +148,7 @@ def apunta_veines_5min(cincs):
     campos = campos_veines_5min()
     guardadas = {}
     if os.path.exists(VEINES_5MIN):
-        with open(VEINES_5MIN, encoding="utf-8") as f:
-            guardadas = {r["fins"]: {c: r.get(c, "") for c in campos} for r in csv.DictReader(f)}
+        guardadas = {k: {c: r.get(c, "") for c in campos} for k, r in llegeix_per_hores(VEINES_5MIN).items()}
     for clave, valors in files.items():
         fila = guardadas.setdefault(clave, {c: "" for c in campos})
         fila["fins"] = clave
@@ -159,7 +166,7 @@ def hores_meteocat(filas):
     horas con sus dos medias horas."""
     per_hora = {}
     for ini, mm in filas:
-        fin = (ini + dt.timedelta(minutes=30)).astimezone()
+        fin = H.utc(ini + dt.timedelta(minutes=30))
         fin = fin.replace(minute=0, second=0, microsecond=0) + (dt.timedelta(hours=1) if fin.minute else dt.timedelta())
         h = per_hora.setdefault(fin, [0.0, 0])
         h[0] += mm
@@ -213,7 +220,7 @@ def falta_ahir_veina(estacio, ahora):
     """Si al registro de una vecina le falta la última hora de ayer (las
     lecturas de hoy no la cierran): se pide el historial de ayer una vez."""
     ruta = os.path.join(DIR, f"veina-{estacio}.csv")
-    mitjanit = ahora.replace(hour=0, minute=0, second=0, microsecond=0).strftime("%Y-%m-%dT%H:%M")
+    mitjanit = H.clau(H.mitjanit(H.dia_local(ahora)))
     if not os.path.exists(ruta):
         return True
     with open(ruta, encoding="utf-8") as f:
@@ -223,16 +230,16 @@ def temperatures_casa(ahora, hores=72, recents=None):
     horas ({"AAAA-MM-DDTHH:MM" local: °C}), del registro y de las lecturas
     de esta pasada (recents, ecowitt.hores): para comparar la previsión con
     lo de ayer (ADR 0061)."""
-    desde = (ahora - dt.timedelta(hours=hores)).strftime("%Y-%m-%dT%H:%M")
+    desde = H.utc(ahora) - dt.timedelta(hours=hores)
     res = {}
     if os.path.exists(ESTACIO_CASA):
         with open(ESTACIO_CASA, encoding="utf-8") as f:
             for r in csv.DictReader(f):
-                if r["fins"] >= desde and _num(r["temperatura"]) is not None:
-                    res[r["fins"]] = _num(r["temperatura"])
+                if H.utc(r["fins"]) >= desde and _num(r["temperatura"]) is not None:
+                    res[P.clau_hora(r["fins"])] = _num(r["temperatura"])
     for fin, h in (recents or {}).items():
         clau = P.clau_hora(fin)
-        if clau >= desde and h.get("temperatura") is not None:
+        if H.utc(fin) >= desde and h.get("temperatura") is not None:
             res[clau] = round(h["temperatura"], 1)
     # Las horas con sol directo sobre el termómetro, con la temperatura
     # esperada según las vecinas (ADR 0081).
@@ -249,8 +256,8 @@ def apunta_setmana(ahora, dies):
     se calcula (como mucho cada hora, setmana.CADA_MIN), en
     setmana-AAAA-MM.jsonl: para comprobar con lo que pasó la probabilidad de
     lluvia, que sale del ensemble sin calibrar (ADR 0122)."""
-    with open(os.path.join(DIR, f"setmana-{ahora:%Y-%m}.jsonl"), "a", encoding="utf-8") as f:
-        f.write(json.dumps({"t": ahora.isoformat(timespec="minutes"), "dies": dies}, ensure_ascii=False) + "\n")
+    with open(os.path.join(DIR, f"setmana-{H.local(ahora):%Y-%m}.jsonl"), "a", encoding="utf-8") as f:
+        f.write(json.dumps({"t": H.clau(ahora), "dies": dies}, ensure_ascii=False) + "\n")
 
 
 def apunta_estacio_casa(nuevas):
@@ -262,8 +269,7 @@ def apunta_estacio_casa(nuevas):
     os.makedirs(DIR, exist_ok=True)
     guardadas = {}
     if os.path.exists(ESTACIO_CASA):
-        with open(ESTACIO_CASA, encoding="utf-8") as f:
-            guardadas = {r["fins"]: r for r in csv.DictReader(f)}
+        guardadas = llegeix_per_hores(ESTACIO_CASA)
     for fin, h in nuevas.items():
         clave = P.clau_hora(fin)
         guardadas[clave] = {"fins": clave, **{k: h.get(k) for k in CAMPOS_ESTACIO_CASA[1:]}}
@@ -287,7 +293,7 @@ def completa_estacio_casa(ahora=None):
         with open(ESTACIO_CASA, encoding="utf-8") as f:
             horas = [r["fins"] for r in csv.DictReader(f) if r["temperatura"]]
         if horas:
-            desde = max(desde, dt.datetime.fromisoformat(horas[-1]).astimezone() - dt.timedelta(hours=2))
+            desde = max(desde, H.utc(horas[-1]) - dt.timedelta(hours=2))
     else:
         desde = max(desde, ahora - dt.timedelta(days=2))
     apunta_estacio_casa(E.hores(E.historial(desde, ahora, "5min")))
@@ -303,10 +309,9 @@ def rehaz_pluja_casa(ahora=None):
     ahora = ahora or P.AHORA
     if not os.path.exists(ESTACIO_CASA):
         return 0
-    with open(ESTACIO_CASA, encoding="utf-8") as f:
-        filas = list(csv.DictReader(f))
+    filas = sorted(llegeix_per_hores(ESTACIO_CASA).values(), key=lambda r: r["fins"])
     desde = max(ahora - dt.timedelta(days=ESTACIO_CASA_DIES_MAX),
-                dt.datetime.fromisoformat(filas[0]["fins"]).astimezone() - dt.timedelta(hours=1))
+                H.utc(filas[0]["fins"]) - dt.timedelta(hours=1))
     buenas = {P.clau_hora(fin): h["pluja_mm"]
               for fin, h in E.hores(E.historial(desde, ahora, "5min")).items() if h["pluja_mm"] is not None}
     canvis = 0
@@ -337,15 +342,17 @@ def apunta_casa(emes, hores, ara_casa=None, sant_cugat=None, veines=None):
     la lluvia de la última hora en la estación de Meteocat de Sant Cugat, por
     si lo que llueve cerca ayuda a prever (ADR 0042); veines: la de cada
     estación vecina ({id: mm}), desde el 10-10-2026 (ADR 0070)."""
-    hora = emes.strftime("%Y-%m-%dT%H")
+    # L'hora en UTC: la nit d'octubre, les dues hores de 2 a 3 són dues (fins
+    # a la 3.200.0 la segona no s'apuntava; ADR 0128).
+    hora = H.clau(emes)[:13]
     if os.path.exists(CASA_DARRERA):
         with open(CASA_DARRERA) as f:
             if f.read().strip() == hora:
                 return
     os.makedirs(DIR, exist_ok=True)
-    linea = {"emes": emes.isoformat(timespec="minutes"), "ara_casa": ara_casa, "hores": hores,
+    linea = {"emes": H.clau(emes), "ara_casa": ara_casa, "hores": hores,
              "sant_cugat": sant_cugat, "veines": veines}
-    with open(os.path.join(DIR, f"casa-{emes.strftime('%Y-%m')}.jsonl"), "a", encoding="utf-8") as f:
+    with open(os.path.join(DIR, f"casa-{H.local(emes):%Y-%m}.jsonl"), "a", encoding="utf-8") as f:
         f.write(json.dumps(linea, ensure_ascii=False) + "\n")
     with open(CASA_DARRERA, "w") as f:
         f.write(hora)

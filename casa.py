@@ -29,6 +29,7 @@ import urllib.parse
 import aire as AI
 import aprenentatge as A
 import config as C
+import hora as H
 import ecowitt as E
 import entorn as EN
 import estacions as ES
@@ -79,7 +80,8 @@ def modelos(desde, errors=None):
     """Los modelos deterministas y, aparte, el ensemble: si solo falla el
     ensemble, la previsión sigue (la probabilidad sale del modelo aprendido
     sin él) y queda apuntado en errors."""
-    dias = [desde.date().isoformat(), (desde + dt.timedelta(days=2)).date().isoformat()]
+    # Els dies d'Open-Meteo, els de Madrid (timezone): el de l'hora d'ara.
+    dias = [H.dia_local(desde).isoformat(), (H.dia_local(desde) + dt.timedelta(days=2)).isoformat()]
     q = urllib.parse.urlencode({
         "latitude": C.CASA[0], "longitude": C.CASA[1],
         "hourly": "temperature_2m,precipitation,weather_code,cloud_cover,cloud_cover_low,"
@@ -132,7 +134,10 @@ def modelos(desde, errors=None):
         "latitude": C.CASA[0], "longitude": C.CASA[1], "minutely_15": "wind_speed_10m",
         "models": "meteofrance_seamless", "timezone": P.TZ, "start_date": dias[0], "end_date": dias[1]})
     try:
-        m15 = json.loads(P.get_reintenta(f"https://api.open-meteo.com/v1/forecast?{q}"))["minutely_15"]
+        # També amb les hores passades a claus en UTC: no ho feia, i els dos
+        # dies abans d'un canvi d'hora anaven una hora desplaçades (inventari
+        # del 25-10-2026, ADR 0128).
+        m15 = P.horas_locales(json.loads(P.get_reintenta(f"https://api.open-meteo.com/v1/forecast?{q}")))["minutely_15"]
         h["vent_15min"] = {t: v for t, v in zip(m15["time"], m15["wind_speed_10m"]) if v is not None}
     except Exception as ex:
         print("No he pogut llegir el vent cada 15 minuts:", ex, file=sys.stderr)
@@ -165,7 +170,7 @@ def desviacio_pressio(h, casa):
     DESVIACIO_PRESSIO_MAX es una lectura mala: 0."""
     if not casa or casa.get("pressio") is None or not casa.get("hora"):
         return 0.0
-    model = temperatura_model_ara(h, dt.datetime.fromisoformat(casa["hora"]), "pressure_msl")
+    model = temperatura_model_ara(h, H.llegeix(casa["hora"]), "pressure_msl")
     if model is None or abs(casa["pressio"] - model) > DESVIACIO_PRESSIO_MAX:
         return 0.0
     return casa["pressio"] - model
@@ -190,8 +195,8 @@ def vent_hora(h, i):
     fi = h["time"][i]
     m15 = h.get("vent_15min") or {}
     if m15:
-        t = dt.datetime.fromisoformat(fi)
-        punts = [m15.get((t - dt.timedelta(minutes=15 * k)).strftime("%Y-%m-%dT%H:%M")) for k in range(4, -1, -1)]
+        t = H.utc(fi)
+        punts = [m15.get(H.clau(t - dt.timedelta(minutes=15 * k))) for k in range(4, -1, -1)]
         if all(v is not None for v in punts):
             return round((punts[0] / 2 + sum(punts[1:4]) + punts[4] / 2) / 4, 1)
     ara = hores[i] if i < len(hores) else None
@@ -205,7 +210,8 @@ def indice_uv(desde):
     """Índice UV por hora ({"AAAA-MM-DDTHH:MM": valor}) para la página «Si
     surts» (ADR 0029). Solo lo da el modelo por defecto de Open-Meteo: va en
     una consulta aparte, y si falla la página sigue sin él."""
-    dias = [desde.date().isoformat(), (desde + dt.timedelta(days=2)).date().isoformat()]
+    # Els dies d'Open-Meteo, els de Madrid (timezone): el de l'hora d'ara.
+    dias = [H.dia_local(desde).isoformat(), (H.dia_local(desde) + dt.timedelta(days=2)).isoformat()]
     q = urllib.parse.urlencode({"latitude": C.CASA[0], "longitude": C.CASA[1], "hourly": "uv_index",
                                 "timezone": P.TZ, "start_date": dias[0], "end_date": dias[1]})
     h = P.horas_locales(json.loads(P.get(f"https://api.open-meteo.com/v1/forecast?{q}")))["hourly"]
@@ -216,8 +222,8 @@ def sol(desde):
     """Salida y puesta del sol e índice UV máximo de hoy y mañana, para
     «Consultes» y /sol (ADR 0054). Del modelo por defecto de Open-Meteo."""
     q = urllib.parse.urlencode({"latitude": C.CASA[0], "longitude": C.CASA[1], "timezone": P.TZ,
-                                "daily": "sunrise,sunset,uv_index_max", "start_date": desde.date().isoformat(),
-                                "end_date": (desde + dt.timedelta(days=1)).date().isoformat()})
+                                "daily": "sunrise,sunset,uv_index_max", "start_date": H.dia_local(desde).isoformat(),
+                                "end_date": (H.dia_local(desde) + dt.timedelta(days=1)).isoformat()})
     d = P.horas_locales(json.loads(P.get(f"https://api.open-meteo.com/v1/forecast?{q}")))["daily"]
     return [{"dia": t, "sortida": s, "posta": p, "uv_max": uv}
             for t, s, p, uv in zip(d["time"], d["sunrise"], d["sunset"], d["uv_index_max"])]
@@ -228,7 +234,7 @@ def estacio_casa():
     if not E.disponible():
         return None
     casa = E.resum_ara()
-    hora = dt.datetime.fromisoformat(casa["hora"])
+    hora = H.llegeix(casa["hora"])
     if P.AHORA - hora > dt.timedelta(minutes=ARA_MAX_MIN):
         raise RuntimeError(f"l'última lectura és de les {hora:%H:%M}")
     return casa
@@ -268,7 +274,7 @@ def estat_pluja(radar, plou, ahora):
       no recoge. No cambia la previsión ni los avisos: se dice y se pregunta
       a Juanjo para comprobarlo (plugim.py)."""
     r = radar or {}
-    t = lambda k: dt.datetime.fromisoformat(r[k]) if r.get(k) else None  # noqa: E731
+    t = lambda k: H.llegeix(r[k]) if r.get(k) else None  # noqa: E731
     arriba, possible = t("arriba"), t("possible")
     if plou:
         estat, font = "plou", "estacions"
@@ -294,15 +300,16 @@ def ajusta_hores(hores, pluja, ahora):
     (previsio_anterior), que no lleva el radar."""
     if not hores or not pluja:
         return hores
-    local = lambda iso: dt.datetime.fromisoformat(iso).astimezone().replace(tzinfo=None)  # noqa: E731
+    # Tot en moments amb zona (ADR 0128): fins a la 3.200.0, sense zona, la
+    # nit del canvi d'hora l'hora repetida (amb desfasament) feia caure casa.py.
     marques = []
     if pluja["estat"] == "radar_sobre":
-        marques.append((ahora.astimezone().replace(tzinfo=None), 0.5))
+        marques.append((H.utc(ahora), 0.5))
     elif pluja["estat"] in ("arriba", "possible") and pluja.get(pluja["estat"]):
-        marques.append((local(pluja[pluja["estat"]]), 0.5 if pluja["estat"] == "arriba" else C.PROB_ATENCION))
+        marques.append((H.utc(pluja[pluja["estat"]]), 0.5 if pluja["estat"] == "arriba" else C.PROB_ATENCION))
     for t, p in marques:
         for f in hores[:3]:
-            if dt.datetime.fromisoformat(f["hora"]) <= t < dt.datetime.fromisoformat(f["fins"]) \
+            if H.utc(f["hora"]) <= t < H.utc(f["fins"]) \
                     and (f.get("probabilitat") or 0) < p:
                 f["probabilitat"] = p
                 f["segons_radar"] = not f.get("plou_ara") and not f.get("segons_estacio")
@@ -374,7 +381,7 @@ def ara_sense_casa(veines, taula, ahora):
     y la humedad, por consenso de las vecinas (consens). Sin presión: la de
     las vecinas no está calibrada. Sin vecinas, None, como hasta ahora."""
     fresques = [v for v in veines or [] if v.get("hora")
-                and ahora - dt.datetime.fromisoformat(v["hora"]) <= dt.timedelta(minutes=PA.FRESCA_MIN)]
+                and ahora - H.llegeix(v["hora"]) <= dt.timedelta(minutes=PA.FRESCA_MIN)]
     baixa = [v["temperatura"] for v in fresques
              if not C.VEINES.get(v["estacio"], {}).get("alta") and v.get("temperatura") is not None]
     if baixa:
@@ -427,7 +434,7 @@ def al_prever(desde, h, casa, riera=None, veines=None):
          # La de las vecinas de Montflorit, como la guarda el registro (ADR 0070).
          "pluja_1h_veines": A.pluja_veines(pluja_veines_ara(veines))}
     if casa and casa.get("temperatura") is not None:
-        t_model = temperatura_model_ara(h, dt.datetime.fromisoformat(casa["hora"]))
+        t_model = temperatura_model_ara(h, H.llegeix(casa["hora"]))
         if t_model is not None:
             d["error_temp_ara"] = round(t_model - casa["temperatura"], 2)
         if casa.get("rosada") is not None:
@@ -438,7 +445,7 @@ def al_prever(desde, h, casa, riera=None, veines=None):
     rosada = _mediana([(casa or {}).get("rosada")] + [v.get("rosada") for v in veines or []])
     hora = (casa or {}).get("hora") or next((v.get("hora") for v in veines or [] if v.get("hora")), None)
     if rosada is not None and hora:
-        ahora = dt.datetime.fromisoformat(hora)
+        ahora = H.llegeix(hora)
         t, hr = temperatura_model_ara(h, ahora), temperatura_model_ara(h, ahora, "relative_humidity_2m")
         if t is not None and hr is not None:
             d["error_rosada_ara"] = round(SE.rosada(t, hr) - rosada, 2)
@@ -481,7 +488,7 @@ def avisos_del_tramo(ini, fin, avisos, tots=True):
     for a in avisos or []:
         # Sense els que cobreix Meteocat, només les hores que no cobreix (smp.visible).
         v = a if tots else SMP.visible(a)
-        a_ini, a_fin = (dt.datetime.fromisoformat(v[k]) for k in ("inicio", "fin"))
+        a_ini, a_fin = (H.llegeix(v[k]) for k in ("inicio", "fin"))
         if a["zona"] == C.ZONA_AVISOS and a_ini < fin and a_fin > ini and (tots or not a.get("cobert")):
             res.setdefault(a["nivel"], set()).add(a["tipo"])
     return [{"nivell": n, "tipus": sorted(t)} for n, t in res.items()]
@@ -528,7 +535,7 @@ def variables_hora(desde, h, prob, i, prever):
     medían las estaciones al prever (al_prever): lo que usa el modelo
     aprendido y lo que se guarda en el registro."""
     t = h["time"][i]
-    fin = dt.datetime.fromisoformat(t).astimezone()
+    fin = H.utc(t)
     d = {"fins": t, "antelacio_h": round((fin - desde).total_seconds() / 3600, 2),
          "prob_ens": prob.get(t)}
     for m in C.MODELOS_FINOS + [C.MODEL_ECMWF]:
@@ -563,16 +570,20 @@ def previsio(desde, h, e, avisos, model=None, casa=None, nc=None, planes=None, r
     def valor(campo, i):
         return h.get(f"{campo}_meteofrance_seamless", [None] * (i + 1))[i]
 
-    primera = desde.replace(minute=0, second=0, microsecond=0) + dt.timedelta(hours=1)
-    fi_dema = (dt.datetime.combine(desde.date() + dt.timedelta(days=1), dt.time(FI_DEMA))).strftime("%Y-%m-%dT%H:%M")
+    # Les claus, en UTC (ADR 0128), es comparen bé com a text; el final de demà
+    # i els trams, en hora de Madrid. Fins a la 3.200.0, en hora local sense
+    # zona: la primera de les dues hores de 2 a 3 d'octubre se saltava la
+    # taula a les 2:xx de l'estiu.
+    primera = P.clau_hora(H.utc(desde).replace(minute=0, second=0, microsecond=0) + dt.timedelta(hours=1))
+    fi_dema = H.clau(dt.datetime.combine(H.dia_local(desde) + dt.timedelta(days=1), dt.time(FI_DEMA), tzinfo=H.ZONA))
     filas = []
     for i, t in enumerate(h["time"]):
-        if t < primera.strftime("%Y-%m-%dT%H:%M"):
+        if t < primera:
             continue
         if (len(filas) >= HORAS and filas[-1]["fins"] >= fi_dema
-                and int(filas[-1]["fins"][11:13]) in FI_TRAMS):
+                and H.hora_local(filas[-1]["fins"]) in FI_TRAMS):
             break
-        fin = dt.datetime.fromisoformat(t).astimezone()
+        fin = H.utc(t)
         ini = fin - dt.timedelta(hours=1)
         n = len(filas)
         d = variables_hora(desde, h, prob, i, prever)
@@ -649,8 +660,8 @@ def riscos_hora(ini, fin, riscos, ahora=None):
     res = []
     for r in riscos or []:
         if r.get("origen") == "previsio":
-            if not (r.get("des_de") and dt.datetime.fromisoformat(r["des_de"]) < fin
-                    and dt.datetime.fromisoformat(r["fins"]) > ini):
+            if not (r.get("des_de") and H.llegeix(r["des_de"]) < fin
+                    and H.llegeix(r["fins"]) > ini):
                 continue
         elif not ini <= ahora < fin:
             continue
@@ -673,7 +684,7 @@ def filas_registro(desde, h, e, mostradas, casa=None, avisos=None, planes=None, 
         d.pop("pluja_1h_emes")      # ya va en «ara_casa», una vez por línea
         d.pop("pluja_1h_xv", None)  # ya va en «sant_cugat», una vez por línea
         d.pop("pluja_1h_veines", None)  # y las vecinas, en «veines»
-        fin = dt.datetime.fromisoformat(f["fins"]).astimezone()
+        fin = H.utc(f["fins"])
         d.update(senyals_avis(fin - dt.timedelta(hours=1), fin, avisos, planes))
         # «plou_ara», para saber qué veredicto dio «Si surts» (ADR 0047).
         d["mostrat"] = {"pluja_mm": f["pluja_mm"], "probabilitat": f["probabilitat"],
@@ -708,15 +719,19 @@ def previsio_anterior(origen, avisos, casa=None, veines=None, nuvols_ara=None):
     de = antes.get("previsio_de") or antes.get("generat")
     if not antes.get("hores") or not de:
         return None
-    if P.AHORA - dt.datetime.fromisoformat(de) > dt.timedelta(hours=C.CASA_PREVISION_ANTERIOR_MAX_H):
+    if P.AHORA - H.llegeix(de) > dt.timedelta(hours=C.CASA_PREVISION_ANTERIOR_MAX_H):
         return None
-    ara_hora = P.AHORA.strftime("%Y-%m-%dT%H:%M")
-    hores = [dict(f) for f in antes["hores"] if f["fins"] > ara_hora]
+    # La previsió anterior és la publicada (hora de Madrid amb desfasament, o
+    # sense zona si és d'abans de la 3.201.0): les seves hores, a claus en UTC
+    # com les de les dades d'ara (ADR 0128).
+    clau = lambda t: H.clau(t) if t else t  # noqa: E731
+    hores = [{**f, "hora": clau(f.get("hora")), "fins": H.clau(f["fins"])} for f in antes["hores"]
+             if H.utc(f["fins"]) > P.AHORA]
     if not hores:
         return None
     llueve_ahora = llueve_ahora_en(casa, veines)
     for n, f in enumerate(hores):
-        fin = dt.datetime.fromisoformat(f["fins"]).astimezone()
+        fin = H.utc(f["fins"])
         f["avisos"] = avisos_mostrats(fin - dt.timedelta(hours=1), fin, avisos)
         f["plou_ara"] = n == 0 and llueve_ahora
         if f["plou_ara"]:
@@ -745,7 +760,7 @@ def comprobacion_modelos(desde, h, filas_estacion, consens_3h=None):
         medida = consens_3h
     prevista = 0.0
     for i, t in enumerate(h["time"]):
-        tt = dt.datetime.fromisoformat(t).astimezone()
+        tt = H.utc(t)
         if ini < tt <= fin:
             prevista += lluvia_modelos(h, i)
     fallan = medida >= 3 and medida > 3 * prevista + 1
@@ -754,7 +769,7 @@ def comprobacion_modelos(desde, h, filas_estacion, consens_3h=None):
 
 
 def recoger(anterior=None):
-    salida = {"versio": C.VERSION, "generat": P.AHORA.isoformat(timespec="minutes"),
+    salida = {"versio": C.VERSION, "generat": H.iso_local(P.AHORA),
               "errors": []}
     # La estación del barrio es la de casa, en «ara_casa» (ADR 0017 y 0058).
     casa = None
@@ -854,7 +869,7 @@ def recoger(anterior=None):
     avisos = planes = None
     try:
         avisos = [a for a in P.avisos() if a["zona"] == C.ZONA_AVISOS
-                  and dt.datetime.fromisoformat(a["fin"]) > P.AHORA]
+                  and H.llegeix(a["fin"]) > P.AHORA]
     except Exception as ex:
         salida["errors"].append(f"avisos: {ex}")
     try:
@@ -905,7 +920,7 @@ def recoger(anterior=None):
         # Cuándo llegaría: probable (50 %) o, si no, posible (20 %).
         for clau, prob in (("arriba", 0.5), ("possible", C.PROB_ATENCION)):
             t = N.arribada(nc, "casa", prob)
-            salida["radar"][clau] = t and t.isoformat(timespec="minutes")
+            salida["radar"][clau] = t and H.clau(t)
         # Cómo sería al llegar, para el aviso de antes de llover (ADR 0022).
         salida["radar"]["arriba_mm_h"] = N.intensitat_arribada(nc, "casa")
         # El mapa i la pluja més propera, per al requadre del radar (17-10-2026).
@@ -1125,6 +1140,14 @@ def recoger(anterior=None):
 
 
 if __name__ == "__main__":
+    # La primera passada amb la 3.201.0 migra els registres a UTC (ADR 0128),
+    # abans de llegir-ne o escriure'n cap; després, no fa res.
+    try:
+        import migra_utc
+        if R.hay_registro() and (fet := migra_utc.migra(R.DIR)) is not None:
+            print(f"Registres migrats a UTC: {len(fet)} fitxers.")
+    except Exception as ex:
+        print("No he pogut migrar els registres a UTC:", ex, file=sys.stderr)
     datos = recoger(sys.argv[sys.argv.index("--anterior") + 1] if "--anterior" in sys.argv else None)
     if "--json" in sys.argv:
         with open(sys.argv[sys.argv.index("--json") + 1], "w", encoding="utf-8") as f:
@@ -1134,6 +1157,6 @@ if __name__ == "__main__":
     print("Modelos:", datos["models"])
     print("Planes:", datos["plans"])
     for f in (datos["hores"] or [])[:8]:
-        print(f["hora"][11:16], f["temperatura"], "°C", f["pluja_mm"], "mm", f["probabilitat"],
+        print(H.local(f["hora"]).strftime("%H:%M"), f["temperatura"], "°C", f["pluja_mm"], "mm", f["probabilitat"],
               "estació" if f["segons_estacio"] else "", "PLOU ARA" if f["plou_ara"] else "",
               f["avisos"])

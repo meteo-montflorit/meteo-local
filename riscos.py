@@ -31,6 +31,7 @@ import os
 import sys
 
 import config as C
+import hora as H
 
 NIVELLS = ("groc", "taronja", "vermell")
 DIR = os.environ.get("REGISTRE_DIR", "/estat/registre")
@@ -71,6 +72,8 @@ def num(x, tipus=None):
 
 def quan(ini, fin, ahora):
     """«avui de 15 a 18 h», «demà de 2 a 5 h»."""
+    # En hora de Madrid, la de la gent (ADR 0128).
+    ini, fin, ahora = H.local(ini), H.local(fin), H.local(ahora)
     dia = "avui" if ini.date() == ahora.date() else "demà" if ini.date() == ahora.date() + dt.timedelta(days=1) \
         else ini.strftime("%d/%m")
     return f"{dia} de {ini.hour} a {fin.hour} h"
@@ -97,8 +100,8 @@ def risc(tipus, origen, valor, ini=None, fin=None, ahora=None, ratxes=None):
     llindar = C.RISC_LLINDARS[tipus][NIVELLS.index(n)]
     return {"clau": f"{origen}:{tipus}", "tipus": tipus, "origen": origen, "nivell": n,
             "valor": round(valor, 1), "llindar": llindar, "unitat": UNITATS[tipus],
-            "des_de": ini and ini.isoformat(timespec="minutes"),
-            "fins": fin and fin.isoformat(timespec="minutes"), "text": text,
+            "des_de": ini and H.clau(ini),
+            "fins": fin and H.clau(fin), "text": text,
             "font": font(tipus, origen, ratxes)}
 
 
@@ -205,7 +208,7 @@ def pitjor_tram(hores, tipus, valor_de):
     # 15 a 4 h»).
     trams, tram = [], [dins[0]]
     for ant, act in zip(dins, dins[1:]):
-        pausa = dt.datetime.fromisoformat(act[0]["hora"]) - dt.datetime.fromisoformat(ant[0]["fins"])
+        pausa = H.llegeix(act[0]["hora"]) - H.llegeix(ant[0]["fins"])
         if pausa <= dt.timedelta(hours=TRAM_PAUSA_H):
             tram.append(act)
         else:
@@ -213,8 +216,8 @@ def pitjor_tram(hores, tipus, valor_de):
             tram = [act]
     trams.append(tram)
     tram = next(t for t in trams if any(v == valor for _, v in t))
-    ini = dt.datetime.fromisoformat(tram[0][0]["hora"])
-    fin = dt.datetime.fromisoformat(tram[-1][0]["fins"])
+    ini = H.llegeix(tram[0][0]["hora"])
+    fin = H.llegeix(tram[-1][0]["fins"])
     return valor, ini, fin
 
 
@@ -230,7 +233,7 @@ def de_la_previsio(hores, ahora):
             ratxes = None
             if tipus == "ratxa":
                 # La més forta de cada model en les hores del tram.
-                dins = [f for f in hores if t[1] <= dt.datetime.fromisoformat(f["hora"]) < t[2]]
+                dins = [f for f in hores if t[1] <= H.llegeix(f["hora"]) < t[2]]
                 ratxes = {}
                 for f in dins:
                     for m, v in (f.get("ratxes_models") or {}).items():
@@ -255,8 +258,8 @@ def de_la_previsio(hores, ahora):
                 millor = (mm, tram)
         if millor and nivell(tipus, millor[0]):
             tram = millor[1]
-            r = risc(tipus, "previsio", millor[0], dt.datetime.fromisoformat(tram[0]["hora"]),
-                     dt.datetime.fromisoformat(tram[-1]["fins"]), ahora)
+            r = risc(tipus, "previsio", millor[0], H.llegeix(tram[0]["hora"]),
+                     H.llegeix(tram[-1]["fins"]), ahora)
             probs = [f["probabilitat"] for f in tram if pot(f) and f.get("probabilitat") is not None]
             if probs and max(probs) < 0.5:
                 r["prob"] = round(max(probs) * 100)
@@ -334,12 +337,12 @@ def compara(estat, salida, ahora):
         if not abans or NIVELLS.index(r["nivell"]) > NIVELLS.index(abans["nivell"]):
             nous.append(r)
             actius[r["clau"]] = {"nivell": r["nivell"]}
-        actius[r["clau"]]["vist"] = ahora.isoformat(timespec="minutes")
+        actius[r["clau"]]["vist"] = H.clau(ahora)
     acabats = []
     for clau, a in list(actius.items()):
         if clau.split(":")[0] in sense:
             continue
-        if ahora - dt.datetime.fromisoformat(a["vist"]) >= dt.timedelta(hours=C.RISC_FI_H):
+        if ahora - H.llegeix(a["vist"]) >= dt.timedelta(hours=C.RISC_FI_H):
             acabats.append(clau)
             del actius[clau]
     if nous:
@@ -355,7 +358,7 @@ def compara(estat, salida, ahora):
 
 
 def avisa(ruta, ahora=None):
-    ahora = ahora or dt.datetime.now().astimezone()
+    ahora = ahora or H.ara()
     with open(ruta, encoding="utf-8") as f:
         salida = json.load(f)
     estat = llegeix_estat()

@@ -29,10 +29,12 @@ import subprocess
 import sys
 
 import config as C
+import hora as H
 
-# Los registros guardan la hora local sin zona; aquí todo va igual.
+# Todo en UTC (ADR 0128): hasta la 3.200.0, hora local sin zona, y la noche
+# del cambio de hora la hora repetida, con desfase, hacía caer la vigilancia.
 def local(t=None):
-    return (t or dt.datetime.now().astimezone()).astimezone().replace(tzinfo=None)
+    return H.utc(t or H.ara())
 
 
 DIR = os.environ.get("REGISTRE_DIR", "/estat/registre")
@@ -59,7 +61,7 @@ def lee(ruta):
         res = {}
         for r in csv.DictReader(f):
             try:
-                res[dt.datetime.fromisoformat(r["fins"])] = float(r["pluja_mm"])
+                res[H.utc(r["fins"])] = float(r["pluja_mm"])
             except (TypeError, ValueError):
                 pass
         return res
@@ -117,12 +119,12 @@ def evalua(mont, casa, desde, ahora):
             continue        # sin datos de casa en el episodio: no se juzga
         m = round(sum(mont[t] for t in ep), 1)
         c = round(sum(casa.get(t, 0.0) for t in horas), 1)
-        fila = {"inici": (ep[0] - dt.timedelta(hours=1)).isoformat(timespec="minutes"),
-                "fi": ep[-1].isoformat(timespec="minutes"), "referencia_mm": m, "casa_mm": c}
+        fila = {"inici": H.clau(ep[0] - dt.timedelta(hours=1)),
+                "fi": H.clau(ep[-1]), "referencia_mm": m, "casa_mm": c}
         (debiles if EPISODIO_DEBIL_MM[0] <= m < EPISODIO_DEBIL_MM[1] else otros).append(fila)
     detectados = sum(e["casa_mm"] >= UMBRAL_MM for e in debiles)
-    return {"des_de": inicio.isoformat(timespec="minutes"),
-            "neteja": limpieza and limpieza.isoformat(timespec="minutes"),
+    return {"des_de": H.clau(inicio),
+            "neteja": limpieza and H.clau(limpieza),
             "debils": debiles, "altres": otros, "detectats": detectados}
 
 
@@ -142,7 +144,7 @@ def coma(x):
 
 
 def hm(iso):
-    t = dt.datetime.fromisoformat(iso)
+    t = H.local(iso)
     return f"{t.day}/{t.month} {t.hour}h"
 
 
@@ -178,8 +180,8 @@ def vigila(ahora=None, avisa=True):
         return None
     with open(ESTADO, encoding="utf-8") as f:
         estado = json.load(f)
-    ahora = ahora or local()
-    desde = local(dt.datetime.fromisoformat(estado["des_de"]))
+    ahora = local(ahora)
+    desde = local(H.llegeix(estado["des_de"]))
     r = evalua(referencia(), lee(CASA), desde, ahora)
     v = veredicto(r, ahora - desde > dt.timedelta(days=DIAS_MAX))
     if not v:
@@ -193,12 +195,12 @@ def vigila(ahora=None, avisa=True):
 
 
 def inicia(desde=None):
-    desde = dt.datetime.fromisoformat(desde).astimezone() if desde else dt.datetime.now().astimezone()
+    desde = H.utc(desde) if desde else H.ara()
     desde = desde.replace(second=0, microsecond=0)
     os.makedirs(os.path.dirname(ESTADO), exist_ok=True)
     with open(ESTADO, "w", encoding="utf-8") as f:
-        json.dump({"des_de": desde.isoformat(timespec="minutes")}, f)
-    print("Vigilando el pluviómetro desde", desde.isoformat(timespec="minutes"))
+        json.dump({"des_de": H.clau(desde)}, f)
+    print("Vigilando el pluviómetro desde", H.iso_local(desde))
 
 
 def estat():
@@ -206,7 +208,7 @@ def estat():
         print("No se está vigilando.")
         return
     with open(ESTADO, encoding="utf-8") as f:
-        desde = local(dt.datetime.fromisoformat(json.load(f)["des_de"]))
+        desde = local(H.llegeix(json.load(f)["des_de"]))
     print(json.dumps(evalua(referencia(), lee(CASA), desde, local()),
                      ensure_ascii=False, indent=1))
 

@@ -42,6 +42,7 @@ import sys
 
 import numpy as np
 
+import hora as H
 import remostreig as R
 
 DIR = os.environ.get("REGISTRE_DIR", "/estat/registre")
@@ -95,7 +96,7 @@ def llegeix(get):
     res = []
     for m in json.loads(dades):
         pct, capes = percentatge(m)
-        t = dt.datetime.fromisoformat(m["reportTime"].replace("Z", "+00:00")).astimezone()
+        t = H.utc(m["reportTime"])
         res.append({"t": t, "nuvols": pct, "capes": capes, "brut": m.get("rawOb")})
     return sorted(res, key=lambda o: o["t"])
 
@@ -242,7 +243,7 @@ def parelles(avui):
                 l = json.loads(linia)
                 for hr in l.get("hores") or []:
                     fins = hr.get("fins")
-                    if not fins or fins[:10] < des_de or fins not in obs:
+                    if not fins or H.dia_local(fins).isoformat() < des_de or fins not in obs:
                         continue
                     pct, capes = obs[fins]
                     camp = "nuvols_" if capes else "nuvols_baixos_"
@@ -335,7 +336,7 @@ def sense_observacions(ahora):
     comparación se para. None si todo va bien."""
     obs = llegeix_observats()
     darrera = max(obs) if obs else None
-    if darrera and ahora - dt.datetime.fromisoformat(darrera).astimezone() < dt.timedelta(days=1):
+    if darrera and ahora - H.llegeix(darrera) < dt.timedelta(days=1):
         return None
     return ("Temps a Montflorit, el cel: fa més d'un dia que no arriba l'observació de núvols de l'aeroport "
             f"de Sabadell (darrera hora: {darrera or 'cap'}). El cel de l'hora en curs és el dels models i "
@@ -343,9 +344,9 @@ def sense_observacions(ahora):
 
 
 def verifica(avui=None, avisa=True):
-    avui = avui or dt.date.today()
+    avui = avui or H.dia_local(H.ara())
     if os.path.exists(OBSERVATS):
-        avis = sense_observacions(dt.datetime.now().astimezone())
+        avis = sense_observacions(H.ara())
         if avis:
             print(avis)
             if avisa:
@@ -383,6 +384,6 @@ if __name__ == "__main__":
         verifica()
     elif orden == "estat":
         print(json.dumps(pesos(), ensure_ascii=False))
-        print(json.dumps(compara(parelles(dt.date.today()), pesos()), ensure_ascii=False))
+        print(json.dumps(compara(parelles(H.dia_local(H.ara())), pesos()), ensure_ascii=False))
     else:
         print(__doc__)

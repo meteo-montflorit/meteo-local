@@ -47,6 +47,7 @@ import os
 import sys
 
 import config as C
+import hora as H
 import nowcast as N
 
 DIR = os.environ.get("REGISTRE_DIR", "/estat/registre")
@@ -108,7 +109,7 @@ def previst(nc, desde, minuts):
     if not minuts or not passos:
         return 0.0
     fin = desde + dt.timedelta(minutes=minuts)
-    t0 = dt.datetime.fromisoformat(nc["hora"])
+    t0 = H.llegeix(nc["hora"])
     mm = 0.0
     if t0 > desde:
         mm += passos[0]["mm_h"] * (min(t0, fin) - desde).total_seconds() / 3600
@@ -182,7 +183,7 @@ class Consulta:
     def __init__(self, ahora, consulta=None):
         import wunderground as W
         self.W, self.fer = W, consulta or W._consulta
-        self.dia = ahora.date().isoformat()
+        self.dia = H.dia_local(ahora).isoformat()
         try:
             with open(COMPTADOR_WU, encoding="utf-8") as f:
                 c = json.load(f)
@@ -218,7 +219,7 @@ def serie_veina(estacio, ahora, consulta):
     W = consulta.W
     avui = W.files(consulta("observations/all/1day", {"stationId": estacio}))
     if avui and avui[0]["t"] > ahora - dt.timedelta(hours=6):
-        ahir = (ahora - dt.timedelta(days=1)).strftime("%Y%m%d")
+        ahir = (H.dia_local(ahora) - dt.timedelta(days=1)).strftime("%Y%m%d")
         ruta = os.path.join(CACHE_WU, f"{estacio}-{ahir}.json")
         try:
             with open(ruta, encoding="utf-8") as f:
@@ -264,7 +265,7 @@ def calcula_veines(ahora, nc, consulta):
         clau = (NIVELLS.index(n), mm3, minuts)
         if millor is None or clau > millor[0]:
             millor = (clau, n, mm3, mm6, minuts)
-    return {"n": len(series), "estacions": sorted(series), "fins": fins.astimezone().isoformat(timespec="minutes"),
+    return {"n": len(series), "estacions": sorted(series), "fins": H.clau(fins),
             "mm_3h": med(C.RIERA_HORES), "mm_6h": med(6), "nivell": millor[1], "index": millor[2],
             "index_6h": millor[3], "index_d_aqui_a_min": millor[4]}
 
@@ -314,7 +315,7 @@ def calcula(ahora, nc, lector=None, consulta=None, pluja_barri=None):
         # Sense Meteocat, les estacions soles (casa.py ho diu als errors).
         res = {"estacio": None, "sense_meteocat": True, "fins": veines["fins"], "mm_3h": veines["mm_3h"],
                "mm_6h": veines["mm_6h"], "mm_1h": None, "incomplet": False,
-               "radar_1h": previst(nc, dt.datetime.fromisoformat(veines["fins"]), 60) if nc else None,
+               "radar_1h": previst(nc, H.llegeix(veines["fins"]), 60) if nc else None,
                "capcalera": None, "nivell": None, "index": 0.0, "index_6h": 0.0, "index_d_aqui_a_min": 0}
     res["veines"] = veines
     res["font"] = "meteocat"
@@ -330,7 +331,7 @@ def darrera_meteocat(ahora, lector=None):
     decir en la página desde cuándo falta (ISO, o None si no hay nada en las
     últimas horas)."""
     filas = files(C.RIERA_ESTACIO, ahora, 6, lector)
-    return (filas[-1][0] + MITJA_HORA).astimezone().isoformat(timespec="minutes") if filas else None
+    return H.clau(filas[-1][0] + MITJA_HORA) if filas else None
 
 
 def calcula_meteocat(ahora, nc, lector=None):
@@ -344,7 +345,7 @@ def calcula_meteocat(ahora, nc, lector=None):
         return None
     h = C.RIERA_HORES
     res = {"estacio": C.ESTACIONES.get(C.RIERA_ESTACIO, C.RIERA_ESTACIO),
-           "fins": fins.astimezone().isoformat(timespec="minutes"),
+           "fins": H.clau(fins),
            "mm_3h": acumulat(filas, fins, h), "mm_6h": acumulat(filas, fins, 6),
            "mm_1h": acumulat(filas, fins, 1),     # per al registre de l'aprenentatge (ADR 0042)
            "incomplet": incomplet(filas, fins),
@@ -356,7 +357,7 @@ def calcula_meteocat(ahora, nc, lector=None):
         cap = files(codi, ahora, 6, lector)
         if cap:
             fc = cap[-1][0] + MITJA_HORA
-            res["capcalera"] = {"estacio": nom, "fins": fc.astimezone().isoformat(timespec="minutes"),
+            res["capcalera"] = {"estacio": nom, "fins": H.clau(fc),
                                 "mm_3h": acumulat(cap, fc, h), "mm_6h": acumulat(cap, fc, 6)}
     except Exception:
         pass
@@ -372,7 +373,7 @@ def missatge(riera, nom):
     if v:
         # Ha decidit la mediana de les estacions particulars (calcula).
         riera = {**riera, "mm_3h": v["mm_3h"], "mm_6h": v["mm_6h"], "fins": v["fins"]}
-    hora = dt.datetime.fromisoformat(riera["fins"]).strftime("%H:%M")
+    hora = H.local(riera["fins"]).strftime("%H:%M")
     if nom == "perill":
         cap = ("Riera de Sant Cugat, perill de desbordament a Montflorit: a Sant Cugat han caigut "
                f"{coma(riera['mm_3h'])} mm en 3 hores i {coma(riera['mm_6h'])} en 6 (fins a les {hora})")
@@ -426,13 +427,13 @@ def compara(estat, riera, ahora):
     ep = estat.get("episodi")
     if not riera:
         return None, None
-    ara = ahora.isoformat(timespec="minutes")
+    ara = H.clau(ahora)
     senyal = riera["index"] >= C.RIERA_REGISTRE_MM
     text = fila = None
     # Con huecos en la estación, lo medido puede quedarse corto: el episodio
     # no se cierra hasta tener las medias horas que faltan.
     if ep and not senyal and not riera.get("incomplet") \
-            and ahora - dt.datetime.fromisoformat(ep["vist"]) >= dt.timedelta(hours=C.RIERA_FI_H):
+            and ahora - H.llegeix(ep["vist"]) >= dt.timedelta(hours=C.RIERA_FI_H):
         # Si es va avisar, es diu que ha passat (Juanjo, 08-10-2026): un sol
         # missatge per episodi, i només després de 3 hores de calma, perquè
         # no es converteixi en una successió d'avís i contraavís.
@@ -491,7 +492,7 @@ def apunta_veines(riera, ahora):
     v = (riera or {}).get("veines")
     if not v:
         return
-    fila = {"t": ahora.isoformat(timespec="minutes"),
+    fila = {"t": H.clau(ahora),
             "xv_3h": "" if riera.get("sense_meteocat") else riera.get("mm_3h"),
             "xv_index": "", "xv_nivell": "", "n": v["n"], "veines_3h": v["mm_3h"], "veines_6h": v["mm_6h"],
             "veines_index": v["index"], "veines_nivell": v["nivell"] or "", "font": riera.get("font")}
@@ -510,7 +511,7 @@ def apunta_veines(riera, ahora):
 
 
 def avisa(ruta, ahora=None):
-    ahora = ahora or dt.datetime.now().astimezone()
+    ahora = ahora or H.ara()
     # Las respuestas de Juanjo a la pregunta del desbordamiento, cada minuto,
     # para que el mensaje diga enseguida que se han apuntado.
     try:
@@ -520,7 +521,7 @@ def avisa(ruta, ahora=None):
     with open(ruta, encoding="utf-8") as f:
         salida = json.load(f)
     # Con datos viejos (la pasada ha fallado), no se avisa.
-    if ahora - dt.datetime.fromisoformat(salida["generat"]) > dt.timedelta(minutes=C.INTERVALO_CASA_MIN):
+    if ahora - H.llegeix(salida["generat"]) > dt.timedelta(minutes=C.INTERVALO_CASA_MIN):
         return None
     estat = llegeix_estat()
     apunta_veines(salida.get("riera"), ahora)
@@ -566,10 +567,10 @@ def pregunta_desbordament(fila, ara=None):
     import confirmacio as CF
     if not (fila.get("avis_atencio") or fila.get("avis_perill")) or not os.path.exists(_config_bot()):
         return None
-    ara = ara or dt.datetime.now().astimezone()
+    ara = ara or H.ara()
     nivell = "perill" if fila.get("avis_perill") else "atencio"
-    inici, fi = (dt.datetime.fromisoformat(fila[k]) for k in ("inici", "fi"))
-    avis = dt.datetime.fromisoformat(fila["avis_perill"] or fila["avis_atencio"])
+    inici, fi = (H.local(fila[k]) for k in ("inici", "fi"))
+    avis = H.local(fila["avis_perill"] or fila["avis_atencio"])
     text = (f"Riera de Sant Cugat: ¿se ha desbordado en Montflorit en este episodio? "
             f"Lluvia desde el {inici:%d-%m} a las {inici:%H:%M} hasta las {fi:%H:%M} del {fi:%d-%m}; "
             f"aviso de {'peligro' if nivell == 'perill' else 'atención'} a las {avis:%H:%M}; "
@@ -580,7 +581,7 @@ def pregunta_desbordament(fila, ara=None):
         chat = json.load(f)["chat_id"]
     r, _ = telegram("sendMessage", chat_id=chat, text=CF.capcalera(text), reply_markup=teclat)
     CF.afegeix(PREGUNTES, ["t", "missatge"] + CAMPS_PREGUNTA,
-               {"t": ara.isoformat(timespec="minutes"), "missatge": r["message_id"], "inici": fila["inici"],
+               {"t": H.clau(ara), "missatge": r["message_id"], "inici": fila["inici"],
                 "fi": fila["fi"], "index_max": fila["index_max"], "nivell": nivell})
     return r["message_id"]
 
@@ -592,7 +593,7 @@ def respostes(ara=None):
     if not os.path.exists(PREGUNTES):
         return 0
     n = CF.respostes("riera", PREGUNTES, CONFIRMACIONS, RESPOSTES, CAMPS_PREGUNTA, telegram,
-                     ara or dt.datetime.now().astimezone())
+                     ara or H.ara())
     if n:
         omple_desbordament()
     return n
@@ -635,7 +636,7 @@ REGISTRE_PREVISIO = os.path.join(DIR, "riera-previsio.csv")
 CAMPS_PREVISIO = ["t", "nivell", "mm_3h_max", "mm_3h_mitjana", "finestra_ini", "finestra_fi", "mm_6h_max",
                   "mm_6h_mitjana", "model_max", "xv_24h"]
 URL_PREVISIO = ("https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=precipitation"
-                "&models={models}&forecast_days=2&timezone=Europe%2FMadrid")
+                "&models={models}&forecast_days=2&timezone=GMT")
 
 
 def _suma(valors, i, n):
@@ -654,7 +655,7 @@ def previsio_models(hores, per_model, ahora, horitzo_h=None, llindar=None):
     horitzo_h = horitzo_h or C.RIERA_PREVISIO_HORES
     llindar = llindar or C.RIERA_PREVISIO_MM
     fi = ahora + dt.timedelta(hours=horitzo_h)
-    dins = [i for i, h in enumerate(hores) if ahora - dt.timedelta(hours=1) < dt.datetime.fromisoformat(h) <= fi]
+    dins = [i for i, h in enumerate(hores) if ahora - dt.timedelta(hours=1) < H.llegeix(h) <= fi]
     series = {m: s for m, s in per_model.items() if any(i < len(s) and s[i] is not None for i in dins)}
     if not dins or not series:
         return None
@@ -662,7 +663,7 @@ def previsio_models(hores, per_model, ahora, horitzo_h=None, llindar=None):
     for i in range(len(hores)):
         vals = [s[i] for s in series.values() if i < len(s) and s[i] is not None]
         mitjana.append(round(sum(vals) / len(vals), 2) if vals else None)
-    res = {"generat": ahora.isoformat(timespec="minutes"), "horitzo_h": horitzo_h, "models": list(series),
+    res = {"generat": H.clau(ahora), "horitzo_h": horitzo_h, "models": list(series),
            "hores": [{"hora": hores[i], "max": max([s[i] for s in series.values() if i < len(s) and s[i] is not None] or [None]),
                       "mitjana": mitjana[i]} for i in dins]}
     for n, nom in ((3, "3h"), (6, "6h")):
@@ -672,11 +673,10 @@ def previsio_models(hores, per_model, ahora, horitzo_h=None, llindar=None):
                 v = _suma(s, i, n)
                 if v is not None and v > millor_mm:
                     millor_model, millor_i, millor_mm = m, i, v
-        ini = dt.datetime.fromisoformat(hores[max(0, millor_i - n + 1)])
+        ini = H.llegeix(hores[max(0, millor_i - n + 1)])
         res[f"mm_{nom}_max"] = max(millor_mm, 0.0)
         res[f"mm_{nom}_mitjana"] = _suma(mitjana, millor_i, n) or 0.0
-        res[f"finestra_{nom}"] = {"ini": ini.isoformat(timespec="minutes"),
-                                  "fi": (dt.datetime.fromisoformat(hores[millor_i]) + dt.timedelta(hours=1)).isoformat(timespec="minutes")}
+        res[f"finestra_{nom}"] = {"ini": H.clau(ini), "fi": H.clau(H.llegeix(hores[millor_i]) + dt.timedelta(hours=1))}
         if n == 3:
             res["per_model"] = {m: (_suma(s, millor_i, 3) or 0.0) for m, s in series.items()}
             res["model_max"] = millor_model
@@ -698,9 +698,10 @@ def previsio(ahora, get=None, lector=None):
     h = d["hourly"]
     per_model = {m: h.get(f"precipitation_{m}") or [] for m in models}
     hores = h["time"]
-    # Les hores d'Open-Meteo vénen en hora local sense zona: s'hi posa la d'ahora.
-    tz = ahora.tzinfo
-    hores_tz = [dt.datetime.fromisoformat(t).replace(tzinfo=tz).isoformat(timespec="minutes") for t in hores]
+    # Les hores d'Open-Meteo, en UTC (timezone=GMT): claus «…Z» (ADR 0128).
+    # Fins a la 3.200.0 es demanaven en hora de Madrid i s'hi posava el
+    # desfasament d'ara, que ja no valia passat un canvi d'hora.
+    hores_tz = [t + "Z" for t in hores]
     res = previsio_models(hores_tz, per_model, ahora)
     if res is None:
         return None
@@ -708,7 +709,7 @@ def previsio(ahora, get=None, lector=None):
         filas = files(C.RIERA_ESTACIO, ahora, 24, lector)
         fins = filas[-1][0] + MITJA_HORA if filas else None
         res["xv_24h"] = acumulat(filas, fins, 24) if fins else None
-        res["xv_fins"] = fins.astimezone().isoformat(timespec="minutes") if fins else None
+        res["xv_fins"] = H.clau(fins) if fins else None
     except Exception:
         res["xv_24h"], res["xv_fins"] = None, None
     estat = {}
@@ -764,19 +765,19 @@ def resum_previsio(registre_xv=None):
         with open(ruta, encoding="utf-8") as f:
             for r in csv.DictReader(f):
                 try:
-                    xv[r["fins"][:13]] = float(r["pluja_mm"])
+                    xv[H.clau(r["fins"])[:13]] = float(r["pluja_mm"])
                 except (KeyError, ValueError):
                     pass
     per_dia = {}
     for r in files_:
-        d = r["finestra_fi"][:10]
+        d = H.dia_local(r["finestra_fi"]).isoformat()
         v = float(r["mm_3h_max"] or 0)
         if v >= per_dia.get(d, (0, None))[0]:
             per_dia[d] = (v, r["t"])
     linies = [f"{'dia':10} {'previst 3h':>10} {'real 3h':>8}  (XV, màxim del dia)"]
     hores = sorted(xv)
     for d in sorted(per_dia):
-        del_dia = [h for h in hores if h.startswith(d)]
+        del_dia = [h for h in hores if H.dia_local(h + ":00Z").isoformat() == d]
         real = max((sum(xv.get(h2, 0) for h2 in hores[max(0, hores.index(h) - 2):hores.index(h) + 1]) for h in del_dia),
                    default=None)
         linies.append(f"{d:10} {per_dia[d][0]:10.1f} {('%.1f' % real) if real is not None else '  —':>8}")

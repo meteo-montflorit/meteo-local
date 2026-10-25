@@ -48,6 +48,7 @@ import unicodedata
 import urllib.request
 
 import config as C
+import hora as H
 
 RENFE = "https://gtfsrt.renfe.com/"
 # Els avisos de la web de Rodalies (ADR 0078): no és un servei documentat, i
@@ -119,7 +120,7 @@ def _text(traduit):
 def iso(segons):
     """Segons des de 1970 (GTFS-RT) → ISO local amb minuts, o None."""
     try:
-        return dt.datetime.fromtimestamp(int(segons), dt.timezone.utc).astimezone().isoformat(timespec="minutes")
+        return H.clau(dt.datetime.fromtimestamp(int(segons), dt.timezone.utc))
     except (TypeError, ValueError, OverflowError):
         return None
 
@@ -210,8 +211,8 @@ def avisos_rodalies(dades=None):
         textos.setdefault("es", textos.get("ca"))
         inici = None
         if n.get("date"):
-            inici = dt.datetime.fromisoformat(f"{n['date']}T{(n.get('time') or '00:00:00')[:5]}").astimezone() \
-                .isoformat(timespec="minutes")
+            # Rodalies dona l'hora de Madrid, sense zona.
+            inici = H.clau(H.llegeix(f"{n['date']}T{(n.get('time') or '00:00:00')[:5]}"))
         res.append({"linies": linies, "text": textos, "inici": inici, "fi": None, "font": "rodalies"})
     return res
 
@@ -268,7 +269,7 @@ def trens_renfe(dades=None, ara=None):
     dades = dades or get(RENFE + "vehicle_positions.json")
     marca = (dades.get("header") or {}).get("timestamp")
     if marca:
-        edat = ((ara or dt.datetime.now().astimezone()) - dt.datetime.fromtimestamp(int(marca), dt.timezone.utc))
+        edat = ((ara or H.ara()) - dt.datetime.fromtimestamp(int(marca), dt.timezone.utc))
         if edat > dt.timedelta(minutes=POSICIONS_VELLES_MIN):
             raise ValueError(f"posicions de fa {int(edat.total_seconds() // 60)} min")
     res = []
@@ -320,13 +321,13 @@ def puntualitat(registre, trens, ara):
     si van en hora i són a prop de l'estació de la seva línia, i treu els de fa
     més de RETARD_MIN minuts. Torna el registre nou."""
     nou = {l: {i: v for i, v in d.items()
-               if ara - dt.datetime.fromisoformat(v[0]) <= dt.timedelta(minutes=RETARD_MIN)}
+               if ara - H.llegeix(v[0]) <= dt.timedelta(minutes=RETARD_MIN)}
            for l, d in (registre or {}).items()}
     for t in trens:
         est = C.TRENS_ESTACIONS.get(t["linia"])
         if t.get("en_hora") is None or not est or km((t["lat"], t["lon"]), est) > C.TRENS_RADI_KM:
             continue
-        nou.setdefault(t["linia"], {})[t["id"]] = [ara.isoformat(timespec="minutes"), t["en_hora"]]
+        nou.setdefault(t["linia"], {})[t["id"]] = [H.clau(ara), t["en_hora"]]
     return {l: d for l, d in nou.items() if d}
 
 
@@ -361,7 +362,7 @@ def es_mouen(trens, abans, ara):
     línia sortia «Sense trens» amb l'avís «Circulació normalitzada» (Juanjo,
     13-10-2026)."""
     estacions = {linia: coord for linia, coord in C.TRENS_ESTACIONS.items()}
-    recent = abans and ara - dt.datetime.fromisoformat(abans["hora"]) <= dt.timedelta(minutes=POSICIONS_MAX_MIN)
+    recent = abans and ara - H.llegeix(abans["hora"]) <= dt.timedelta(minutes=POSICIONS_MAX_MIN)
     res = []
     for t in trens:
         if t["linia"] not in estacions:
@@ -395,14 +396,15 @@ RECUPERA = re.compile(r"resolt[ae]? la incid[eè]ncia|resuelta la incidencia|rec
 
 def vigent(a, ara):
     """Si l'avís és d'ara: ha començat (o no té data) i no ha acabat."""
-    ara = ara.isoformat(timespec="minutes") if ara.tzinfo else ara.astimezone().isoformat(timespec="minutes")
-    comparable = lambda t: dt.datetime.fromisoformat(t).astimezone().isoformat(timespec="minutes")
-    return (not a.get("inici") or comparable(a["inici"]) <= ara) and (not a.get("fi") or comparable(a["fi"]) > ara)
+    # Moments, no text: amb desfasaments diferents, el text s'ordenava malament
+    # al voltant del canvi d'hora (ADR 0128).
+    ara = H.llegeix(ara)
+    return (not a.get("inici") or H.llegeix(a["inici"]) <= ara) and (not a.get("fi") or H.llegeix(a["fi"]) > ara)
 
 
 def mes_nous_primer(avisos):
     """Del més recent al més vell; sense data, els últims."""
-    return sorted(avisos, key=lambda a: a.get("inici") or "", reverse=True)
+    return sorted(avisos, key=lambda a: H.clau(a["inici"]) if a.get("inici") else "", reverse=True)
 
 
 def dins_horari(linia, ara):
@@ -412,7 +414,7 @@ def dins_horari(linia, ara):
     ini, fi = getattr(C, "TRENS_HORARI_LINIA", {}).get(linia, C.TRENS_HORARI)
     h, m = map(int, ini.split(":"))
     inici = f"{(h * 60 + m + C.TRENS_MARGE_INICI_MIN) // 60:02d}:{(h * 60 + m + C.TRENS_MARGE_INICI_MIN) % 60:02d}"
-    return inici <= ara.strftime("%H:%M") < fi
+    return inici <= H.local(ara).strftime("%H:%M") < fi
 
 
 def _norm(text):
@@ -482,7 +484,7 @@ def estat_linia(linia, mouen, vist, avisos, ara):
     propis = [a["text"] for a in nomes]
     generals = [a["text"] for a in mes_nous_primer([a for a in avisos if linia in a["linies"] and len(a["linies"]) > 1])]
     n = sum(t["linia"] == linia for t in mouen)
-    circula = n > 0 or bool(vist and ara - dt.datetime.fromisoformat(vist)
+    circula = n > 0 or bool(vist and ara - H.llegeix(vist)
                             <= dt.timedelta(minutes=C.TRENS_VIST_MIN))
     de_dia = dins_horari(linia, ara)
     # Si l'avís més nou que parla del servei té data, decideix ell; sense
@@ -527,7 +529,7 @@ def estat_linia(linia, mouen, vist, avisos, ara):
     for t in propis + generals:
         if t not in textos:
             textos.append(t)
-    res = {"estat": estat, "trens": n, "vist": vist if not n else ara.isoformat(timespec="minutes"),
+    res = {"estat": estat, "trens": n, "vist": vist if not n else H.clau(ara),
            "avisos": textos[:2]}
     if no_vist:
         res["no_vist"] = True
@@ -538,7 +540,7 @@ def calcula(ara=None):
     """L'estat de cada línia de C.TRENS, per a les dades públiques. Al NAS
     (amb /estat) desa les posicions i quan s'ha vist circular cada línia, per
     a la passada següent."""
-    ara = ara or dt.datetime.now().astimezone()
+    ara = ara or H.ara()
     try:
         with open(ESTAT, encoding="utf-8") as f:
             abans = json.load(f)
@@ -546,7 +548,7 @@ def calcula(ara=None):
         abans = None
     vistos = dict((abans or {}).get("vist") or {})
     registre_puntualitat = (abans or {}).get("puntualitat") or {}
-    res = {"hora": ara.isoformat(timespec="minutes"), "linies": [], "errors": []}
+    res = {"hora": H.clau(ara), "linies": [], "errors": []}
     trens = []
     for operador, llegeix_avisos, llegeix_trens in (
             ("rodalies", lambda: avisos_rodalies_o_renfe(res["errors"]), trens_renfe),

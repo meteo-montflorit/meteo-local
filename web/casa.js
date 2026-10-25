@@ -87,9 +87,12 @@ function diaAbans(clau) {
   return `${t.getFullYear()}-${dos(t.getMonth() + 1)}-${dos(t.getDate())}T${hora}`;
 }
 
-function comparaTemp(files, nit, mesurada, totes) {
+function comparaTemp(files, nit, mesura, totes) {
+  // Les claus, en hora de rellotge sense el desfasament que porten les dades
+  // (ADR 0128): «2026-10-24T07:00+02:00» → «2026-10-24T07:00».
+  const mesurada = mesura && Object.fromEntries(Object.entries(mesura).map(([k, v]) => [k.slice(0, 16), v]));
   if (!mesurada || !Object.keys(mesurada).length || !files.length) return null;
-  const previstes = Object.fromEntries((totes || []).map((f) => [f.hora, f]));
+  const previstes = Object.fromEntries((totes || []).map((f) => [f.hora.slice(0, 16), f]));
   const abans = [];
   for (const f of files) {
     const a = mesurada[diaAbans(f.hora)];

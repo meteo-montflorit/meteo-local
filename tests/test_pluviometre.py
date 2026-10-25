@@ -5,11 +5,13 @@ import os
 import sys
 import tempfile
 import unittest
+from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pluviometre as V  # noqa: E402
 
-T0 = dt.datetime(2026, 10, 6, 9, 0)
+# Amb zona (ADR 0128): els registres sense zona són hora de Madrid.
+T0 = dt.datetime(2026, 10, 6, 9, 0, tzinfo=ZoneInfo("Europe/Madrid"))
 
 
 def h(n):
@@ -63,7 +65,7 @@ class Vigilancia(unittest.TestCase):
         casa = {3: 0.3, 20: 0.8, 40: 1.0, 60: 0.8}
         self.escribe(mont, casa)
         r = V.evalua(V.referencia(), V.lee(V.CASA), T0, h(150))
-        self.assertEqual(r["neteja"], h(3).isoformat(timespec="minutes"))
+        self.assertEqual(r["neteja"], V.H.clau(h(3)))
         self.assertEqual((len(r["debils"]), r["detectats"]), (3, 3))
         self.assertIn("limpieza", V.mensaje(r, "funciona"))
 

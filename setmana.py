@@ -40,6 +40,7 @@ import sys
 import urllib.parse
 
 import config as C
+import hora as H
 import part_alta as PA
 import prevision as P
 import registre as R
@@ -66,7 +67,8 @@ def _per_dies(temps, valors):
     res = {}
     for t, v in zip(temps, valors):
         if v is not None:
-            res.setdefault(t[:10], []).append((int(t[11:13]), v))
+            # El dia i l'hora de Madrid (les claus són en UTC, ADR 0128).
+            res.setdefault(H.dia_local(t).isoformat(), []).append((H.hora_local(t), v))
     return res
 
 
@@ -74,7 +76,7 @@ def dies_mesurats(mesurada):
     """{dia: (màxima, mínima)} de lo medido por horas, los días con MIN_HORES o más."""
     dies = {}
     for clau, v in (mesurada or {}).items():
-        dies.setdefault(clau[:10], []).append(v)
+        dies.setdefault(H.dia_local(clau).isoformat(), []).append(v)
     return {d: (max(v), min(v)) for d, v in dies.items() if len(v) >= MIN_HORES}
 
 
@@ -113,7 +115,7 @@ def alta_per_dies(model, taula, ajust=None):
     PA.a_les_hores(files, taula, ajust)
     res = {}
     for f in files:
-        res.setdefault(f["hora"][:10], []).append(f["temperatura"] + (f["dif_alta"] or 0))
+        res.setdefault(H.dia_local(f["hora"]).isoformat(), []).append(f["temperatura"] + (f["dif_alta"] or 0))
     return res
 
 
@@ -154,12 +156,12 @@ def dies(avui, model, ensemble, corr, taula=None, ajust=None):
 def calcula(ahora, taula=None):
     """La semana para la página. Con registro, lo guardado si tiene menos de
     CADA_MIN minutos; la corrección, la del día si ya está calculada."""
-    avui = ahora.date()
+    avui = H.dia_local(ahora)
     cache = {}
     if R.hay_registro() and os.path.exists(CACHE):
         with open(CACHE, encoding="utf-8") as f:
             cache = json.load(f)
-        if cache.get("llegit") and ahora - dt.datetime.fromisoformat(cache["llegit"]) < dt.timedelta(minutes=CADA_MIN) \
+        if cache.get("llegit") and ahora - H.llegeix(cache["llegit"]) < dt.timedelta(minutes=CADA_MIN) \
                 and cache.get("dies") and cache["dies"][0]["dia"] == avui.isoformat():
             return cache["dies"]
     corr, dia_corr = {}, None
@@ -187,7 +189,7 @@ def calcula(ahora, taula=None):
     res = dies(avui, model, ensemble, corr, taula, PA.ajust_nit())
     if R.hay_registro():
         with open(CACHE, "w", encoding="utf-8") as f:
-            json.dump({"llegit": ahora.isoformat(timespec="minutes"), "dies": res,
+            json.dump({"llegit": H.clau(ahora), "dies": res,
                        "correccio_dia": dia_corr, "correccio": corr}, f)
         R.apunta_setmana(ahora, res)
     return res
