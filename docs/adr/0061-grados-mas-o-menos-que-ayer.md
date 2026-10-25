@@ -43,7 +43,18 @@ comparar.
   (medido el 23-10-2026 con los datos de las 8:00). Para eso, las pastillas
   de debajo van en una fila: la de la lluvia de hoy («3,2 mm avui») solo sale
   si ha llovido algo (Juanjo: «0,0 mm avui» a primera hora no dice nada). Si
-  ha llovido, con tres pastillas, van en dos filas. Las rachas del viento,
+  ha llovido, con tres pastillas, van en dos filas. Desde el 25-10-2026
+  (3.198.2), la de la lluvia de ahora tampoco sale si no llueve: solo «Plou»
+  o «Plugim segons el radar», no «No plou» (Juanjo: «esto solo debe salir
+  cuando llueve»). Y el viento, solo cuando molesta (`VENT_MOLEST`): 20 km/h
+  o más de media, la fuerza 4 de Beaufort, que según la tabla de AEMET y las
+  de los servicios meteorológicos levanta polvo y papeles, o rachas de 40 km/h
+  o más, las de «compte» en bici en «Si surts». Del 2 al 25-10-2026, en la
+  estación de Sant Cugat, ninguna media hora llegó (media máxima de 14 km/h,
+  racha de 33). Sin lluvia ni viento, la tarjeta no lleva pastillas y queda
+  más baja; el viento se sigue viendo en la gráfica. Los nombres de la escala
+  («fresquito», «fresco») no se usan: son de marinos y «fresco» se leería como
+  temperatura. Las rachas del viento,
   solo la cifra entre paréntesis: «Vent 7 km/h (16)».
 - **Los datos**: `casa.py` añade a los datos `temperatura_mesurada`, la de
   cada hora en punto de las últimas 72 horas, del registro del NAS y de la

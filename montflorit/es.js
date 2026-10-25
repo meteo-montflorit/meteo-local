@@ -223,7 +223,6 @@ var IDIOMA = {
     "Mig ennuvolat": "Nuboso",
     "Molt ennuvolat": "Muy nuboso",
     "Cobert": "Cubierto",
-    "No plou": "No llueve",
     "semblant a ahir": "similar a ayer",
     "semblant a avui": "similar a hoy",
     "{0}° més que ahir": "{0}° más que ayer",

@@ -34,6 +34,10 @@ const TRAMS = [[7, 14, 'Matí'], [14, 21, 'Tarda'], [21, 7, 'Nit']];
 const FENOMENS = { pluja_forta: INTENSITAT_PLUJA[1], pluja_torrencial: INTENSITAT_PLUJA[2], ratxa: 72, calor: 36.8, glaçada: 0 };
 // El llindar taronja de les ratxes (config.RISC_LLINDARS, l'alt de Meteocat).
 const RATXA_TARONJA = 108;
+// El vent, a «Ara» només quan molesta (config.VENT_MOLEST, Juanjo,
+// 25-10-2026): força 4 de Beaufort de mitjana, o la ratxa amb què «Si surts»
+// ja diu «compte» en bici.
+const VENT_MOLEST = { mitja: 20, ratxa: 40 };
 // Els noms, amb T() literal perquè les proves de traducció els trobin.
 const NOM_TRAM = { Matí: () => T('Matí'), Tarda: () => T('Tarda'), Nit: () => T('Nit') };
 const NOM_TRAM_DEMA = { Matí: () => T('Demà matí'), Tarda: () => T('Demà tarda'), Nit: () => T('Demà nit') };
@@ -723,33 +727,38 @@ function blocAra(casa, radarDades, vent, veines, hores, mesurada) {
   const intensitat = (casa.plou && casa.intensitat) || 0;
   const llista = element('ul', 'dades-ara');
   // Plugim que només veu el radar (els dos, estès a sobre del barri): el
-  // pluviòmetre no el recull, però «No plou» es contradiria amb el requadre
-  // del radar (Juanjo, 18-10-2026; ADR 0019).
+  // pluviòmetre no el recull, però es diu, com el requadre del radar (Juanjo,
+  // 18-10-2026; ADR 0019). Si no plou, res: la pastilla només surt quan plou
+  // (Juanjo, 25-10-2026: «esto solo debe salir cuando llueve»).
   const plugim = !plou && radarDades && radarDades.pluja && radarDades.pluja.plugim;
-  llista.append(plugim ? dada('i-cloud-drizzle', T('Plugim segons el radar'))
-    : !plou ? dada('i-umbrella-off', T('No plou'))
-      : intensitat ? dada('i-umbrella', T`Plou: ${coma(intensitat)} mm/h`)
-        : dada('i-umbrella', T('Plou')));
+  if (plugim) llista.append(dada('i-cloud-drizzle', T('Plugim segons el radar')));
+  else if (plou) llista.append(intensitat ? dada('i-umbrella', T`Plou: ${coma(intensitat)} mm/h`) : dada('i-umbrella', T('Plou')));
   // La pluja d'avui, només si n'ha caigut: «0,0 mm avui» a primera hora no diu
   // res, i així les pastilles caben en una fila al mòbil (Juanjo, 23-10-2026).
   // Tampoc «Plou» amb «0 mm avui», que es contradiu (inventari del 18-10-2026).
   if (casa.pluja_avui) llista.append(dada('i-cloud-rain', T`${coma(casa.pluja_avui)} mm avui`));
   // El vent, de l'estació de Meteocat més propera, per mitges hores (ADR
   // 0037): l'estació i l'hora, a «D'on surt» (ADR 0074). Si ve de les veïnes
-  // (ADR 0064), que «D'on surt» encara no diu, es diu aquí.
-  if (vent && vent.mitja != null) {
+  // (ADR 0064), que «D'on surt» encara no diu, es diu aquí. Només si molesta
+  // (VENT_MOLEST); si no, es pot veure a la gràfica.
+  if (ventMolest(vent)) {
     // Les ratxes, només la xifra entre parèntesis (Juanjo, 23-10-2026).
     const ratxa = vent.ratxa != null ? ` (${coma(vent.ratxa, 0)})` : '';
     const veines = vent.font === 'veines' ? T(', estacions veïnes') : '';
     llista.append(dada('i-wind', T`Vent ${coma(vent.mitja, 0)} km/h${ratxa}` + veines));
   }
-  sec.append(llista);
+  // Sense pluja ni vent que molesti, cap pastilla: sense la llista buida.
+  if (llista.childElementCount !== 0) sec.append(llista);
   // Sense la línia de la humitat i la pressió, perquè la targeta no creixi
   // amb la part alta a sota de la temperatura (Juanjo, 22-10-2026: «podemos
   // prescindir de la humedad y presión»). Es poden veure a la gràfica.
   // El radar, a part: va sota la gràfica (titularAra).
   sec._radar = blocRadar(radarDades, plou, hores);
   return sec;
+}
+
+function ventMolest(vent) {
+  return !!vent && vent.mitja != null && (vent.mitja >= VENT_MOLEST.mitja || (vent.ratxa || 0) >= VENT_MOLEST.ratxa);
 }
 
 // «d'aquí a 25 minuts», «d'aquí a 1 h 10 min»: un element que actualitzaComptes

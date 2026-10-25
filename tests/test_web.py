@@ -950,6 +950,16 @@ class Web(unittest.TestCase):
         m = re.search(r"const RATXA_TARONJA = ([\d.]+);", codi)
         self.assertEqual(float(m.group(1)), C.RISC_LLINDARS["ratxa"][1])
 
+    def test_vent_a_ara_nomes_si_molesta(self):
+        # Juanjo, 25-10-2026: com la pluja, la pastilla del vent només quan molesta.
+        with open(os.path.join(WEB, "casa.js"), encoding="utf-8") as f:
+            m = re.search(r"const VENT_MOLEST = \{ mitja: ([\d.]+), ratxa: ([\d.]+) \};", f.read())
+        self.assertEqual((float(m.group(1)), float(m.group(2))), (C.VENT_MOLEST["mitja"], C.VENT_MOLEST["ratxa"]))
+        r = self.avalua("2026-10-25T07:00:00+01:00",
+                        "[ventMolest({mitja: 3, ratxa: 7}), ventMolest({mitja: 20, ratxa: 25}),"
+                        " ventMolest({mitja: 12, ratxa: 40}), ventMolest({mitja: 19.9, ratxa: null}), ventMolest(null)]")
+        self.assertEqual(r, [False, True, True, False, False])
+
     def test_xifra_del_risc_com_el_text(self):
         # Revisor, 19-10-2026: «vent fort (92,5 km/h)» a la portada, «92» a l'avís i «93» a la taula.
         r = self.avalua("2026-10-19T14:00:00+02:00",

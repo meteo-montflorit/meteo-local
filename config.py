@@ -2,7 +2,7 @@
 """Datos fijos de «Temps a Montflorit»: lugares, horario, fuentes y umbrales.
 Se cambian aquí, no en los programas."""
 
-VERSION = "3.198.1"
+VERSION = "3.198.2"
 
 # Coordenadas con tres decimales (unos 100 m), no las exactas: para el tiempo
 # da igual una calle u otra, y el repositorio es público.
@@ -239,6 +239,11 @@ SORTIR_LLINDARS_PLUJA = {"curt": {"pluja": 0.4, "risc": 0.1}, "llarg": {"pluja":
 # mm previstos en una hora, d'AEMET, ADR 0039). Ratxes (km/h) i fred (°C):
 # (compte, millor no).
 SORTIR_PLUJA_COTXE = {"30min": RISC_LLINDARS["pluja_30min"], "3h": RISC_LLINDARS["pluja_3h"]}
+# El viento sale en «Ara» solo cuando molesta (Juanjo, 25-10-2026): media de
+# 20 km/h o más (fuerza 4 de Beaufort, levanta polvo y papeles) o racha de 40
+# km/h o más (la de «compte» en bici). Del 2 al 25-10-2026, en Sant Cugat, la
+# media llegó a 14 km/h y la racha a 33: ninguna media hora lo pasó.
+VENT_MOLEST = {"mitja": 20, "ratxa": 40}
 SORTIR_LLINDARS = {
     "peu": {"ratxa": (None, 70), "fred": (None, None)},
     "bici": {"ratxa": (40, 50), "fred": (3, 1)},

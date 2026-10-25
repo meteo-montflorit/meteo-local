@@ -1498,7 +1498,7 @@ const NOM_CEL = () => ({
 const NIVELLS_MARCA = ['nul', 'baix', 'mig', 'alt', 'maxim', 'extrem'];
 // Les línies sense marca també en porten una, perquè la columna no quedi amb
 // forats (Juanjo, 10-10-2026: «haría falta 1 icono por línea»): sense pluja,
-// el paraigua tancat, com «No plou» de la web; la resta, la del tema, en gris.
+// el paraigua tancat; la resta, la del tema, en gris.
 const ICONA_LINIA = [
   [/^(Sense pluja|Sin lluvia)/, 'i-umbrella-off'],
   [/^Temperatura/, 'i-thermometer'],
