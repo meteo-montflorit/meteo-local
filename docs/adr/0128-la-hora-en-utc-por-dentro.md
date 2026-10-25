@@ -126,9 +126,13 @@ Versión 3.201.0.
   la siguiente. Es lo que da la fuente.
 - Las pruebas construyen horas «de Madrid» con la zona del sistema: pasan con
   `TZ=Europe/Madrid`, como en GitHub y en el NAS. El código no depende de ella.
-- Un hueco de casi dos horas en `ecotop.csv` la noche del cambio no es de cómo
-  se guarda la hora: el programa no se ejecutó en ese rato; la causa está por
-  averiguar en los registros del NAS.
+- El hueco de casi dos horas en `ecotop.csv` la noche del cambio no fue un
+  fallo: el NAS publicó cada 15 minutos toda la noche, y `ecotop.py` solo baja
+  imágenes con lluvia a la vista; de 23:45 a 1:15 UTC la más cercana estaba a
+  más de 60 km (`radar-a-prop-2026-10.jsonl`). Lo único que falló esa noche,
+  cada hora de 2:05 a 8:05, fue la vigilancia del pluviómetro (horas con zona
+  y sin ella), uno de los cinco fallos que paraban un proceso; desde la
+  3.201.0 acaba bien.
 
 ## Validación
 
