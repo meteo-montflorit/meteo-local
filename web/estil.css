@@ -1621,20 +1621,20 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .heroi-cel-bloc { flex: 0 1 auto; min-width: 0; max-width: 45%; width: 9.5rem; margin: -1.6rem -.8rem -1.6rem auto;
   display: flex; flex-direction: column; align-items: center; }
 .heroi-cel { display: block; width: 100%; height: auto; aspect-ratio: 1; filter: drop-shadow(0 6px 10px rgb(20 35 60 / .28)); }
-/* L'hora de l'alba o la posta, sota el dibuix, dins del marge buit de baix
-   del dibuix (el marge en %, proporcional a l'amplada del dibuix), i amb el
-   mateix de farciment a sota, menys la línia: la targeta no canvia d'alçada. Centrada amb el dibuix; si no hi cap, creix cap a
-   l'esquerra, no fora de la targeta. */
-.heroi-sol { align-self: flex-end; min-width: 100%; margin: -22% 0 0; padding-bottom: calc(22% - 1.2em); font-size: .95rem;
-  line-height: 1.2; color: var(--heroi-suau); white-space: nowrap; text-align: center; }
-.heroi-sol[hidden] { display: none; }
+/* Sota el dibuix, l'hora de l'alba o la posta i la fase de la Lluna (ADR 0121
+   i 0127), dins del marge buit de baix del dibuix (el marge en %,
+   proporcional a l'amplada del dibuix), i amb el mateix de farciment a sota,
+   menys una línia: amb una línia, la targeta no canvia d'alçada. Centrades
+   amb el dibuix; si no hi caben, creixen cap a l'esquerra, no fora de la
+   targeta. */
+.heroi-sota { align-self: flex-end; min-width: 100%; margin: -22% 0 0; padding-bottom: calc(22% - 1.2em); font-size: .95rem;
+  line-height: 1.2; color: var(--heroi-suau); text-align: center; }
+.heroi-sota[hidden], .heroi-sol[hidden] { display: none; }
+/* Amb dues línies (l'hora del sol i la Lluna), una mica més de marge a sota. */
+.heroi-sota:has(.heroi-sol:not([hidden]) + .heroi-lluna) { padding-bottom: calc(22% - 1.2em + .3rem); }
+.heroi-sol, .heroi-lluna { margin: 0; white-space: nowrap; }
+.heroi-lluna svg.lluna { width: 1em; height: 1em; margin-right: .25em; vertical-align: -.15em; }
 @media (max-width: 40rem) { .heroi-cel-bloc { width: 7.4rem; margin: -1.2rem -.3rem -1.2rem auto; } }
-/* Als mòbils més estrets, el text llarg («Puesta del sol: 17:55») en dues
-   línies sota el dibuix, sense tocar «Avui, 3° més que ahir». */
-@media (max-width: 22.4rem) {
-  .heroi-sol { align-self: center; max-width: calc(100% + 1.5rem); padding-bottom: calc(22% - 1.2em + .3rem); white-space: normal;
-    text-wrap: balance; }
-}
 /* La part alta, a sota de la temperatura, com a text, sense color (Juanjo,
    22-10-2026); en prémer-la, què vol dir, com a tot arreu. */
 .ara-temp-col { display: flex; flex-direction: column; align-items: flex-start; gap: .15rem; flex: none; }
@@ -1666,12 +1666,23 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
   .heroi .ara-temp .alta { font-size: .9rem; line-height: 1.25; }
   .heroi-cel-bloc { width: 6rem; margin: -1rem -.2rem -1rem auto; }
   /* Com les pastilles. */
-  .heroi-sol { font-size: .85rem; }
+  /* Fins a 2,5 rem més ample que el dibuix, cap a l'esquerra; la fase llarga
+     («Quart minvant: demà, 21:28»), en dues línies (Juanjo, 25-10-2026: «sí,
+     hazlo así»). */
+  .heroi-sota { font-size: .85rem; width: max-content; max-width: calc(100% + 2.5rem); }
+  .heroi-lluna { white-space: normal; text-wrap: balance; }
   /* Les pastilles, en una fila (Juanjo, 23-10-2026); si ha plogut avui, que
      n'hi ha tres, en dues. */
   .heroi .dades-ara { gap: .3rem; margin: .5rem 0 .1rem; font-size: .85rem; }
   .heroi .dades-ara li { padding: .2rem .5rem; gap: .3rem; }
   .heroi .dades-ara svg { width: 1rem; height: 1rem; }
+}
+/* Als mòbils més estrets, el text llarg («Puesta del sol: 17:55») en dues
+   línies sota el dibuix, sense tocar «Avui, 3° més que ahir»: després de la
+   regla del mòbil, que si no la tapa. */
+@media (max-width: 22.4rem) {
+  .heroi-sota { align-self: center; max-width: calc(100% + .5rem); padding-bottom: calc(22% - 1.2em + .3rem); }
+  .heroi-sol { white-space: normal; text-wrap: balance; }
 }
 /* Avisos i riera d'una ullada, sota «Ara». */
 .targeta.estat-portada { margin-top: .8rem; padding: 0; border-left-width: 1px; overflow: hidden; }

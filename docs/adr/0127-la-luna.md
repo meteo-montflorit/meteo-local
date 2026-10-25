@@ -25,10 +25,18 @@ Versión 3.200.0, con el recorrido del sol de «Consultes» (ADR 0054).
   universal y las horas salen en hora local con su desfase, como pidió
   Juanjo para toda la web el mismo día («internamente siempre utc y al
   mostrar datos los adaptas al horario actual»).
-- **«Ara»**: de 12 horas antes a 12 después de una fase principal, una
-  pastilla con su dibujo y «Lluna plena: demà, 5:12» (con el día solo si no
-  es hoy), con la misma forma de nombre que «Sortida del sol: 7:14»
-  (ADR 0121). Fuera de ese margen, nada (`FASE_A_PROP_H`, `faseAProp`).
+- **«Ara»**: de 12 horas antes a 12 después de una fase principal, debajo
+  del dibujo del cielo, con su dibujo pequeño delante: «Lluna plena: demà,
+  5:12» (con el día solo si no es hoy), con la misma forma que «Sortida del
+  sol: 7:14» (ADR 0121) y en el mismo hueco, para que la tarjeta no crezca
+  (Juanjo: «para no aumentar la altura de la tarjeta no se puede poner encima
+  o debajo del sol o la nube?»; al principio era una pastilla). Si coincide
+  con la hora del sol, una línea debajo de la otra. En el móvil, el texto
+  largo («Quart minvant: demà, 5:12») pasa a dos líneas; a 320 px, a tres.
+  Medido en Chromium, Firefox y WebKit: con una línea, la tarjeta mide lo
+  mismo; con dos, unos 8 px más a 393 px y 13 a 360. Fuera del margen de 12
+  horas, nada (`FASE_A_PROP_H`, `faseAProp`). Solo si no hay dibujo del
+  cielo, va en una pastilla.
 - **La gráfica horaria**: la fase, pequeña, en la fila de los días y solo en
   la columna de la hora en que pasa; al tocarla, qué fase es y cuándo. Si
   coincide con el nombre de un día, el nombre se corre a la derecha. La
@@ -87,7 +95,7 @@ Versión 3.200.0, con el recorrido del sol de «Consultes» (ADR 0054).
 - `tests/test_web.py`: la fase sale de 12 horas antes a 12 después y no
   fuera; «demà, 5:12»; los nombres de las fases de paso.
 - En el navegador, con el reloj a las 20:00 del 25-10-2026 y los datos de
-  esa hora: la pastilla «Lluna plena: demà, 5:12» en «Ara», la Luna en la
+  esa hora: «Lluna plena: demà, 5:12» bajo el dibujo de «Ara», la Luna en la
   columna de 5 a 6 de la gráfica con su leyenda, y «Sol i lluna» con la Luna,
   en Chromium, Firefox y WebKit, móvil y escritorio, claro y oscuro; axe-core
   sin incidencias.

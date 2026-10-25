@@ -437,11 +437,19 @@ function textSol(sol, ara = new Date()) {
 // no cal: el cel només canvia amb les dades.
 let CEL_ARA = null;
 
+// La fase de la Lluna, amb el seu dibuix: «Lluna plena: demà, 5:12».
+function liniaFase(fase) {
+  const p = element('p', 'heroi-lluna');
+  p.append(dibuixLluna(ANGLE_FASE[fase.fase]), document.createTextNode(`${NOM_FASE_LLUNA()[fase.fase]}: ${quanFase(fase.hora)}`));
+  return p;
+}
+
 function posaCel(cel) {
-  const { sec, dibuix, horaSol, sol } = CEL_ARA;
+  const { sec, dibuix, sota, horaSol, ambFase, sol } = CEL_ARA;
   const textHora = cel.moment === 'alba' ? textSol(sol) : '';
   horaSol.textContent = textHora;
   horaSol.hidden = !textHora;
+  sota.hidden = !textHora && !ambFase;
   sec.classList.remove(...[...sec.classList].filter((c) => c.startsWith('cel-')));
   sec.classList.add(`cel-${cel.fons}`);
   const src = `${ARREL}img/meteocons/${cel.dibuix}.svg`;
@@ -737,13 +745,19 @@ function blocAra(casa, radarDades, vent, veines, hores, mesurada, sol, lluna) {
     const dibuix = element('img', 'heroi-cel');
     dibuix.alt = '';
     dibuix.setAttribute('aria-hidden', 'true');
-    // L'hora de l'alba o de la posta, amb el dibuix: es mou i es fa gran o
-    // petita amb ell.
+    // L'hora de l'alba o de la posta i la fase de la Lluna, amb el dibuix: es
+    // mouen i es fan grans o petites amb ell, i la targeta no creix (Juanjo,
+    // 25-10-2026: «para no aumentar la altura de la tarjeta no se puede poner
+    // encima o debajo del sol o la nube?»).
     const bloc = element('div', 'heroi-cel-bloc');
+    const sota = element('div', 'heroi-sota');
     const horaSol = element('p', 'heroi-sol');
-    bloc.append(dibuix, horaSol);
+    sota.append(horaSol);
+    const fase = faseAProp(lluna);
+    if (fase) sota.append(liniaFase(fase));
+    bloc.append(dibuix, sota);
     fila.append(bloc);
-    CEL_ARA = { sec, dibuix, horaSol, hores, plou, radarDades, sol };
+    CEL_ARA = { sec, dibuix, sota, horaSol, ambFase: Boolean(fase), hores, plou, radarDades, sol };
     posaCel(cel);
   } else CEL_ARA = null;
   const intensitat = (casa.plou && casa.intensitat) || 0;
@@ -769,11 +783,12 @@ function blocAra(casa, radarDades, vent, veines, hores, mesurada, sol, lluna) {
     const veines = vent.font === 'veines' ? T(', estacions veïnes') : '';
     llista.append(dada('i-wind', T`Vent ${coma(vent.mitja, 0)} km/h${ratxa}` + veines));
   }
-  // Una fase principal de la Lluna, de 12 hores abans a 12 després (ADR 0127).
-  const fase = faseAProp(lluna);
+  // Una fase principal de la Lluna, de 12 hores abans a 12 després (ADR 0127):
+  // sota el dibuix; només si no n'hi ha, en una pastilla.
+  const fase = !cel && faseAProp(lluna);
   if (fase) {
     const li = element('li', 'fase-lluna');
-    li.append(dibuixLluna(ANGLE_FASE[fase.fase]), document.createTextNode(`${NOM_FASE_LLUNA()[fase.fase]}: ${quanFase(fase.hora)}`));
+    li.append(...liniaFase(fase).childNodes);
     llista.append(li);
   }
   // Sense pluja, vent que molesti ni fase de la Lluna, cap pastilla: sense la
