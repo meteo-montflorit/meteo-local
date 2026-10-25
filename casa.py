@@ -236,7 +236,7 @@ def estacio_casa():
     casa = E.resum_ara()
     hora = H.llegeix(casa["hora"])
     if P.AHORA - hora > dt.timedelta(minutes=ARA_MAX_MIN):
-        raise RuntimeError(f"l'última lectura és de les {hora:%H:%M}")
+        raise RuntimeError(f"l'última lectura és de les {H.local(hora):%H:%M}")
     return casa
 
 
@@ -392,7 +392,8 @@ def ara_sense_casa(veines, taula, ahora):
         if alta is None or dif is None:
             return None
         temperatura = round(alta - dif, 1)
-    res = {"hora": max(v["hora"] for v in fresques), "temperatura": temperatura, "pressio": None,
+    # Per moment, no com a text (ADR 0128).
+    res = {"hora": H.clau(max((v["hora"] for v in fresques), key=H.utc)), "temperatura": temperatura, "pressio": None,
            "humitat": _mediana([v.get("humitat") for v in fresques]), "pluja_avui": 0.0, "pluja_1h": 0.0,
            "plou": False, "intensitat": 0.0, "font": "veines"}
     return consens(res, None, fresques)
@@ -1049,7 +1050,19 @@ def recoger(anterior=None):
     try:
         salida["setmana"] = SM.calcula(P.AHORA, taula_alta)
     except Exception as ex:
-        salida["setmana"] = (anterior or {}).get("setmana")
+        # «anterior» és on és la publicació d'abans (ruta o adreça), amb l'hora
+        # de Madrid: per dins, en UTC (ADR 0128). Si tampoc es pot llegir, res.
+        try:
+            if not anterior:
+                antes = {}
+            elif anterior.startswith("http"):
+                antes = json.loads(P.get(anterior))
+            else:
+                with open(anterior, encoding="utf-8") as f:
+                    antes = json.load(f)
+            salida["setmana"] = H.interna(antes.get("setmana"))
+        except Exception:
+            salida["setmana"] = None
         salida["errors"].append(f"setmana: {ex}")
     # El sol y la calidad del aire, para «Consultes», /sol y /aire (ADR 0054), y
     # la Luna, para «Consultes», «Ara» y la gráfica (ADR 0127).
@@ -1136,7 +1149,11 @@ def recoger(anterior=None):
             RF.apunta(P.AHORA, nc, salida)
         except Exception as ex:
             print("No he podido apuntar los radares:", ex, file=sys.stderr)
-    return salida
+    # Tot casa.json en UTC, també els moments que les fonts donen amb
+    # desfasament (ADR 0128): així es compara i s'ordena bé com a text i no hi
+    # ha dues formes al mateix fitxer. La web i el bot el reben amb l'hora de
+    # Madrid (montflorit.py, H.publica).
+    return H.interna(salida)
 
 
 if __name__ == "__main__":
@@ -1146,6 +1163,8 @@ if __name__ == "__main__":
         import migra_utc
         if R.hay_registro() and (fet := migra_utc.migra(R.DIR)) is not None:
             print(f"Registres migrats a UTC: {len(fet)} fitxers.")
+        if R.hay_registro() and (fet := migra_utc.corregeix_elaborat_aemet(R.DIR)) is not None:
+            print(f"Hora d'elaboració d'AEMET corregida: {fet} línies.")
     except Exception as ex:
         print("No he pogut migrar els registres a UTC:", ex, file=sys.stderr)
     datos = recoger(sys.argv[sys.argv.index("--anterior") + 1] if "--anterior" in sys.argv else None)

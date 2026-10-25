@@ -172,7 +172,10 @@ class Revisio(unittest.TestCase):
         self.assertIn("🤖 <b>Claude</b>", cap)
         self.assertIn("revisor", cap)
         self.assertNotIn("<b>", cos)
-        self.assertIn(FITXA, RV.llegeix(RV.CORRECCIONS, {})["fitxes"])
+        # La clau, amb el començament en UTC (ADR 0128): la mateixa que fa
+        # aplica_correccions sobre l'historial intern.
+        self.assertIn(RV.fitxa_normal(FITXA), RV.llegeix(RV.CORRECCIONS, {})["fitxes"])
+        self.assertEqual(RV.fitxa_normal(FITXA), "meteocat:2026-10-16T07:55+02:00|2026-10-16T05:55Z")
         # A la següent pasada, sense res de nou, no es desperta.
         self.assertIsNone(self.revisa(ARA + dt.timedelta(minutes=6), [problema])[0])
         # Despertat més tard, el que ja s'ha dit va al context perquè no ho repeteixi.
@@ -201,6 +204,17 @@ class Revisio(unittest.TestCase):
         self.assertIsNone(RV.toca(estat, {"pluja_ara": {"estat": "plou"}}, {}, ARA + dt.timedelta(minutes=10), []))
         self.assertEqual(RV.toca(estat, {}, {"avisos": [{"hora": "2026-10-18T07:05+02:00"}]},
                                  ARA + dt.timedelta(minutes=10), []), "avís enviat")
+
+
+class ClauFitxa(unittest.TestCase):
+    def test_la_correccio_del_publicat_s_aplica_a_l_historial_intern(self):
+        # El revisor llegeix avisos.json (hora de Madrid) i avisos_bot aplica
+        # la correcció abans de publicar, amb l'historial en UTC (ADR 0128).
+        e = {"clau": "pla:INUNCAT", "inici": "2026-10-25T09:00Z", "ca": "a\nb", "es": "a\nb"}
+        cs = {"fitxes": {"pla:INUNCAT|2026-10-25T10:00+01:00": {"original": RV.empremta("a\nb"), "ca": "a",
+                                                               "es": "a", "hora": "2026-10-25T09:30Z"}}}
+        sortida = RV.aplica_correccions({"historial": [e]}, cs)
+        self.assertEqual(sortida["historial"][0]["ca"], "a")
 
 
 if __name__ == "__main__":

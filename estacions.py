@@ -99,7 +99,7 @@ def vigila(casa_ok, veines_ok, ahora, envia=None, ruta=None):
         if clau in FALLA:
             missatges.append(FALLA[clau].format(h=f"{H.local(des_de):%H:%M}"))
         else:
-            missatges.append(VEINA.format(e=clau, nom=C.VEINES[clau]["nom"], d=f"{des_de:%d/%m %H:%M}"))
+            missatges.append(VEINA.format(e=clau, nom=C.VEINES[clau]["nom"], d=f"{H.local(des_de):%d/%m %H:%M}"))
     os.makedirs(os.path.dirname(ruta), exist_ok=True)
     with open(ruta + ".tmp", "w", encoding="utf-8") as f:
         json.dump(estat, f)

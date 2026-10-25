@@ -85,7 +85,7 @@ def git(repo, *args, timeout=300):
 
 def apunta(registre):
     os.makedirs(REGISTRE_DIR, exist_ok=True)
-    registre = {"hora": H.iso_local(H.ara(), segons=True), **registre}
+    registre = {"hora": H.clau(H.ara()), **registre}
     with open(ruta("registre"), "a", encoding="utf-8") as f:
         f.write(json.dumps(registre, ensure_ascii=False) + "\n")
     print(f"{registre.get('sha', '')[:7]}: {registre['resultat']}"

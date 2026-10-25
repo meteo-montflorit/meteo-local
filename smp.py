@@ -118,10 +118,20 @@ def de_la_comarca(llista, comarca=None):
                             llindar = af.get("llindar") or ev.get("llindar1")
                             t = trossos.setdefault((nivell(perill), llindar), {"perill": 0, "dies": {}})
                             t["perill"] = max(t["perill"], perill)
+                            # Les franges («06-12») són hores UTC del dia UTC
+                            # («…T00:00Z»): l'avís de l'acumulació del 19-10-2026
+                            # anava de dataInici 06:00Z a dataFi 05:59Z del 20,
+                            # just de la franja 06-12 a la 00-06. Fins a la
+                            # 3.201.0 es llegien com a hora de Madrid i l'avís
+                            # sortia 1 h (hivern) o 2 h (estiu) abans (ADR 0067
+                            # i 0128). Passen a hores de Madrid amb hores().
                             dia = (af.get("dia") or ev.get("dia") or "")[:10]
-                            t["dies"].setdefault(dia, set()).add(franja(per["nom"]))
+                            a, b = franja(per["nom"])
+                            d0 = dt.datetime.fromisoformat(dia).replace(tzinfo=H.UTC)
+                            for dl, fr in hores(d0 + dt.timedelta(hours=a), d0 + dt.timedelta(hours=b)).items():
+                                t["dies"].setdefault(dl, set()).update(fr)
                 for t in trossos.values():
-                    t["dies"] = {d: junta(sorted(f)) for d, f in sorted(t["dies"].items())}
+                    t["dies"] = {d: junta(sorted(f), d) for d, f in sorted(t["dies"].items())}
             else:
                 afs = [af for af in av.get("afectacions") or [] if int(af.get("idComarca") or 0) == comarca]
                 if afs and av.get("dataInici") and av.get("dataFi"):
@@ -163,12 +173,21 @@ def hores(inici, fi):
     return res
 
 
-def junta(franges):
-    """Las franjas seguidas, juntas: [(12, 18), (18, 24)] → [(12, 24)]."""
+def hora_inexistent(dia, h):
+    """Si l'hora h no existeix el dia (de Madrid) dia: la de 2 a 3 del darrer
+    diumenge de març, que salta a les 3."""
+    t = dt.datetime.combine(dt.date.fromisoformat(dia) if isinstance(dia, str) else dia, dt.time(h), tzinfo=H.ZONA)
+    return t.astimezone(H.UTC).astimezone(H.ZONA).hour != h
+
+
+def junta(franges, dia=None):
+    """Las franjas seguidas, juntas: [(12, 18), (18, 24)] → [(12, 24)]. Las que
+    se solapan también: el día del cambio de octubre la hora de 2 a 3 sale dos
+    veces. Con el día, se salta la hora que no existe en marzo (ADR 0128)."""
     res = []
     for a, b in franges:
-        if res and res[-1][1] == a:
-            res[-1] = (res[-1][0], b)
+        if res and (a <= res[-1][1] or (dia and a == res[-1][1] + 1 and hora_inexistent(dia, res[-1][1]))):
+            res[-1] = (res[-1][0], max(res[-1][1], b))
         else:
             res.append((a, b))
     return res
@@ -321,11 +340,12 @@ def marca_coberts(avisos, smp):
         if not lliures:
             a["cobert"] = "meteocat"
             continue
-        ini, fi = dt.datetime.fromisoformat(a["inicio"]), dt.datetime.fromisoformat(a["fin"])
         if lliures[0] > hores[0]:
-            a["inicio_visible"] = lliures[0].astimezone(ini.tzinfo).isoformat()
+            # Amb el desfasament del moment, no el de l'avís: el que el travessa
+            # el dia del canvi d'hora diria una hora de més (ADR 0128).
+            a["inicio_visible"] = H.iso_local(lliures[0], segons=True)
         if lliures[-1] < hores[-1]:
-            a["fin_visible"] = (lliures[-1] + dt.timedelta(hours=1) - dt.timedelta(seconds=1)).astimezone(fi.tzinfo).isoformat()
+            a["fin_visible"] = H.iso_local(H.utc(lliures[-1]) + dt.timedelta(hours=1) - dt.timedelta(seconds=1), segons=True)
     return avisos
 
 
@@ -414,7 +434,7 @@ def per_fenomen(avisos, ahora=None):
                     lh = H.local(hora)
                     dies.setdefault(lh.date().isoformat(), []).append((lh.hour, lh.hour + 1))
             res.append({"fenomen": f, "nivell": n,
-                        "dies": {d: [list(x) for x in junta(sorted(fr))] for d, fr in sorted(dies.items())},
+                        "dies": {d: [list(x) for x in junta(sorted(set(fr)), d)] for d, fr in sorted(dies.items())},
                         "ca": f"Meteocat: avís de perill {GRAU['ca'][n]} per {nca} al {nom}",
                         "es": f"Meteocat: aviso de peligro {GRAU['es'][n]} por {nes} en el {nom}"})
     res.sort(key=lambda x: -rang[x["nivell"]])

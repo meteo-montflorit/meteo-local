@@ -62,7 +62,7 @@ def apunta(ahora, nc, salida):
     linia = {"t": H.clau(ahora), "plou": plou(salida),
              "triada": nc and nc.get("imatge"), "fonts": (nc or {}).get("fonts") or {}}
     with open(os.path.join(DIR, f"radar-fonts-{H.local(ahora):%Y-%m}.jsonl"), "a", encoding="utf-8") as f:
-        f.write(json.dumps(linia, ensure_ascii=False) + "\n")
+        f.write(json.dumps(H.interna(linia), ensure_ascii=False) + "\n")
 
 
 def llegeix(avui):

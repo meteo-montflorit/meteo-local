@@ -31,8 +31,124 @@ function TD(paraula) {
 // On són els fitxers comuns: la pàgina en castellà és en una subcarpeta.
 const ARREL = document.documentElement.dataset.arrel || '';
 
+// --- La hora de Madrid (ADR 0128). Les dades porten cada hora en hora de
+// Madrid amb el seu desfasament («2026-10-25T09:45+01:00»); les d'abans de la
+// 3.201.0, sense («2026-10-25T09:45»), que també és hora de Madrid. La pàgina
+// diu i compta sempre en hora de Madrid, sigui quina sigui la zona del
+// dispositiu (Canàries, Portugal, qui viatja, Firefox amb «resistFingerprinting»,
+// que va en UTC): res de getHours, getDate, toDateString ni toLocale* sense
+// zona, que donen la del dispositiu. Tot passa per aquestes funcions.
+const ZONA_HORA = 'Europe/Madrid';
+const FORMAT_HORA = new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_HORA, hourCycle: 'h23', year: 'numeric',
+  month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short' });
+const SETMANA_HORA = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+// Un text ISO sense zona: el dia sol o el dia i l'hora.
+const ISO_SENSE_ZONA = /^(\d{4})-(\d\d)-(\d\d)(?:T(\d\d):(\d\d)(?::(\d\d)(?:\.(\d{1,3})\d*)?)?)?$/;
+const PARTS_HORA = new Map();
+
+// El moment d'una data, d'un nombre o d'un text ISO. Un text sense zona és
+// hora de Madrid: «new Date('2026-10-25T09:45')» la llegiria en la del
+// dispositiu, i «new Date('2026-10-25')», en UTC.
+function llegeixHora(x) {
+  const m = typeof x === 'string' && ISO_SENSE_ZONA.exec(x);
+  if (!m) return new Date(x);
+  const t = deRellotge(+m[1], +m[2], +m[3], +(m[4] || 0), +(m[5] || 0)).getTime();
+  return new Date(t + (+(m[6] || 0)) * 1000 + (+(m[7] || '0').padEnd(3, '0')));
+}
+
+// L'hora de Madrid d'un moment, per parts: { any, mes (1-12), dia, hora,
+// minut, setmana (0, diumenge), data («AAAA-MM-DD»), desfas (minuts, 60 o
+// 120) }. No s'ha de modificar: es reaprofita.
+function partsHora(x) {
+  const t = llegeixHora(x).getTime();
+  let p = PARTS_HORA.get(t);
+  if (p) return p;
+  if (Number.isNaN(t)) return { any: NaN, mes: NaN, dia: NaN, hora: NaN, minut: NaN, setmana: NaN, data: '', desfas: NaN };
+  const v = {};
+  for (const { type, value } of FORMAT_HORA.formatToParts(t)) v[type] = value;
+  const [any, mes, dia, hora, minut] = [+v.year, +v.month, +v.day, +v.hour % 24, +v.minute];
+  p = { any, mes, dia, hora, minut, setmana: SETMANA_HORA[v.weekday], data: `${v.year}-${v.month}-${v.day}`,
+    desfas: Math.round((Date.UTC(any, mes - 1, dia, hora, minut) - Math.floor(t / 60000) * 60000) / 60000) };
+  if (PARTS_HORA.size > 5000) PARTS_HORA.clear();
+  PARTS_HORA.set(t, p);
+  return p;
+}
+
+// El dia de Madrid («AAAA-MM-DD») i l'hora de rellotge (0-23) d'un moment.
+const diaLocal = (x) => partsHora(x).data;
+const horaLocal = (x) => partsHora(x).hora;
+
+// El desfasament de Madrid en un moment, en minuts (60 a l'hivern, 120 a
+// l'estiu), i escrit com a les dades («+01:00»).
+const desfasHora = (x) => partsHora(x).desfas;
+// El que porta escrit una hora de les dades («…+01:00» → 60); sense, el de Madrid.
+function desfasDe(iso) {
+  const m = /([+-])(\d\d):(\d\d)$/.exec(typeof iso === 'string' ? iso : '');
+  return m ? (m[1] === '-' ? -1 : 1) * (+m[2] * 60 + +m[3]) : desfasHora(iso);
+}
+
+function textDesfas(min) {
+  const a = Math.abs(min);
+  return `${min < 0 ? '-' : '+'}${String(Math.floor(a / 60)).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`;
+}
+
+// El moment d'una hora de rellotge de Madrid. L'hora que es repeteix a
+// l'octubre és la primera (la d'estiu), i la que no existeix al març cau en
+// la de després (de 2:30 a 3:30), com «hora.llegeix» de Python.
+function deRellotge(any, mes, dia, hora = 0, minut = 0) {
+  const w = Date.UTC(any, mes - 1, dia, hora, minut);
+  const abans = partsHora(w - 864e5).desfas;
+  const despres = partsHora(w + 864e5).desfas;
+  for (const d of [Math.max(abans, despres), Math.min(abans, despres)]) {
+    if (partsHora(w - d * 60000).desfas === d) return new Date(w - d * 60000);
+  }
+  return new Date(w - abans * 60000);
+}
+
+// La mitjanit (hora de Madrid) del dia d'un moment o d'un dia «AAAA-MM-DD».
+function mitjanit(x) {
+  const p = partsHora(x);
+  return deRellotge(p.any, p.mes, p.dia);
+}
+
+// El dia de Madrid («AAAA-MM-DD») n dies després (o abans) del d'un moment.
+function sumaDies(x, n) {
+  const p = partsHora(x);
+  return new Date(Date.UTC(p.any, p.mes - 1, p.dia + n)).toISOString().slice(0, 10);
+}
+
+// El moment de l'hora de rellotge «hora:minut» de Madrid del dia n dies
+// després (o abans) del d'un moment o d'un dia «AAAA-MM-DD».
+function horaDelDia(x, n = 0, hora = 0, minut = 0) {
+  const [a, m, d] = sumaDies(x, n).split('-').map(Number);
+  return deRellotge(a, m, d, hora, minut);
+}
+
+// Quants dies de calendari de Madrid hi ha del dia d'«a» al de «b».
+function diesEntre(a, b) {
+  const [pa, pb] = [partsHora(a), partsHora(b)];
+  return Math.round((Date.UTC(pb.any, pb.mes - 1, pb.dia) - Date.UTC(pa.any, pa.mes - 1, pa.dia)) / 864e5);
+}
+
+const mateixDia = (a, b) => diaLocal(a) === diaLocal(b);
+
+// Les dades, amb el desfasament a cada hora sense zona (valors i claus), com
+// les que publica la 3.201.0: les d'abans (l'historial de la gràfica fins al
+// 23-10-2026) es llegeixen igual que les noves, també tallant el text.
+function ambDesfas(d) {
+  if (typeof d === 'string') return d.length > 10 && ISO_SENSE_ZONA.test(d) ? d + textDesfas(desfasHora(d)) : d;
+  if (Array.isArray(d)) return d.map(ambDesfas);
+  if (d && typeof d === 'object') return Object.fromEntries(Object.entries(d).map(([k, v]) => [ambDesfas(k), ambDesfas(v)]));
+  return d;
+}
+
+// La data d'un moment a Madrid, com la diu el navegador en l'idioma de la pàgina («25/10/2026»).
+function textData(data) {
+  return llegeixHora(data).toLocaleDateString(IDIOMA.codi, { timeZone: ZONA_HORA });
+}
+
 function horaCurta(data) {
-  return new Date(data).toLocaleTimeString(IDIOMA.codi, { hour: '2-digit', minute: '2-digit' });
+  return llegeixHora(data).toLocaleTimeString(IDIOMA.codi, { hour: '2-digit', minute: '2-digit', timeZone: ZONA_HORA });
 }
 
 function element(etiqueta, classe, text) {
@@ -117,14 +233,13 @@ function nomFaseLluna(lluna, ara = new Date()) {
 // «5:12», «demà, 5:12» o «ahir, 23:40»; amb el dia de la setmana si és més
 // lluny («dilluns 2, 21:28»).
 function quanFase(iso, ara = new Date()) {
-  const d = new Date(iso);
-  const hora = d.toLocaleTimeString(IDIOMA.codi, { hour: 'numeric', minute: '2-digit' });
-  const dies = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate())
-    - new Date(ara.getFullYear(), ara.getMonth(), ara.getDate())) / 864e5);
+  const d = llegeixHora(iso);
+  const hora = d.toLocaleTimeString(IDIOMA.codi, { hour: 'numeric', minute: '2-digit', timeZone: ZONA_HORA });
+  const dies = diesEntre(ara, d);
   if (dies === 0) return hora;
   if (dies === 1) return T`demà, ${hora}`;
   if (dies === -1) return T`ahir, ${hora}`;
-  return `${d.toLocaleDateString(IDIOMA.codi, { weekday: 'long', day: 'numeric' })}, ${hora}`;
+  return `${d.toLocaleDateString(IDIOMA.codi, { weekday: 'long', day: 'numeric', timeZone: ZONA_HORA })}, ${hora}`;
 }
 
 // La Lluna tal com es veu des d'aquí, amb la part il·luminada de veritat: el
@@ -169,8 +284,8 @@ function dadesVelles(dades, ara = new Date()) {
 
 function blocDadesVelles(dades) {
   const generat = new Date(dades.generat);
-  const dia = generat.toDateString() === new Date().toDateString() ? ''
-    : T` del ${generat.toLocaleDateString(IDIOMA.codi)}`;
+  const dia = mateixDia(generat, new Date()) ? ''
+    : T` del ${textData(generat)}`;
   const caixa = element('section', 'avis avis-velles');
   caixa.append(element('p', null,
     T`Les dades són de les ${horaCurta(generat) + dia}: fa més de ${DADES_VELLES_H} hores que no s’actualitzen. La previsió i l’estat dels trens no es mostren fins que tornin.`));
@@ -189,12 +304,10 @@ function blocDadesVelles(dades) {
   return caixa;
 }
 
-// Data d'avui (hora local) a l'hora «HH:MM».
-function avuiA(hhmm) {
+// Data d'avui (hora de Madrid) a l'hora «HH:MM»; amb «dies», la d'un altre dia.
+function avuiA(hhmm, dies = 0) {
   const [h, m] = hhmm.split(':').map(Number);
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return d;
+  return horaDelDia(new Date(), dies, h, m);
 }
 
 // Totes les hores d'actualització d'avui, segons l'horari de les dades.
@@ -287,8 +400,8 @@ function avisosFonts(dades, fonts) {
   const riera = errors.filter((e) => e.startsWith('riera:'));
   if (riera.some((e) => e.includes('sense dades recents')) && !dades.riera) {
     const fins = dades.riera_meteocat_fins;
-    const dia = fins && new Date(fins).toDateString() !== new Date().toDateString()
-      ? T` del ${new Date(fins).toLocaleDateString(IDIOMA.codi)}` : '';
+    const dia = fins && !mateixDia(fins, new Date())
+      ? T` del ${textData(fins)}` : '';
     const falta = fins ? T`Sense dades de Meteocat a Sant Cugat des de les ${horaCurta(fins) + dia}`
       : T('Sense dades recents de Meteocat a Sant Cugat');
     avisos.push(T`${falta}: ara no es pot calcular el risc de la riera.`);
@@ -311,7 +424,7 @@ function pintaHorari(dades, fonts = FONTS_TEMPS) {
   const darreraPrevista = hores.filter((t) => t <= ara).pop();
   // L'hora d'actualització, destacada, al capdamunt de la pàgina (Juanjo, 09-10-2026:
   // «visible nada más abrir»).
-  const dia = generat.toDateString() === ara.toDateString() ? '' : T` del ${generat.toLocaleDateString(IDIOMA.codi)}`;
+  const dia = mateixDia(generat, ara) ? '' : T` del ${textData(generat)}`;
   // Al costat, el «?» de cada quan s'actualitza (ADR 0074), enganxat a
   // l'última paraula perquè no baixi sol a una altra línia.
   const [boto, sentit] = botoAjuda(textActualitzacio(dades.horari), T('Cada quan s’actualitza?'), ajudaModeOberta,
@@ -361,8 +474,7 @@ function properaPendent(dades, ara = new Date()) {
 function properaActualitzacio(horari, ara = new Date()) {
   const propera = horesActualitzacio(horari).find((t) => t > ara);
   if (propera) return propera;
-  const dema = avuiA(horari.trams[0][0]);
-  dema.setDate(dema.getDate() + 1);
+  const dema = avuiA(horari.trams[0][0], 1);
   return new Date(dema.getTime() + (horari.desfase_min || 0) * 60000);
 }
 
@@ -389,7 +501,7 @@ function baixa(url) {
       // L'hora en què el fitxer va arribar al servidor (Last-Modified), per
       // dir quan s'han actualitzat de veritat les dades (horaDades).
       const publicat = r.headers && r.headers.get('Last-Modified');
-      return r.json().then((d) => {
+      return r.json().then((d) => ambDesfas(d)).then((d) => {
         if (publicat && d && typeof d === 'object' && !Array.isArray(d)) d.publicat_servidor = new Date(publicat).toISOString();
         return d;
       });
@@ -505,10 +617,10 @@ if ('serviceWorker' in navigator && navigator.serviceWorker.addEventListener) {
 
 // «avui», «demà» o el dia de la setmana.
 function nomDiaCurt(data, ara) {
-  const dies = Math.round((new Date(data).setHours(0, 0, 0, 0) - new Date(ara).setHours(0, 0, 0, 0)) / 864e5);
+  const dies = diesEntre(ara, data);
   if (dies === 0) return T('avui');
   if (dies === 1) return T('demà');
-  return new Date(data).toLocaleDateString(IDIOMA.codi, { weekday: 'long' });
+  return llegeixHora(data).toLocaleDateString(IDIOMA.codi, { weekday: 'long', timeZone: ZONA_HORA });
 }
 
 // «a les 18:00», «a la 01:00» o «a mitjanit».
@@ -640,7 +752,7 @@ function frasesAvisos(avisos, ara = new Date()) {
 function textPrevisioAnterior(dades) {
   if (!dades || !dades.previsio_de) return '';
   const de = new Date(dades.previsio_de);
-  const dia = de.toDateString() === new Date().toDateString() ? '' : T` del ${de.toLocaleDateString(IDIOMA.codi)}`;
+  const dia = mateixDia(de, new Date()) ? '' : T` del ${textData(de)}`;
   return T`Open-Meteo, d\u2019on surten els models, ara no respon: la previsió és la de les ${horaCurta(de)}${dia}.`;
 }
 
@@ -670,10 +782,10 @@ function deFase(fase) {
   return /^[aeiouàèéíòóúh]/i.test(fase) ? `d’${fase}` : `de ${fase}`;
 }
 
-// «15/10/2026 10:33», l'hora local de les dades de Protecció Civil.
+// «15/10/2026 10:33», l'hora de Madrid de les dades de Protecció Civil.
 function dataPla(text) {
   const m = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})$/.exec(text || '');
-  return m ? new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]) : null;
+  return m ? deRellotge(+m[3], +m[2], +m[1], +m[4], +m[5]) : null;
 }
 
 // L'adreça de la fitxa d'un pla a «Perill»: en prealerta, una de fixa per
@@ -829,9 +941,8 @@ const GRAU_SMP = { mig: () => T('moderat'), alt: () => T('alt'), maxim: () => T(
 
 function quanDies(dies, ara) {
   return Object.entries(dies || {}).sort().map(([dia, franges]) => {
-    const [a, m, d] = dia.split('-').map(Number);
     const hores = franges.map(([i, f]) => T`de ${i} a ${f} h`).join(T(' i '));
-    return `${nomDiaCurt(new Date(a, m - 1, d), ara)} ${hores}`;
+    return `${nomDiaCurt(dia, ara)} ${hores}`;
   }).join('; ');
 }
 
@@ -858,9 +969,9 @@ function curtsSmp(smp, href, ara) {
 // fins ara només eren a «Consultes › Llum» (Juanjo, 12-10-2026; ADR 0074). Els
 // carrers, estimats (e-distribució no els dona), i el detall, a «Llum».
 function quanLlum(iso, desDe = false, ara = new Date()) {
-  const t = new Date(iso);
-  if (t.toDateString() === ara.toDateString()) return desDe ? T`des de les ${horaCurta(t)}` : T`les ${horaCurta(t)}`;
-  const d = `${t.getDate()}/${t.getMonth() + 1}`;
+  const t = llegeixHora(iso);
+  if (mateixDia(t, ara)) return desDe ? T`des de les ${horaCurta(t)}` : T`les ${horaCurta(t)}`;
+  const d = `${partsHora(t).dia}/${partsHora(t).mes}`;
   return desDe ? T`des del ${d} a les ${horaCurta(t)}` : T`el ${d} a les ${horaCurta(t)}`;
 }
 
@@ -1085,10 +1196,11 @@ function episodiDe(href) {
   return id ? (HISTORIAL_PERILL || []).find((e) => e.clau && idFitxa(e) === id) : null;
 }
 
-// L'hora del comunicat d'un pla, del nom del PDF: «…_202610171110.pdf».
+// L'hora del comunicat d'un pla, del nom del PDF: «…_202610171110.pdf», en
+// hora de Madrid.
 function horaComunicat(url) {
   const m = /_(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})\.pdf$/.exec(url || '');
-  return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) : null;
+  return m ? deRellotge(+m[1], +m[2], +m[3], +m[4], +m[5]) : null;
 }
 
 function publicacioEpisodi(e) {
@@ -1099,11 +1211,11 @@ function publicacioEpisodi(e) {
 }
 
 function diaPassat(data, ara) {
-  const dies = Math.round((new Date(ara).setHours(0, 0, 0, 0) - new Date(data).setHours(0, 0, 0, 0)) / 864e5);
+  const dies = diesEntre(data, ara);
   if (dies === 0) return T('avui');
   if (dies === 1) return T('ahir');
-  const nom = new Date(data).toLocaleDateString(IDIOMA.codi, { weekday: 'long' });
-  return dies < 7 ? nom : `${nom} ${new Date(data).getDate()}`;
+  const nom = llegeixHora(data).toLocaleDateString(IDIOMA.codi, { weekday: 'long', timeZone: ZONA_HORA });
+  return dies < 7 ? nom : `${nom} ${partsHora(data).dia}`;
 }
 
 function textPublicacio(pub, ara = new Date()) {
@@ -1258,7 +1370,7 @@ function enllacExtern(text, href) {
 
 // «divendres 23».
 function diaBus(d) {
-  return `${d.toLocaleDateString(IDIOMA.codi, { weekday: 'long' })} ${d.getDate()}`;
+  return `${d.toLocaleDateString(IDIOMA.codi, { weekday: 'long', timeZone: ZONA_HORA })} ${partsHora(d).dia}`;
 }
 
 function incidenciesBusos(busos, quan, linia) {
@@ -1277,11 +1389,10 @@ function liniaIncidenciaBus(inc, des, ambLinia) {
   const titol = inc.titol[idioma] || inc.titol.ca;
   const url = (inc.url || {})[idioma] || (inc.url || {}).ca;
   text.append(url ? enllacExtern(titol, url) : titol);
-  const mateixDia = (d) => d.toDateString() === des.toDateString();
   const [inici, fi] = [inc.inici && new Date(inc.inici), inc.fi && new Date(inc.fi)];
   if (inici && inici > des) {
-    text.append(mateixDia(inici) ? T`, a partir de les ${horaCurta(inici)}.` : T`, a partir del ${diaBus(inici)} a les ${horaCurta(inici)}.`);
-  } else if (fi) text.append(mateixDia(fi) ? T`, fins a les ${horaCurta(fi)}.` : T`, fins al ${diaBus(fi)}.`);
+    text.append(mateixDia(inici, des) ? T`, a partir de les ${horaCurta(inici)}.` : T`, a partir del ${diaBus(inici)} a les ${horaCurta(inici)}.`);
+  } else if (fi) text.append(mateixDia(fi, des) ? T`, fins a les ${horaCurta(fi)}.` : T`, fins al ${diaBus(fi)}.`);
   else text.append('.');
   return p;
 }
@@ -1308,7 +1419,7 @@ function horesParada(hores, des) {
   if (properes.length) return properes.map(horaCurta).join(T(' i '));
   if (!futures.length) return '—';
   const d = new Date(futures[0]);
-  return d.toDateString() === des.toDateString() ? horaCurta(d) : T`${diaBus(d)} a les ${horaCurta(d)}`;
+  return mateixDia(d, des) ? horaCurta(d) : T`${diaBus(d)} a les ${horaCurta(d)}`;
 }
 
 // Per a «Consultes»: cada línia amb les seves incidències, cada sentit amb les

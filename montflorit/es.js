@@ -913,11 +913,12 @@ var IDIOMA = {
     if (!plantilla) return r.text;
     let quan = '';
     if (r.des_de && r.fins) {
-      const ini = new Date(r.des_de);
-      const dies = Math.round((new Date(ini).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 864e5);
+      // En hora de Madrid, amb les funcions de comu.js (ADR 0128).
+      const ini = partsHora(r.des_de);
+      const dies = diesEntre(new Date(), r.des_de);
       const dia = dies === 0 ? 'hoy' : dies === 1 ? 'mañana'
-        : `${String(ini.getDate()).padStart(2, '0')}/${String(ini.getMonth() + 1).padStart(2, '0')}`;
-      quan = `${dia} de ${ini.getHours()} a ${new Date(r.fins).getHours()} h`;
+        : `${String(ini.dia).padStart(2, '0')}/${String(ini.mes).padStart(2, '0')}`;
+      quan = `${dia} de ${ini.hora} a ${horaLocal(r.fins)} h`;
     }
     // Com riscos.num: sense decimals; la temperatura, amb un si no és un grau enter.
     const v = Number(r.valor);

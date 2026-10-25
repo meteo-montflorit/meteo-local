@@ -144,7 +144,7 @@ function pintaPollen(p) {
   cap.append(element('strong', null, T('Pol·len a Bellaterra')),
     T` (setmana del ${dataCurta(p.inici)} al ${dataCurta(p.fi)}, a ${coma(p.km)} km)`);
   const peces = [cap];
-  if (new Date(p.fi + 'T23:59') < new Date()) peces.push(element('p', 'nota', T('Són les dades de l’última setmana publicada.')));
+  if (llegeixHora(p.fi + 'T23:59') < new Date()) peces.push(element('p', 'nota', T('Són les dades de l’última setmana publicada.')));
   peces.push(element('h2', 'pollen-grup', T('Pol·len')), ...filesPollen(p.pollens || [], idioma));
   peces.push(element('h2', 'pollen-grup', T('Espores de fongs')), ...filesPollen(p.espores || [], idioma));
   const peu = element('p', 'nota');
@@ -273,12 +273,18 @@ const solY = (graus) => SOL_DIB.dalt + (SOL_DIB.max - graus) / (SOL_DIB.max - SO
 // la corba no fa cap salt (Juanjo, 25-10-2026: «el cambio horario no debe
 // nunca distorsionar resultados … internamente siempre utc»).
 function recorregutSol(dia, desfas) {
-  const [a, m, d] = dia.split('-').map(Number);
   const punts = [];
-  for (let min = 0; min <= 1440; min += 5) {
-    punts.push([min, posicioSol(new Date(Date.UTC(a, m - 1, d, 0, min - desfas))).altura]);
-  }
+  for (let min = 0; min <= 1440; min += 5) punts.push([min, posicioSol(momentSol(dia, min, desfas)).altura]);
   return punts;
+}
+
+// El desfasament de l'hora oficial d'un dia (AAAA-MM-DD) a Madrid, el del
+// migdia, sigui quina sigui la zona del dispositiu, i el moment d'un minut
+// del dibuix d'aquell dia (de 0 a 1440).
+const desfasSol = (dia) => desfasHora(`${dia}T12:00`);
+function momentSol(dia, min, desfas = desfasSol(dia)) {
+  const [a, m, d] = dia.split('-').map(Number);
+  return new Date(Date.UTC(a, m - 1, d, 0, min - desfas));
 }
 
 function camiSol(punts) {
@@ -295,8 +301,7 @@ function direccioSol(azimut) {
 let numSol = 0;
 function graficaSol(avui, ara, ample = 340) {
   const any = avui.dia.slice(0, 4);
-  const [a, m, d] = avui.dia.split('-').map(Number);
-  const desfas = -new Date(a, m - 1, d, 12).getTimezoneOffset();
+  const desfas = desfasSol(avui.dia);
   SOL_DIB.ample = ample;
   // Quadrat (Juanjo, 25-10-2026: «para evitar problemas, hazlo cuadrado»,
   // després de demanar-lo més alt dues vegades): les corbes no queden mai
@@ -337,7 +342,7 @@ function graficaSol(avui, ara, ample = 340) {
   const sortida = minutsDelDia(avui.sortida);
   const posta = minutsDelDia(avui.posta);
   // Les guies de la sortida, el migdia i la posta, amb l'hora a dalt.
-  const hora = (min) => horaCurta(new Date(2000, 0, 1, 0, min));
+  const hora = (min) => horaCurta(momentSol(avui.dia, min, desfas));
   // Prop de la vora, l'hora s'alinea amb la vora perquè no quedi tallada (al
   // juny, el sol surt i es pon gairebé als extrems).
   const marge = 22;
@@ -355,9 +360,10 @@ function graficaSol(avui, ara, ample = 340) {
     svg.append(text(xt, SOL_DIB.alt - 5, `${h} h`, 'sol-eix', ancora));
   }
   // On és ara, si és avui.
-  const dataLocal = `${ara.getFullYear()}-${String(ara.getMonth() + 1).padStart(2, '0')}-${String(ara.getDate()).padStart(2, '0')}`;
-  const minAra = ara.getHours() * 60 + ara.getMinutes();
-  if (dataLocal === avui.dia && minAra >= SOL_DIB.ini && minAra <= SOL_DIB.fi) {
+  // El minut, el del dibuix (amb el desfasament del migdia), perquè el punt
+  // caigui sobre la corba també la nit del canvi d'hora.
+  const minAra = Math.round((ara - momentSol(avui.dia, 0, desfas)) / 60000);
+  if (diaLocal(ara) === avui.dia && minAra >= SOL_DIB.ini && minAra <= SOL_DIB.fi) {
     const alt = posicioSol(ara).altura;
     const g = nodeSvg('g', { class: alt > -0.8 ? 'sol-ara' : 'sol-ara sol-ara-nit' });
     // De nit, si baixa més del que es dibuixa, al fons de la franja de la nit.
@@ -384,9 +390,8 @@ function pintaSol(dies, ara = new Date(), lluna = null) {
   const ampla = dins >= SOL_FILA;
   const costat = ampla ? Math.min(SOL_MAX, Math.round(dins * SOL_AMPLE)) : Math.max(280, Math.round(dins) || 340);
   const { svg, minMig, altMig } = graficaSol(avui, ara, costat);
-  const [a, m, d] = avui.dia.split('-').map(Number);
   const per = (iso) => direccioSol(posicioSol(new Date(iso)).azimut);
-  const mig = horaCurta(new Date(a, m - 1, d, 0, minMig));
+  const mig = horaCurta(momentSol(avui.dia, minMig));
   const dibuix = element('div', 'sol-dibuix');
   const text = element('div', 'sol-text');
   const fila = element('div', ampla ? 'sol-bloc sol-bloc-ample' : 'sol-bloc');

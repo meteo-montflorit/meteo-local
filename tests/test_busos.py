@@ -157,6 +157,28 @@ class HorariDesat(unittest.TestCase):
             finally:
                 BU.CAU, BU.baixa = antic, baixa
 
+    def test_el_d_avui_amb_el_calcul_d_abans_es_torna_a_fer(self):
+        # El 25-10-2026 el desat a les 0 h amb el càlcul anterior a la 3.199.1
+        # duia tot el dia els busos sense temps real una hora avançats.
+        import json
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            cau = os.path.join(d, "busos-horari.json")
+            with open(cau, "w", encoding="utf-8") as f:
+                json.dump({"dia": DIA.isoformat(), "rutes": {}, "viatges": []}, f)
+            antic, baixa = BU.CAU, BU.baixa
+            BU.CAU = cau
+            BU.baixa = lambda *a, **k: open(ZIP, "rb").read() if isinstance(ZIP, str) else ZIP
+            try:
+                nou = BU.horari_desat(DIA)
+                self.assertEqual(nou["format"], BU.FORMAT_HORARI)
+                self.assertTrue(nou["viatges"])
+                # I el que ja és d'avui i amb el càlcul d'ara, es fa servir.
+                BU.baixa = lambda *a, **k: (_ for _ in ()).throw(OSError("no cal"))
+                self.assertEqual(BU.horari_desat(DIA)["format"], BU.FORMAT_HORARI)
+            finally:
+                BU.CAU, BU.baixa = antic, baixa
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -114,3 +114,13 @@ tres días, que desaparece al abrir cada una, y no en «Si surts».
 - Comparado con el prototipo de la rama de prueba el 22-10-2026: mismas horas
   e incidencias. Probado en Chromium y Firefox, móvil y ordenador, tema claro
   y oscuro.
+
+## Cambio del 25-10-2026 (3.202.0): el horario guardado lleva su forma de cálculo
+
+El horario del día se guarda en `busos-horari.json` y se reutiliza hasta el
+día siguiente. El del 25-10-2026 se guardó a las 0:00 con el cálculo anterior
+a la 3.199.1 y llevó todo el día los autobuses sin tiempo real una hora
+adelantados. Desde la 3.202.0 el archivo lleva `format` (`FORMAT_HORARI`): el
+de hoy solo vale si tiene el formato de ahora; si no, se vuelve a calcular.
+Sin red, se sigue sirviendo el guardado de pocos días, aunque sea de antes:
+solo fallaba los días del cambio de hora.

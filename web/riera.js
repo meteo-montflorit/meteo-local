@@ -14,7 +14,7 @@ const NOM_MODEL = {
   meteofrance_arome_france_hd: 'AROME HD', meteofrance_arome_france: 'AROME', icon_eu: 'ICON-EU', ecmwf_ifs: 'ECMWF',
 };
 function h(iso) {
-  return `${new Date(iso).getHours()}`;
+  return `${horaLocal(iso)}`;
 }
 
 // --- L'avís de la riera, si n'hi ha: el mateix que a «Perill» -------------------------
@@ -40,7 +40,7 @@ function pintaAvis(historial) {
 function quanPrevisio(p) {
   const f = p.finestra_3h;
   if (!f) return '';
-  return new Date(f.ini).getDate() !== new Date().getDate()
+  return !mateixDia(f.ini, new Date())
     ? T`demà entre les ${h(f.ini)} i les ${h(f.fi)} h` : T`entre les ${h(f.ini)} i les ${h(f.fi)} h`;
 }
 
@@ -118,7 +118,7 @@ function pintaAra(dades) {
 
 function pintaEpisodis(historial) {
   const cos = $('episodis-cos');
-  const eps = (historial || []).filter((e) => e.tipus === 'riera').sort((a, b) => (a.inici < b.inici ? 1 : -1));
+  const eps = (historial || []).filter((e) => e.tipus === 'riera').sort((a, b) => llegeixHora(b.inici) - llegeixHora(a.inici));
   if (!eps.length) {
     cos.replaceChildren(element('p', 'nota', T('Cap episodi amb avís des que la web els apunta (octubre del 2026).')));
     return;
@@ -127,7 +127,7 @@ function pintaEpisodis(historial) {
   for (const e of eps) {
     const li = element('li', `episodi-linia ${e.nivell === 'perill' ? 'vermell' : 'taronja'}`);
     const d = new Date(e.inici);
-    const quan = `${d.toLocaleDateString(IDIOMA.codi === 'es' ? 'es-ES' : 'ca-ES', { day: 'numeric', month: 'long', year: 'numeric' })}, ${horaCurta(e.inici)}`;
+    const quan = `${d.toLocaleDateString(IDIOMA.codi === 'es' ? 'es-ES' : 'ca-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: ZONA_HORA })}, ${horaCurta(e.inici)}`;
     const nivell = e.nivell === 'perill' ? T('perill de desbordament') : T('atenció');
     li.append(element('strong', null, quan), `: ${nivell}`, e.fi ? T` · acabat a les ${horaCurta(e.fi)}` : T(' · en curs'), ' · ');
     const a = element('a', null, T('vegeu l’avís'));

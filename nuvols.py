@@ -224,7 +224,8 @@ def llegeix_observats():
     if not os.path.exists(OBSERVATS):
         return {}
     with open(OBSERVATS, encoding="utf-8") as f:
-        return {r["fins"]: (float(r["nuvols"]), r.get("capes") == "1")
+        # La clau, en UTC encara que el registre fos d'abans (ADR 0128).
+        return {H.clau(r["fins"]): (float(r["nuvols"]), r.get("capes") == "1")
                 for r in csv.DictReader(f) if r["nuvols"] not in ("", None)}
 
 
@@ -242,7 +243,7 @@ def parelles(avui):
                     continue
                 l = json.loads(linia)
                 for hr in l.get("hores") or []:
-                    fins = hr.get("fins")
+                    fins = hr.get("fins") and H.clau(hr["fins"])
                     if not fins or H.dia_local(fins).isoformat() < des_de or fins not in obs:
                         continue
                     pct, capes = obs[fins]

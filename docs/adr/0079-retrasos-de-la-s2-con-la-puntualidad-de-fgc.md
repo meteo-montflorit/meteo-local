@@ -73,3 +73,12 @@ los avisos que quedan coinciden con `trens.RECUPERA` («resolta la
 incidència», «recuperen progressivament» y sus formas en castellano), la línea
 sale «amb retard», sin número de trenes. Con otro aviso abierto, sigue «amb
 incidències». Explicado en «Com es decideix» de «Si surts».
+
+## Cambio del 25-10-2026 (3.202.0): el archivo de avisos de FGC trae avisos de PHP delante
+
+El archivo GTFS-RT de avisos de FGC (`alerts-gtfs_realtime`) llega con avisos
+de PHP del servidor delante del binario («<br />\n<b>Warning</b>: Undefined
+property…»). Al leerlo fallaba («tipus de camp desconegut: 4») y, como sin
+avisos la línea no se puede decidir, la S2 salía «sense dades» en la web y en
+el bot; en el NAS se vio por última vez el 23-10-2026 a las 19:15. Desde la
+3.202.0, `trens.sense_avisos_php` los quita antes de leerlo (`tests/test_trens.py`).

@@ -163,7 +163,7 @@ function nomesAvisRodes(f) {
 }
 
 function hora(f) {
-  return new Date(f.hora).getHours();
+  return horaLocal(f.hora);
 }
 
 function graus(t) {
@@ -223,7 +223,7 @@ function avalua(mitja, tram, trens, futur, transit, entorn) {
     const tres = viatge.map((f) => plujaTresHores((entorn || {}).hores, f)).filter(Boolean)
       .reduce((a, b) => (!a || b.mm > a.mm ? b : a), null);
     const mm3 = tres ? Math.round(tres.mm) : 0;
-    const tresTxt = tres && T`de ${hora(tres.ini)} a ${new Date(tres.fi.fins).getHours()}\u00a0h`;
+    const tresTxt = tres && T`de ${hora(tres.ini)} a ${horaLocal(tres.fi.fins)}\u00a0h`;
     const mm30 = Math.round(ara30);
     if (ara30 > PLUJA_COTXE_30MIN[1]) puja('no', T`Ara plou amb molta intensitat al barri (${mm30}\u00a0mm en mitja hora): millor no agafar el cotxe.`);
     else if (tres && tres.mm > PLUJA_COTXE_3H[1]) puja('no', T`Fins a ${mm3}\u00a0mm de pluja en 3 hores (${tresTxt}): millor no agafar el cotxe.`);
@@ -424,7 +424,7 @@ function consells(tram, ara) {
 function etiquetaHora(f, ara) {
   const d = new Date(f.hora);
   const text = horaCurta(d);
-  if (d.toDateString() === ara.toDateString()) return text;
+  if (mateixDia(d, ara)) return text;
   const dia = nomDiaCurt(d, ara);
   return dia === T('demà') ? T`demà ${text}` : `${dia} ${text}`;
 }
@@ -447,13 +447,14 @@ const HORES_ENLLAC = new URLSearchParams(location.search);
 function pintaSelectors(hores, ara) {
   const surto = $('surto');
   const torno = $('torno');
-  const abansSurto = surto.value || HORES_ENLLAC.get('surto') || '';
-  const abansTorno = torno.value || HORES_ENLLAC.get('torno') || '';
+  // Un enllaç d'abans de la 3.201.0 porta les hores sense el desfasament.
+  const abansSurto = surto.value || ambDesfas(HORES_ENLLAC.get('surto') || '');
+  const abansTorno = torno.value || ambDesfas(HORES_ENLLAC.get('torno') || '');
   omple(surto, hores.slice(0, -1).map((f, i) => [f.hora, i === 0 ? T('Ara') : etiquetaHora(f, ara)]), abansSurto);
   const i = Math.max(0, hores.findIndex((f) => f.hora === surto.value));
   const per = Math.min(i + TORNADA_PER_DEFECTE_H, hores.length - 1);
   omple(torno, hores.slice(i + 1).map((f) => [f.hora, etiquetaHora(f, ara)]),
-    abansTorno && abansTorno > surto.value ? abansTorno : hores[per].hora);
+    abansTorno && llegeixHora(abansTorno) > llegeixHora(surto.value) ? abansTorno : hores[per].hora);
 }
 
 // --- Pintar ----------------------------------------------------------------------

@@ -713,8 +713,10 @@ def historial_perill(avisos):
         except (OSError, ValueError):
             continue
         for e in hist:
-            if (e.get("clau"), e.get("inici")) not in vistos:
-                vistos.add((e.get("clau"), e.get("inici")))
+            # El publicat porta l'hora de Madrid i l'arxiu intern, UTC (ADR 0128).
+            vist = (e.get("clau"), H.clau(e["inici"]) if e.get("inici") else None)
+            if vist not in vistos:
+                vistos.add(vist)
                 res.append(e)
     return res
 

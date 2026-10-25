@@ -68,9 +68,29 @@ class Smp(unittest.TestCase):
         # graus 1 i 2 (17-10-2026: deia «perill molt alt» per a un dilluns en groc).
         self.assertEqual(len(a), 2)
         self.assertEqual(a[0]["meteor"], "Intensitat de pluja")
-        self.assertEqual((a[0]["perill"], a[0]["dies"]), (3, {"2026-10-10": [(12, 18)]}))
-        self.assertEqual((a[1]["perill"], a[1]["dies"]), (2, {"2026-10-10": [(18, 24)], "2026-10-11": [(0, 6)]}))
+        # Les franges són hores UTC (dataInici 12:00Z, la franja 12-18): en
+        # hora de Madrid d'estiu, dues més (ADR 0128).
+        self.assertEqual((a[0]["perill"], a[0]["dies"]), (3, {"2026-10-10": [(14, 20)]}))
+        self.assertEqual((a[1]["perill"], a[1]["dies"]), (2, {"2026-10-10": [(20, 24)], "2026-10-11": [(0, 8)]}))
         self.assertEqual(smp.de_la_comarca(EPISODIS, 99), [])
+
+    def test_les_franges_son_hores_utc(self):
+        # L'avís real de l'acumulació del 19-10-2026: dataInici 06:00Z i dataFi
+        # 05:59Z del 20, franges 06-12, 12-18 i 18-00 del 19 i 00-06 del 20.
+        def af(dia):
+            return [afectacio(40.0, 2.0, dia)]
+        ep = {"id": None, "estat": {"nom": "Obert", "data": None}, "meteor": {"idMeteor": None, "nom": "Acumulació de pluja"},
+              "avisos": [{"tipus": "Avís", "estat": "Vigent", "dataEmisio": "2026-10-19T08:46Z",
+                          "dataInici": "2026-10-19T06:00Z", "dataFi": "2026-10-20T05:59Z", "evolucions": [
+                              {"dia": "2026-10-19T00:00Z", "llindar1": "Acumulada > 100 mm /24 hores", "periodes": [
+                                  {"nom": "00-06", "afectacions": None}, {"nom": "06-12", "afectacions": af("2026-10-19T00:00Z")},
+                                  {"nom": "12-18", "afectacions": af("2026-10-19T00:00Z")},
+                                  {"nom": "18-00", "afectacions": af("2026-10-19T00:00Z")}]},
+                              {"dia": "2026-10-20T00:00Z", "llindar1": "Acumulada > 100 mm /24 hores", "periodes": [
+                                  {"nom": "00-06", "afectacions": af("2026-10-20T00:00Z")}]}]}]}
+        a = smp.de_la_comarca(smp.episodis(pagina([[ep]])))
+        # De les 8 h del 19 a les 8 h del 20, en hora d'estiu: el mateix que dataInici i dataFi.
+        self.assertEqual(a[0]["dies"], {"2026-10-19": [(8, 24)], "2026-10-20": [(0, 8)]})
 
     def test_grau_com_el_mapa_de_meteocat(self):
         self.assertEqual([smp.nivell(p) for p in range(1, 7)], ["mig", "mig", "alt", "alt", "maxim", "maxim"])
@@ -81,23 +101,25 @@ class Smp(unittest.TestCase):
         self.assertEqual(l["nivell"], "alt")
         hora = smp.hora_local("2026-10-10T08:09Z")
         self.assertEqual(l["ca"], "Meteocat: avís de perill alt per «Intensitat de pluja» al Vallès Occidental, "
-                                  f"dissabte 10 de 12 a 18 h (Intensitat > 20 mm / 30 minuts; emès a les {hora}).")
+                                  f"dissabte 10 de 14 a 20 h (Intensitat > 20 mm / 30 minuts; emès a les {hora}).")
         self.assertTrue(l["es"].startswith("Meteocat: aviso de peligro alto por «Intensitat de pluja» en el Vallès "
-                                           "Occidental, sábado 10 de 12 a 18 h"))
+                                           "Occidental, sábado 10 de 14 a 20 h"))
         self.assertTrue(r["linies"][1]["ca"].startswith("Meteocat: avís de perill moderat per «Intensitat de pluja» al "
-                                                        "Vallès Occidental, dissabte 10 de 18 a 24 h i diumenge 11 de 0 a 6 h"))
+                                                        "Vallès Occidental, dissabte 10 de 20 a 24 h i diumenge 11 de 0 a 8 h"))
         # El resum per fenomen, igual: cada nivell amb les seves hores, sense repetir-ne.
         self.assertEqual([(f["nivell"], f["dies"]) for f in smp.per_fenomen(r["avisos"])],
-                         [("alt", {"2026-10-10": [[12, 18]]}),
-                          ("mig", {"2026-10-10": [[18, 24]], "2026-10-11": [[0, 6]]})])
-        # Les hores passades no surten al resum: a les 19 h, de 12 a 18 h ja no.
+                         [("alt", {"2026-10-10": [[14, 20]]}),
+                          ("mig", {"2026-10-10": [[20, 24]], "2026-10-11": [[0, 8]]})])
+        # Les hores passades no surten al resum: a les 19 h, de 14 a 19 h ja no.
         tarda = smp.llegeix(lambda url: pagina(EPISODIS), AHORA)
         self.assertEqual([(f["nivell"], f["dies"]) for f in tarda["fenomens"]],
-                         [("mig", {"2026-10-10": [[19, 24]], "2026-10-11": [[0, 6]]})])
+                         [("alt", {"2026-10-10": [[19, 20]]}),
+                          ("mig", {"2026-10-10": [[20, 24]], "2026-10-11": [[0, 8]]})])
         # Ni a les línies (18-10-2026: Meteocat manté al vigent les franges
         # passades, i la fitxa deia les del dia abans); els avisos, sencers.
-        self.assertEqual([l["nivell"] for l in tarda["linies"]], ["mig"])
-        self.assertIn("dissabte 10 de 19 a 24 h i diumenge 11 de 0 a 6 h", tarda["linies"][0]["ca"])
+        self.assertEqual([l["nivell"] for l in tarda["linies"]], ["alt", "mig"])
+        self.assertIn("dissabte 10 de 19 a 20 h", tarda["linies"][0]["ca"])
+        self.assertIn("dissabte 10 de 20 a 24 h i diumenge 11 de 0 a 8 h", tarda["linies"][1]["ca"])
         self.assertEqual(len(tarda["avisos"]), 2)
         cap = smp.llegeix(lambda url: pagina([]), AHORA)["linies"]
         self.assertEqual(cap, [{"nivell": "nul",
@@ -169,7 +191,9 @@ class Smp(unittest.TestCase):
               "meteor": {"idMeteor": None, "nom": "Intensitat de pluja en 30 minuts"},
               "avisos": [av("Ampliat", "2026-10-15T07:28Z", 2.0), av("Vigent", "2026-10-15T16:20Z", 3.0)]}
         a = smp.de_la_comarca(smp.episodis(pagina([[ep], [ep]])))
-        self.assertEqual([(x["perill"], x["dies"]) for x in a], [(3, {"2026-10-17": [(12, 24)]})])
+        # De 12 a 24 h UTC: de 14 a 2 h de Madrid, en estiu.
+        self.assertEqual([(x["perill"], x["dies"]) for x in a],
+                         [(3, {"2026-10-17": [(14, 24)], "2026-10-18": [(0, 2)]})])
 
     def test_meteocat_avisa_per_fenomen(self):
         # ADR 0092: el primer, si puja de nivell, un fenomen nou i hores noves;

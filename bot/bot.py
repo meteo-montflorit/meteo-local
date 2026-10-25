@@ -305,20 +305,36 @@ def graus(t):
     return f"{math.floor(t + 0.5)} °C".replace("-", "−")
 
 
+def _instant(iso):
+    """El moment d'una hora de les dades, en UTC; sense zona, la de Madrid."""
+    t = dt.datetime.fromisoformat(iso)
+    return (t if t.tzinfo else t.replace(tzinfo=ZONA)).astimezone(dt.timezone.utc)
+
+
+def _seguides(files):
+    """[(inici, fi, files)] de les files seguides, unides pel moment i no per
+    l'hora de rellotge: la nit del canvi d'hora d'octubre, de 2 a 3 dues
+    vegades, no parteix la franja (ADR 0128). Inici i fi, al rellotge de Madrid
+    i sense zona, com hora_local."""
+    res = []
+    for f in files:
+        ini = _instant(f["hora"])
+        fi = _instant(f["fins"]) if f.get("fins") else ini + dt.timedelta(hours=1)
+        if res and res[-1][1] == ini:
+            res[-1] = (res[-1][0], fi, res[-1][2] + [f])
+        else:
+            res.append((ini, fi, [f]))
+    return [(a.astimezone(ZONA).replace(tzinfo=None), b.astimezone(ZONA).replace(tzinfo=None), fs)
+            for a, b, fs in res]
+
+
 def franges(hores):
     """[(inici, fi, prob)] de les hores seguides amb risc de pluja."""
-    res = []
-    for f in hores:
-        # Como en la web: decide la probabilidad; sin ella, los milímetros.
+    # Como en la web: decide la probabilidad; sin ella, los milímetros.
+    def plou(f):
         p = f.get("probabilitat")
-        if (p >= 0.2) if p is not None else (f.get("pluja_mm") or 0) >= 0.2:
-            p = p or 0
-            h = hora_local(f["hora"])
-            if res and res[-1][1] == h:
-                res[-1] = (res[-1][0], h + dt.timedelta(hours=1), max(res[-1][2], p))
-            else:
-                res.append((h, h + dt.timedelta(hours=1), p))
-    return res
+        return (p >= 0.2) if p is not None else (f.get("pluja_mm") or 0) >= 0.2
+    return [(a, b, max(f.get("probabilitat") or 0 for f in fs)) for a, b, fs in _seguides(filter(plou, hores))]
 
 
 def plou_ara(dades):
@@ -480,9 +496,11 @@ def amb_icona(icona, text):
 
 
 def hora_ara(dades, moment):
-    ara_n = moment.astimezone(ZONA).replace(tzinfo=None)
+    # Pel moment, no per l'hora de rellotge: la primera de 2 a 3 d'octubre
+    # acaba a les 2 i no es trobava mai (ADR 0128).
+    ara_u = moment.astimezone(dt.timezone.utc)
     for f in dades.get("hores") or []:
-        if hora_local(f["hora"]) <= ara_n < hora_local(f["fins"]):
+        if _instant(f["hora"]) <= ara_u < _instant(f["fins"]):
             return f
     return None
 
@@ -515,12 +533,15 @@ def text_pluja_prevista(dades, idioma, moment):
     """La primera hora de les 24 que venen amb pluja segons la previsió (del
     20 %, com «possible pluja»): «Pluja prevista d'aquí a unes 6 hores, cap a
     les 20 h (73 %).». La previsió és per hores: sense minuts."""
-    ara_n = moment.replace(tzinfo=None)
+    # Les hores que falten, pel moment (el dia del canvi d'hora, el rellotge
+    # en diria una de més o de menys); l'hora que es diu, la de Madrid.
+    ara_u = moment.astimezone(dt.timezone.utc)
     for f in dades.get("hores") or []:
-        ini = hora_local(f["hora"])
-        if not (ara_n < ini <= ara_n + dt.timedelta(hours=24)) or not pluja_hora(f):
+        ini_u = _instant(f["hora"])
+        if not (ara_u < ini_u <= ara_u + dt.timedelta(hours=24)) or not pluja_hora(f):
             continue
-        h = round((ini - ara_n).total_seconds() / 3600)
+        ini = hora_local(f["hora"])
+        h = round((ini_u - ara_u).total_seconds() / 3600)
         p = f.get("probabilitat")
         pct = f" ({math.floor(p * 100 + 0.5)} %)" if p is not None else ""
         segura = p is None or p >= 0.5
@@ -648,15 +669,8 @@ TIPUS_AVIS_PLUJA = {"pluja", "tempestes", "temps_violent"}
 
 def hores_avis_pluja(files):
     """[(inici, fi)] de les hores seguides amb avís oficial per pluja."""
-    res = []
-    for f in files:
-        if any(set(a.get("tipus") or []) & TIPUS_AVIS_PLUJA for a in f.get("avisos") or []):
-            h = hora_local(f["hora"])
-            if res and res[-1][1] == h:
-                res[-1] = (res[-1][0], h + dt.timedelta(hours=1))
-            else:
-                res.append((h, h + dt.timedelta(hours=1)))
-    return res
+    return [(a, b) for a, b, _ in _seguides(
+        f for f in files if any(set(a.get("tipus") or []) & TIPUS_AVIS_PLUJA for a in f.get("avisos") or []))]
 
 
 def text_pluja(tram, idioma, icona=True, avis=None):
@@ -1241,9 +1255,11 @@ def _dia_bus(d, idioma):
 
 
 def hores_parada(hores, des, idioma):
-    # En hora de Madrid sense zona, com des (ADR 0128).
-    futures = [h for h in (hora_local(x) for x in hores) if h >= des]
-    properes = [h for h in futures if h <= des + dt.timedelta(hours=2)][:2]
+    # Pel moment (ADR 0128); per mostrar, en hora de Madrid sense zona, com des.
+    des_u = _instant(des.isoformat())
+    futures = [(u, hora_local(x)) for x in hores if (u := _instant(x)) >= des_u]
+    properes = [h for u, h in futures if u <= des_u + dt.timedelta(hours=2)][:2]
+    futures = [h for _, h in futures]
     if properes:
         return (" y " if idioma == "es" else " i ").join(_hora_bus(h) for h in properes)
     if not futures:
@@ -1628,12 +1644,14 @@ def text_radar_bot(dades, idioma, moment):
     # El que es mesura mana, com a la web: si ja plou, «pluja a sobre», amb
     # l'hora en què pararia si el radar la veu (ADR 0049).
     plou = plou_ara(dades)
-    aviat = r.get("arriba") and dt.datetime.fromisoformat(r["arriba"]) <= moment + dt.timedelta(minutes=5)
+    # Sumant en UTC: amb la zona de Madrid, Python suma hores de rellotge.
+    ara_u = moment.astimezone(dt.timezone.utc)
+    aviat = r.get("arriba") and dt.datetime.fromisoformat(r["arriba"]) <= ara_u + dt.timedelta(minutes=5)
     # L'estat únic de la pluja (ADR 0101), com a la web: si només la veu el
     # radar, es diu.
     estat = (dades.get("pluja_ara") or {}).get("estat")
     nomes_radar = estat == "radar_sobre" or (estat is None and aviat and not plou)
-    veu = aviat or (r.get("possible") and dt.datetime.fromisoformat(r["possible"]) <= moment + dt.timedelta(minutes=5))
+    veu = aviat or (r.get("possible") and dt.datetime.fromisoformat(r["possible"]) <= ara_u + dt.timedelta(minutes=5))
     if plou and not veu and estat != "radar_sobre":
         # La mesuren les estacions i el radar no la veu a sobre (el plugim,
         # sovint), com a la web (Juanjo, 18-10-2026).

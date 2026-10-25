@@ -769,7 +769,7 @@ def decideix(estat, salida, ahora):
     elif acabats and not actius:
         # Quan ja no en queda cap, es diu (abans, només a Juanjo).
         tipus = estat.pop("perill_tipus", None) or [c.split(":", 1)[1] for c, _ in acabats]
-        afegeix("perill", hora + ":fi", text_perill_fi(tipus, max(v for _, v in acabats), oficials_actius(salida, ahora)),
+        afegeix("perill", hora + ":fi", text_perill_fi(tipus, max((v for _, v in acabats), key=H.utc), oficials_actius(salida, ahora)),
                 "fi", episodi="propi")
     if not actius:
         estat.pop("perill_tipus", None)
@@ -957,12 +957,14 @@ def fusiona(propi, altre):
     coinciden clave y comienzo; si uno de los dos ya lo da por acabado, vale ese."""
     res = [dict(e) for e in propi]
     for e in altre or []:
-        igual = next((x for x in res if x["clau"] == e["clau"] and x["inici"] == e["inici"]), None)
+        igual = next((x for x in res if x["clau"] == e["clau"] and H.clau(x["inici"]) == H.clau(e["inici"])), None)
         if igual is None:
             res.append(dict(e))
         elif e.get("fi") and not igual.get("fi"):
             igual.update({k: e[k] for k in ("fi", "fi_ca", "fi_es", "substituit_per", "fora_zona") if k in e})
-    return sorted(res, key=lambda e: e["inici"])
+    # Per moment, no com a text: al registre hi ha hores d'abans amb el
+    # desfasament i les noves en UTC (ADR 0128).
+    return sorted(res, key=lambda e: H.utc(e["inici"]))
 
 
 FORA_ZONA = {"ca": "Segons Bombers continua actiu, però és fora de la zona que vigila aquesta aplicació "
@@ -1201,9 +1203,10 @@ def llegeix_arxiu(font):
     try:
         if font.startswith("https://"):
             with urllib.request.urlopen(font, timeout=20) as r:
-                return json.load(r).get("historial") or []
+                return H.interna(json.load(r).get("historial") or [])
         with open(font, encoding="utf-8") as f:
-            return json.load(f).get("historial") or []
+            # Publicat, amb l'hora de Madrid: per dins, en UTC (ADR 0128).
+            return H.interna(json.load(f).get("historial") or [])
     except (OSError, ValueError):
         return []
 
@@ -1216,7 +1219,9 @@ def arxiva(vells, dir_estat, dir_sortida, anterior=None):
     y devuelve los nombres escritos en la de salida."""
     per_any = {}
     for e in vells:
-        per_any.setdefault(e["inici"][:4], []).append(e)
+        # L'any de Madrid: amb la clau en UTC, el que comença l'1 de gener entre
+        # les 0 i la 1 aniria a l'arxiu de l'any anterior (ADR 0128).
+        per_any.setdefault(str(H.local(e["inici"]).year), []).append(e)
     def publicat(nom):
         if not anterior:
             return []
@@ -1303,10 +1308,10 @@ def prealertes(estat, salida, hist, ahora):
             e["comunicat"] = v["comunicat"]
         else:
             e["enllac"] = PROTECCIO_CIVIL
-        if not any(x["clau"] == e["clau"] and x["inici"] == e["inici"] for x in hist):
+        if not any(x["clau"] == e["clau"] and H.clau(x["inici"]) == H.clau(e["inici"]) for x in hist):
             hist.append(e)
     estat["prealertes"] = nou
-    hist.sort(key=lambda e: e["inici"])
+    hist.sort(key=lambda e: H.utc(e["inici"]))
     return hist
 
 
@@ -1339,9 +1344,10 @@ def anterior_publicat(font):
     try:
         if font.startswith("https://"):
             with urllib.request.urlopen(font, timeout=20) as r:
-                return json.load(r).get("historial") or []
+                return H.interna(json.load(r).get("historial") or [])
         with open(font, encoding="utf-8") as f:
-            return json.load(f).get("historial") or []
+            # Publicat, amb l'hora de Madrid: per dins, en UTC (ADR 0128).
+            return H.interna(json.load(f).get("historial") or [])
     except (OSError, ValueError):
         return []
 
@@ -1406,7 +1412,9 @@ def actualitza(casa_json, sortida, ahora=None, anterior=None, avisa=True):
             pass
     try:
         with open(ESTAT, encoding="utf-8") as f:
-            estat = json.load(f)
+            # Les hores d'abans de la 3.201.0, amb desfasament, en UTC com les
+            # noves (ADR 0128): així es comparen i s'ordenen bé.
+            estat = H.interna(json.load(f))
     except (OSError, ValueError):
         estat = {}
     nous = decideix(estat, salida, ahora)
@@ -1425,7 +1433,7 @@ def actualitza(casa_json, sortida, ahora=None, anterior=None, avisa=True):
             arxiva(vells, os.path.dirname(ESTAT), os.path.dirname(os.path.abspath(sortida)), anterior)
             estat["historial"] = hist
         except OSError:
-            hist = sorted(hist + vells, key=lambda e: e["inici"])
+            hist = sorted(hist + vells, key=lambda e: H.utc(e["inici"]))
     # El enlace va en el aviso, no en el historial: la ficha ya está en la web.
     for a in nous:
         amb_enllac(a, hist)

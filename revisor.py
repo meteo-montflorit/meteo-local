@@ -52,6 +52,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 
 import config as C
 import hora as H
@@ -280,8 +281,10 @@ def pagines(casa_json, avisos_json, navegador=None):
 
 def nous_missatges(avisos, estat):
     """Los avisos hacia los vecinos que han salido desde la última revisión."""
-    darrer = estat.get("darrer_missatge") or ""
-    return [a for a in avisos.get("avisos") or [] if a.get("hora", "") > darrer]
+    # Per moment: avisos.json porta l'hora de Madrid, amb el desfasament de
+    # cada moment, i com a text s'ordenaria malament el dia del canvi (ADR 0128).
+    darrer = estat.get("darrer_missatge")
+    return [a for a in avisos.get("avisos") or [] if a.get("hora") and (not darrer or H.utc(a["hora"]) > H.utc(darrer))]
 
 
 def toca(estat, casa, avisos, moment, problemes_regles):
@@ -336,7 +339,10 @@ def context(casa, avisos, textos, moment, motiu, problemes_regles, resum=None, i
                "## Ja informats a Juanjo (no els repeteixis si no han canviat)",
                json.dumps(informats or [], ensure_ascii=False), "",
                "## Regles fixes que ja han fallat", json.dumps(problemes_regles, ensure_ascii=False), "",
-               "## Dades (mesurades, radar, previsió i avisos oficials)", json.dumps(dades, ensure_ascii=False), "",
+               # Amb l'hora de Madrid, com les pàgines i les fitxes: per dins és
+               # en UTC (ADR 0128) i la IA veuria desfasaments que no hi són.
+               "## Dades (mesurades, radar, previsió i avisos oficials)",
+               json.dumps(H.publica(dades), ensure_ascii=False), "",
                "## Fitxes obertes de «Perill» (id: clau + inici)", json.dumps(fitxes, ensure_ascii=False), "",
                "## Últims avisos enviats als veïns", json.dumps(enviats, ensure_ascii=False), ""]
     if resum:
@@ -351,7 +357,7 @@ def demana(text, model=None):
     ({problemes}, {cost, durada})."""
     with open(INSTRUCCIONS, encoding="utf-8") as f:
         instruccions = f.read()
-    t0 = dt.datetime.now()
+    t0 = time.monotonic()
     r = subprocess.run(["claude", "-p", "--model", model or C.REVISOR_MODEL, "--output-format", "json",
                         "--max-turns", "1", "--allowedTools", ""],
                        input=f"{instruccions}\n\n---\n\n{text}", capture_output=True, text=True, timeout=600)
@@ -359,18 +365,34 @@ def demana(text, model=None):
     resposta = sortida.get("result") or ""
     m = re.search(r"\{.*\}", resposta, re.S)
     res = json.loads(m.group(0)) if m else {"problemes": []}
-    return res, {"cost_usd": sortida.get("total_cost_usd"), "segons": (dt.datetime.now() - t0).seconds,
+    return res, {"cost_usd": sortida.get("total_cost_usd"), "segons": int(time.monotonic() - t0),
                  "tokens": (sortida.get("usage") or {}).get("input_tokens")}
 
 
 # --- Las correcciones -----------------------------------------------------------------
+
+def clau_fitxa(clau, inici):
+    """La clau d'una fitxa a correccions.json: amb el començament en UTC, igual
+    si ve del que s'ha publicat (hora de Madrid) que de l'historial intern
+    (ADR 0128)."""
+    return f"{clau}|{H.clau(inici)}"
+
+
+def fitxa_normal(fitxa):
+    """La clau «clau|inici» d'una correcció, amb el començament en UTC."""
+    clau, _, inici = (fitxa or "").rpartition("|")
+    try:
+        return clau_fitxa(clau, inici)
+    except ValueError:
+        return fitxa
+
 
 def objectiu(avisos, c):
     """El texto al que se refiere una corrección: una ficha (clau + inici) o un
     aviso enviado (id)."""
     if c.get("fitxa"):
         return next((e for e in avisos.get("historial") or []
-                     if f"{e['clau']}|{e['inici']}" == c["fitxa"] and not e.get("fi")), None)
+                     if clau_fitxa(e["clau"], e["inici"]) == fitxa_normal(c["fitxa"]) and not e.get("fi")), None)
     if c.get("avis"):
         return next((a for a in avisos.get("avisos") or [] if a["id"] == c["avis"]), None)
     return None
@@ -402,9 +424,9 @@ def aplica(correccio, ca, es, avisos, moment, motiu):
     cs = llegeix(CORRECCIONS, {"fitxes": {}, "avisos": {}})
     e = objectiu(avisos, correccio)
     entrada = {"original": empremta(e.get("ca")), "ca": ca, "es": es, "abans_ca": e.get("ca"), "abans_es": e.get("es"),
-               "hora": moment.isoformat(timespec="minutes"), "motiu": motiu}
+               "hora": H.clau(moment), "motiu": motiu}
     if correccio.get("fitxa"):
-        cs["fitxes"][correccio["fitxa"]] = entrada
+        cs["fitxes"][fitxa_normal(correccio["fitxa"])] = entrada
     else:
         cs["avisos"][correccio["avis"]] = entrada
     desa(CORRECCIONS, cs)
@@ -414,9 +436,8 @@ def aplica(correccio, ca, es, avisos, moment, motiu):
 
 def desfes(clau):
     cs = llegeix(CORRECCIONS, {"fitxes": {}, "avisos": {}})
-    for grup in ("fitxes", "avisos"):
-        if clau in cs.get(grup, {}):
-            del cs[grup][clau]
+    for grup, k in (("fitxes", fitxa_normal(clau)), ("fitxes", clau), ("avisos", clau)):
+        cs.get(grup, {}).pop(k, None)
     desa(CORRECCIONS, cs)
 
 
@@ -430,9 +451,11 @@ def aplica_correccions(sortida, correccions=None, ara_=None):
     if not cs:
         return sortida
     vius = {"fitxes": {}, "avisos": {}}
+    # Les claus d'abans de la 3.201.0 portaven el començament amb desfasament.
+    fitxes = {fitxa_normal(k): v for k, v in cs.get("fitxes", {}).items()}
     for e in sortida.get("historial") or []:
-        clau = f"{e['clau']}|{e['inici']}"
-        c = cs.get("fitxes", {}).get(clau)
+        clau = clau_fitxa(e["clau"], e["inici"])
+        c = fitxes.get(clau)
         if c and empremta(e.get("ca")) in (c["original"], empremta(c["ca"])):
             if c.get("tanca"):
                 e.update(fi=c["hora"], fi_ca=c.get("fi_ca") or "Ja no és vigent.",
@@ -551,7 +574,7 @@ def revisa(casa_json, avisos_json, moment=None, prova=False, demana_=None, pagin
                 try:
                     r, _ = envia(missatge(p, accio, abans, despres), reply_markup=botons(n, accio))
                     preguntes[n] = {"missatge": r["message_id"], "accio": accio, "correccio": c,
-                                    "t": moment.isoformat(timespec="minutes")}
+                                    "t": H.clau(moment)}
                 except Exception as ex:
                     fets.append({"error_telegram": str(ex)})
             elif p.get("gravetat") in ("alta", "mitjana"):
@@ -569,22 +592,22 @@ def revisa(casa_json, avisos_json, moment=None, prova=False, demana_=None, pagin
             except Exception as ex:
                 fets.append({"error_telegram": str(ex)})
         estat["informats"] = (estat.get("informats") or []) + [
-            {"on": p.get("on"), "que": p.get("que"), "hora": moment.isoformat(timespec="minutes")} for p in problemes]
+            {"on": p.get("on"), "que": p.get("que"), "hora": H.clau(moment)} for p in problemes]
         # Lo que se recuerda: dos días.
         limit = moment - dt.timedelta(days=2)
         estat["informats"] = [v for v in estat["informats"] if H.llegeix(v["hora"]) > limit]
         estat["preguntes"] = {k: v for k, v in preguntes.items() if H.llegeix(v["t"]) > limit}
-        estat["regles_vistes"] = {empremta(p): moment.isoformat(timespec="minutes") for p in problemes_regles}
+        estat["regles_vistes"] = {empremta(p): H.clau(moment) for p in problemes_regles}
         estat["conclusions"] = empremta(conclusions(casa, avisos))
-        estat["darrera"] = moment.isoformat(timespec="minutes")
-        if avisos.get("avisos"):
-            estat["darrer_missatge"] = max(a.get("hora", "") for a in avisos["avisos"])
+        estat["darrera"] = H.clau(moment)
+        if hores := [a["hora"] for a in avisos.get("avisos") or [] if a.get("hora")]:
+            estat["darrer_missatge"] = H.clau(max(hores, key=H.utc))
         if motiu.startswith("resum"):
             estat["diaris"] = (estat.get("diaris") or [])[-10:] + [f"{moment.date().isoformat()} {motiu[6:]}"]
         desa(ESTAT, estat)
         os.makedirs(os.path.dirname(REGISTRE), exist_ok=True)
         with open(REGISTRE, "a", encoding="utf-8") as f:
-            f.write(json.dumps({"hora": moment.isoformat(timespec="minutes"), "motiu": motiu, **cost,
+            f.write(json.dumps({"hora": H.clau(moment), "motiu": motiu, **cost,
                                 "problemes": problemes, "fets": [x.get("accio") for x in fets]},
                                ensure_ascii=False) + "\n")
     return {"motiu": motiu, "problemes": problemes, "cost": cost, "textos": textos}
@@ -619,7 +642,7 @@ def respostes(moment=None):
         if not p or p.get("resposta"):
             continue
         c = p.get("correccio") or {}
-        clau = c.get("fitxa") or c.get("avis")
+        clau = fitxa_normal(c["fitxa"]) if c.get("fitxa") else c.get("avis")
         text = {"aplica": "Aplicado", "deixa": "Dejado como estaba", "desfes": "Deshecho"}.get(accio, accio)
         if accio == "aplica" and clau:
             cs = llegeix(CORRECCIONS, {"fitxes": {}, "avisos": {}})
@@ -628,7 +651,7 @@ def respostes(moment=None):
                 "original": c.get("original_empremta"), "ca": c.get("ca") or c.get("abans_ca"),
                 "es": c.get("es") or c.get("ca") or c.get("abans_ca"), "tanca": c.get("tipus") == "tanca_fitxa",
                 "fi_ca": c.get("fi_ca"), "fi_es": c.get("fi_es"),
-                "hora": (moment or ara()).isoformat(timespec="minutes"), "motiu": "aprovat per Juanjo"}
+                "hora": H.clau(moment or ara()), "motiu": "aprovat per Juanjo"}
             desa(CORRECCIONS, cs)
         elif accio == "desfes" and clau:
             desfes(clau)

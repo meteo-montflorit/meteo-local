@@ -28,19 +28,20 @@ def ara():
 
 
 def llegeix(t):
-    """Un moment amb zona a partir d'un text (o d'un datetime) en qualsevol de
-    les formes del programa. Sense zona, és l'hora de Madrid (els registres
-    d'abans de la migració); la primera de l'hora repetida d'octubre, que
-    llavors ja portava el desfasament."""
+    """Un moment, sempre en UTC, a partir d'un text (o d'un datetime) en
+    qualsevol de les formes del programa. Sense zona, és l'hora de Madrid (els
+    registres d'abans de la migració); la primera de l'hora repetida d'octubre,
+    que llavors ja portava el desfasament. Sempre en UTC, també si ve amb
+    desfasament o amb ZoneInfo: Python resta dues hores amb la mateixa ZoneInfo
+    com a hores de rellotge, i la nit del canvi s'equivoca d'una. Per mostrar-la,
+    `local`."""
     if t is None:
         return None
     if isinstance(t, str):
         t = dt.datetime.fromisoformat(t.replace("Z", "+00:00") if t.endswith("Z") else t)
     if t.tzinfo is None:
-        # En UTC i no amb ZoneInfo: Python resta dues hores amb la mateixa
-        # ZoneInfo com a hores de rellotge, i la nit del canvi s'equivoca d'una.
-        t = t.replace(tzinfo=ZONA).astimezone(UTC)
-    return t
+        t = t.replace(tzinfo=ZONA)
+    return t.astimezone(UTC)
 
 
 def utc(t):
@@ -117,4 +118,31 @@ def publica(dades):
 def _local_clau(text):
     if _CLAU.match(text):
         return iso_local(text, segons=len(text) > 17)
+    return text
+
+
+# Una hora de qualsevol forma d'abans o publicada: amb minuts i, si de cas,
+# segons i desfasament (sense «Z»).
+_ALTRA = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?([+-]\d{2}:\d{2})?$")
+
+
+def interna(dades):
+    """El contrari de `publica`: cada hora que no sigui interna (amb el
+    desfasament, com es publica, o sense zona, com es desava abans de la
+    3.201.0), valor o clau d'un diccionari, en clau UTC; la resta, tal com és.
+    Per al que es llegeix del que s'ha publicat o d'un fitxer d'abans: així
+    es compara i s'ordena bé com a text amb el que és intern."""
+    if isinstance(dades, dict):
+        return {(_clau_interna(k) if isinstance(k, str) else k): interna(v) for k, v in dades.items()}
+    if isinstance(dades, list):
+        return [interna(v) for v in dades]
+    if isinstance(dades, str):
+        return _clau_interna(dades)
+    return dades
+
+
+def _clau_interna(text):
+    if _ALTRA.match(text):
+        t = utc(text)
+        return t.strftime("%Y-%m-%dT%H:%M:%SZ" if t.second else "%Y-%m-%dT%H:%MZ")
     return text

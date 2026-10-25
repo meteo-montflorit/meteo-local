@@ -16,6 +16,7 @@ import hora as H  # noqa: E402
 import prevision as P  # noqa: E402
 import registre as R  # noqa: E402
 import riscos as RS  # noqa: E402
+import avisos_bot as AB  # noqa: E402
 import smp as SMP  # noqa: E402
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bot"))
 import bot as B  # noqa: E402
@@ -163,6 +164,53 @@ class AvisosAmbCanvi(unittest.TestCase):
     def test_les_franges_d_un_avis_que_travessa_el_canvi(self):
         # De les 0 a les 6 del 25-10: 7 hores, les 2 dues vegades.
         self.assertEqual(SMP.hores("2026-10-24T22:00Z", "2026-10-25T05:00Z"), {"2026-10-25": [(0, 6)]})
+
+
+class LlegirElPublicat(unittest.TestCase):
+    def test_llegeix_sempre_torna_utc(self):
+        a = H.llegeix(dt.datetime(2026, 10, 25, 1, 30, tzinfo=H.ZONA))
+        b = H.llegeix(dt.datetime(2026, 10, 25, 3, 30, tzinfo=H.ZONA))
+        self.assertEqual(b - a, dt.timedelta(hours=3))
+        self.assertEqual(H.llegeix("2026-10-25T02:00+01:00").utcoffset(), dt.timedelta(0))
+
+    def test_interna_es_el_contrari_de_publica(self):
+        dades = {"hora": "2026-10-25T01:00Z", "fi": "2026-10-25T05:59:59Z", "dia": "2026-10-25", "text": "a les 02:00",
+                 "per_hora": {"2026-10-25T00:00Z": 1}}
+        self.assertEqual(H.interna(H.publica(dades)), dades)
+        self.assertEqual(H.interna("2026-10-25T02:00"), "2026-10-25T00:00Z")      # sense zona: Madrid
+
+    def test_la_fitxa_publicada_i_la_interna_son_la_mateixa(self):
+        # Fins a la 3.201.0 inclosa, «Perill» la duplicava: el publicat, amb
+        # l'hora de Madrid, i l'intern, en UTC, no coincidien com a text.
+        intern = [{"clau": "propi", "inici": "2026-10-25T11:09Z", "nivell": "alt"}]
+        publicat = H.publica([{"clau": "propi", "inici": "2026-10-25T11:09Z", "nivell": "mig", "fi": "2026-10-25T12:00Z"}])
+        r = AB.fusiona(intern, publicat)
+        self.assertEqual(len(r), 1)
+        self.assertEqual(r[0]["fi"], "2026-10-25T13:00+01:00")
+
+    def test_l_historial_s_ordena_pel_moment(self):
+        hist = [{"clau": "b", "inici": "2026-10-24T17:30Z"}, {"clau": "a", "inici": "2026-10-24T18:00+02:00"}]
+        self.assertEqual([e["clau"] for e in AB.fusiona(hist, [])], ["a", "b"])        # 16:00Z abans que 17:30Z
+
+
+class FrangesAmbCanvi(unittest.TestCase):
+    def test_un_avis_de_tot_el_dia_es_una_franja(self):
+        for dia in ("2026-10-25", "2027-03-28"):
+            a = {"meteor": "Intensitat de pluja", "perill": 3, "dies": {dia: [(0, 24)]}}
+            self.assertEqual(SMP.per_fenomen([a])[0]["dies"], {dia: [[0, 24]]}, dia)
+
+    def test_la_pluja_del_bot_no_es_parteix(self):
+        for t0, esperat in ((dt.datetime(2026, 10, 24, 23, tzinfo=UTC), [("01", "04")]),
+                            (dt.datetime(2027, 3, 27, 23, tzinfo=UTC), [("00", "05")])):
+            files = [{"hora": H.iso_local(t0 + dt.timedelta(hours=x)), "fins": H.iso_local(t0 + dt.timedelta(hours=x + 1)),
+                      "probabilitat": 0.6} for x in range(4)]
+            self.assertEqual([(a.strftime("%H"), b.strftime("%H")) for a, b, _ in B.franges(files)], esperat)
+
+    def test_l_hora_en_curs_del_bot_la_primera_de_2_a_3(self):
+        files = [{"hora": "2026-10-25T02:00+02:00", "fins": "2026-10-25T02:00+01:00"},
+                 {"hora": "2026-10-25T02:00+01:00", "fins": "2026-10-25T03:00+01:00"}]
+        moment = dt.datetime(2026, 10, 25, 0, 30, tzinfo=UTC)                 # les 2:30 d'estiu
+        self.assertEqual(B.hora_ara({"hores": files}, moment)["hora"], "2026-10-25T02:00+02:00")
 
 
 class Registre(unittest.TestCase):

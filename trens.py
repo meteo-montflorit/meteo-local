@@ -284,10 +284,20 @@ def trens_renfe(dades=None, ara=None):
     return res
 
 
+# Els avisos de PHP que el servidor de FGC posa davant del binari (des del
+# 25-10-2026 com a mínim: «<br />\n<b>Warning</b>: Undefined property…»).
+AVISOS_PHP = re.compile(rb"(?:<br />\r?\n|<b>(?:Warning|Notice|Deprecated|Fatal error)</b>:[^\n]*<br />\r?\n)+")
+
+
+def sense_avisos_php(b):
+    m = AVISOS_PHP.match(b)
+    return b[m.end():] if m else b
+
+
 def avisos_fgc():
     fitxer = get(FGC + "alerts-gtfs_realtime/records?limit=1")["results"][0]["file"]["url"]
     res = []
-    for a in avisos_pb(get(fitxer, binari=True)):
+    for a in avisos_pb(sense_avisos_php(get(fitxer, binari=True))):
         # Els textos, mai traduïts: en català i castellà si n'hi ha; si no, el
         # que hi hagi, tal qual.
         textos = (idiomes(t for idioma, t in a["text"].items() if idioma in ("ca", "es", ""))

@@ -23,7 +23,6 @@ Uso:
   python3 montflorit.py web DESTINO        genera la web en la carpeta DESTINO
   python3 montflorit.py dades CASA SALIDA  los datos públicos a partir de casa.json
 """
-import datetime as dt
 import html
 import json
 import os
@@ -631,7 +630,9 @@ CONSULTES = ("avui", "dema", "sol", "aire", "pollen", "trens", "transit", "llum"
 def consultes(dades):
     sys.path.insert(0, os.path.join(ARREL, "bot"))
     import bot as B
-    moment = dt.datetime.fromisoformat(dades["generat"])
+    # Amb la zona de Madrid i no amb el desfasament fix de «generat»: la vigília
+    # del canvi d'hora, l'avís de «demà» desapareixia (ADR 0128).
+    moment = H.local(dades["generat"])
     funcions = {
         "avui": lambda i: B.resum(dades, i, moment, avui=True),
         "dema": lambda i: B.resum(dades, i, moment, dema=True),

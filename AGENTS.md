@@ -31,9 +31,16 @@ Al cambiar algo:
   pasa cada «…Z» a la hora de Madrid con su desfase: `montflorit.json`,
   `avisos.json`, el historial), lo que se escribe a la gente y las reglas de
   las personas (`hora.local`, `hora.hora_local`, `hora.dia_local`,
-  `hora.de_rellotge`). Nada de `.astimezone()` sin zona ni de restar horas de
-  Madrid: Python las resta como horas de reloj. Lo que depende del sol, en
-  hora solar (`prevision.hora_solar`, ADR 0090).
+  `hora.de_rellotge`). Lo que entra de lo publicado o de un archivo de antes
+  pasa por `hora.interna` (el contrario de `publica`), y `casa.json` y las
+  líneas de los JSONL se escriben así: un archivo interno no mezcla formas.
+  Dos horas que pueden venir de sitios distintos se comparan como momento
+  (`H.utc`, `H.clau`), no como texto. Nada de `.astimezone()` sin zona ni de
+  restar horas de Madrid: Python las resta como horas de reloj. La web, en
+  hora de Madrid fuera cual fuera la zona del dispositivo (`web/comu.js`).
+  De cada fuente nueva, comprobar en qué zona da la hora (las franjas de
+  Meteocat y la elaboración de AEMET son UTC sin decirlo). Lo que depende del
+  sol, en hora solar (`prevision.hora_solar`, ADR 0090).
 - **Las alertas de peligro van todas juntas en todas partes** (ADR 0093): la
   portada, «Perill», /avisos_actius y el resumen del día (bot y «Consultes»).
   «Si surts» no las repite: una línea dice cuántas pueden afectar la
