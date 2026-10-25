@@ -521,7 +521,7 @@ class Web(unittest.TestCase):
         self.assertEqual(r[1], ["2026-10-24", 12, 12, "pluja", "i-cloud-rain"])
         self.assertEqual(r[2], ["2026-10-25", 30, 1, "pluja", "i-cloud-rain"])  # d'ECMWF: 60 %
         self.assertEqual(r[3][3:], ["possible", "i-cloud-sun-rain"])              # 30 %
-        self.assertEqual(r[4][3:], [None, "i-cloudy"])                              # 10 %: només el cel
+        self.assertEqual(r[4][3:], [None, "i-cloudy-cobert"])                       # 10 %: només el cel, cobert
         self.assertEqual(len(r), 7)                                                 # sense ahir
         # A la part alta (ADR 0123): avui i demà amb la diferència de cada hora i el mesurat a dalt; la
         # resta, amb la màxima i la mínima de la part alta de setmana.py.

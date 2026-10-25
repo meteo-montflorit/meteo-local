@@ -60,8 +60,23 @@ class Dies(unittest.TestCase):
         self.assertEqual((res[3]["max"], res[3]["corregit"]), (20.0, False))
         self.assertEqual(res[1]["nuvols"], 80)
         self.assertEqual((res[2]["probabilitat"], res[2]["pluja_mm"]), (0.5, 0.5))
+        # Si plou, la dels membres que plouen: 1 mm, no la mitjana de 0,5.
+        self.assertEqual((res[2]["pluja_si_plou"], res[2]["pluja_fins"]), (1.0, 1.0))
         self.assertEqual(res[1]["probabilitat"], 0.0)
+        self.assertNotIn("pluja_si_plou", res[1])
         self.assertEqual(res[3]["codi"], 95)
+
+    def test_si_plou_la_mediana_i_fins_on_pot_arribar(self):
+        dies = [(AVUI + dt.timedelta(days=i)).isoformat() for i in range(S.DIES)]
+        temps, t = hores(dies, lambda d, h: 15.0)
+        model = {"time": temps, "temperature_2m": t}
+        # Deu membres: set secs i, el dia 1, tres amb 1, 2 i 9 mm.
+        ens = {"time": temps}
+        for m, mm in enumerate([0, 0, 0, 0, 0, 0, 0, 1.0, 2.0, 9.0]):
+            ens[f"precipitation_member{m:02d}"] = hores(dies, lambda d, h, mm=mm: mm if d == dies[1] and h == 12 else 0.0)[1]
+        d = S.dies(AVUI, model, ens, {})[1]
+        self.assertEqual((d["probabilitat"], d["pluja_mm"], d["pluja_si_plou"]), (0.3, 1.2, 2.0))
+        self.assertEqual(d["pluja_fins"], 7.6)          # el percentil 90 dels que plouen
 
     def test_la_part_alta(self):
         # ADR 0123: la mateixa compta amb la diferència de la part alta de cada hora i la mateixa correcció.

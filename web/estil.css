@@ -33,6 +33,7 @@
   --c-sol-fons: #fcd34d;
   --c-nuvol: #64748b;
   --c-nuvol-fons: #e2e8f0;
+  --c-cobert-fons: #94a3b8;
   --c-aigua: #2563eb;
   --c-aigua-fons: #dbeafe;
   --c-aigua-text: #1e40af;  /* el text de pluja, també damunt la barra de probabilitat */
@@ -72,6 +73,7 @@
   --c-sol-fons: #a16207;
   --c-nuvol: #94a3b8;
   --c-nuvol-fons: #334155;
+  --c-cobert-fons: #64748b;
   --c-aigua: #60a5fa;
   --c-aigua-fons: #1e3a5f;
   --c-aigua-text: #93c5fd;
@@ -91,14 +93,14 @@
    botons, les pestanyes) les mateixes icones queden del color del text. */
 .taula-hores, .tram-hores > summary, .dades-ara, .resum-linia, .grafica, .setmana-dies {
   --ic-sol: var(--c-sol); --ic-sol-fons: var(--c-sol-fons);
-  --ic-nuvol: var(--c-nuvol); --ic-nuvol-fons: var(--c-nuvol-fons);
+  --ic-nuvol: var(--c-nuvol); --ic-nuvol-fons: var(--c-nuvol-fons); --ic-cobert-fons: var(--c-cobert-fons);
   --ic-aigua: var(--c-aigua); --ic-aigua-fons: var(--c-aigua-fons);
   --ic-neu: var(--c-neu);
   --ic-lluna: var(--c-lluna); --ic-lluna-fons: var(--c-lluna-fons);
 }
 /* Un fenomen destacat (tempesta, calor…) és un avís: la icona, sencera del color de l'avís. */
 .tram-hores .fenomen {
-  --ic-sol: initial; --ic-sol-fons: initial; --ic-nuvol: initial; --ic-nuvol-fons: initial;
+  --ic-sol: initial; --ic-sol-fons: initial; --ic-nuvol: initial; --ic-nuvol-fons: initial; --ic-cobert-fons: initial;
   --ic-aigua: initial; --ic-aigua-fons: initial; --ic-neu: initial; --ic-lluna: initial; --ic-lluna-fons: initial;
 }
 .temp-max { color: var(--c-maxima); }
@@ -1260,6 +1262,8 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .grafica .g-nit { fill: color-mix(in srgb, var(--suau) 13%, transparent); }
 .grafica .g-mitjanit { stroke: var(--suau); stroke-width: 1; stroke-dasharray: 3 3; }
 .grafica .g-dia { fill: var(--suau); font-size: 12px; font-weight: 600; }
+.grafica .g-lluna-fons { fill: var(--superficie); fill-opacity: .88; stroke: var(--vora); }
+.grafica .g-lluna-nom { fill: var(--c-lluna); font-size: 11px; font-weight: 600; }
 .grafica .g-avis { cursor: pointer; }
 .grafica .g-avis rect { fill: var(--nivell); }
 .grafica .g-avis text { fill: #111; font-size: 11px; font-weight: 600; }
@@ -1577,6 +1581,9 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
   stroke-linecap: round; stroke-linejoin: round; }
 .setmana-max, .setmana-min { font-weight: 600; font-size: .95rem; height: 1.4rem; }
 .setmana-pluja { font-size: .75rem; color: var(--c-aigua); font-weight: 600; height: 1.2rem; white-space: nowrap; }
+.setmana-cel-caixa { cursor: help; }
+.setmana-pluja:not(:empty) { cursor: help; }
+.setmana-mm { font-size: .7rem; color: var(--c-aigua); height: 1.1rem; white-space: nowrap; cursor: help; }
 .setmana-claus { padding-right: .25rem; }
 .setmana-claus :is(.setmana-max, .setmana-min) { font-size: .72rem; cursor: help; }
 .setmana-claus .setmana-pluja { cursor: help; }

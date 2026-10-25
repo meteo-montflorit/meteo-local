@@ -45,3 +45,14 @@ era, y al repasar el resto de estados del tiempo que escribe la página
   tramos) y `tests/test_montflorit.py` (traducciones): 218 pruebas el
   08-10-2026. Juanjo dio por bueno publicar sin servidor local: «es cambio
   de nomenclatura».
+
+## Cambio del 25-10-2026 (3.203.0): «cobert» con su propio icono
+
+«Molt ennuvolat» y «cobert» tenían el mismo dibujo, las dos nubes de Lucide
+(`i-cloudy`). Lucide no tiene uno de cielo cubierto: «cobert» lleva las mismas
+dos nubes rellenas de un gris más denso (`i-cloudy-cobert`, `--c-cobert-fons`),
+el cielo cerrado, en la tabla y la gráfica por horas, la semana, «Fiabilitat»
+y la imagen de la gráfica del bot (`grafica.js` `celNuvols`, `bot.icona_cel`,
+que en los mensajes de texto sigue siendo ☁️, porque no hay emoji de cielo
+cubierto). Juanjo, 25-10-2026: «cobert y molt ennuvolat tienen el mismo
+icono, no convendría diferenciarlos?».

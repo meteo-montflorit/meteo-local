@@ -76,7 +76,9 @@ function celNuvols(nuvols, nit) {
   if (nuvols < 45) return [T('Poc ennuvolat'), nit ? 'i-cloud-moon' : 'i-cloud-sun'];
   if (nuvols < 70) return [T('Mig ennuvolat'), 'i-cloud'];
   if (nuvols < 85) return [T('Molt ennuvolat'), 'i-cloudy'];
-  return [T('Cobert'), 'i-cloudy'];
+  // Els mateixos dos núvols que «molt ennuvolat», plens i més foscos: el cel
+  // tancat (Juanjo, 25-10-2026: «cobert y molt ennuvolat tienen el mismo icono»).
+  return [T('Cobert'), 'i-cloudy-cobert'];
 }
 
 // La part alta del barri, quan la diferència arriba a un grau (ADR 0087):
@@ -556,28 +558,43 @@ function dibuixaGrafica(fig) {
     etiquetesDia.push(t);
   }
   // La fase principal de la Lluna, només a l'hora en què passa (Juanjo,
-  // 25-10-2026; ADR 0127), a la fila dels dies; si hi ha el nom d'un dia, el
-  // nom es corre a la dreta de la lluna.
+  // 25-10-2026; ADR 0127): a mitja alçada de la zona de la temperatura, amb
+  // el nom al costat sobre el fons de la gràfica, que no la tapi la corba
+  // (Juanjo, 25-10-2026: «por enmedio del grafico … con una etiqueta visible
+  // indicando la fase»). Es posa damunt de tot, menys de les zones de les hores.
   const fasesGrafica = [];
+  const llunesGrafica = [];
   for (const fase of (LLUNA && LLUNA.fases) || []) {
     const t = new Date(fase.hora);
     const i = files.findIndex((f) => new Date(f.hora) <= t && t < new Date(f.fins));
     if (i < 0) continue;
     fasesGrafica.push(fase.fase);
-    const mida = 13;
+    const mida = 14;
     const cx = x(i) + col / 2;
+    const cy = yTemp + hTemp / 2;
     const lluna = dibuixLluna(ANGLE_FASE[fase.fase]);
-    for (const [k, v] of Object.entries({ x: cx - mida / 2, y: yDia + 1.5, width: mida, height: mida })) lluna.setAttribute(k, v);
-    const text = `${NOM_FASE_LLUNA()[fase.fase]}: ${quanFase(fase.hora)}`;
+    for (const [k, v] of Object.entries({ x: cx - mida / 2, y: cy - mida / 2, width: mida, height: mida })) lluna.setAttribute(k, v);
+    const nom = NOM_FASE_LLUNA()[fase.fase];
+    const text = `${nom}: ${quanFase(fase.hora)}`;
     const grup = svg('g', { class: 'g-lluna' });
-    grup.append(svg('rect', { x: cx - col / 2, y: yDia, width: col, height: 16, fill: 'transparent' }), lluna,
-      svg('title', {}, text));
+    const fons = svg('rect', { class: 'g-lluna-fons', y: cy - 10, height: 20, rx: 5 });
+    const etiqueta = svg('text', { class: 'g-lluna-nom', x: cx + mida / 2 + 4, y: cy + 4 }, nom);
+    grup.append(fons, lluna, etiqueta, svg('title', {}, text));
     grup.addEventListener('click', () => avisBreu(`${text}.`));
     g.append(grup);
-    for (const e of etiquetesDia) {
-      const x0 = Number(e.getAttribute('x'));
-      if (cx - mida / 2 - 2 < x0 + e.getComputedTextLength() && cx + mida / 2 + 2 > x0) e.setAttribute('x', cx + mida / 2 + 3);
+    // El nom, a la dreta; si no hi cap, a l'esquerra.
+    const llarg = etiqueta.getComputedTextLength();
+    let esq = cx - mida / 2 - 4;
+    let dre = cx + mida / 2 + 4 + llarg + 4;
+    if (dre > W - 2) {
+      etiqueta.setAttribute('x', cx - mida / 2 - 4);
+      etiqueta.setAttribute('text-anchor', 'end');
+      esq = cx - mida / 2 - 4 - llarg - 4;
+      dre = cx + mida / 2 + 4;
     }
+    fons.setAttribute('x', esq);
+    fons.setAttribute('width', dre - esq);
+    llunesGrafica.push(grup);
   }
 
   // Les files dels avisos: el nom (davant o a sobre) i els trams de cada
@@ -994,6 +1011,7 @@ function dibuixaGrafica(fig) {
     fitxa.style.left = `${fx}px`;
     fitxa.style.top = `${fy}px`;
   };
+  for (const grup of llunesGrafica) g.append(grup);
   files.forEach((f, i) => {
     const zona = svg('rect', { class: 'g-zona', x: x(i), y: yCel - 2, width: col, height: baix - yCel + 2 });
     zona.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') mostra(i); });
