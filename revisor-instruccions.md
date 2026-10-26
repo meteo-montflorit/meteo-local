@@ -37,6 +37,28 @@ señales gustos de redacción ni mejoras; solo lo que es falso, caducado o
 contradictorio. Las reglas fijas que ya han fallado vienen al principio:
 inclúyelas si son reales, explicando por qué.
 
+## Las páginas que recibes
+
+- **Siempre**: la portada (`index.html`), «Si surts», «Perill», «Riera» y
+  «Consultes». Las cinco hablan del tiempo de ahora y se comparan con los
+  datos y entre sí. La previsión de crecida de «Riera» no es una alerta: no
+  se envía por ningún canal y no tiene por qué salir en «Perill» (ADR 0107).
+- **Con el resumen de la noche**, también «Fiabilitat»: cuánto ha acertado la
+  previsión en los días pasados. Mira hacia atrás, así que no la compares con
+  el tiempo de ahora; busca lo incoherente en sí (cifras imposibles, un texto
+  que dice lo contrario que su gráfica o su tabla) y que no contradiga lo que
+  dicen las demás páginas sobre cómo se calcula. Que hoy aún no tenga horas
+  medidas no es un error.
+- **A veces, las páginas fijas** («Com funciona», «Fonts», «Avisos»,
+  «Telegram», «Privacitat»), con `config.py` al final: llegan cuando ha
+  salido una versión nueva del programa. No cambian con el tiempo; busca lo
+  que dicen y ya no es verdad: un horario, un umbral, una fuente o una opción
+  que no coincide con `config.py` o con lo que muestran las otras páginas.
+  Los comentarios de `config.py` explican cada valor. Estos problemas no
+  tienen corrección desde aquí (`correccio`: `null`); di en `on` la página y
+  el apartado, y en `per_que`, el valor de `config.py` o la página con que
+  choca. Si un texto no se puede comprobar con lo que tienes, no lo señales.
+
 ## Qué hay detrás de lo que ves
 
 - Lo medido manda sobre el radar y el radar sobre la previsión. Las estaciones

@@ -95,8 +95,8 @@ En el NAS, tras cada publicación y aparte del reloj:
   del de mañana); falla una regla nueva, o cambia lo que concluye la web
   (llueve o no, el modo, los avisos y sus niveles, las fichas abiertas), como
   mucho cada 30 minutos (`C.REVISOR_MIN_MIN`). Lee las páginas ya dibujadas
-  (portada, «Si surts» y «Perill», con Chromium sin pantalla y los datos que
-  se acaban de publicar), el resumen del bot, los últimos avisos y los datos
+  (con Chromium sin pantalla y los datos que se acaban de publicar; cuáles,
+  en «Todas las páginas», más abajo), el resumen del bot, los últimos avisos y los datos
   medidos y oficiales, y dice qué es falso, caducado o contradictorio. Se le
   pasa lo que ya ha contado los dos últimos días, para que no lo repita.
 - **Qué hace con lo que encuentra** (Juanjo, 18-10-2026: «me parece bien»):
@@ -525,3 +525,46 @@ de AEMET acaba a su hora sin mensaje de final, y «Perill» ya lo da por
 acabado. El revisor recibe ahora las fichas abiertas con la misma regla que
 «Perill», y sus instrucciones lo explican. Validación: `tests/test_web.py` y
 `tests/test_revisor.py`.
+
+**Todas las páginas** (26-10-2026, 3.205.0). Juanjo, al ver que el revisor
+solo leía la portada, «Si surts» y «Perill»: «no debería repasarlas todas?».
+No todas en cada revisión: las que no cambian con el tiempo no pueden
+contradecir los datos de ahora, y leerlas siempre sería gastar para nada.
+
+- **En cada revisión** (`PAGINES`), las que hablan del tiempo de ahora: la
+  portada (que sale de `web/casa.html`, «Temps a casa»), «Si surts», «Perill»,
+  «Riera» y «Consultes».
+- **Con el resumen de las 20:50** (`PAGINES_DIA`), también «Fiabilitat», que
+  mira hacia atrás. Necesita el historial: el revisor lo genera en su copia
+  con `historial.fes(…, 1, refa=False)`, el índice y el día de hoy, sin rehacer
+  los días de un formato anterior ni tocar su marca, que son trabajo de
+  `publica.sh`. Si falla, la página se deja fuera y queda en el registro del
+  reloj.
+- **En esa misma revisión, si ha salido una versión nueva** (`C.VERSION`
+  distinta de la de la última vez, en `revisor.json`), las fijas
+  (`PAGINES_FIXES`: «Com funciona», «Fonts», «Avisos», «Telegram» y
+  «Privacitat») junto con `config.py`. Pueden dejar de ser verdad cuando
+  cambia lo que hace el programa (un horario, un umbral, una fuente), y
+  `config.py` reúne esos valores con su explicación. Una vez al día como
+  mucho, aunque salgan varias versiones: en la semana del 19 al 26-10 salieron
+  43, y los textos de esas páginas cambiaron casi a diario.
+- Cada página entra hasta 16.000 caracteres (antes 12.000: «Com funciona»
+  tiene unos 13.600). Las instrucciones explican qué buscar en cada grupo.
+- Límite: las páginas fijas no se comparan con los datos, solo con
+  `config.py` y las otras páginas; lo que dicen del bot o del servidor de
+  avisos (IONOS) no se puede comprobar desde aquí.
+
+Coste, medido con `revisor.py prova` en el NAS el 26-10-2026 a las 19:24 (todas
+las páginas y `config.py`): 0,34 $ y 70 s, frente a unos 0,15 $ y 20 s de las
+revisiones de antes. Esa prueba encontró tres incoherencias leves, todas en
+páginas nuevas: dos cifras distintas del mismo histórico de la riera (página
+y comentario de `config.py`), un texto de «Fiabilitat» que dice que Meteocat y
+AEMET aún no tienen error de lluvia junto a una tabla que sí lo da, y una
+franja de «Riera» que empezaba antes de la hora actual.
+
+Validación: `tests/test_revisor.py` (`test_pagines_de_cada_revisio`: qué
+páginas pide cada revisión y que las fijas no se repiten con la misma
+versión) y `tests/test_historial_grafica.py`
+(`test_el_revisor_no_avanca_la_feina_de_publica`); las páginas nuevas,
+dibujadas en el NAS con los datos reales (Riera 3.444 caracteres, Consultes
+1.282, Fiabilitat con su historial).

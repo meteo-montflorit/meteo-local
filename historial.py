@@ -815,8 +815,11 @@ def index(dies, avui, comp=None):
             "encert": {str(n): per_antelacio(n) for n in ANTELACIONS}}
 
 
-def fes(carpeta, ultims=None, avui=None, registre=None, avisos=None):
-    """Escribe historial.json y los días (todos o los `ultims`). Devuelve los nombres."""
+def fes(carpeta, ultims=None, avui=None, registre=None, avisos=None, refa=True):
+    """Escribe historial.json y los días (todos o los `ultims`). Devuelve los nombres.
+    Con `refa=False`, solo esos días, sin rehacer los de un formato anterior ni
+    tocar su marca: el revisor (revisor.py) dibuja «Fiabilitat» con una copia
+    de un momento y no puede adelantar el trabajo de publica.sh."""
     avui = avui or H.dia_local(H.ara())
     emes = emissions(registre)
     dies = tots(avui, registre, emes, avisos)
@@ -839,7 +842,7 @@ def fes(carpeta, ultims=None, avui=None, registre=None, avisos=None):
         text = ""
     triats = dies[-ultims:] if ultims else dies
     pendent = None
-    if ultims and text != str(FORMAT):
+    if ultims and refa and text != str(FORMAT):
         try:
             m = json.loads(text)
             seguent = m["seguent"] if m.get("format") == FORMAT else PRIMER_DIA.isoformat()
@@ -852,7 +855,7 @@ def fes(carpeta, ultims=None, avui=None, registre=None, avisos=None):
         nom = f"historial-{d['dia']}.json"
         escriu(nom, d)
         noms.append(nom)
-    if ultims and text != str(FORMAT):
+    if ultims and refa and text != str(FORMAT):
         try:
             with open(marca, "w") as f:
                 f.write(json.dumps({"format": FORMAT, "seguent": pendent}) if pendent else str(FORMAT))

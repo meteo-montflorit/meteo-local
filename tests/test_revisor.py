@@ -150,7 +150,7 @@ class Revisio(unittest.TestCase):
 
     def revisa(self, moment, resposta):
         demana = mock.Mock(return_value=({"problemes": resposta}, {"cost_usd": 0.3, "segons": 40}))
-        r = RV.revisa(self.casa, self.avisos, moment, demana_=demana, pagines_=lambda c, a: {"index.html": "No plou"})
+        r = RV.revisa(self.casa, self.avisos, moment, demana_=demana, pagines_=lambda c, a, llista=None: {"index.html": "No plou"})
         return r, demana
 
     def test_corregeix_avisa_i_no_es_repeteix(self):
@@ -192,6 +192,36 @@ class Revisio(unittest.TestCase):
         self.assertEqual(len(textos), 1)
         self.assertIn("4 incoherencia(s)", textos[0])     # amb les dues regles fixes de la fitxa
         self.assertIn("Y 1 leve(s)", textos[0])
+
+    def test_pagines_de_cada_revisio(self):
+        # Juanjo, 26-10-2026: «no debería repasarlas todas?». Les del temps
+        # d'ara, sempre; «Fiabilitat», amb el resum de la nit; les fixes i
+        # config.py, a la mateixa revisió si hi ha una versió nova.
+        demanades = []
+
+        def pagines(c, a, llista=None):
+            demanades.append(list(llista))
+            return {p: "No plou" for p in llista}
+        demana = mock.Mock(return_value=({"problemes": []}, {"cost_usd": 0.3, "segons": 40}))
+
+        def revisa(moment):
+            return RV.revisa(self.casa, self.avisos, moment, demana_=demana, pagines_=pagines)
+        revisa(ARA)
+        self.assertEqual(demanades[-1], list(RV.PAGINES))
+        self.assertIn("riera.html", demanades[-1])
+        self.assertNotIn("config.py", demana.call_args[0][0])
+        nit = ARA.replace(hour=20, minute=55)
+        self.assertEqual(revisa(nit)["motiu"], "resum 20:50")
+        self.assertEqual(demanades[-1], list(RV.PAGINES + RV.PAGINES_DIA + RV.PAGINES_FIXES))
+        self.assertIn("## config.py", demana.call_args[0][0])
+        self.assertEqual(RV.llegeix(RV.ESTAT, {})["fixes"], RV.C.VERSION)
+        # L'endemà, amb la mateixa versió, només «Fiabilitat».
+        revisa(nit + dt.timedelta(days=1))
+        self.assertEqual(demanades[-1], list(RV.PAGINES + RV.PAGINES_DIA))
+        self.assertNotIn("## config.py", demana.call_args[0][0])
+        # El matí, sense cap de les dues.
+        revisa(ARA.replace(hour=5, minute=55) + dt.timedelta(days=2))
+        self.assertEqual(demanades[-1], list(RV.PAGINES))
 
     def test_toca(self):
         estat = {"darrer_missatge": "2026-10-17T19:13+02:00", "conclusions": RV.empremta(RV.conclusions({}, {})),

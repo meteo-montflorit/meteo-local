@@ -237,6 +237,18 @@ class Historial(unittest.TestCase):
             self.assertEqual(H.fes(sortida, 2, avui, reg), ["historial.json", "historial-2026-10-16.json",
                                                             "historial-2026-10-17.json"])
 
+    def test_el_revisor_no_avanca_la_feina_de_publica(self):
+        # «Fiabilitat» al revisor (26-10-2026): l'índex i l'últim dia, sense
+        # refer els vells ni tocar la marca.
+        with tempfile.TemporaryDirectory() as reg, tempfile.TemporaryDirectory() as sortida:
+            for f in os.listdir(self.dir.name):
+                shutil.copy(os.path.join(self.dir.name, f), reg)
+            marca = os.path.join(reg, "historial-format")
+            abans = open(marca).read() if os.path.exists(marca) else None
+            noms = H.fes(sortida, 1, dt.date(2026, 10, 17), reg, refa=False)
+            self.assertEqual(noms, ["historial.json", "historial-2026-10-17.json"])
+            self.assertEqual(open(marca).read() if os.path.exists(marca) else None, abans)
+
     def test_el_dia_del_canvi_d_hora_te_25_hores(self):
         self.assertEqual(len(H.hores_del_dia(dt.date(2026, 10, 25))), 25)
         self.assertEqual(len(H.hores_del_dia(dt.date(2027, 3, 28))), 23)

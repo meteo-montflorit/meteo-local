@@ -67,8 +67,17 @@ CONFIG_BOT = os.path.expanduser("~/.config/avisar-juanjo/config.json")
 # Una corrección aplicada: el reloj publica en el minuto siguiente (reloj.sh).
 PUBLICA_ARA = os.path.join(DIR, "publica-ara")
 
-# Las páginas que se leen, en catalán: las que dicen algo del tiempo de ahora.
-PAGINES = ("index.html", "sortir.html", "perill.html")
+# Las páginas que se leen, en catalán (Juanjo, 26-10-2026: «no debería
+# repasarlas todas?»). En cada revisión, las que dicen algo del tiempo de
+# ahora; una vez al día, con el resumen de la noche, «Fiabilitat», que mira
+# hacia atrás; y en esa misma revisión, si ha salido una versión nueva del
+# programa, las que no cambian con el tiempo, junto con config.py: pueden
+# dejar de ser verdad cuando cambia lo que hace el programa. «Temps a casa»
+# (web/casa.html) es la portada (index.html).
+PAGINES = ("index.html", "sortir.html", "perill.html", "riera.html", "consultes.html")
+PAGINES_DIA = ("fiabilitat.html",)
+PAGINES_FIXES = ("com-funciona.html", "fonts.html", "avisos.html", "telegram.html", "privacitat.html")
+MAX_PAGINA = 16000
 DIES = ("dilluns", "dimarts", "dimecres", "dijous", "divendres", "dissabte", "diumenge")
 
 
@@ -238,7 +247,7 @@ class Silenci(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def pagines(casa_json, avisos_json, navegador=None):
+def pagines(casa_json, avisos_json, navegador=None, llista=PAGINES):
     """{pàgina: text} de la web generada con estos datos, en un servidor local
     de un momento: se genera la web (montflorit.py), se le ponen los datos y
     Chromium la dibuja con su JavaScript, como en el móvil de un vecino."""
@@ -253,6 +262,14 @@ def pagines(casa_json, avisos_json, navegador=None):
         subprocess.run([sys.executable, os.path.join(ARREL, "montflorit.py"), "dades", casa_json,
                         os.path.join(web, "montflorit.json"), avisos_json], check=True, capture_output=True)
         shutil.copy(avisos_json, os.path.join(web, "avisos.json"))
+        # «Fiabilitat» lee el índice del historial y el día de hoy (ADR 0099).
+        if "fiabilitat.html" in llista:
+            import historial
+            try:
+                historial.fes(web, 1, avisos=avisos_json, refa=False)
+            except Exception as ex:
+                print(f"no s'ha pogut fer l'historial per a «Fiabilitat»: {ex}", file=sys.stderr)
+                llista = [p for p in llista if p != "fiabilitat.html"]
         # Los datos, los de al lado y no los de IONOS: los que se revisan.
         comu = os.path.join(web, "comu.js")
         with open(comu, encoding="utf-8") as f:
@@ -262,7 +279,7 @@ def pagines(casa_json, avisos_json, navegador=None):
         srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Silenci, directory=web))
         threading.Thread(target=srv.serve_forever, daemon=True).start()
         try:
-            for pag in PAGINES:
+            for pag in llista:
                 try:
                     r = subprocess.run([navegador, "--headless", "--no-sandbox", "--disable-gpu", "--no-first-run",
                                         "--disable-extensions", f"--user-data-dir={tmp}/perfil",
@@ -308,7 +325,7 @@ def toca(estat, casa, avisos, moment, problemes_regles):
 
 # --- La pregunta a Claude ------------------------------------------------------------
 
-def context(casa, avisos, textos, moment, motiu, problemes_regles, resum=None, informats=None):
+def context(casa, avisos, textos, moment, motiu, problemes_regles, resum=None, informats=None, config=None):
     """Todo lo que el revisor necesita, en un solo texto: lo que dice la web, lo
     que se ha enviado y los datos de los que sale."""
     hores = [{k: h.get(k) for k in ("hora", "temperatura", "probabilitat", "pluja_mm", "plou_ara", "segons_radar",
@@ -348,7 +365,9 @@ def context(casa, avisos, textos, moment, motiu, problemes_regles, resum=None, i
     if resum:
         trossos += ["## Resum del dia que envia el bot", resum, ""]
     for pag, text in textos.items():
-        trossos += [f"## Pàgina {pag}, tal com la veu un veí", text[:12000], ""]
+        trossos += [f"## Pàgina {pag}, tal com la veu un veí", text[:MAX_PAGINA], ""]
+    if config:
+        trossos += ["## config.py (llindars, horaris i fonts del programa, per a les pàgines fixes)", config, ""]
     return "\n".join(trossos)
 
 
@@ -533,7 +552,15 @@ def revisa(casa_json, avisos_json, moment=None, prova=False, demana_=None, pagin
     motiu = "prova" if prova else toca(estat, casa, avisos, moment, problemes_regles)
     if not motiu:
         return None
-    textos = (pagines_ or pagines)(casa_json, avisos_json)
+    llista = list(PAGINES)
+    if motiu == f"resum {C.REVISOR_HORES[-1]}" or prova:
+        llista += PAGINES_DIA
+        fixes = prova or estat.get("fixes") != C.VERSION
+        if fixes:
+            llista += PAGINES_FIXES
+    else:
+        fixes = False
+    textos = (pagines_ or pagines)(casa_json, avisos_json, llista=llista)
     problemes_regles += regles(casa, avisos, moment, textos)[len(problemes_regles):]
     resum = None
     if motiu.startswith("resum") or prova:
@@ -544,8 +571,12 @@ def revisa(casa_json, avisos_json, moment=None, prova=False, demana_=None, pagin
         except Exception as ex:
             resum = f"(no s'ha pogut generar el resum: {ex})"
     informats = [v for v in (estat.get("informats") or []) if H.llegeix(v["hora"]) > moment - dt.timedelta(days=2)]
+    config = None
+    if fixes:
+        with open(os.path.join(ARREL, "config.py"), encoding="utf-8") as f:
+            config = f.read()
     resposta, cost = (demana_ or demana)(context(casa, avisos, textos, moment, motiu, problemes_regles, resum,
-                                                 [{k: v[k] for k in ("on", "que")} for v in informats]))
+                                                 [{k: v[k] for k in ("on", "que")} for v in informats], config))
     problemes = resposta.get("problemes") or []
     # Las reglas fijas que la IA no haya recogido van igualmente.
     for p in problemes_regles:
@@ -602,12 +633,14 @@ def revisa(casa_json, avisos_json, moment=None, prova=False, demana_=None, pagin
         estat["darrera"] = H.clau(moment)
         if hores := [a["hora"] for a in avisos.get("avisos") or [] if a.get("hora")]:
             estat["darrer_missatge"] = H.clau(max(hores, key=H.utc))
+        if fixes:
+            estat["fixes"] = C.VERSION
         if motiu.startswith("resum"):
             estat["diaris"] = (estat.get("diaris") or [])[-10:] + [f"{moment.date().isoformat()} {motiu[6:]}"]
         desa(ESTAT, estat)
         os.makedirs(os.path.dirname(REGISTRE), exist_ok=True)
         with open(REGISTRE, "a", encoding="utf-8") as f:
-            f.write(json.dumps({"hora": H.clau(moment), "motiu": motiu, **cost,
+            f.write(json.dumps({"hora": H.clau(moment), "motiu": motiu, **cost, "pagines": sorted(textos),
                                 "problemes": problemes, "fets": [x.get("accio") for x in fets]},
                                ensure_ascii=False) + "\n")
     return {"motiu": motiu, "problemes": problemes, "cost": cost, "textos": textos}
@@ -677,7 +710,8 @@ def mostra_estat():
         files = []
     for r in files:
         print(f"{r['hora']}  {r['motiu']:<14} {len(r.get('problemes') or [])} problema(es)  "
-              f"{r.get('segons')} s  {r.get('cost_usd')} $")
+              f"{r.get('segons')} s  {r.get('cost_usd')} $"
+              + (f"  {len(r['pagines'])} pàgines" if r.get("pagines") else ""))
 
 
 if __name__ == "__main__":
