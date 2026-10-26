@@ -479,6 +479,22 @@ class Previsio(unittest.TestCase):
     """La previsió de crescuda (ADR 0107): el model que més en dona en 3 hores,
     la finestra, la mitjana i el nivell «possible»; només les properes hores."""
 
+    def test_la_finestra_no_comenca_abans_d_ara(self):
+        # El revisor, 26-10-2026: a les 19:24, sense pluja, «entre les 17 i les 20 h».
+        ara = dt.datetime(2026, 10, 26, 19, 24, tzinfo=dt.timezone(dt.timedelta(hours=1)))
+        hores = [(ara.replace(minute=0) + dt.timedelta(hours=k)).isoformat(timespec="minutes") for k in range(-2, 46)]
+        zeros = [0.0] * len(hores)
+        hm = lambda t: __import__("hora").local(t).strftime("%H:%M")  # noqa: E731
+        p = RI.previsio_models(hores, {"icon_eu": zeros}, ara)
+        self.assertEqual(p["mm_3h_max"], 0.0)
+        self.assertEqual(hm(p["finestra_3h"]["ini"]), "19:00")
+        self.assertEqual(hm(p["finestra_6h"]["ini"]), "19:00")
+        # La pluja de l'hora en curs compta, la de dues hores enrere no.
+        pluja = list(zeros)
+        pluja[0], pluja[2] = 30.0, 4.0
+        p = RI.previsio_models(hores, {"icon_eu": pluja}, ara)
+        self.assertEqual((p["mm_3h_max"], hm(p["finestra_3h"]["ini"])), (4.0, "19:00"))
+
     def test_el_model_que_mes_en_dona_i_la_finestra(self):
         ara = dt.datetime(2026, 10, 19, 7, 40, tzinfo=dt.timezone(dt.timedelta(hours=2)))
         hores = [(ara.replace(minute=0) + dt.timedelta(hours=k)).isoformat(timespec="minutes") for k in range(-2, 46)]

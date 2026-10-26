@@ -99,3 +99,22 @@ partes («hazlo así»).
 - La página en Chromium y Firefox, móvil y escritorio, claro y oscuro, con
   los datos del 19-10-2026 (AROME HD preveía 23,5 mm de 16 a 19 h:
   «possible»), y axe-core.
+
+**Tres correcciones del revisor** (26-10-2026, 3.205.1; ADR 0101, la primera
+revisión con todas las páginas). Juanjo: «arregla los fallos».
+
+- **La ventana empieza en la hora en curso.** La lluvia de 3 horas más alta se
+  buscaba en las ventanas que acaban en cada hora del horizonte, y la que
+  acaba en la primera empezaba dos horas antes. Con 0 mm en todos los modelos
+  era la que quedaba: a las 19:24 la página decía «entre les 17 i les 20 h».
+  Ahora solo cuentan las ventanas que empiezan en la hora en curso o después
+  (`previsio_models`), y con 0 mm la página no da horas: «Els models no hi
+  preveuen pluja». Validación: `tests/test_riera.py`
+  (`test_la_finestra_no_comenca_abans_d_ara`).
+- **Los desbordamientos que vio venir.** La página decía que la señal de 20 mm
+  solo vio venir el del 4-10-2026; según la medida (`docs/estadistica.md`,
+  12.6), vio dos: abril de 2024 (30 mm previstos) y 4-10-2026 (88). Se corrige
+  en catalán y castellano.
+- **27 días en `config.py`.** El comentario de `RIERA_PREVISIO_MM` daba la
+  cifra del máximo por hora, descartado (ver «Alternativas descartadas»); la
+  del método que se usa es 21, la de la página.

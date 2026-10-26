@@ -634,15 +634,22 @@ function pintaDetall(e) {
   const res = [];
   // Contra les oficials, a les mateixes hores.
   const files = [];
+  let senseRegistre = false;
   for (const [clau, nom] of [['meteocat', 'Meteocat'], ['aemet', 'AEMET']]) {
     const o = e.oficial && e.oficial[clau];
     if (!o) continue;
-    files.push([T`Aquesta web (hores de ${nom})`, graus(o.temperatura.web), brier(o.pluja.web), String(o.temperatura.hores)]);
-    files.push([nom, graus(o.temperatura.oficial), brier(o.pluja.oficial), String(o.temperatura.hores)]);
+    // La pluja, amb la mateixa regla que les gràfiques (valorOficial): sense
+    // cap hora plujosa, guió (el revisor, 26-10-2026: la gràfica deia que no
+    // hi havia error de pluja i la taula en donava).
+    const pluja = valorOficial(o, 'pluja') != null;
+    if (!pluja) senseRegistre = true;
+    files.push([T`Aquesta web (hores de ${nom})`, graus(o.temperatura.web), pluja ? brier(o.pluja.web) : '—', String(o.temperatura.hores)]);
+    files.push([nom, graus(o.temperatura.oficial), pluja ? brier(o.pluja.oficial) : '—', String(o.temperatura.hores)]);
   }
   if (files.length) {
     res.push(element('h3', null, T('Contra Meteocat i AEMET')),
       taula([T('Previsió'), T('Error de temperatura'), T('Error de pluja'), T('Hores')], files));
+    if (senseRegistre) res.push(element('p', 'nota', T('L’error de pluja surt quan hagi plogut en alguna de les hores comparades.')));
   }
   // Setmana a setmana.
   const setmanes = [...(e.setmanes || [])].reverse();

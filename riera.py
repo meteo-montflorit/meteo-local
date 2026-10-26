@@ -667,9 +667,14 @@ def previsio_models(hores, per_model, ahora, horitzo_h=None, llindar=None):
            "hores": [{"hora": hores[i], "max": max([s[i] for s in series.values() if i < len(s) and s[i] is not None] or [None]),
                       "mitjana": mitjana[i]} for i in dins]}
     for n, nom in ((3, "3h"), (6, "6h")):
-        millor_model, millor_i, millor_mm = None, dins[0], -1.0
+        # Les finestres que comencen a l'hora en curs o després: una que acaba
+        # a la primera hora començava dues hores enrere, i amb 0 mm arreu era
+        # la que quedava (el revisor, 26-10-2026: «entre les 17 i les 20 h» a
+        # les 19:24).
+        finals = [i for i in dins if i - n + 1 >= dins[0]] or dins[-1:]
+        millor_model, millor_i, millor_mm = None, finals[0], -1.0
         for m, s in series.items():
-            for i in dins:
+            for i in finals:
                 v = _suma(s, i, n)
                 if v is not None and v > millor_mm:
                     millor_model, millor_i, millor_mm = m, i, v

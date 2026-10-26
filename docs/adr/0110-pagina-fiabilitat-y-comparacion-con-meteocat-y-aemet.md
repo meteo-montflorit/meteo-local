@@ -253,3 +253,13 @@ datos a la pagina de fiabilitat»). Una ficha «Humitat» con el resultado del
 año de casa en barras (corregida y sin corregir, en puntos de humedad) y lo
 que lleva el aprendizaje del barrio, su gráfica día a día y sus cambios en la
 lista. Los datos, de `historial.humitat` (ADR 0114).
+
+**La lluvia de las oficiales en la tabla** (26-10-2026, 3.205.1). El revisor
+(ADR 0101) vio que las gráficas decían que Meteocat y AEMET aún no tenían
+error de lluvia (sin ninguna hora lluviosa, el 23-10-2026 se dejó de
+mostrar: solo contaba las falsas alarmas) y la tabla «Contra Meteocat i
+AEMET» sí lo daba. La tabla usa ahora la misma regla (`valorOficial`): guion,
+también en la fila de la web a esas horas, y una nota debajo: «L’error de
+pluja surt quan hagi plogut en alguna de les hores comparades». Validación:
+la página con los datos del 26-10-2026 en Chromium y Firefox, móvil, catalán
+y castellano, y axe-core sin errores en claro y oscuro.

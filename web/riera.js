@@ -62,8 +62,10 @@ function pintaPrevisio(p) {
     linia.append(element('strong', null, T('Risc de crescuda possible.')), ' ',
       T`Els models preveuen fins a ${coma(p.mm_3h_max)} mm en 3 hores a la conca ${quan}. L’avís d’atenció es dona a partir de 35 mm mesurats.`);
   } else {
+    // Amb 0 mm arreu, la finestra no diu res: sense hores.
     linia.append(element('strong', null, T`Cap senyal de crescuda en les properes ${p.horitzo_h} hores.`), ' ',
-      T`Com a molt, ${coma(p.mm_3h_max)} mm en 3 hores segons els models (${quan}).`);
+      p.mm_3h_max > 0 ? T`Com a molt, ${coma(p.mm_3h_max)} mm en 3 hores segons els models (${quan}).`
+        : T('Els models no hi preveuen pluja.'));
   }
   cos.replaceChildren(linia);
   // El detall, plegat amb les dades d'ara.
