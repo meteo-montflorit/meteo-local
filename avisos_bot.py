@@ -15,7 +15,7 @@ Tipos:
 - perill: lo medido o previsto llega a los umbrales de aviso de AEMET (la de
   riscos.py, ADR 0018), al aparecer o subir de nivel; y, desde el 08-10-2026,
   un incendio forestal en curso que interesa al barrio (Bombers; desde el
-  16-10-2026, en Collserola o a 2 km o menos) al empezar y al dejar de constar (entorn.py, ADR 0046 y 0071).
+  28-10-2026, en Collserola a 5 km o menos, y en cualquier sitio a 2 km o menos) al empezar y al dejar de constar (entorn.py, ADR 0046 y 0071).
 - riera: riesgo de desbordamiento de la riera de Sant Cugat (la de riera.py,
   ADR 0027), atención y peligro, siempre con el aviso de que es orientativo.
 - perill, también, desde el 09-10-2026: los avisos oficiales nuevos (ADR 0055).
@@ -342,9 +342,11 @@ def lloc_incendi(i, idioma):
     return on
 
 
-def enllac_bombers(idioma):
+def enllac_bombers(idioma, mapa=None):
+    """El visor de Bombers ya con el incendio y el barrio a la vista
+    (entorn.mapa); sin él (estados de antes), la página de Bombers."""
     text = "Mapa d'actuacions de Bombers" if idioma == "ca" else "Mapa de actuaciones de Bombers"
-    return f'<a href="{BOMBERS[idioma]}">{text}</a>'
+    return f'<a href="{html.escape(mapa or BOMBERS[idioma])}">{text}</a>'
 
 
 def text_incendi(i, acabat=False, parat=None):
@@ -372,11 +374,11 @@ def text_incendi(i, acabat=False, parat=None):
     return {"ca": negreta(f"Bombers: incendi forestal {lloc_incendi(i, 'ca')}", "incendi")
                   + f"\nBombers de la Generalitat treballen en un incendi de vegetació forestal a {lloc}{parc_ca}, "
                   f"des de les {hhmm(i.get('inici'))}. Segueix les indicacions de Bombers i de Protecció Civil."
-                  + "\n" + enllac_bombers("ca"),
+                  + "\n" + enllac_bombers("ca", i.get("mapa")),
             "es": negreta(f"Bombers: incendio forestal {lloc_incendi(i, 'es')}", "incendi")
                   + f"\nBombers de la Generalitat trabajan en un incendio de vegetación forestal en {lloc}{parc_es}, "
                   f"desde las {hhmm(i.get('inici'))}. Sigue las indicaciones de Bombers y de Protección Civil."
-                  + "\n" + enllac_bombers("es")}
+                  + "\n" + enllac_bombers("es", i.get("mapa"))}
 
 
 # --- Cortes de luz (ADR 0072) ----------------------------------------------------
@@ -787,27 +789,34 @@ def decideix(estat, salida, ahora):
         ara_ids = {i["id"]: i for i in entorn["incendis"]}
         fora = set(entorn.get("incendis_fora") or [])
         parats = entorn.get("incendis_parats") or {}
+        # Lo apuntado con el GlobalID de una fila (hasta la 3.206.1) pasa al
+        # número de la actuación, que no cambia con la fila que dé Bombers:
+        # ni es nuevo ni se ha acabado (28-10-2026, ADR 0071).
+        alies = {**((e or {}).get("alies") or {}), **(entorn.get("incendis_alies") or {})}
+        # Las filas apartadas por la 3.206.1, del mismo incendio que la que quedó.
+        for d, q in ((e or {}).pop("duplicats", None) or {}).items():
+            for x, y in ((d, q), (q, d)):
+                if x in alies:
+                    alies.setdefault(y, alies[x])
+        if e is not None:
+            e["incendis"] = {alies.get(k, k): {**v, "id": alies.get(k, k)} for k, v in e["incendis"].items()}
+            e["fora"] = sorted({alies.get(k, k) for k in e.get("fora") or []})
         apartats = set((e or {}).get("fora") or [])
         abans = dict((e or {}).get("incendis") or {})
-        # Una fila repetida de Bombers es el mismo incendio con otro
-        # identificador: ni es nuevo ni, al apartarla, se ha acabado
-        # (28-10-2026, ADR 0071).
-        duplicats = {**((e or {}).get("duplicats") or {}), **(entorn.get("incendis_duplicats") or {})}
         if e is not None:
             for i in entorn["incendis"]:
-                coneguts = {i["id"]} | {d for d, q in duplicats.items() if q == i["id"]}
-                if not coneguts & (set(e["incendis"]) | apartats):
+                if i["id"] not in e["incendis"] and i["id"] not in apartats:
                     afegeix("perill", f"incendi:{i['id']}", text_incendi(i), "incendi", episodi=f"incendi:{i['id']}")
             for iid, i in e["incendis"].items():
-                if iid not in ara_ids and iid not in fora and iid not in duplicats:
+                if iid not in ara_ids and iid not in fora:
                     afegeix("perill", f"incendi:{iid}:fi", text_incendi(i, acabat=True, parat=parats.get(iid)), "fi",
                             episodi=f"incendi:{iid}")
         estat.setdefault("entorn", {"incendis": {}})["incendis"] = ara_ids
         estat["entorn"]["fora"] = sorted((apartats | set(abans)) & fora)
         estat["entorn"]["en_curs_fora"] = sorted(fora)
-        # Se guardan por si el historial publicado o la reserva devuelven la
-        # ficha repetida; los de hace mucho ya no hacen falta.
-        estat["entorn"]["duplicats"] = dict(list(duplicats.items())[-50:])
+        # Se guardan por si el historial publicado o la reserva devuelven una
+        # ficha con el GlobalID; los de hace mucho ya no hacen falta.
+        estat["entorn"]["alies"] = dict(list(alies.items())[-50:])
     # Cortes de luz del barrio (ADR 0072): al aparecer y al dejar de constar. La
     # primera vez solo se apunta lo que hay; si e-distribución no responde
     # (None), no se toca el estado.
@@ -976,9 +985,9 @@ def fusiona(propi, altre):
 
 
 FORA_ZONA = {"ca": "Segons Bombers continua actiu, però és fora de la zona que vigila aquesta aplicació "
-                   "(el parc de Collserola i fins a 2 km del barri).",
+                   "(el parc de Collserola fins a 5 km del barri i qualsevol lloc fins a 2 km).",
              "es": "Según Bombers sigue activo, pero está fuera de la zona que vigila esta aplicación "
-                   "(el parque de Collserola y hasta 2 km del barrio)."}
+                   "(el parque de Collserola hasta 5 km del barrio y cualquier sitio hasta 2 km)."}
 SUBSTITUIT = {"ca": "Meteocat en té avís per al Vallès Occidental: ara es mostra el seu.",
               "es": "Meteocat tiene aviso para el Vallès Occidental: ahora se muestra el suyo."}
 INCLOS = {"ca": "L'AEMET l'ha inclòs en un altre avís seu, que continua actiu.",
@@ -1163,16 +1172,24 @@ def historial(estat, nous, ahora, anterior=None):
     # cierra diciéndolo, sin darlo por apagado.
     # Las que se cerraron con «ja no consta» estando en curso (16-10-2026)
     # se corrigen igual.
-    # La ficha de una fila repetida de Bombers (28-10-2026): fuera si ya está
-    # la del mismo incendio; si no, pasa a ser la suya.
-    duplicats = (estat.get("entorn") or {}).get("duplicats") or {}
+    # La ficha de un incendio apuntada con el GlobalID de una fila pasa al
+    # número de la actuación; si ya hay una de ese número, sobra
+    # (28-10-2026, ADR 0071).
+    alies = (estat.get("entorn") or {}).get("alies") or {}
     for e in list(h):
         iid = e["clau"][8:] if e["clau"].startswith("incendi:") else None
-        if iid in duplicats:
-            if any(x["clau"] == f"incendi:{duplicats[iid]}" for x in h):
+        if iid in alies:
+            if any(x["clau"] == f"incendi:{alies[iid]}" for x in h):
                 h.remove(e)
             else:
-                e["clau"] = f"incendi:{duplicats[iid]}"
+                e["clau"] = f"incendi:{alies[iid]}"
+    # Un incendio que Bombers da en curso no puede tener la ficha cerrada con
+    # «ja no consta»: el 28-10-2026 se cerró así por una fila que desapareció.
+    for iid in (estat.get("entorn") or {}).get("incendis") or {}:
+        fitxa = next((x for x in reversed(h) if x["clau"] == f"incendi:{iid}"), None)
+        if fitxa and fitxa.get("fi") and "ja no consta" in (fitxa.get("fi_ca") or ""):
+            for k in ("fi", "fi_ca", "fi_es"):
+                fitxa.pop(k, None)
     en_curs_fora = set((estat.get("entorn") or {}).get("en_curs_fora") or [])
     for e in h:
         if e["clau"].startswith("incendi:") and e["clau"][8:] in en_curs_fora and (

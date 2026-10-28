@@ -2,7 +2,7 @@
 """Datos fijos de «Temps a Montflorit»: lugares, horario, fuentes y umbrales.
 Se cambian aquí, no en los programas."""
 
-VERSION = "3.206.1"
+VERSION = "3.207.0"
 
 # Coordenadas con tres decimales (unos 100 m), no las exactas: para el tiempo
 # da igual una calle u otra, y el repositorio es público.
@@ -324,7 +324,10 @@ TRENS = [
 # valor); se muestra desde el nivel ALFA_NIVELL_MOSTRAR, el que restringe el
 # acceso a los espacios forestales.
 ENTORN_RADI_KM = 2
-# Desde el 16-10-2026 (ADR 0071): los de Collserola a cualquier distancia y,
+COLLSEROLA_RADI_KM = 5
+# Desde el 28-10-2026 (ADR 0071), los de Collserola, a COLLSEROLA_RADI_KM o
+# menos (Juanjo: «limita los avisos a 5 km en collserola»); antes, a
+# cualquier distancia. Desde el 16-10-2026: los de Collserola y,
 # fuera del parque, los de ENTORN_RADI_KM o menos, sea cual sea el municipio
 # (Juanjo: «bájalo a 2 km esté donde esté y luego los del parque»). Del
 # 11-10-2026 a esa fecha, los de Cerdanyola siempre y los de los demás
@@ -342,6 +345,10 @@ COLLSEROLA_MARGE_KM = 0.2
 # más de INCENDI_PARAT_H horas se da por apagado (25-10-2026, ADR 0071): los
 # anteriores duraron entre 6 minutos y 1 hora.
 INCENDI_PARAT_H = 3
+# El enlace al visor de Bombers se abre con el incendio y Montflorit a la
+# vista (entorn.mapa, 28-10-2026); uno muy cerca, como mucho a este nivel de
+# zoom (1:36.112), para que se vea dónde queda respecto a Cerdanyola.
+INCENDI_MAPA_ZOOM_MAX = 14
 ALFA_MUNICIPI = "082665"            # Cerdanyola del Vallès
 ALFA_ACTUAL_H = 36
 ALFA_NIVELL_MOSTRAR = 3

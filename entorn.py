@@ -3,9 +3,10 @@
 
 - incendios forestales en curso de la capa pública de actuaciones urgentes de
   Bombers de la Generalitat (ArcGIS), solo los que interesan al barrio (ADR
-  0071): dentro del Parc Natural de Collserola, a cualquier distancia (el
-  límite oficial de la capa del Consorci, sin sus enclaves), y fuera del parque, a
-  ENTORN_RADI_KM o menos, en cualquier municipio (desde el 16-10-2026);
+  0071): dentro del Parc Natural de Collserola (el límite oficial de la capa
+  del Consorci, sin sus enclaves), a COLLSEROLA_RADI_KM o menos (desde el
+  28-10-2026), y en cualquier sitio a ENTORN_RADI_KM o menos (desde el
+  16-10-2026);
 - el nivel del Pla Alfa de Cerdanyola hoy y mañana, y los cierres de espacios
   naturales que tocan Collserola, de las capas públicas de Agents Rurals
   (ArcGIS).
@@ -33,6 +34,13 @@ import hora as H
 
 ARCGIS = "https://services7.arcgis.com/ZCqVt1fRXwwK6GF4/arcgis/rest/services"
 BOMBERS = ARCGIS + "/ACTUACIONS_URGENTS_online_PRO_AMB_FASE_VIEW/FeatureServer/0"
+# El visor público de Bombers (ArcGIS Experience Builder): acepta en la
+# dirección el centro y la escala de sus dos mapas, el del ordenador
+# (widget_1) y el del móvil (widget_67). Si un día cambian, abre Cataluña
+# entera, como antes (28-10-2026, ADR 0071).
+VISOR = "https://experience.arcgis.com/experience/f6172fd2d6974bc0a8c51e3a6bc2a735/"
+# Escala del nivel 0 de los mapas de teselas de ArcGIS (Web Mercator).
+ESCALA_Z0 = 591657527.591555
 # El límite del Parc Natural de la Serra de Collserola, del Consorci del parque.
 COLLSEROLA = ("https://services7.arcgis.com/z50OW9s1n52Z8H2C/arcgis/rest/services/"
               "L%C3%ADmit_Parc_de_Collserola/FeatureServer/0")
@@ -130,31 +138,51 @@ def dins_collserola(y, x):
     return d.get("count", 0) > 0
 
 
+def mapa(lat, lon):
+    """El visor de Bombers con el incendio y Montflorit a la vista en el móvil
+    (unos 390 × 600 píxeles de mapa), con margen: centrado entre los dos y en
+    el nivel de zoom que pide la distancia (Juanjo, 28-10-2026: «el mapa
+    siempre hay que hacer zoom»). El visor redondea la escala a sus niveles
+    (la de 1:100.000 la mostró a 1:72.224): se le pide ya uno, el más cercano
+    en que caben los dos, y como mucho INCENDI_MAPA_ZOOM_MAX."""
+    y, x = (lat + C.CASA[0]) / 2, (lon + C.CASA[1]) / 2
+    dx = abs(lon - C.CASA[1]) * 111320 * math.cos(math.radians(y))
+    dy = abs(lat - C.CASA[0]) * 111320
+    # Metros por píxel de pantalla a escala 1: 0,0254 m / 96.
+    cal = max(dx / 390, dy / 600) * 1.3 / (0.0254 / 96)
+    zoom = min(C.INCENDI_MAPA_ZOOM_MAX, math.floor(math.log2(ESCALA_Z0 / cal)) if cal else C.INCENDI_MAPA_ZOOM_MAX)
+    vista = f"center:{x:.4f}%2C{y:.4f}%2C4326,scale:{ESCALA_Z0 / 2 ** zoom:.3f}"
+    return f"{VISOR}#widget_1={vista}&widget_67={vista}"
+
+
 def interessa(municipi, dist, collserola):
-    """Si un incendio interesa al barrio: en Collserola, a cualquier
-    distancia; fuera, a ENTORN_RADI_KM o menos, en cualquier municipio
-    (Juanjo, 16-10-2026: «bájalo a 2 km esté donde esté y luego los del
-    parque»). El municipio ya no cuenta; se queda en la firma porque lo da
+    """Si un incendio interesa al barrio: en Collserola, a COLLSEROLA_RADI_KM
+    o menos (Juanjo, 28-10-2026: «limita los avisos a 5 km en collserola»);
+    en cualquier sitio, a ENTORN_RADI_KM o menos (16-10-2026: «bájalo a 2 km
+    esté donde esté y luego los del parque»). El municipio ya no cuenta; se queda en la firma porque lo da
     Bombers y la página lo muestra."""
-    return bool(collserola) or (dist is not None and dist <= C.ENTORN_RADI_KM)
+    if dist is None:
+        return False
+    return dist <= C.ENTORN_RADI_KM or (bool(collserola) and dist <= C.COLLSEROLA_RADI_KM)
 
 
-def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None, duplicats=None):
+def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None, alies=None):
     """Incendios de vegetación forestal en curso que interesan al barrio
     (interessa), del más cercano al más lejano. En «fora», si se pasa, los
     identificadores de los que siguen en curso pero quedan fuera de la zona:
     salir de ella no es acabar (16-10-2026, ADR 0071). En «parats», los que
     Bombers deja abiertos sin ningún vehículo ni cambio desde hace
     INCENDI_PARAT_H horas, con la hora del último cambio: se dan por apagados
-    (25-10-2026, ADR 0071). En «duplicats», las filas repetidas de una misma
-    actuación, con el identificador de la que se queda (28-10-2026, ADR 0071)."""
+    (25-10-2026, ADR 0071). Cada incendio se identifica por el número de la
+    actuación; en «alies», el GlobalID de cada fila con ese número, el
+    identificador de antes (28-10-2026, ADR 0071)."""
     ara = ara or H.ara()
     xmin, ymin, xmax, ymax = C.INCENDIS_CAIXA
     d = dades or get(BOMBERS + "/query", {
         "where": "TAL_COD_ALARMA1='IV'", "geometry": f"{xmin},{ymin},{xmax},{ymax}",
         "geometryType": "esriGeometryEnvelope", "inSR": 4326, "spatialRel": "esriSpatialRelIntersects",
         "outSR": 4326,
-        "outFields": "GlobalID,OBJECTID,ESRI_OID,TAL_DESC_ALARMA2,MUNICIPI_SIG,ACT_DAT_INICI,ACT_DAT_FI,ACT_DAT_ACTUAL,"
+        "outFields": "GlobalID,OBJECTID,TAL_DESC_ALARMA2,MUNICIPI_SIG,ACT_DAT_INICI,ACT_DAT_FI,ACT_DAT_ACTUAL,"
                      "ACT_NUM_VEH,COM_FASE",
         "returnGeometry": "true", "f": "json"})
     if "error" in d:
@@ -164,14 +192,18 @@ def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None, dupl
     # de Bombers), misma posición y mismas horas; solo cambian ESRI_OID y
     # GlobalID. El 28-10-2026, uno de Sant Cugat salió dos veces y los vecinos
     # recibieron dos avisos iguales; ese día, 5 de las 7 actuaciones de la
-    # capa estaban repetidas. Se queda la de ESRI_OID más bajo.
+    # capa estaban repetidas. Y la que queda al dejar de repetirse puede ser
+    # cualquiera: el incendio es el número de la actuación, no la fila.
     actuacions = {}
-    for f in sorted(d.get("features", []), key=lambda f: f["attributes"].get("ESRI_OID") or 0):
+    for f in d.get("features", []):
         a = f["attributes"]
-        actuacions.setdefault(a.get("OBJECTID") or a["GlobalID"], []).append(f)
+        iid = str(a.get("OBJECTID") or a["GlobalID"])
+        actuacions.setdefault(iid, []).append(f)
+        if alies is not None and a.get("GlobalID") and a["GlobalID"] != iid:
+            alies[a["GlobalID"]] = iid
     res = []
-    for grup in actuacions.values():
-        f, ids = grup[0], [x["attributes"]["GlobalID"] for x in grup]
+    for iid, grup in actuacions.items():
+        f = grup[0]
         a, g = f["attributes"], f.get("geometry") or {}
         # Solo los forestales: los de solares urbanos son muchos y no limitan salir.
         if "forestal" not in (a.get("TAL_DESC_ALARMA2") or "").lower() or a.get("ACT_DAT_FI"):
@@ -183,7 +215,7 @@ def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None, dupl
         al_parc = collserola(g["y"], g["x"])
         if not interessa(municipi, dist, al_parc):
             if fora is not None:
-                fora.extend(ids)
+                fora.append(iid)
             continue
         # Uno de Montcada se quedó abierto el 24-10-2026 con 0 vehículos y sin
         # ningún cambio desde que se dio de alta; los de antes duraron una hora
@@ -192,11 +224,9 @@ def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None, dupl
         if a.get("ACT_NUM_VEH") == 0 and canvi and \
                 ara - dt.datetime.fromtimestamp(canvi / 1000, H.UTC) > dt.timedelta(hours=C.INCENDI_PARAT_H):
             if parats is not None:
-                parats.update(dict.fromkeys(ids, hora_iso(canvi)))
+                parats[iid] = hora_iso(canvi)
             continue
-        if duplicats is not None:
-            duplicats.update(dict.fromkeys(ids[1:], ids[0]))
-        res.append({"id": a["GlobalID"], "municipi": municipi, "km": round(dist, 1),
+        res.append({"id": iid, "municipi": municipi, "km": round(dist, 1), "mapa": mapa(g["y"], g["x"]),
                     "collserola": al_parc, "inici": hora_iso(a.get("ACT_DAT_INICI")),
                     "vehicles": a.get("ACT_NUM_VEH"), "fase": a.get("COM_FASE")})
     return sorted(res, key=lambda i: i["km"])
@@ -237,8 +267,8 @@ def calcula(ara=None):
     """Para casa.json y los datos públicos. Cada parte, None si su fuente falla."""
     ara = ara or H.ara()
     res = {"hora": H.clau(ara), "errors": []}
-    fora, parats, duplicats = [], {}, {}
-    for clau, funcio in (("incendis", lambda: incendis(fora=fora, parats=parats, ara=ara, duplicats=duplicats)), ("pla_alfa", lambda: pla_alfa(ara))):
+    fora, parats, alies = [], {}, {}
+    for clau, funcio in (("incendis", lambda: incendis(fora=fora, parats=parats, ara=ara, alies=alies)), ("pla_alfa", lambda: pla_alfa(ara))):
         try:
             res[clau] = funcio()
         except Exception as ex:
@@ -246,7 +276,7 @@ def calcula(ara=None):
             res["errors"].append(f"{clau}: {ex}")
     res["incendis_fora"] = None if res["incendis"] is None else fora
     res["incendis_parats"] = None if res["incendis"] is None else parats
-    res["incendis_duplicats"] = None if res["incendis"] is None else duplicats
+    res["incendis_alies"] = None if res["incendis"] is None else alies
     return res
 
 

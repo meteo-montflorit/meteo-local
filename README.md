@@ -190,7 +190,7 @@ Umbrales y lugares, en `config.py`. El porqué, en los ADR.
 | `hora.py` | La hora del programa: el «ahora» y las claves en UTC, la lectura de las formas de antes y la hora de Madrid para lo que se publica y se muestra (ADR 0128) |
 | `migra_utc.py` | La migración, una sola vez, de los registros del NAS a UTC, con copia de antes (ADR 0128) |
 | `lluna.py` | La Luna: la fase, las fases principales y la salida y la puesta, con Astronomy Engine (`tercers/astronomy.py`, MIT), para «Ara», la gráfica y «Sol i lluna» (ADR 0127) |
-| `entorn.py` | Incendios forestales en curso que interesan al barrio (Bombers: en Collserola y, fuera del parque, a 2 km o menos) y nivel del Pla Alfa de Cerdanyola (Agents Rurals), para la web y los avisos de peligro (ADR 0046 y 0071) |
+| `entorn.py` | Incendios forestales en curso que interesan al barrio (Bombers: en Collserola, a 5 km o menos; en cualquier sitio, a 2 km o menos) y nivel del Pla Alfa de Cerdanyola (Agents Rurals), para la web y los avisos de peligro (ADR 0046 y 0071) |
 | `desplegament.py` | Pone al día la copia del repositorio (NAS, reserva y bot) hasta el último commit con las pruebas de GitHub en verde; si GitHub no responde o las pruebas llevan más de 20 minutos sin acabar, despliega igualmente y lo apunta (ADR 0038) |
 | `avis_privat.py` | Avisos de mantenimiento a Juanjo por Telegram con cola de reintento si Telegram no los acepta (ADR 0038) |
 | `llum.py` | Cortes de luz de e-distribución dentro de los límites del barrio, para «Llum» y `/llum`, y su prueba diaria (ADR 0072) |

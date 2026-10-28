@@ -47,31 +47,32 @@ class Fonts(unittest.TestCase):
     def test_files_repetides_de_la_mateixa_actuacio(self):
         # 28-10-2026: un de Sant Cugat va sortir dos cops, amb el mateix
         # OBJECTID i tot igual menys ESRI_OID i GlobalID (ADR 0071).
-        def fila(gid, oid, objectid=1157498):
-            f = feature("Incendi vegetació forestal", "Sant Cugat del Vallès", 41.4336, 2.0941, gid=gid)
-            f["attributes"].update(OBJECTID=objectid, ESRI_OID=oid)
+        def fila(gid, objectid=1157498):
+            f = feature("Incendi vegetació forestal", "Sant Cugat del Vallès", 41.47, 2.09, gid=gid)
+            f["attributes"]["OBJECTID"] = objectid
             return f
-        duplicats = {}
-        r = EN.incendis({"features": [fila("8353bad1", 427667), fila("82e358db", 427666), fila("altre", 427670, 1157503)]},
-                        collserola=lambda y, x: True, duplicats=duplicats)
-        self.assertEqual(sorted(i["id"] for i in r), ["82e358db", "altre"])
-        self.assertEqual(duplicats, {"8353bad1": "82e358db"})
+        alies = {}
+        r = EN.incendis({"features": [fila("8353bad1"), fila("82e358db"), fila("altre", 1157503)]},
+                        collserola=lambda y, x: True, alies=alies)
+        self.assertEqual(sorted(i["id"] for i in r), ["1157498", "1157503"])
+        self.assertEqual(alies, {"8353bad1": "1157498", "82e358db": "1157498", "altre": "1157503"})
 
     def test_nomes_els_que_interessen_al_barri(self):
-        # ADR 0071 (Juanjo, 16-10-2026): Collserola a qualsevol distància i,
-        # fora del parc, a 2 km o menys, sigui quin sigui el municipi.
-        parc = {(41.40, 2.02), (41.46, 2.10)}                     # Molins i Sant Cugat, dins del parc
+        # ADR 0071 (Juanjo, 16-10-2026): a 2 km o menys, sigui quin sigui el
+        # municipi, i Collserola, des del 28-10-2026 a 5 km o menys.
+        parc = {(41.40, 2.02), (41.46, 2.10), (41.47, 2.17)}      # Molins, Sant Cugat i Montcada, dins del parc
         f = "Incendi vegetació forestal"
         d = {"features": [feature(f, "Ripollet", 41.490, 2.148, gid="ripollet"),            # 1,4 km, sense parc
                           feature(f, "Badia del Vallès", 41.505, 2.115, gid="badia"),
                           feature(f, "Montcada i Reixac", 41.483, 2.165, gid="montcada"),  # 2,5 km, fora del parc
                           feature(f, "Montcada i Reixac", 41.483, 2.180, gid="montcada-lluny"),  # 3,8 km
-                          feature(f, "Molins de Rei", 41.40, 2.02, gid="molins"),          # 13 km
+                          feature(f, "Molins de Rei", 41.40, 2.02, gid="molins"),          # 13 km, dins del parc
+                          feature(f, "Montcada i Reixac", 41.47, 2.17, gid="montcada-parc"),  # 3,2 km, dins del parc
                           feature(f, "Sant Cugat del Vallès", 41.46, 2.10, gid="stcugat"),
                           feature(f, "Cerdanyola del Vallès", 41.50, 2.14, gid="cerdanyola")]}   # 2,04 km, fora del parc
         r = EN.incendis(d, collserola=lambda y, x: (y, x) in parc)
-        self.assertEqual(sorted(i["id"] for i in r), ["molins", "ripollet", "stcugat"])
-        self.assertEqual(r[-1]["id"], "molins")                  # del més a prop al més lluny
+        self.assertEqual(sorted(i["id"] for i in r), ["montcada-parc", "ripollet", "stcugat"])
+        self.assertEqual(r[-1]["id"], "stcugat")                 # del més a prop al més lluny
 
     def test_el_parc_sense_forats(self):
         # Juanjo, 16-10-2026: els enclavaments (les Planes, Can Cerdà…) també compten.
@@ -84,7 +85,10 @@ class Fonts(unittest.TestCase):
     def test_interessa(self):
         self.assertTrue(EN.interessa("Montcada i Reixac", 2.0, False))
         self.assertFalse(EN.interessa("Montcada i Reixac", 2.1, False))
-        self.assertTrue(EN.interessa("Molins de Rei", 14, True))
+        # Collserola, a 5 km o menys (Juanjo, 28-10-2026).
+        self.assertTrue(EN.interessa("Sant Cugat del Vallès", 5.0, True))
+        self.assertFalse(EN.interessa("Sant Cugat del Vallès", 6.4, True))
+        self.assertFalse(EN.interessa("Molins de Rei", 14, True))
         self.assertTrue(EN.interessa("Ripollet", 1.5, False))
         self.assertFalse(EN.interessa("Cerdanyola del Vallès", 7, False))
         self.assertTrue(EN.interessa("Cerdanyola del Vallès", 1.9, False))
@@ -172,31 +176,53 @@ class Avisos(unittest.TestCase):
         self.assertEqual(passada([], [], 24)[0]["nivell"], "fi")      # ara sí que s'acaba
         self.assertEqual(passada([], [], 30), [])
 
-    def test_la_fila_repetida_ni_es_nova_ni_s_acaba(self):
-        # 28-10-2026: els veïns van rebre dos avisos iguals (ADR 0071). Amb
-        # l'arreglat, la segona fila desapareix sense «ja no consta» i la seva
-        # fitxa surt de l'historial.
-        def passada(incendis, duplicats, minuts):
-            salida = {"entorn": {"incendis": incendis, "incendis_duplicats": duplicats, "pla_alfa": {}}}
-            return [a for a in AB.decideix(estat, salida, ARA + dt.timedelta(minutes=minuts)) if a["tipus"] == "perill"]
-        estat = {}
-        passada([], {}, 0)
+    def test_l_enllac_obre_el_visor_amb_l_incendi_i_el_barri(self):
+        # 28-10-2026: el visor de Bombers obria Catalunya sencera. Al centre
+        # entre l'incendi i el barri, en un nivell de zoom del visor.
+        u = EN.mapa(41.4336, 2.0941)                         # el de Sant Cugat, a 6,4 km
+        self.assertTrue(u.startswith(EN.VISOR + "#widget_1=center:2.1145%2C41.4578%2C4326,scale:72223.819"))
+        self.assertIn("&widget_67=center:2.1145%2C41.4578%2C4326,scale:72223.819", u)
+        self.assertIn("scale:36111.910", EN.mapa(41.49, 2.14))    # a 1 km: com a molt, el nivell 14
+        self.assertIn("scale:144447.639", EN.mapa(41.41, 2.02))   # a 13 km, més lluny
+        r = EN.incendis({"features": [feature("Incendi vegetació forestal", "Ripollet", 41.49, 2.148)]},
+                        collserola=lambda y, x: False)
+        self.assertEqual(r[0]["mapa"], EN.mapa(41.49, 2.148))
+        t = AB.text_incendi(r[0])
+        self.assertIn(f'<a href="{AB.html.escape(r[0]["mapa"])}">Mapa d\'actuacions de Bombers</a>', t["ca"])
+        self.assertIn("Mapa de actuaciones de Bombers</a>", t["es"])
+        self.assertIn(AB.BOMBERS["ca"], AB.text_incendi({**r[0], "mapa": None})["ca"])   # els d'abans
+
+    def test_l_incendi_es_l_actuacio_no_la_fila(self):
+        # 28-10-2026 (ADR 0071): Bombers va donar dues files del mateix
+        # incendi i, en deixar de repetir-la, va quedar una qualsevol. Ni és
+        # nou ni s'acaba, i té una sola fitxa, oberta.
+        def passada(incendis, alies, minuts):
+            salida = {"entorn": {"incendis": incendis, "incendis_alies": alies, "pla_alfa": {}}}
+            avisos = [a for a in AB.decideix(estat, salida, ARA + dt.timedelta(minutes=minuts)) if a["tipus"] == "perill"]
+            AB.historial(estat, [{**a, "hora": (ARA + dt.timedelta(minutes=minuts)).isoformat()} for a in avisos],
+                         ARA + dt.timedelta(minutes=minuts))
+            return avisos
+        def fitxes():
+            return [(e["clau"], bool(e.get("fi"))) for e in estat["historial"] if e["clau"].startswith("incendi:")]
         foc = {"municipi": "Sant Cugat del Vallès", "km": 6.4, "collserola": True, "inici": ARA.isoformat()}
-        avisos = passada([{**foc, "id": "a"}, {**foc, "id": "b"}], {}, 6)           # abans de l'arreglat
-        AB.historial(estat, [{**a, "hora": ARA.isoformat()} for a in avisos], ARA)
-        self.assertEqual(passada([{**foc, "id": "a"}], {"b": "a"}, 12), [])
-        h = AB.historial(estat, [], ARA + dt.timedelta(minutes=12))
-        self.assertEqual([e["clau"] for e in h if e["clau"].startswith("incendi:")], ["incendi:a"])
-        # Si la que es queda és la que no s'havia vist, tampoc és nova i es
-        # queda la fitxa que hi havia.
+        # Amb el GlobalID (fins a la 3.206.0), les dues files: dues fitxes.
         estat = {}
         passada([], {}, 0)
-        avisos = passada([{**foc, "id": "b"}], {}, 6)
-        AB.historial(estat, [{**a, "hora": ARA.isoformat()} for a in avisos], ARA)
-        self.assertEqual(passada([{**foc, "id": "a"}], {"b": "a"}, 12), [])
-        h = AB.historial(estat, [], ARA + dt.timedelta(minutes=12))
-        self.assertEqual([e["clau"] for e in h if e["clau"].startswith("incendi:")], ["incendi:a"])
-        self.assertEqual(passada([], {}, 18)[0]["nivell"], "fi")                    # ara sí que s'acaba
+        self.assertEqual(len(passada([{**foc, "id": "a"}, {**foc, "id": "b"}], {}, 6)), 2)
+        self.assertEqual(passada([{**foc, "id": "123"}], {"a": "123", "b": "123"}, 12), [])
+        self.assertEqual(fitxes(), [("incendi:123", False)])
+        self.assertEqual(passada([{**foc, "id": "123"}], {"b": "123"}, 18), [])   # queda una fila qualsevol
+        self.assertEqual(passada([], {}, 24)[0]["nivell"], "fi")                    # ara sí que s'acaba
+        self.assertEqual(fitxes(), [("incendi:123", True)])
+        # El que va passar amb la 3.206.1: fitxa de «a» tancada amb «ja no
+        # consta», la de «b» esborrada i «b» a l'estat.
+        estat = {}
+        passada([], {}, 0)
+        passada([{**foc, "id": "a"}], {}, 6)
+        estat["entorn"].update(incendis={"b": {**foc, "id": "b"}}, duplicats={"b": "a"})
+        estat["historial"][-1].update(fi=ARA.isoformat(), fi_ca="🟢 ja no consta com a actiu", fi_es="🟢")
+        self.assertEqual(passada([{**foc, "id": "123"}], {"b": "123"}, 12), [])
+        self.assertEqual(fitxes(), [("incendi:123", False)])
 
     def test_a_collserola_es_diu_on_es(self):
         foc = {"id": "y", "municipi": "Molins de Rei", "km": 13.4, "collserola": True, "inici": ARA.isoformat()}

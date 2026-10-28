@@ -1825,10 +1825,13 @@ def blocs_entorn(entorn, idioma):
         lloc = ((f"dentro del Parque de Collserola ({i['municipi']})" if es else
                  f"dins del Parc de Collserola ({i['municipi']})") if i.get("collserola") else
                 (f"en {i['municipi']}" if es else f"a {i['municipi']}"))
+        # Cadascun, amb el visor de Bombers ja centrat en ell i el barri
+        # (entorn.mapa, 28-10-2026); el general, si no en té.
         focs.append(amb_icona("🔥", html.escape(f"Bombers: incendio forestal {lloc}{dist}, desde las {h}." if es
-                                                else f"Bombers: incendi forestal {lloc}{dist}, des de les {h}.", quote=False)))
+                                                else f"Bombers: incendi forestal {lloc}{dist}, des de les {h}.", quote=False))
+                    + (" " + enllac(i["mapa"], "Mapa") if i.get("mapa") else ""))
     if focs:
-        blocs.append(("Bombers", focs + [enllac(BOMBERS, "Mapa")]))
+        blocs.append(("Bombers", focs + ([] if all(i.get("mapa") for i in entorn["incendis"]) else [enllac(BOMBERS, "Mapa")])))
     alfa = entorn.get("pla_alfa") or {}
     nivells = []
     for dia in ("avui", "dema"):

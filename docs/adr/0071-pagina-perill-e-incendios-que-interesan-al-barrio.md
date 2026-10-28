@@ -3,24 +3,57 @@
 Fecha: 2026-10-11 · Estado: aceptado
 
 
-**28-10-2026 (3.206.1): una actuación, un incendio.** Un incendio forestal
-de Sant Cugat, dentro del parque y a 6,4 km, salió dos veces en «Avisos», en
-el recuento de la portada y en «Si surts», y los vecinos recibieron dos
-avisos iguales; lo vio Juanjo («dos avisos de incendios que parecen el
-mismo») y también el revisor (ADR 0101). La capa de Bombers repite filas:
-las dos tenían el mismo `OBJECTID` (el número de la actuación), la misma
-posición y las mismas horas al segundo, y solo cambiaban `ESRI_OID` y
-`GlobalID`, que era lo que la web usaba para distinguirlos. Ese día, 5 de
-las 7 actuaciones de la capa estaban repetidas: no es un caso raro, solo no
-había coincidido dentro de la zona. Desde ahora `entorn.incendis` agrupa las
-filas por `OBJECTID` y se queda la de `ESRI_OID` más bajo; las otras van a
-`incendis_duplicats` con el identificador de la que se queda. Una fila
-apartada así no se anuncia como nueva ni como acabada («ja no consta»), y su
-ficha del historial se quita si ya está la del mismo incendio o, si no, pasa
-a ser la suya, también cuando la devuelve el `avisos.json` publicado o la
-reserva (`estat.entorn.duplicats`, los últimos 50). Los dos avisos ya
-enviados no se pueden retirar. Validado con las dos filas reales y con la
-capa en vivo: sale un solo incendio.
+**28-10-2026 (3.207.0): Collserola, hasta 5 km.** Juanjo: «limita los
+avisos a 5 km en collserola». Un incendio en el parque avisa si está a
+`COLLSEROLA_RADI_KM` (5 km) o menos del barrio; en cualquier sitio, como
+antes, a `ENTORN_RADI_KM` (2 km) o menos. Ese día había avisado uno en el
+parque a 6,4 km, en Sant Cugat, pasada la autopista. La zona va de Sant
+Cugat a Montcada i Reixac y hasta tocar Nou Barris; Vallvidrera, les Planes
+y Molins de Rei quedan fuera. El mapa de la zona (`web/img/incendis.webp`)
+se rehízo con `eines/mapa_incendis.html`, que ahora recorta el parque con
+el círculo de 5 km. Uno en curso que queda fuera por el cambio se cierra
+como «fora de la zona», sin mensaje.
+
+**28-10-2026 (3.207.0): el mapa de Bombers, ya centrado.** El enlace del
+aviso abría el visor de Bombers con Cataluña entera y había que buscar el
+incendio (Juanjo: «siempre hay que hacer zoom»). El visor (ArcGIS
+Experience Builder) acepta en la dirección el centro y la escala de sus dos
+mapas, el del ordenador (`widget_1`) y el del móvil (`widget_67`), su
+mecanismo estándar. `entorn.mapa` lo centra entre el incendio y Montflorit,
+con los dos a la vista en un móvil, y cada incendio lleva su enlace
+(`mapa`): en el aviso que reciben los vecinos, en su ficha de «Avisos» y en
+`/avisos_actius`. El visor redondea la escala a sus niveles de zoom (la de
+1:100.000 la mostró a 1:72.224), así que se le pide ya uno: el más cercano
+en que caben los dos con margen y, como mucho, el 14 (1:36.112), para que
+se vea dónde queda respecto a Cerdanyola. Si Bombers cambia el visor, el
+enlace abre Cataluña entera, como antes. Se descartó dibujar un mapa propio
+para cada incendio (con el barrio marcado): lo hace el NAS con más trabajo
+y el oficial ya enseña los dos. Probado en Chromium y Firefox,
+escritorio y móvil; con el incendio a la vista, solo en Chromium (Bombers
+lo cerró antes de la prueba en Firefox).
+
+**28-10-2026 (3.206.1 y 3.207.0): una actuación, un incendio.** Un
+incendio forestal de Sant Cugat salió dos veces en «Avisos», en el recuento
+de la portada y en «Si surts», y los vecinos recibieron dos avisos iguales.
+Lo vio Juanjo («dos avisos de incendios que parecen el mismo») y también el
+revisor (ADR 0101). La capa de Bombers repite filas: las dos tenían el mismo
+`OBJECTID` (el número de la actuación), la misma posición y las mismas horas
+al segundo, y solo cambiaban `ESRI_OID` y `GlobalID`, que era lo que la web
+usaba para distinguirlos. Ese día, 5 de las 7 actuaciones de la capa
+estaban repetidas: no es un caso raro, solo no había coincidido dentro de
+la zona. La 3.206.1 se quedaba con la fila de `ESRI_OID` más bajo, pero al
+dejar de repetirla Bombers quedó la otra: se envió «ja no consta com a
+actiu» del incendio y, a la vez, otra vez el aviso, y su ficha desapareció
+de «Avisos» mientras la portada lo seguía dando (revisor, 18:46). Desde la
+3.207.0 cada incendio se identifica por el número de la actuación, que no
+depende de la fila que quede. Lo apuntado con un `GlobalID` (estado,
+historial, también el que devuelven el `avisos.json` publicado o la
+reserva) pasa a ese número con `incendis_alies` (`estat.entorn.alies`, los
+últimos 50), sin anunciarse como nuevo ni como acabado, y la ficha de un
+incendio en curso cerrada con «ja no consta» se reabre. Validado con las
+filas reales y con el estado del NAS de ese momento, en dos pasadas: ningún
+aviso y una sola ficha, abierta. Los avisos ya enviados no se pueden
+retirar.
 
 **25-10-2026 (3.198.1): abierto sin vehículos, apagado.** El 24-10-2026 un
 incendio forestal de Montcada i Reixac (Collserola, 4,1 km) entró a las

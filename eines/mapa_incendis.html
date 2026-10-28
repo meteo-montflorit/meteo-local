@@ -10,17 +10,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // La imatge de «Quins incendis s'avisen» (web/img/incendis.webp, ADR 0071): el
 // contorn exterior del parc de Collserola (capa del Consorci, sense els
-// enclavaments) unit al cercle d'ENTORN_RADI_KM al voltant de C.CASA. Per
+// enclavaments) fins a COLLSEROLA_RADI_KM de C.CASA, unit al cercle
+// d'ENTORN_RADI_KM. Per
 // refer-la: python3 -m http.server a eines/, obrir mapa_incendis.html amb una
 // finestra de 1000 × 820, fer-ne una captura i passar-la a WebP (qualitat 78).
 const CAPA = 'https://services7.arcgis.com/z50OW9s1n52Z8H2C/arcgis/rest/services/L%C3%ADmit_Parc_de_Collserola/FeatureServer/0/query?where=1%3D1&outSR=4326&f=geojson';
 fetch(CAPA).then((r) => r.json()).then((parc) => {
 const casa = [41.482, 2.135];
-const m = L.map('m', {zoomControl: false, attributionControl: false}).fitBounds([[41.378, 1.995], [41.505, 2.205]]);
+const m = L.map('m', {zoomControl: false, attributionControl: false});
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 18, attribution: '&copy; OpenStreetMap'}).addTo(m);
-// Una sola zona: el parc i els 2 km al voltant del barri, units.
+// Una sola zona: el parc fins a 5 km del barri i els 2 km al voltant, units.
+const cinc = turf.circle([casa[1], casa[0]], 5, {units: 'kilometers', steps: 256});
 let zona = turf.circle([casa[1], casa[0]], 2, {units: 'kilometers', steps: 128});
-for (const f of parc.features) zona = turf.union(zona, turf.polygon([f.geometry.coordinates[0]]));
+for (const f of parc.features) {
+  const tros = turf.intersect(turf.polygon([f.geometry.coordinates[0]]), cinc);
+  if (tros) zona = turf.union(zona, tros);
+}
+m.fitBounds(L.geoJSON(cinc).getBounds(), {padding: [20, 20]});
 L.geoJSON(zona, {style: {color: '#b91c1c', weight: 2.5, fillColor: '#ef4444', fillOpacity: .28}})
   .bindTooltip('Qualsevol incendi forestal dins d’aquesta zona').addTo(m);
 L.circleMarker(casa, {radius: 5, color: '#fff', weight: 2, fillColor: '#111', fillOpacity: 1}).addTo(m)
