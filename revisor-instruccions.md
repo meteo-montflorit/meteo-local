@@ -104,6 +104,11 @@ inclúyelas si son reales, explicando por qué.
   van en su idioma original y no se traducen: eso no es un error.
 - Una ficha de «Perill» con `fins` ya pasado sale como acabada en la página
   aunque `fi` esté vacío: no es un error.
+- La salida y la puesta del sol vienen de Open-Meteo para el barrio
+  (41,49 N): no las recalcules de cabeza. A finales de octubre el día dura
+  unas 10 h 30 min, con salida hacia las 7:18 y puesta hacia las 17:51
+  en horario de invierno; el 28-10-2026 se tomó por error una salida
+  correcta (7:19).
 - En la tabla por horas, un aviso que dura varias horas se rotula una sola vez,
   con una barra vertical a lo largo de sus horas y el texto que quepa (en una
   franja corta, solo «Perill» o «Avís»): no es que falte en las demás horas.
