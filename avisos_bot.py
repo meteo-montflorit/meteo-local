@@ -789,17 +789,25 @@ def decideix(estat, salida, ahora):
         parats = entorn.get("incendis_parats") or {}
         apartats = set((e or {}).get("fora") or [])
         abans = dict((e or {}).get("incendis") or {})
+        # Una fila repetida de Bombers es el mismo incendio con otro
+        # identificador: ni es nuevo ni, al apartarla, se ha acabado
+        # (28-10-2026, ADR 0071).
+        duplicats = {**((e or {}).get("duplicats") or {}), **(entorn.get("incendis_duplicats") or {})}
         if e is not None:
             for i in entorn["incendis"]:
-                if i["id"] not in e["incendis"] and i["id"] not in apartats:
+                coneguts = {i["id"]} | {d for d, q in duplicats.items() if q == i["id"]}
+                if not coneguts & (set(e["incendis"]) | apartats):
                     afegeix("perill", f"incendi:{i['id']}", text_incendi(i), "incendi", episodi=f"incendi:{i['id']}")
             for iid, i in e["incendis"].items():
-                if iid not in ara_ids and iid not in fora:
+                if iid not in ara_ids and iid not in fora and iid not in duplicats:
                     afegeix("perill", f"incendi:{iid}:fi", text_incendi(i, acabat=True, parat=parats.get(iid)), "fi",
                             episodi=f"incendi:{iid}")
         estat.setdefault("entorn", {"incendis": {}})["incendis"] = ara_ids
         estat["entorn"]["fora"] = sorted((apartats | set(abans)) & fora)
         estat["entorn"]["en_curs_fora"] = sorted(fora)
+        # Se guardan por si el historial publicado o la reserva devuelven la
+        # ficha repetida; los de hace mucho ya no hacen falta.
+        estat["entorn"]["duplicats"] = dict(list(duplicats.items())[-50:])
     # Cortes de luz del barrio (ADR 0072): al aparecer y al dejar de constar. La
     # primera vez solo se apunta lo que hay; si e-distribución no responde
     # (None), no se toca el estado.
@@ -1155,6 +1163,16 @@ def historial(estat, nous, ahora, anterior=None):
     # cierra diciéndolo, sin darlo por apagado.
     # Las que se cerraron con «ja no consta» estando en curso (16-10-2026)
     # se corrigen igual.
+    # La ficha de una fila repetida de Bombers (28-10-2026): fuera si ya está
+    # la del mismo incendio; si no, pasa a ser la suya.
+    duplicats = (estat.get("entorn") or {}).get("duplicats") or {}
+    for e in list(h):
+        iid = e["clau"][8:] if e["clau"].startswith("incendi:") else None
+        if iid in duplicats:
+            if any(x["clau"] == f"incendi:{duplicats[iid]}" for x in h):
+                h.remove(e)
+            else:
+                e["clau"] = f"incendi:{duplicats[iid]}"
     en_curs_fora = set((estat.get("entorn") or {}).get("en_curs_fora") or [])
     for e in h:
         if e["clau"].startswith("incendi:") and e["clau"][8:] in en_curs_fora and (

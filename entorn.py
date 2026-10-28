@@ -139,27 +139,39 @@ def interessa(municipi, dist, collserola):
     return bool(collserola) or (dist is not None and dist <= C.ENTORN_RADI_KM)
 
 
-def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None):
+def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None, duplicats=None):
     """Incendios de vegetación forestal en curso que interesan al barrio
     (interessa), del más cercano al más lejano. En «fora», si se pasa, los
     identificadores de los que siguen en curso pero quedan fuera de la zona:
     salir de ella no es acabar (16-10-2026, ADR 0071). En «parats», los que
     Bombers deja abiertos sin ningún vehículo ni cambio desde hace
     INCENDI_PARAT_H horas, con la hora del último cambio: se dan por apagados
-    (25-10-2026, ADR 0071)."""
+    (25-10-2026, ADR 0071). En «duplicats», las filas repetidas de una misma
+    actuación, con el identificador de la que se queda (28-10-2026, ADR 0071)."""
     ara = ara or H.ara()
     xmin, ymin, xmax, ymax = C.INCENDIS_CAIXA
     d = dades or get(BOMBERS + "/query", {
         "where": "TAL_COD_ALARMA1='IV'", "geometry": f"{xmin},{ymin},{xmax},{ymax}",
         "geometryType": "esriGeometryEnvelope", "inSR": 4326, "spatialRel": "esriSpatialRelIntersects",
         "outSR": 4326,
-        "outFields": "GlobalID,TAL_DESC_ALARMA2,MUNICIPI_SIG,ACT_DAT_INICI,ACT_DAT_FI,ACT_DAT_ACTUAL,ACT_NUM_VEH,COM_FASE",
+        "outFields": "GlobalID,OBJECTID,ESRI_OID,TAL_DESC_ALARMA2,MUNICIPI_SIG,ACT_DAT_INICI,ACT_DAT_FI,ACT_DAT_ACTUAL,"
+                     "ACT_NUM_VEH,COM_FASE",
         "returnGeometry": "true", "f": "json"})
     if "error" in d:
         raise RuntimeError(d["error"].get("message"))
     collserola = collserola or dins_collserola
+    # La capa repite filas de una misma actuación: mismo OBJECTID (el número
+    # de Bombers), misma posición y mismas horas; solo cambian ESRI_OID y
+    # GlobalID. El 28-10-2026, uno de Sant Cugat salió dos veces y los vecinos
+    # recibieron dos avisos iguales; ese día, 5 de las 7 actuaciones de la
+    # capa estaban repetidas. Se queda la de ESRI_OID más bajo.
+    actuacions = {}
+    for f in sorted(d.get("features", []), key=lambda f: f["attributes"].get("ESRI_OID") or 0):
+        a = f["attributes"]
+        actuacions.setdefault(a.get("OBJECTID") or a["GlobalID"], []).append(f)
     res = []
-    for f in d.get("features", []):
+    for grup in actuacions.values():
+        f, ids = grup[0], [x["attributes"]["GlobalID"] for x in grup]
         a, g = f["attributes"], f.get("geometry") or {}
         # Solo los forestales: los de solares urbanos son muchos y no limitan salir.
         if "forestal" not in (a.get("TAL_DESC_ALARMA2") or "").lower() or a.get("ACT_DAT_FI"):
@@ -171,7 +183,7 @@ def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None):
         al_parc = collserola(g["y"], g["x"])
         if not interessa(municipi, dist, al_parc):
             if fora is not None:
-                fora.append(a["GlobalID"])
+                fora.extend(ids)
             continue
         # Uno de Montcada se quedó abierto el 24-10-2026 con 0 vehículos y sin
         # ningún cambio desde que se dio de alta; los de antes duraron una hora
@@ -180,8 +192,10 @@ def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None):
         if a.get("ACT_NUM_VEH") == 0 and canvi and \
                 ara - dt.datetime.fromtimestamp(canvi / 1000, H.UTC) > dt.timedelta(hours=C.INCENDI_PARAT_H):
             if parats is not None:
-                parats[a["GlobalID"]] = hora_iso(canvi)
+                parats.update(dict.fromkeys(ids, hora_iso(canvi)))
             continue
+        if duplicats is not None:
+            duplicats.update(dict.fromkeys(ids[1:], ids[0]))
         res.append({"id": a["GlobalID"], "municipi": municipi, "km": round(dist, 1),
                     "collserola": al_parc, "inici": hora_iso(a.get("ACT_DAT_INICI")),
                     "vehicles": a.get("ACT_NUM_VEH"), "fase": a.get("COM_FASE")})
@@ -223,8 +237,8 @@ def calcula(ara=None):
     """Para casa.json y los datos públicos. Cada parte, None si su fuente falla."""
     ara = ara or H.ara()
     res = {"hora": H.clau(ara), "errors": []}
-    fora, parats = [], {}
-    for clau, funcio in (("incendis", lambda: incendis(fora=fora, parats=parats, ara=ara)), ("pla_alfa", lambda: pla_alfa(ara))):
+    fora, parats, duplicats = [], {}, {}
+    for clau, funcio in (("incendis", lambda: incendis(fora=fora, parats=parats, ara=ara, duplicats=duplicats)), ("pla_alfa", lambda: pla_alfa(ara))):
         try:
             res[clau] = funcio()
         except Exception as ex:
@@ -232,6 +246,7 @@ def calcula(ara=None):
             res["errors"].append(f"{clau}: {ex}")
     res["incendis_fora"] = None if res["incendis"] is None else fora
     res["incendis_parats"] = None if res["incendis"] is None else parats
+    res["incendis_duplicats"] = None if res["incendis"] is None else duplicats
     return res
 
 

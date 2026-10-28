@@ -3,6 +3,25 @@
 Fecha: 2026-10-11 · Estado: aceptado
 
 
+**28-10-2026 (3.206.1): una actuación, un incendio.** Un incendio forestal
+de Sant Cugat, dentro del parque y a 6,4 km, salió dos veces en «Avisos», en
+el recuento de la portada y en «Si surts», y los vecinos recibieron dos
+avisos iguales; lo vio Juanjo («dos avisos de incendios que parecen el
+mismo») y también el revisor (ADR 0101). La capa de Bombers repite filas:
+las dos tenían el mismo `OBJECTID` (el número de la actuación), la misma
+posición y las mismas horas al segundo, y solo cambiaban `ESRI_OID` y
+`GlobalID`, que era lo que la web usaba para distinguirlos. Ese día, 5 de
+las 7 actuaciones de la capa estaban repetidas: no es un caso raro, solo no
+había coincidido dentro de la zona. Desde ahora `entorn.incendis` agrupa las
+filas por `OBJECTID` y se queda la de `ESRI_OID` más bajo; las otras van a
+`incendis_duplicats` con el identificador de la que se queda. Una fila
+apartada así no se anuncia como nueva ni como acabada («ja no consta»), y su
+ficha del historial se quita si ya está la del mismo incendio o, si no, pasa
+a ser la suya, también cuando la devuelve el `avisos.json` publicado o la
+reserva (`estat.entorn.duplicats`, los últimos 50). Los dos avisos ya
+enviados no se pueden retirar. Validado con las dos filas reales y con la
+capa en vivo: sale un solo incendio.
+
 **25-10-2026 (3.198.1): abierto sin vehículos, apagado.** El 24-10-2026 un
 incendio forestal de Montcada i Reixac (Collserola, 4,1 km) entró a las
 17:15 en la capa de Bombers y siguió en ella más de 12 horas sin hora de
