@@ -434,3 +434,9 @@ daba (Juanjo: «quien da la previsión? queda extraño así»). Ahora dice «La
 previsió per hores sí que dona pluja a partir de les 20 h (37 %): pot ser pluja
 de prop que creixi o es desviï cap aquí» (o «per a aquesta hora»), con la hora
 en lugar de la cuenta atrás, que ya está en la etiqueta de arriba.
+
+## Cambio del 28-10-2026 (3.206.0): la respuesta tardía dice para qué hora vale
+
+Si la respuesta llega más de 30 minutos después de la pregunta, el mensaje
+pide para qué hora vale, la de la pregunta o la de la respuesta, y la elección
+va a la columna `val_per` (detalle en el ADR 0100).

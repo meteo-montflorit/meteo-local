@@ -48,12 +48,14 @@ class Confirmacio(unittest.TestCase):
         self.casa = os.path.join(self.dir.name, "casa.json")
         self.crides = []
 
+        self.dada = "boira:si"
+
         def telegram(metode, **p):
             self.crides.append((metode, p))
             if metode == "sendMessage":
                 return {"message_id": 41}, {"chat_id": 7}
             if metode == "getUpdates":
-                return [{"callback_query": {"id": "q", "data": "boira:si", "from": {"id": 7},
+                return [{"callback_query": {"id": "q", "data": self.dada, "from": {"id": 7},
                                             "message": {"message_id": 41}}}], {"chat_id": 7}
             return True, {"chat_id": 7}
         B.telegram = telegram
@@ -75,6 +77,56 @@ class Confirmacio(unittest.TestCase):
         metodes = [m for m, _ in self.crides]
         self.assertLess(metodes.index("editMessageReplyMarkup"), metodes.index("answerCallbackQuery"))
         self.assertIn("answerCallbackQuery", [m for m, _ in self.crides])
+
+    def botons(self):
+        return [[b["text"] for b in fila] for fila in
+                [p for m, p in self.crides if m == "editMessageReplyMarkup"][-1]["reply_markup"]["inline_keyboard"]]
+
+    def test_a_temps_val_per_a_la_resposta(self):
+        import confirmacio as CF
+        self.casa_amb(99)
+        B.pregunta(ARA, self.casa)
+        B.respostes(ARA + dt.timedelta(minutes=20))
+        fila = CF.files(B.CONFIRMACIONS)[0]
+        self.assertEqual(fila["val_per"], "resposta")
+        self.assertEqual(self.botons(), [["Apuntado a las 09:00: Sí, hay niebla"]])
+
+    def test_tard_pregunta_per_a_quina_hora_val(self):
+        # 28-10-2026: pregunta a les 7:01, resposta a les 8:16, «no había niebla a las 7».
+        import confirmacio as CF
+        self.casa_amb(99)
+        B.pregunta(ARA, self.casa)
+        tard = ARA + dt.timedelta(minutes=75)
+        self.assertEqual(B.respostes(tard), 1)
+        fila = CF.files(B.CONFIRMACIONS)[0]
+        self.assertEqual(fila["val_per"], "")
+        self.assertEqual(CF.val_per(fila), "resposta")                            # mentre no tria
+        self.assertEqual(self.botons(), [["Apuntado: Sí, hay niebla"],
+                                          ["Vale para las 08:40", "Vale para las 09:55"]])
+        self.dada = "boira:val:pregunta"
+        self.assertEqual(B.respostes(tard + dt.timedelta(seconds=15)), 1)
+        fila = CF.files(B.CONFIRMACIONS)[0]
+        self.assertEqual(fila["val_per"], "pregunta")
+        self.assertEqual(fila["resposta"], "si")
+        self.assertEqual(self.botons(), [["Apuntado a las 08:40: Sí, hay niebla"]])
+        self.assertEqual(B.respostes(tard + dt.timedelta(seconds=30)), 0)        # una sola vegada
+        self.assertEqual(len(CF.files(B.CONFIRMACIONS)), 1)
+
+    def test_el_fitxer_d_abans_guanya_la_columna(self):
+        import csv
+        import confirmacio as CF
+        camps = ["missatge", "pregunta", "resposta", "resposta_t", "humitat", "sabadell",
+                 "pregunta_humitat", "pregunta_sabadell"]
+        with open(B.CONFIRMACIONS, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, camps)
+            w.writeheader()
+            w.writerow({"missatge": 9, "pregunta": "2026-10-27T06:01Z", "resposta": "no",
+                        "resposta_t": "2026-10-27T06:02Z", "humitat": 99, "sabadell": 0,
+                        "pregunta_humitat": 99, "pregunta_sabadell": 0})
+        CF.al_dia(B.CONFIRMACIONS, ["humitat", "sabadell"])
+        fila = CF.files(B.CONFIRMACIONS)[0]
+        self.assertEqual((fila["val_per"], fila["humitat"], fila["pregunta_humitat"]), ("", "99", "99"))
+        self.assertEqual(CF.val_per(fila), "resposta")
 
     def test_no_pregunta_si_no_toca(self):
         self.casa_amb(90)

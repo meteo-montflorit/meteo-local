@@ -82,7 +82,8 @@ class Confirmacio(unittest.TestCase):
         self.assertTrue(text.startswith("⚙️ Temps a Montflorit · "))
         self.assertIsNone(PG.pregunta(ARA + dt.timedelta(hours=1), self.casa))   # no fins d'aquí a 3 h
         # Només la resposta del plugim, no la de la boira. Respon més tard: val
-        # per a aquell moment, amb les dades d'aleshores (Juanjo, 18-10-2026).
+        # per a aquell moment, amb les dades d'aleshores (Juanjo, 18-10-2026),
+        # mentre no tria la de la pregunta (28-10-2026).
         self.casa_amb(False, 5, 30)
         tard = ARA + dt.timedelta(minutes=40)
         self.assertEqual(PG.respostes(tard), 1)
@@ -93,7 +94,9 @@ class Confirmacio(unittest.TestCase):
         self.assertEqual((fila["pregunta"], fila["pregunta_meteocat"], fila["pregunta_plugim"]),
                          (__import__("hora").clau(ARA), "31", "1"))
         edit = [p for m, p in self.crides if m == "editMessageReplyMarkup"][0]
-        self.assertEqual(edit["reply_markup"]["inline_keyboard"][0][0]["text"], "Apuntado a las 19:25: Sí, llueve")
+        self.assertEqual([[b["text"] for b in f] for f in edit["reply_markup"]["inline_keyboard"]],
+                         [["Apuntado: Sí, llueve"], ["Vale para las 18:45", "Vale para las 19:25"]])
+        self.assertEqual(fila["val_per"], "")
 
     def test_les_respostes_d_abans_passen_a_les_dades_de_la_pregunta(self):
         import confirmacio as CF

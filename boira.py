@@ -185,8 +185,8 @@ def _pregunta(ara, casa_json):
 
 
 def estat(casa_json=None):
-    """La humedad de casa y la niebla de Sabadell ahora, para la respuesta,
-    que vale para el momento en que se responde (confirmacio.respostes)."""
+    """La humedad de casa y la niebla de Sabadell ahora, para la respuesta
+    (confirmacio.respostes)."""
     with open(casa_json or CASA_JSON, encoding="utf-8") as f:
         c = json.load(f).get("ara_casa") or {}
     res = {"humitat": c.get("humitat_estacio", c.get("humitat")), "sabadell": None}
@@ -199,9 +199,10 @@ def estat(casa_json=None):
 
 def respostes(ara=None):
     """Las respuestas a los botones, una vez cada una, en boira-confirmacions.csv,
-    con los datos del momento en que se responde."""
+    con los datos del momento en que se responde; si llega tarde, Juanjo dice
+    para qué hora vale (confirmacio.TARDA, val_per)."""
     return CF.respostes("boira", PREGUNTES, CONFIRMACIONS, RESPOSTES, ["humitat", "sabadell"], telegram,
-                        ara or H.ara(), estat)
+                        ara or H.ara(), estat, quan=True)
 
 
 if __name__ == "__main__":

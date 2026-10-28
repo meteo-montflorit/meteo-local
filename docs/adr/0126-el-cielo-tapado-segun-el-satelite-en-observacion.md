@@ -105,3 +105,9 @@ mes y preguntar a Juanjo cuando discrepen; Juanjo: «sí, prepáralo así».
   noche, sin discrepancia, con datos viejos, más de dos al día).
 - Con el servidor real (24-10-2026): 13 cuartos de hora apuntados, el barrio
   cubierto como Sabadell.
+
+## Cambio del 28-10-2026 (3.206.0): la respuesta tardía dice para qué hora vale
+
+Si la respuesta llega más de 30 minutos después de la pregunta, el mensaje
+pide para qué hora vale, la de la pregunta o la de la respuesta, y la elección
+va a la columna `val_per` (detalle en el ADR 0100).

@@ -86,9 +86,10 @@ def _pregunta(ara, casa_json):
 
 def respostes(ara=None):
     """Les respostes als botons, una vegada cadascuna, a plugim-confirmacions.csv,
-    amb les dades del moment en què es respon."""
+    amb les dades del moment en què es respon; si arriba tard, Juanjo diu per
+    a quina hora val (confirmacio.TARDA, val_per)."""
     return CF.respostes("plugim", PREGUNTES, CONFIRMACIONS, RESPOSTES, CAMPS, telegram,
-                        ara or H.ara(), estat)
+                        ara or H.ara(), estat, quan=True)
 
 
 def resum():

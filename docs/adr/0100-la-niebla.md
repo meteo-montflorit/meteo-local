@@ -100,3 +100,26 @@ solo guarda cada pulsación unos dos minutos (141 s en dos pruebas del
 que se suponían; desde la 3.204.2 el bucle lee también las del cielo tapado
 (ADR 0126).
 
+
+## Cambio del 28-10-2026 (3.206.0): la respuesta tardía dice para qué hora vale
+
+Juanjo contestó a las 8:16 «No hay niebla» a la pregunta de las 7:01, y lo
+que había visto era la riera a las 7 («no había niebla a las 7, pero el bot lo
+ha registrado con la hora actual»). Con la regla del 18-10, la respuesta valía
+para las 8:16. Las dos cosas pasan: quien contesta tarde puede describir lo
+que vio al recibir la pregunta o lo que ve al contestar, y solo él lo sabe.
+
+Ahora, en las preguntas de «ahora» (niebla, llovizna y cielo tapado; la de la
+riera habla de un episodio y no cambia), si la respuesta llega más de 30
+minutos después de la pregunta (`confirmacio.TARDA`), el mensaje queda con
+«Apuntado: …» y dos botones debajo, «Vale para las 07:01» y «Vale para las
+08:16». La elección va a la columna `val_per` de las confirmaciones
+(`pregunta`: su hora y los datos `pregunta_…`; `resposta`: `resposta_t` y los
+datos del momento de responder), y el mensaje pasa a «Apuntado a las 07:01:
+…». Mientras no elige, vale para la respuesta, como hasta ahora; también las
+respuestas de antes y las que llegan a tiempo, que se apuntan con
+`resposta`. `confirmacio.val_per(fila)` da el valor que cuenta (vacío es
+`resposta`), y el resumen del 17-11 tiene que usarlo. El reloj sigue leyendo
+la elección cada 15 segundos mientras haya respuestas sin elegir de las
+últimas 24 horas. La respuesta del 28-10 (mensaje 551) se marcó a mano como
+válida para las 7:01.
