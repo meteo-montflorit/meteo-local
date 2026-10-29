@@ -336,11 +336,24 @@ def repara_font(font, s, estat):
             motius += [f"continua fallant: {c['nom']}" for c in comprovacions(copia) if not c["ok"]]
         if not motius and (encara := falla_encara(copia, font)):
             motius.append(f"la font continua fallant: {encara[:200]}")
+    if res.get("de_la_font") and not res.get("arreglat"):
+        # No era del programa: el mateix avís que una font caiguda (fonts_falla.vigila), i no un
+        # «no ho ha aconseguit» que semblava una avaria pendent (29-10-2026). Que torna, també.
+        s_estat = FF._llegeix(FF.FITXER)
+        if font in s_estat:
+            s_estat[font]["avisat"] = True
+            desa(FF.FITXER, s_estat)
+        apunta({"sha": sha, "font": font, "resultat": "de_la_font", "detall": res.get("detall"),
+                "cost_usd": res.get("cost_usd"), "minuts": res.get("minuts")})
+        causa = (res.get("causa") or "").strip().rstrip(".")
+        avisa(FF.text_falla(font, s) + " És de la font, no del programa" + (f": {causa}" if causa else "")
+              + ". Si dura, caldrà decidir.")
+        return
     if motius:
         apunta({"sha": sha, "font": font, "resultat": "no_arreglat", "motiu": "; ".join(motius),
                 "detall": res.get("detall"), "cost_usd": res.get("cost_usd"), "minuts": res.get("minuts")})
-        avisa(FF.text_falla(font, s) + " Un agent ho ha provat d'arreglar i no ho ha aconseguit: "
-              + (res.get("detall") or "; ".join(motius))[:500])
+        avisa(FF.text_falla(font, s) + " Un agent ho ha provat d'arreglar i no ho ha aconseguit. "
+              "La propera sessió ho mirarà (reparador.py estat).")
         return
     nova = puja_versio(copia)
     missatge = f"{res.get('commit') or f'Es torna a llegir la font {font}'} (reparador, {nova}, ADR 0031 i 0113)"

@@ -10,7 +10,8 @@ fitxer). Ara, a cada passada del NAS (casa.py):
 - s'apunta des de quan falla cada font (FITXER, a /estat) i es publica a les
   dades (`fonts_falla`), perquè la web digui «Des de les 12:00 no arriben…»;
 - si dura LLINDAR_H hores i l'error és de la xarxa o del servidor (no respon,
-  un 500), se li diu una vegada a Juanjo, i una altra quan torna;
+  un 500) o la font respon sense dades (una estació aturada), se li diu una
+  vegada a Juanjo, i una altra quan torna;
 - si sembla del programa (la font ha canviat de format: un error en llegir
   el que arriba), es demana al reparador (reparador.py, ADR 0113) que un agent
   ho arregli; si no ho aconsegueix, el reparador avisa Juanjo.
@@ -36,7 +37,11 @@ APART = {"smp", "estació", "estació de casa", "estacions veïnes"}
 # Un error de la xarxa o del servidor: no és cosa del programa.
 XARXA = re.compile(r"HTTP Error|URLError|urlopen error|timed out|Timeout|timeout|Connection|Temporary failure|"
                    r"Name or service|Network is unreachable|SSL|RemoteDisconnected|IncompleteRead|"
-                   r"Service Unavailable|Bad Gateway|Gateway|Too Many Requests|refused|reset by peer", re.I)
+                   r"Service Unavailable|Bad Gateway|Gateway|Too Many Requests|refused|reset by peer|"
+                   # La font respon però no porta dades: una estació aturada, no un canvi de format.
+                   # El 29-10-2026 la XV de Sant Cugat es va quedar sense dades i el reparador hi va
+                   # gastar un agent per acabar dient que no era del programa.
+                   r"sense dades|falten mitges hores", re.I)
 # Quina font és i què deixa de sortir, per al missatge a Juanjo (com els textos
 # de la web, comu.js TEXT_FONT_FALLA).
 QUE = {
@@ -52,6 +57,8 @@ QUE = {
     "trens": ("l'estat dels trens", "No es diu si hi ha incidències."),
     "trànsit": ("l'estat del trànsit", "No es diu si hi ha incidències a prop."),
     "índex UV": ("l'índex UV", "No surt la protecció solar."),
+    "riera": ("l'estació de Meteocat a Sant Cugat (la riera)",
+              "La riera es calcula amb les estacions particulars de Sant Cugat, si n'hi ha."),
 }
 
 

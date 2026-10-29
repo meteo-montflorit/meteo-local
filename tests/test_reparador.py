@@ -89,6 +89,35 @@ class Reparador(unittest.TestCase):
         with mock.patch.object(R, "comprovacions", comprovacions), mock.patch.object(R, "agent", agent_fals):
             R.comprova(ara=time.time() + minuts * 60)
 
+    def font_que_falla(self, agent):
+        import fonts_falla as FF
+        fitxer = os.path.join(self.estat, "fonts-falla.json")
+        s = {"des_de": "2026-10-29T13:30Z", "error": "riera: x", "avisat": False, "reparar": True}
+        with open(fitxer, "w") as f:
+            json.dump({"riera": s}, f)
+        with mock.patch.object(FF, "FITXER", fitxer), mock.patch.object(R, "prepara_copia", lambda sha: True), \
+                mock.patch.object(R, "versio", lambda copia: "3.170.0"), mock.patch.object(R, "proves", lambda c: 2), \
+                mock.patch.object(R, "agent", lambda *a: agent):
+            R.repara_font("riera", s, {})
+        with open(fitxer) as f:
+            return json.load(f)["riera"]
+
+    def test_si_la_font_no_es_del_programa_ho_diu_aixi(self):
+        # 29-10-2026: el «no ho ha aconseguit» semblava una avaria pendent.
+        s = self.font_que_falla({"arreglat": False, "de_la_font": True, "causa": "la estación no da datos.",
+                                 "detall": "x" * 2000})
+        self.assertEqual(len(self.avisos), 1)
+        self.assertIn("És de la font, no del programa: la estación no da datos. Si dura", self.avisos[0])
+        self.assertNotIn("xxx", self.avisos[0])
+        self.assertEqual(self.registre()[-1]["resultat"], "de_la_font")
+        self.assertTrue(s["avisat"])
+
+    def test_si_no_ho_arregla_el_detall_va_al_registre(self):
+        self.font_que_falla({"arreglat": False, "detall": "x" * 2000})
+        self.assertNotIn("xxx", self.avisos[0])
+        self.assertIn("no ho ha aconseguit", self.avisos[0])
+        self.assertEqual(self.registre()[-1]["resultat"], "no_arreglat")
+
     def test_espera_que_la_sessio_ho_arregli_abans(self):
         R.comprova(ara=time.time())
         self.comprova([False], minuts=10)

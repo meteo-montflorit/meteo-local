@@ -125,3 +125,27 @@ arreglo si el error de esa fuente ha desaparecido. Si no lo consigue, avisa a
 Juanjo con qué falla y qué ha encontrado el agente. Cada caída de cada fuente
 (fuente y desde cuándo) se intenta una sola vez.
 
+## Cambio del 29-10-2026 (3.207.1): cuando no es del programa
+
+El 29-10-2026 la estación de Meteocat en Sant Cugat (XV) dejó de dar datos a
+las 14:00 y la riera dio «Sant Cugat (Meteocat) sense dades recents». Ese
+texto no parecía de la red, así que `fonts_falla.py` lo pasó al reparador. El
+agente vio, bien, que la página respondía y que solo esa estación venía vacía,
+pero solo podía responder «arreglado» o «no arreglado»: Juanjo recibió un
+«Un agent ho ha provat d'arreglar i no ho ha aconseguit», cortado a los 500
+caracteres, de algo que no había que arreglar (0,33 USD).
+
+- Un error de fuente que responde sin datos («sense dades», «falten mitges
+  hores») se trata como de la red (`fonts_falla.XARXA`): un aviso corto, sin
+  agente.
+- El agente puede responder `"de_la_font": true` con la causa en una frase. El
+  aviso dice entonces «És de la font, no del programa: …. Si dura, caldrà
+  decidir.», queda en el registro como `"resultat": "de_la_font"` (el aviso
+  de inicio de sesión solo mira `no_arreglat`) y la fuente queda como avisada,
+  así que su vuelta también se avisa.
+- Cuando no lo arregla, el aviso ya no lleva el detalle del agente, que va al
+  registro: dice qué falla y que lo mirará la próxima sesión.
+- La riera tiene su texto en `fonts_falla.QUE`: qué se usa mientras falta la
+  estación.
+
+Validación: `tests/test_fonts_falla.py` y `tests/test_reparador.py`.

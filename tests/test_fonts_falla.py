@@ -58,6 +58,15 @@ class FontsFalla(unittest.TestCase):
         self.assertTrue(FF.es_de_xarxa("<urlopen error _ssl.c:975: The handshake operation timed out>"))
         self.assertFalse(FF.es_de_xarxa("tipus de camp desconegut: 4"))
 
+    def test_una_font_que_respon_sense_dades_no_va_al_reparador(self):
+        # 29-10-2026: la XV de Sant Cugat aturada no és un canvi de format.
+        e = ["riera: Sant Cugat (Meteocat) sense dades recents"]
+        self.passa(e, 0)
+        self.passa(e, 4)
+        self.assertEqual(len(self.enviats), 1)
+        self.assertIn("estacions particulars", self.enviats[0])
+        self.assertIn("Sembla de la font", self.enviats[0])
+
 
 if __name__ == "__main__":
     unittest.main()

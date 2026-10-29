@@ -17,8 +17,9 @@ error que da.
 1. Lee `AGENTS.md` y busca qué módulo lee esa fuente (el nombre de la fuente
    es el prefijo del error en `casa.py`: `salida["errors"].append(f"…: {ex}")`).
 2. Pide la fuente tal como la pide el programa y mira qué llega ahora. Si de
-   verdad es la fuente la que está caída o da una página de error, no cambies
-   nada: no es cosa del programa.
+   verdad es la fuente la que está caída, da una página de error o llega bien
+   pero sin datos (una estación parada), no cambies nada: no es cosa del
+   programa. Responde con `"de_la_font": true` (abajo).
 3. Si ha cambiado el formato, adapta la lectura con el cambio más pequeño y
    que siga leyendo también el formato de antes, y añade una prueba en
    `tests/` con un trozo real de lo que llega ahora.
@@ -50,6 +51,16 @@ dilo en la respuesta.
 ## Tu respuesta final
 
 Solo un objeto JSON, sin nada alrededor:
+
+Si no era del programa:
+
+```json
+{"arreglat": false, "de_la_font": true,
+ "causa": "una frase corta en castellano, para Juanjo: qué le pasa a la fuente, sin tecnicismos (por ejemplo, «la estación no da datos desde las 14:00; las de al lado, sí»)",
+ "detall": "en castellano, qué has mirado y qué has visto, para la próxima sesión"}
+```
+
+Si lo has arreglado:
 
 ```json
 {"arreglat": true,

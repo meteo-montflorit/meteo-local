@@ -108,8 +108,9 @@ estuvo dos días «sense dades» (ADR 0079). Desde la 3.204.0:
   `/estat/fonts-falla.json`) y lo publica (`fonts_falla` en los datos). En la
   reserva de IONOS, sin estado, desde ahora.
 - **Si dura LLINDAR_H (3) horas**: si el error es de la red o del servidor (no
-  responde, un 500…), un aviso a Juanjo por Telegram, una vez, y otro cuando
-  vuelve; si parece del programa (la fuente ha cambiado de formato), se lo
+  responde, un 500…) o la fuente responde sin datos («sense dades», «falten
+  mitges hores»: una estación parada), un aviso a Juanjo por Telegram, una
+  vez, y otro cuando vuelve; si parece del programa (la fuente ha cambiado de formato), se lo
   encarga al reparador (ADR 0113), que solo publica el arreglo si con él la
   fuente se vuelve a leer y, si no lo consigue, avisa a Juanjo. Meteocat
   (`smp.py`) y las estaciones (`estacions.py`) ya tenían su aviso y no se
