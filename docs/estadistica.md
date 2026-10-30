@@ -1331,8 +1331,11 @@ que cumplen, se proponen y se aplican al día siguiente.
 
 ### Los demás medios
 
-- **Coche**: «millor no» con 40 mm o más en una hora y «compte» con 20 (los
-  umbrales naranja y amarillo de la AEMET); con lluvia probable (el umbral
+- **Coche**: con los umbrales de Meteocat de los peligros (ADR 0039), que
+  hay que pasar: «millor no» con más de 40 mm medidos en la última media hora
+  por la red del barrio, si se sale ahora, o más de 90 mm previstos en 3
+  horas alrededor de la ida o la vuelta (solo las horas con un 20 % o más);
+  «compte» con más de 20 o de 60; con lluvia probable (el umbral
   «pluja» aprendido, lluvia ahora o aviso de la AEMET), también «compte».
 - **A pie**: «compte» (paraguas) con el umbral «risc» aprendido, lluvia
   ahora o aviso de la AEMET por lluvia o tormentas.

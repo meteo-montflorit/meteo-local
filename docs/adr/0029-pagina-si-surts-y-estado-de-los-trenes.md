@@ -29,9 +29,11 @@ y otros transportes.
   con datos, salvo en moto y en bici, que desde el 08-10-2026 deciden solo por
   la probabilidad (40 % y 10 %, ADR 0047); los de viento y frío de bici y moto, una primera propuesta que la
   página declara sin comprobar. El coche no sale «bé» con lluvia (auditoría
-  del 08-10-2026, antes solo miraba el viento): lluvia muy fuerte (40 mm en
-  una hora, umbral naranja de AEMET), «no»; fuerte (20 mm, amarillo),
-  probable o hielo (1 °C), «compte»; posible, se dice sin cambiar el nivel.
+  del 08-10-2026, antes solo miraba el viento). Desde el 18-10-2026 (ADR
+  0039), con los umbrales de Meteocat de los peligros: más de 40 mm medidos
+  en la última media hora, si se sale ahora, o más de 90 mm previstos en 3
+  horas, «no»; más de 20 o de 60, lluvia probable o hielo (1 °C), «compte»;
+  posible, se dice sin cambiar el nivel.
   «Sense pluja ni vent fort» solo cuando ninguna hora del viaje la ve.
 - **Avisos de AEMET por lluvia o tormentas**: cuentan como lluvia probable,
   como en el trayecto. Si son lo único que la ve (probabilidad, que ya lleva el
