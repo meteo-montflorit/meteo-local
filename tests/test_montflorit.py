@@ -327,7 +327,7 @@ class Castella(unittest.TestCase):
                          "<b>Hoy</b>\nSin lluvia prevista.")
         # Juanjo, 12-10-2026 (ADR 0074): sin «Modo normal» ni «Modo vigilancia»; el «?»
         # de la línea de actualización explica cada cuánto se actualiza.
-        explicacio = ("La página se actualiza cada 15 minutos, y cada 6 cuando hay un aviso de Meteocat o de AEMET, un plan de "
+        explicacio = ("La página se actualiza cada 15 minutos, y cada 6 cuando hay un aviso de Meteocat o de AEMET en vigor, un plan de "
                       "Protección Civil en alerta o emergencia, lluvia en Montflorit o lluvia en el radar a menos de 15 km.")
         # En mode avís, el motiu d'ara al davant (Juanjo, 20-10-2026: «por qué se actualiza cada 6 minutos?»).
         self.assertEqual(js("textActualitzacio({trams: [['00:00', '23:45']], cada_min: 6, mode_avis: ['pluja al radar'], normal_min: 15, avis_min: 6, radar_km: 15, km_pluja: 12.6})"),

@@ -145,7 +145,7 @@ var IDIOMA = {
     "previsió de Meteocat": "previsión de Meteocat",
     "radar": "radar",
     "Cada quan s’actualitza?": "¿Cada cuánto se actualiza?",
-    "La pàgina s’actualitza cada {0} minuts, i cada {1} quan hi ha un avís del Meteocat o de l’AEMET, un pla de Protecció Civil en alerta o emergència, pluja a Montflorit o pluja al radar a menys de {2} km.": "La página se actualiza cada {0} minutos, y cada {1} cuando hay un aviso de Meteocat o de AEMET, un plan de Protección Civil en alerta o emergencia, lluvia en Montflorit o lluvia en el radar a menos de {2} km.",
+    "La pàgina s’actualitza cada {0} minuts, i cada {1} quan hi ha un avís del Meteocat o de l’AEMET en vigor, un pla de Protecció Civil en alerta o emergència, pluja a Montflorit o pluja al radar a menys de {2} km.": "La página se actualiza cada {0} minutos, y cada {1} cuando hay un aviso de Meteocat o de AEMET en vigor, un plan de Protección Civil en alerta o emergencia, lluvia en Montflorit o lluvia en el radar a menos de {2} km.",
     " Només s’actualitza de {0}.": " Solo se actualiza de {0}.",
     " del {0}": " del {0}",
     "demà a les {0}": "mañana a las {0}",
