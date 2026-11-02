@@ -40,5 +40,7 @@ Pla Alfa (Cerdanyola), la riera (Sant Cugat) y los avisos de lluvia.
 Se activan para Cataluña o para unas comarcas, según cada comunicado, y ni
 los datos abiertos ni el comunicado (texto libre) dicen de forma fiable qué
 zona abarcan: el texto del plan no dice zona, para no afirmar una que no se
-sabe. Desde la 3.54.0 va acompañado de si Meteocat tiene aviso de peligro
-para el Vallès Occidental (ADR 0067).
+sabe. De la 3.54.0 a la 3.118.x iba acompañado de si Meteocat tenía aviso
+de peligro para el Vallès Occidental; desde la 3.119.0 los avisos de
+Meteocat van aparte (ADR 0067) y, si no hay ninguno, la web y el bot no
+dicen nada junto al plan.
