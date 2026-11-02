@@ -495,30 +495,60 @@ def episodis_api(ahora, clau=None, baixa=baixa_api, cache=CACHE_API):
     return llista
 
 
-def avisos_de(get, ahora, api=episodis_api):
-    """(avisos de la comarca, None) de la página o, si falla, (avisos, error de
-    la página) de la API. Si fallan las dos, la excepción dice las dos cosas."""
+def fenomens_avisats(llista):
+    """Los fenómenos («pluja», «vent»…) con algún aviso vigente que no es
+    preaviso en cualquier comarca de Cataluña. Un plan de Protección Civil de
+    ese fenómeno sin aviso en la comarca del barrio es de otras comarcas
+    (prevision.pla_per_temps, ADR 0062)."""
+    res = set()
+    for ep in llista or []:
+        meteor = ((ep.get("meteor") or {}).get("nom") or "").strip()
+        for av in ep.get("avisos") or []:
+            if (av.get("estat") or "").lower() != "vigent" or (av.get("tipus") or "").strip().lower().startswith("preav"):
+                continue
+            afs = [af for ev in av.get("evolucions") or [] for per in ev.get("periodes") or []
+                   for af in per.get("afectacions") or []] + list(av.get("afectacions") or [])
+            if any(int(af.get("perill") or 0) for af in afs):
+                res.add(fenomen(meteor or "Temps violent"))
+    return res
+
+
+def episodis_de(get, ahora, api=episodis_api):
+    """(episodios, avisos de la comarca, None) de la página o, si falla,
+    (episodios, avisos, error de la página) de la API. Si fallan las dos, la
+    excepción dice las dos cosas."""
     try:
-        return de_la_comarca(episodis(get(URL))), None
+        llista = episodis(get(URL))
+        return llista, de_la_comarca(llista), None
     except Exception as ex:
         falla = str(ex) or type(ex).__name__
         if api is None:
             raise
         try:
-            return de_la_comarca(api(ahora)), falla
+            llista = api(ahora)
+            return llista, de_la_comarca(llista), falla
         except Exception as ex_api:
             raise ValueError(f"{falla}; API: {str(ex_api) or type(ex_api).__name__}") from ex
 
 
+def avisos_de(get, ahora, api=episodis_api):
+    """(avisos de la comarca, None) de la página o, si falla, (avisos, error de
+    la página) de la API."""
+    _, avisos, falla = episodis_de(get, ahora, api)
+    return avisos, falla
+
+
 def llegeix(get, ahora, api=episodis_api):
     """Lo que se publica: {hora, avisos (los de la comarca, enteros), linies (los
-    textos, solo con lo que queda), fenomens (el resumen por fenómeno)} y, si
+    textos, solo con lo que queda), fenomens (el resumen por fenómeno),
+    fenomens_catalunya (los fenómenos con aviso en cualquier comarca)} y, si
     se ha leído de la API, falla_pagina (por qué no se ha podido de la página)."""
-    avisos, falla = avisos_de(get, ahora, api)
+    llista, avisos, falla = episodis_de(get, ahora, api)
     hora = H.local(ahora).strftime("%H:%M")
     res = {"hora": H.iso_local(ahora), "avisos": avisos,
            "linies": textos(pendents(avisos, ahora), hora),
-           "fenomens": per_fenomen(avisos, ahora)}
+           "fenomens": per_fenomen(avisos, ahora),
+           "fenomens_catalunya": sorted(fenomens_avisats(llista))}
     if falla:
         res["falla_pagina"] = falla
     return res

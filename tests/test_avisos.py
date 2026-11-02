@@ -87,6 +87,31 @@ class PlansProteccioCivil(unittest.TestCase):
         self.assertTrue(P.pla_per_temps(pla, None, ara))                                    # sense avisos llegits: es mostra
         self.assertTrue(P.pla_per_temps(dict(pla, des_de=None), [], ara))
 
+    def test_un_pla_d_altres_comarques_no_es_mostra(self):
+        # L'INUNCAT del 02-11-2026 a les 12:07: Meteocat avisava de pluja intensa
+        # al Barcelonès, el Garraf, el Tarragonès… i no al Vallès Occidental. No es
+        # mostra, encara que el comunicat sigui de fa poc i l'AEMET avisi al Vallès.
+        import datetime as dt
+        ara = dt.datetime(2026, 11, 2, 12, 33).astimezone()
+        pla = {"pla": "INUNCAT", "nom": "d'inundacions", "fase": "alerta", "des_de": "02/11/2026 12:07"}
+        aemet = [{"zona": "Prelitoral de Barcelona", "tipo": "pluja", "nivel": "groc",
+                  "inicio": "2026-11-02T22:00:00+01:00", "fin": "2026-11-03T03:59:59+01:00"}]
+        fora = {"avisos": [], "fenomens_catalunya": ["pluja"]}
+        self.assertFalse(P.pla_per_temps(pla, aemet, ara, fora))
+        self.assertTrue(P.pla_per_temps(dict(pla, fase="emergència"), aemet, ara, fora))
+        # Amb avís de Meteocat de pluja al Vallès, sí.
+        al_valles = dict(fora, avisos=[{"meteor": "Intensitat de pluja en 30 minuts", "tipus": "previsio",
+                                        "perill": 1, "dies": {"2026-11-02": [(23, 24)]}}])
+        self.assertTrue(P.pla_per_temps(pla, aemet, ara, al_valles))
+        # Meteocat sense avisos de pluja enlloc (o d'un altre fenomen): la regla d'abans.
+        self.assertTrue(P.pla_per_temps(pla, aemet, ara, {"avisos": [], "fenomens_catalunya": ["vent"]}))
+        self.assertTrue(P.pla_per_temps(pla, aemet, ara, {"avisos": [], "fenomens_catalunya": []}))
+        # Sense lectura de Meteocat o amb dades d'abans de la 3.208.0: es mostra.
+        self.assertTrue(P.pla_per_temps(pla, aemet, ara, None))
+        self.assertTrue(P.pla_per_temps(pla, aemet, ara, {"avisos": []}))
+        # Un pla de vent amb avisos de pluja a fora: no és d'altres comarques.
+        self.assertTrue(P.pla_per_temps(dict(pla, pla="VENTCAT", nom="de vent"), aemet, ara, fora))
+
     def test_un_pla_repetit_es_queda_amb_la_fase_mes_alta(self):
         r = self.plans([registre("INUNCAT", "PREALERTA", "NO"), registre("INUNCAT", "EMERGÈNCIA"),
                         registre("INUNCAT", "ALERTA")])

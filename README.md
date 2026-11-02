@@ -17,8 +17,10 @@ y en [castellano](https://meteo-montflorit.github.io/es/). Tiene cuatro páginas
   las 21 h de mañana, plegada por mañana, tarde y noche
   con el resumen de cada una (probabilidad de lluvia, temperaturas y
   fenómenos destacables; ADR 0041), con los avisos de AEMET y los planes de
-  Protección Civil (ADR 0007 y 0024), y junto a cada plan si Meteocat tiene
-  aviso de peligro para el Vallès Occidental (ADR 0067). Cada aviso lleva
+  Protección Civil (ADR 0007 y 0024) y los avisos de peligro de Meteocat
+  para el Vallès Occidental (ADR 0067). Un plan de otras comarcas (Meteocat
+  avisa de su fenómeno en otras y no en el Vallès Occidental) no se muestra,
+  salvo en emergencia (ADR 0062). Cada aviso lleva
   «›» a su detalle dentro de la web (ADR 0075). Desde la 3.152.0, tras «Ara»
   (con el radar, compacto si no es urgente) va la gráfica de la previsión,
   luego el resumen del día y los tramos; los trenes no salen en la portada
@@ -152,7 +154,8 @@ Fuentes de la previsión:
    cuántos grados más o menos que el día antes, con lo medido en la
    estación particular (ADR 0061).
 4. **Avisos de AEMET** del Prelitoral de Barcelona y **planes de Protección
-   Civil** (ADR 0008).
+   Civil** (ADR 0008), sin los de otras comarcas ni los que no tienen motivo
+   meteorológico a la vista (ADR 0062).
 5. **Trenes**: los avisos de Rodalies, de la API de su web (ADR 0078; si no
    responde, los de Renfe), la posición en tiempo real de Renfe (R4, R7 y R8)
    y de FGC (S2), para «Si surts» (`trens.py`, ADR 0029), con el horario de
@@ -179,7 +182,7 @@ Umbrales y lugares, en `config.py`. El porqué, en los ADR.
 |---|---|
 | `casa.py` | Datos de la web (`casa.json`): lo de ahora, la previsión hora a hora, el índice UV, los trenes, el tráfico y la riera |
 | `prevision.py` | Recogida de datos que usa `casa.py`: avisos de AEMET, planes de Protección Civil, radar, lluvia y viento de las estaciones, y el modo aviso |
-| `smp.py` | Con un plan de Protección Civil a la vista, si Meteocat tiene aviso de peligro para el Vallès Occidental, leído de meteo.cat o, si falla, de su API (como mucho cada 30 min, ADR 0109), y su prueba diaria (ADR 0067) |
+| `smp.py` | Los avisos de peligro de Meteocat para el Vallès Occidental y los fenómenos con aviso en el resto de Cataluña (para saber si un plan de Protección Civil es de otras comarcas), leído de meteo.cat o, si falla, de su API (como mucho cada 30 min, ADR 0109), y su prueba diaria (ADR 0067) |
 | `config.py` | Coordenadas, horario, estaciones, zonas de aviso, modelos y umbrales |
 | `setmana.py` | La previsión de 7 días: ECMWF con la máxima y la mínima corregidas con el error de los últimos 30 días en la estación de casa, y la lluvia del ensemble; se apunta en el registro para comprobarla (ADR 0122). Su validación, `calibracio/setmana.py` |
 | `web/` | Las fuentes de la web pública: `casa.html` y `casa.js` (el tiempo ahora), `sortir.html` y `sortir.js` («Si surts»), `perill.html` y `perill.js` («Avisos», antes «Perill»), `riera.html` y `riera.js` («Riera»), `consultes.html` y `consultes.js` («Consultes»), `avisos.html` y `avisos.js` («Notificacions»: avisos en el navegador), `telegram.html` (ayuda de Telegram), `privacitat.html` (qué se guarda y qué no, ADR 0073), `comu.js` (lo común), `estil.css`, `fonts.html` (fuentes y créditos), `manifest.webmanifest`, `sw.js`, `icones/` y `fonts/` (la letra Figtree, ADR 0118) |

@@ -61,6 +61,16 @@ class Smp(unittest.TestCase):
         with self.assertRaises(ValueError):
             smp.episodis("<html>sense avisos</html>")
 
+    def test_fenomens_amb_avis_a_qualsevol_comarca(self):
+        # ADR 0062: els fenòmens amb avís vigent (no preavís) a qualsevol comarca.
+        self.assertEqual(smp.fenomens_avisats(EPISODIS), {"pluja"})
+        nomes_preavis = [dict(EPISODIS[0], avisos=[EPISODIS[0]["avisos"][1]])]
+        self.assertEqual(smp.fenomens_avisats(nomes_preavis), set())
+        vent = [{"meteor": {"nom": "Ratxa màxima de vent"}, "avisos": [{
+            "tipus": "Avís Vigilància", "estat": "Vigent", "afectacions": [afectacio(13, 2)]}]}]
+        self.assertEqual(smp.fenomens_avisats(vent), {"vent"})
+        self.assertEqual(smp.fenomens_avisats([]), set())
+
     def test_nomes_els_vigents_de_la_comarca(self):
         a = smp.de_la_comarca(EPISODIS, 40)
         # El preavís i l'avís d'una altra comarca no hi són; les franges seguides, juntes.

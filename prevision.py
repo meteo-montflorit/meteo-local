@@ -477,8 +477,11 @@ def planes_proteccion_civil():
 
 # Un plan abierto sin motivo meteorológico a la vista no se muestra (Juanjo,
 # 10-10-2026: «el plan no está abierto por motivos meteorológicos sino de
-# recuperación… confunde mucho»; ADR 0062). Se muestra si está en
-# emergencia, si su último comunicado tiene menos de PLA_COMUNICAT_H horas o
+# recuperación… confunde mucho»; ADR 0062). Tampoco uno de otras comarcas
+# (02-11-2026: «no se puede mejorar el sistema para no dar alertas que no
+# afectan al barrio?»): si Meteocat avisa de su fenómeno en otras comarcas y
+# no en la del barrio, aunque el comunicado sea de hace poco. Se muestra si
+# está en emergencia, si su último comunicado tiene menos de PLA_COMUNICAT_H horas o
 # si hay aviso de AEMET o de Meteocat de su fenómeno en la zona (desde la 3.88.0;
 # antes, solo AEMET por lluvia o tormentas), vigente o para las próximas
 # PLA_AVIS_H horas. Si no se han podido leer los avisos, se muestra.
@@ -509,6 +512,20 @@ def motiu_pla(p):
     return next((m for clau, m in MOTIU_PLA if clau in nom), None)
 
 
+def de_altres_comarques(p, smp):
+    """Si el plan es de otras comarcas: Protección Civil lo activa por los
+    avisos de Meteocat (el comunicado del INUNCAT del 02-11-2026 nombraba las
+    mismas ocho comarcas que sus avisos de intensidad de lluvia, sin el Vallès
+    Occidental), y Meteocat tiene avisos de su fenómeno en Cataluña pero
+    ninguno en la comarca del barrio. Sin la lectura de Meteocat, o con datos
+    de antes de la 3.208.0, no se sabe: no lo es."""
+    import smp as SMP
+    motiu = motiu_pla(p)
+    if motiu is None or not smp or not set(smp.get("fenomens_catalunya") or ()) & motiu:
+        return False
+    return not any(SMP.fenomen(m["meteor"]) in motiu for m in smp.get("avisos") or [])
+
+
 def pla_per_temps(p, avisos_, ahora=None, smp=None):
     """Si el plan tiene motivo meteorológico a la vista: un aviso de AEMET o de
     Meteocat (smp, ADR 0093) de su fenómeno en la zona, vigente o para las
@@ -517,6 +534,8 @@ def pla_per_temps(p, avisos_, ahora=None, smp=None):
     ahora = ahora or AHORA
     if p.get("fase") == "emergència":
         return True
+    if de_altres_comarques(p, smp):
+        return False
     t = data_fase(p.get("des_de"))
     if t is None or ahora - t < dt.timedelta(hours=PLA_COMUNICAT_H):
         return True

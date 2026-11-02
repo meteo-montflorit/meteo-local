@@ -42,5 +42,6 @@ los datos abiertos ni el comunicado (texto libre) dicen de forma fiable qué
 zona abarcan: el texto del plan no dice zona, para no afirmar una que no se
 sabe. De la 3.54.0 a la 3.118.x iba acompañado de si Meteocat tenía aviso
 de peligro para el Vallès Occidental; desde la 3.119.0 los avisos de
-Meteocat van aparte (ADR 0067) y, si no hay ninguno, la web y el bot no
-dicen nada junto al plan.
+Meteocat van aparte (ADR 0067). Desde la 3.208.0, un plan cuyo fenómeno
+Meteocat avisa en otras comarcas y no en el Vallès Occidental no se muestra
+(ADR 0062).
