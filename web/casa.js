@@ -616,12 +616,13 @@ function mmSetmana(v) {
 }
 
 // La frase sencera, per al rètol i els lectors de pantalla: el més probable i,
-// si és prou més, fins on pot arribar.
+// si és prou més, fins on pot arribar. De tot el dia, dit (Juanjo, 02-11-2026:
+// «debe poner que es de todo el dia… que se entienda»).
 function textMmSetmana(d) {
   const quant = (v) => (v < 1 ? T('menys d’1\u00a0mm') : `${Math.round(v)}\u00a0mm`);
   const fins = d.pluja_fins != null && Math.round(d.pluja_fins) > Math.max(1, Math.round(d.pluja_si_plou));
-  return fins ? T`Si plou, el més probable: ${quant(d.pluja_si_plou)}; fins a ${quant(d.pluja_fins)}`
-    : T`Si plou, el més probable: ${quant(d.pluja_si_plou)}`;
+  return fins ? T`Si plou, el més probable en tot el dia: ${quant(d.pluja_si_plou)}; fins a ${quant(d.pluja_fins)}`
+    : T`Si plou, el més probable en tot el dia: ${quant(d.pluja_si_plou)}`;
 }
 
 function blocSetmana(dades, ara = new Date()) {
@@ -653,7 +654,7 @@ function blocSetmana(dades, ara = new Date()) {
     clau('setmana-max temp-max', T('màx'), T('Temperatura màxima')),
     clau('setmana-min temp-min', T('mín'), T('Temperatura mínima')));
   if (ambPluja) claus.append(clau('setmana-pluja', icona('i-umbrella'), T('Probabilitat que plogui en algun moment del dia')));
-  if (ambMm) claus.append(clau('setmana-mm', 'mm', T('Si plou, els litres per metre quadrat més probables')));
+  if (ambMm) claus.append(clau('setmana-mm', 'mm', T('Si plou, els litres per metre quadrat més probables en tot el dia')));
   llista.append(claus);
   dies.forEach((d, i) => {
     const data = llegeixHora(`${d.dia}T12:00`);

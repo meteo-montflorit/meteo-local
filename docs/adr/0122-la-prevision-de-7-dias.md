@@ -166,5 +166,7 @@ daban 1 mm y hasta 5.
 
 La probabilidad, el dibujo del cielo y los litros llevan su explicación en el
 `title` (el ratón, o el toque largo en el móvil): «Probabilitat que plogui en
-algun moment del dia: 25 %», el nombre del cielo, «Si plou, el més probable:
-3 mm; fins a 9 mm». Las temperaturas ya la tienen en «màx» y «mín».
+algun moment del dia: 25 %», el nombre del cielo, «Si plou, el més probable en
+tot el dia: 3 mm; fins a 9 mm» (que es de todo el día, dicho desde el
+02-11-2026: sin decirlo, no se entendía). Las temperaturas ya la tienen en
+«màx» y «mín».
