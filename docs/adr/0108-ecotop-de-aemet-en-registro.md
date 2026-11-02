@@ -1,6 +1,6 @@
 # 108. El ecotop del radar de AEMET, en registro
 
-Fecha: 2026-10-19 · Estado: en curso (registro del 19-10 al 02-11-2026; no se muestra en la web)
+Fecha: 2026-10-19 · Estado: retirado el 02-11-2026 (registro del 19-10 al 02-11-2026; nunca se mostró en la web)
 
 ## Contexto
 
@@ -55,6 +55,28 @@ intensidad, y con cuánta antelación respecto a lo que ya dice la web (el
 radar, ADR 0019; la lluvia que crece, ADR 0019). Aciertos, fallos y falsas
 alarmas, con la regla de mejora del programa (ADR 0105) si se compara con lo
 que hay.
+
+## Resultado y retirada (02-11-2026, 3.208.2)
+
+505 imágenes de Gelida, del 19-10 a las 14:00 al 02-11 a las 16:30 (hora
+UTC), con un retraso de publicación de 11 minutos de mediana
+(`ecotop.py estat`). El ecotop de 8 km o más llegó a 15 km o menos de casa
+diez veces:
+
+- **Seis el 19-10, todas con la lluvia ya en el barrio.** La red de
+  estaciones (`veines-5min.csv`) medía lluvia desde las 12:00 UTC y el primer
+  ecotop cercano se publicó a las 14:26; en el segundo chubasco, la lluvia
+  empezó a las 17:10 y el ecotop se publicó a las 17:46. Ninguno se adelantó
+  al radar ni a la lluvia que crece.
+- **Cuatro el 27 y el 28-10 (de 20:10 a 00:30 UTC), sin una gota en el
+  barrio**, con ecotops de 16 a 20 km en las imágenes de esa noche: falsas
+  alarmas.
+
+Juanjo, ante el resultado y la recomendación de retirarlo: «de acuerdo,
+retiralo». Se quitan `ecotop.py`, `tests/test_ecotop.py` y el enganche de
+`publica.sh`, y su entrada del inventario de automatismos del NAS. El
+registro (`registre/ecotop.csv` y `registre/ecotop/`) se queda en el NAS; el
+programa, en el historial de git (hasta la 3.208.1).
 
 ## Riesgos y lo no comprobado
 

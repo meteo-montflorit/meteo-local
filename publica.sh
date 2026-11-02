@@ -66,11 +66,6 @@ fi
 # usarlo (boira.py, ADR 0100); una vez por hora como mucho.
 [ -z "$ESTAT_DIR" ] || python3 boira.py apunta >/dev/null 2>&1 \
   || echo "$(date '+%F %T')  ha fallat la vigilància de la boira" >&2
-# El ecotop del radar de AEMET en Gelida, dos semanas, para ver si anuncia las
-# tormentas antes que lo que ya se usa (ecotop.py, ADR 0108); cada 25 minutos
-# como mucho y solo con lluvia a la vista. Después de casa.json.
-[ -z "$ESTAT_DIR" ] || timeout 180 python3 ecotop.py apunta "$ESTAT_DIR/casa.json" >/dev/null \
-  || echo "$(date '+%F %T')  ha fallat el registre de l'ecotop" >&2
 # Las previsiones de Meteocat y AEMET para Cerdanyola, para compararlas con la
 # de la web en «Fiabilitat» (previsio_oficial.py, ADR 0110): Meteocat cada 3
 # horas, AEMET cada hora. Antes del historial, que las lee.

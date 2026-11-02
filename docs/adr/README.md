@@ -109,7 +109,7 @@
 | [0105](0105-una-sola-regla-de-mejora-remuestreo-por-bloques.md) | Una sola regla de mejora: remuestreo por bloques de días o episodios | aceptado |
 | [0106](0106-validacion-con-avance-temporal.md) | Validación con avance temporal: cada día se evalúa con el modelo de los días anteriores | aceptado |
 | [0107](0107-pagina-riera-y-prevision-de-crecida.md) | Página «Riera» y previsión de crecida con los modelos | aceptado |
-| [0108](0108-ecotop-de-aemet-en-registro.md) | El ecotop del radar de AEMET, en registro dos semanas | en curso |
+| [0108](0108-ecotop-de-aemet-en-registro.md) | El ecotop del radar de AEMET, en registro dos semanas | retirado |
 | [0109](0109-api-de-meteocat-de-reserva.md) | La API de Meteocat, de reserva de la página de avisos | aceptado |
 | [0110](0110-pagina-fiabilitat-y-comparacion-con-meteocat-y-aemet.md) | Página «Fiabilitat» y comparación con Meteocat y AEMET | aceptado |
 | [0111](0111-uso-de-ia-y-condiciones-de-las-fuentes.md) | El uso de IA explicado en «Fonts i crèdits» y las condiciones de las fuentes | aceptado |
