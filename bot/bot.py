@@ -831,7 +831,7 @@ def es_nota(t, kmh):
 # hará fresco… solo el de hoy. Y cuando envias el de mañana, también»). El
 # mateix compte que la web, a la riera, com la resta del resum.
 TRAMS_FRASE = ((7, 14, "Matí"), (14, 21, "Tarda"), (21, 7, "Nit"))
-SENSACIO = ((-1, "fred intens"), (5, "molt fred"), (11, "fred"), (17, "fresc"), (25, "agradable"),
+SENSACIO = ((-1, "fred intens"), (4, "molt fred"), (10, "fred"), (17, "fresc"), (25, "agradable"),
             (32, "calor"), (math.inf, "molta calor"))
 PARAULA_SENSACIO = {
     "ca": {"fred intens": "amb fred intens", "molt fred": "amb molt de fred", "fred": "fred", "fresc": "fresc",

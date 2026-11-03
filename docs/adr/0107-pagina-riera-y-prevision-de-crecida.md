@@ -49,7 +49,10 @@ partes («hazlo así»).
   `config.CONCA_RIERA`, 24 horas; para cada modelo su máximo de 3 horas y
   manda el que más da (ADR 0103: el máximo no rebaja la lluvia fuerte), con
   su ventana y la media de los modelos en ella; lo mismo a 6 horas; la
-  lluvia de las últimas 24 horas en Sant Cugat (el suelo mojado, 12.3).
+  lluvia de las últimas 24 horas en Sant Cugat (el suelo mojado, 12.3). La
+  página solo dice que el suelo mojado hace subir antes la riera desde 1 mm;
+  con menos, da la cifra sola, y con 0, «no ha plogut» (3.209.1, a raíz del
+  revisor: con 0,0 mm hablaba de suelo mojado).
   «Risc de crescuda possible» desde `RIERA_PREVISIO_MM = 20`. Va en
   `casa.json` (`riera_previsio`) y en `avisos.json`, para la pestaña.
 - **No es un aviso**: no sale por Telegram, ni en el navegador, ni en «Avisos

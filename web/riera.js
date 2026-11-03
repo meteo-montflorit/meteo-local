@@ -75,7 +75,10 @@ function pintaPrevisio(p) {
       .map(([m, mm]) => `${NOM_MODEL[m] || m} ${coma(mm)}`).join(' · ') + T` mm (mitjana, ${coma(p.mm_3h_mitjana)}).`);
   }
   if (p.mm_6h_max >= 1) frases.push(T`En 6 hores, fins a ${coma(p.mm_6h_max)} mm.`);
-  if (p.xv_24h != null) frases.push(T`A Sant Cugat han caigut ${coma(p.xv_24h)} mm en les últimes 24 hores: el sòl mullat fa pujar la riera abans.`);
+  // El sòl mullat, només si ha plogut almenys 1 mm: amb 0 mm no hi ha res mullat (revisor, 02-11-2026).
+  if (p.xv_24h >= 1) frases.push(T`A Sant Cugat han caigut ${coma(p.xv_24h)} mm en les últimes 24 hores: el sòl mullat fa pujar la riera abans.`);
+  else if (p.xv_24h > 0) frases.push(T`A Sant Cugat han caigut ${coma(p.xv_24h)} mm en les últimes 24 hores.`);
+  else if (p.xv_24h != null) frases.push(T('A Sant Cugat no ha plogut en les últimes 24 hores.'));
   if (p.generat) frases.push(T`Previsió llegida a les ${horaCurta(p.generat)}.`);
   detall.replaceChildren(element('p', 'riera-detalls', frases.join(' ')));
 }

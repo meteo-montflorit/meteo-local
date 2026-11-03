@@ -46,7 +46,10 @@ con una simulación de avisos. Juanjo: «me gusta, publica la portada nueva».
   temperatura agradable (18–25; «agradable» solo no se entendía, Juanjo),
   calor (26–32) y molta calor (33 o más). Desde la 3.209.0 (03-11-2026), fred va
   de 5 a 10 °C (Juanjo: «haz que el frío sea entre 5 y 10»); antes, molt fred
-  era 0–5, fred 6–11 y fresc 12–17. Se mide la temperatura
+  era 0–5, fred 6–11 y fresc 12–17. El resumen del día (bot y «Consultes»,
+  `bot.SENSACIO`) usa los mismos niveles: la 3.209.0 solo cambió la web y el
+  revisor encontró «fresc» en la portada y «fred» en «Consultes» para la misma
+  mañana; desde la 3.209.1 una prueba compara las dos tablas. Se mide la temperatura
   que se nota (`esNota`, el índice de Environment Canada que ya usaban la
   ropa y «Si surts», ahora en `comu.js`), redondeada: la mínima por la noche
   y por la mañana y la máxima por la tarde (`casa.sensacioTram`). Por la

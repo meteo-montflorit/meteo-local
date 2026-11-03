@@ -1460,3 +1460,14 @@ class FraseCel(unittest.TestCase):
         # El tram en curs amb una sola hora ja no compta si en ve un altre.
         files = self.hores("2026-10-23", 13, 21, lambda h: 20, lambda h: 10)
         self.assertTrue(B.frase_cel(files, "ca", avui).startswith("Aquesta tarda,"))
+
+    def test_mateixos_llindars_de_sensacio_que_la_web(self):
+        # La frase del resum (bot i «Consultes») i la de dalt d'«Ara» (casa.js)
+        # diuen el mateix: la 3.209.0 va canviar només la web i el revisor va
+        # trobar «fresc» a la portada i «fred» a «Consultes» (03-11-2026).
+        import math
+        import re
+        js = open(os.path.join(ARREL, "web", "casa.js"), encoding="utf-8").read()
+        taula = re.search(r"const SENSACIO = \[(.*?)\];", js, re.S).group(1)
+        web = [(math.inf if v == "Infinity" else int(v), n) for v, n in re.findall(r"\[(-?\d+|Infinity), '([^']+)'\]", taula)]
+        self.assertEqual(web, list(B.SENSACIO))

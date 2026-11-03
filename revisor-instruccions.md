@@ -104,6 +104,14 @@ inclúyelas si son reales, explicando por qué.
   van en su idioma original y no se traducen: eso no es un error.
 - Una ficha de «Perill» con `fins` ya pasado sale como acabada en la página
   aunque `fi` esté vacío: no es un error.
+- El historial («Últims 30 dies») guarda lo que se avisó con el criterio de
+  aquel momento, aunque el criterio cambie después: lo enviado no se borra.
+  El incendio de Collserola a 6,4 km del 28-10-2026 (18:30) se avisó antes de
+  que el límite pasara a 5 km (19:01, ADR 0071); compara cada aviso con el
+  criterio de su fecha, no con el de ahora.
+- La actualización cada 6 minutos es con un aviso **en vigor**, no con uno
+  anunciado para más tarde (3.208.1): un aviso que empieza a las 22:00 no la
+  activa a las 13:00.
 - La salida y la puesta del sol vienen de Open-Meteo para el barrio
   (41,49 N): no las recalcules de cabeza. A finales de octubre el día dura
   unas 10 h 30 min, con salida hacia las 7:18 y puesta hacia las 17:51

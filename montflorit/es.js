@@ -542,6 +542,8 @@ var IDIOMA = {
     "Ara no hi ha previsió dels models per a la conca.": "Ahora no hay previsión de los modelos para la cuenca.",
     "Cap senyal de crescuda en les properes {0} hores.": "Ninguna señal de crecida en las próximas {0} horas.",
     "A Sant Cugat han caigut {0} mm en les últimes 24 hores: el sòl mullat fa pujar la riera abans.": "En Sant Cugat han caído {0} mm en las últimas 24 horas: el suelo mojado hace subir la riera antes.",
+    "A Sant Cugat han caigut {0} mm en les últimes 24 hores.": "En Sant Cugat han caído {0} mm en las últimas 24 horas.",
+    "A Sant Cugat no ha plogut en les últimes 24 hores.": "En Sant Cugat no ha llovido en las últimas 24 horas.",
     "Previsió llegida a les {0}.": "Previsión leída a las {0}.",
     "Cap episodi amb avís des que la web els apunta (octubre del 2026).": "Ningún episodio con aviso desde que la web los apunta (octubre de 2026).",
     "perill de desbordament": "peligro de desbordamiento",
