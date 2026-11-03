@@ -253,8 +253,8 @@ class Web(unittest.TestCase):
 
     def test_la_frase_de_dalt_diu_com_es_nota(self):
         # Juanjo, 22-10-2026: si fa fred o calor, en paraules i sense xifres; els
-        # seus set nivells (fred intens sota 0, molt fred de 0 a 5, fred de 6 a 11,
-        # fresc de 12 a 17, agradable de 18 a 25, calor de 26 a 32, molta calor
+        # seus set nivells (fred intens sota 0, molt fred de 0 a 4, fred de 5 a 10,
+        # fresc de 11 a 17, agradable de 18 a 25, calor de 26 a 32, molta calor
         # des de 33), amb la mínima a la nit i la màxima a la tarda.
         def frase(tarda, nit, vent=0):
             hores = [{"hora": f"2026-10-21T{h:02d}:00", "fins": f"2026-10-21T{h + 1:02d}:00", "probabilitat": 0,
@@ -273,9 +273,12 @@ class Web(unittest.TestCase):
                          "Aquesta tarda, amb molta calor i serè; aquesta nit, amb calor i serè.")
         self.assertEqual(frase([12, 16, 13, 12, 12, 12], [11, 9, 8, 7, 6, 6, 7, 8, 9, 10]),
                          "Aquesta tarda, fresc i serè; aquesta nit, fred i serè.")
-        self.assertEqual(frase([8, 11, 10, 9, 8, 8], [5, 3, 1, 0.4, 1, 2, 3, 4, 5, 6]),
+        self.assertEqual(frase([8, 10.4, 10, 9, 8, 8], [5, 3, 1, 0.4, 1, 2, 3, 4, 5, 6]),
                          "Aquesta tarda, fred i serè; aquesta nit, amb molt de fred i serè.")
-        self.assertEqual(frase([4, 5, 4, 3, 2, 1], [0, -1, -0.6, -2, -1, 0, 1, 2, 3, 4]),
+        # Els límits del fred (03-11-2026): 11 °C ja és fresc i 5 °C ja és fred.
+        self.assertEqual(frase([8, 11, 10, 9, 8, 8], [6, 5, 4.6, 5, 6, 7, 8, 9, 10, 10]),
+                         "Aquesta tarda, fresc i serè; aquesta nit, fred i serè.")
+        self.assertEqual(frase([4, 4.4, 4, 3, 2, 1], [0, -1, -0.6, -2, -1, 0, 1, 2, 3, 4]),
                          "Aquesta tarda, amb molt de fred i serè; aquesta nit, amb fred intens i serè.")
         # Amb vent, el que es nota: 6,5 °C amb 20 km/h es noten com 3 °C. A la
         # tarda, amb més de 10 °C, el vent no hi compta.

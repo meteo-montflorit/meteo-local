@@ -297,7 +297,7 @@ const QUAN_TRAM_DEMA = { Matí: () => T('Demà al matí'), Tarda: () => T('Demà
 // després agradable»: la mínima del matí és la de l'alba, la mateixa de la
 // nit, i sense això l'escalfament del matí no sortia enlloc (Juanjo,
 // 22-10-2026). El refredament de la tarda ja el diu la nit, el tram següent.
-const SENSACIO = [[-1, 'fred intens'], [5, 'molt fred'], [11, 'fred'], [17, 'fresc'], [25, 'agradable'],
+const SENSACIO = [[-1, 'fred intens'], [4, 'molt fred'], [10, 'fred'], [17, 'fresc'], [25, 'agradable'],
   [32, 'calor'], [Infinity, 'molta calor']];
 const PARAULA_SENSACIO = {
   'fred intens': () => T('amb fred intens'), 'molt fred': () => T('amb molt de fred'), fred: () => T('fred'),
@@ -1614,7 +1614,7 @@ function taula(hores, mesurada, riscos, sol) {
     llista.append(dt, element('dd', null, T('L’hora en què surt i es pon el sol, a la fila de l’hora en què passa.')));
   }
   // Les paraules de la frase de dalt d'«Ara» (sensacioTram), orientatives.
-  terme(T('Fred, fresc, calor…'), T('A la frase de dalt, com es nota cada tram, amb la temperatura que es nota (amb el vent, quan fa fred): la mínima a la nit i al matí i la màxima a la tarda; al matí, si després escalfa fins a una altra paraula, també aquesta («fresc i després agradable»). Fred intens, sota 0\u00a0°C; molt fred, de 0 a 5\u00a0°C; fred, de 6 a 11\u00a0°C; fresc, de 12 a 17\u00a0°C; temperatura agradable, de 18 a 25\u00a0°C; calor, de 26 a 32\u00a0°C, i molta calor, des de 33\u00a0°C. Són intervals orientatius, no una classificació oficial.'));
+  terme(T('Fred, fresc, calor…'), T('A la frase de dalt, com es nota cada tram, amb la temperatura que es nota (amb el vent, quan fa fred): la mínima a la nit i al matí i la màxima a la tarda; al matí, si després escalfa fins a una altra paraula, també aquesta («fresc i després agradable»). Fred intens, sota 0\u00a0°C; molt fred, de 0 a 4\u00a0°C; fred, de 5 a 10\u00a0°C; fresc, de 11 a 17\u00a0°C; temperatura agradable, de 18 a 25\u00a0°C; calor, de 26 a 32\u00a0°C, i molta calor, des de 33\u00a0°C. Són intervals orientatius, no una classificació oficial.'));
   terme(T('Prob.'), T('La probabilitat que plogui en aquella hora. Per sota del 10\u00a0%, no s’espera pluja; del 10 al 20\u00a0%, és poc probable, però pot caure algun ruixat; del 20 al 50\u00a0%, pot ploure: si surts, porta paraigua; del 50\u00a0% amunt, el més probable és que plogui. Per exemple, un 40\u00a0% vol dir que, de cada 10 vegades que la previsió dona un 40\u00a0% per a una hora, en 4 acaba plovent.'));
   terme(T('Pluja'), T('Els mil·límetres que caurien si plou.'));
   // La xifra de la capçalera de cada tram és la quantitat esperada (ADR 0103),

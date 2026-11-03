@@ -42,9 +42,11 @@ con una simulación de avisos. Juanjo: «me gusta, publica la portada nueva».
   de la calle, sin cifras (Juanjo, 22-10-2026: «algo que haga referencia a
   si hace frío o calor o heladas… no quiero datos»), con siete niveles que
   fijó Juanjo como orientativos, no una clasificación oficial: fred intens
-  (bajo 0 °C), molt fred (0–5), fred (6–11), fresc (12–17),
+  (bajo 0 °C), molt fred (0–4), fred (5–10), fresc (11–17),
   temperatura agradable (18–25; «agradable» solo no se entendía, Juanjo),
-  calor (26–32) y molta calor (33 o más). Se mide la temperatura
+  calor (26–32) y molta calor (33 o más). Desde la 3.209.0 (03-11-2026), fred va
+  de 5 a 10 °C (Juanjo: «haz que el frío sea entre 5 y 10»); antes, molt fred
+  era 0–5, fred 6–11 y fresc 12–17. Se mide la temperatura
   que se nota (`esNota`, el índice de Environment Canada que ya usaban la
   ropa y «Si surts», ahora en `comu.js`), redondeada: la mínima por la noche
   y por la mañana y la máxima por la tarde (`casa.sensacioTram`). Por la
