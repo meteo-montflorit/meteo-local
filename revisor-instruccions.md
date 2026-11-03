@@ -131,6 +131,14 @@ inclúyelas si son reales, explicando por qué.
   marca las que ha dado la persistencia. Si en una fila intermedia el modelo
   da más, esa va sin asterisco y las de antes y después con él: no es un
   error, ni lo es que la hora futura lleve asterisco aunque ya no llueva.
+- En «Si surts», la lluvia de bici, moto y coche solo mira la hora de salir y
+  la de volver («a l'anada ni a la tornada»), y a pie mira todo el tiempo
+  fuera, porque decide el paraguas: lo dice «Com es decideix» («la pluja que
+  pugui caure mentre ets fora decideix el paraigua»). Con una hora intermedia
+  más lluviosa que la ida y la vuelta, «A peu» puede decir «pluja probable» o
+  «paraigua» mientras los vehículos dicen «pot ploure» o «sense pluja»: no es
+  una contradicción (falsas alarmas del 03-11-2026). Sí lo sería que la ida o
+  la vuelta tuvieran más probabilidad en un medio que en otro.
 - La diferencia de la parte alta se dice redondeada al grado: 0,5 °C sale
   como «1 °C més» (Juanjo, 13-10-2026), y no sale si redondeada es 0.
 - La hora «propera» de la actualización sale de un horario fijo (cada 15
