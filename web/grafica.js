@@ -719,6 +719,15 @@ function dibuixaGrafica(fig) {
   // El sostre, una ratlla fina amb la seva xifra, com la del vent; només si plou.
   const ambBarres = files.some((f) => plujaGrafica(f)) || ambPrevMm;
   g.append(svg('line', { class: 'g-sostre', x1: 0, x2: W, y1: ySostre, y2: ySostre }));
+  // La mínima, a baix a l'esquerra amb la seva ratlla, com la màxima a dalt
+  // (Juanjo, 03-11-2026: «igual que sale la maxima del periodo arriba a la
+  // izquierda, me gustaria que saliese también la minima abajo a la
+  // izquierda»). No surt si arrodonida és la màxima, si no hi cap sota la
+  // del sostre o amb l'escala de «Fiabilitat» i «Historial», que ja la dona.
+  const tMinReal = Math.min(...escala);
+  const yMin = yT(tMinReal);
+  const ambMin = ambTemp && !opcions.escala && Math.round(tMinReal) !== Math.round(tMax) && yMin - ySostre >= 16;
+  if (ambMin) g.append(svg('line', { class: 'g-sostre', x1: 0, x2: W, y1: yMin, y2: yMin }));
   // A «Fiabilitat», una escala a l'esquerra cada 2 °C: l'eix no comença a 0
   // i, sense, no se sabia quants graus separen les corbes (Juanjo,
   // 23-10-2026: «esta grafica empieza en 0? faltan referencias y valores»).
@@ -770,6 +779,10 @@ function dibuixaGrafica(fig) {
   if (ambTemp) {
     g.append(svg('text', { class: 'g-mm g-sostre-xifra g-sostre-temp', x: 2, y: ySostre - 3 },
       `${Math.round(tMax)}\u00a0°C`));
+  }
+  if (ambMin) {
+    g.append(svg('text', { class: 'g-mm g-sostre-xifra g-sostre-tmin', x: 2, y: yMin - 3 },
+      `${Math.round(tMinReal)}\u00a0°C`));
   }
 
   // El vent i les ratxes, en km/h: una ratlla a dalt amb la xifra de l'escala,

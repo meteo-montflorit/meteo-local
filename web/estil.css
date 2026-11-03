@@ -1371,6 +1371,7 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .grafica .g-sostre { stroke: var(--suau); stroke-opacity: .6; stroke-dasharray: 2 3; }
 .grafica .g-sostre-xifra { font-weight: 400; }
 .grafica .g-sostre-xifra.g-sostre-temp { fill: var(--c-maxima); }
+.grafica .g-sostre-xifra.g-sostre-tmin { fill: var(--c-minima); }
 /* Les xifres del sostre, fixes damunt de la gràfica que es desplaça (dibuixaGrafica). */
 .grafica .g-fixes { position: absolute; z-index: 1; pointer-events: none; overflow: visible; max-width: none; }
 .grafica .g-vent-xifra { fill: var(--suau); font-size: 11px; }

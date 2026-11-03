@@ -185,6 +185,14 @@ siempre en la hora en curso.
   izquierda («24 °C», en el rojo de la temperatura) y el techo de la lluvia a
   la derecha («10 mm», solo si llueve). La curva es monótona entre horas,
   así que no pasa de la raya.
+- **La mínima, abajo a la izquierda** (3.210.0; Juanjo, 03-11-2026: «igual
+  que sale la maxima del periodo arriba a la izquierda, me gustaria que
+  saliese también la minima abajo a la izquierda»): una raya gris a la
+  altura de la mínima del periodo, con su cifra a la izquierda («7 °C», en
+  el azul de la mínima de la previsión de 7 días). No sale si redondeada es
+  igual que la máxima, si no cabe bajo la del techo (16 px) ni en las
+  gráficas con escala cada 2 °C («Historial» y «Fiabilitat»), donde ya se lee
+  y las cifras se pisarían.
 - **La parte alta, como segunda curva** (3.107.0; Juanjo, 17-10-2026: «una
   opción en la vista de gráfico que actúe como conmutador para mostrar la
   temperatura en la parte baja y alta»): botón «Part alta» en la vista en
