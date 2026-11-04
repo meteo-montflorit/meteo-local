@@ -71,3 +71,16 @@ todas las horas, cuando ella solo tenía las que llevan el dato. Ahora
 base con las mismas muestras (`error_base`): la variante solo se adopta si
 lo mejora en un 5 % en esas horas, y el aviso de una vez compara con ese
 error.
+
+## Resultado del 04-11-2026: no ayuda, el aeropuerto de Sabadell no se añade
+
+El aviso de una vez llegó el 04-11-2026, con 31 horas de lluvia en el
+registro: error (Brier) en días no vistos, a las mismas horas, 0,0601 con
+la lluvia de Sant Cugat y 0,0601 sin ella; el archivo tal como lo publica
+la web, 0,0337. Que las dos variantes empaten no es un fallo del rasgo:
+de 15.178 muestras con su dato, solo 142 (un 1 %) tienen lluvia en Sant
+Cugat al prever, y en 60 de ellas llovió en casa; con tan pocas, el rasgo
+no mueve el error medio. Se cierra la hipótesis: **no se pide la clave de
+OpenData de la AEMET ni se añade el aeropuerto de Sabadell**. El rasgo
+sigue en la variante, que `candidat` solo adoptaría si mejorase con
+seguridad.
