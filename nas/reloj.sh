@@ -47,6 +47,19 @@ HORA_COPIA=04:15
 
 registro() { printf '%s  %s\n' "$(date '+%F %T')" "$*"; }
 
+# Si GitHub no responde (incidencia de GitHub del 04-11-2026: el «git fetch»
+# falló de 10:45 a 11:00 y la web se quedó con los datos de las 10:30), se
+# publica con el código que ya hay: ya se desplegó y pasó sus pruebas. Solo se
+# para si no hay código con que publicar.
+sin_poner_al_dia() {
+  if [ -f "$REPO/publica.sh" ]; then
+    registro "no he podido poner al día el repositorio: sigo con $(git -C "$REPO" rev-parse --short HEAD 2>/dev/null)"
+    return 0
+  fi
+  registro "no he podido poner al día el repositorio"
+  return 1
+}
+
 prepara() {
   if [ ! -d "$REPO/.git" ]; then
     git clone -q "$URL_REPO" "$REPO" || { registro "no he podido clonar"; return 1; }
@@ -56,10 +69,10 @@ prepara() {
     # con la fecha, al registro.
     python3 "$REPO/desplegament.py" actualitza "$REPO" "$ESTAT_DIR/desplegament.json" 2>&1 >/dev/null \
       | while IFS= read -r linia; do registro "$linia"; done
-    [ "${PIPESTATUS[0]}" = 0 ] || { registro "no he podido poner al día el repositorio"; return 1; }
+    [ "${PIPESTATUS[0]}" = 0 ] || sin_poner_al_dia || return 1
   else
     git -C "$REPO" fetch -q origin main && git -C "$REPO" reset -q --hard origin/main \
-      || { registro "no he podido poner al día el repositorio"; return 1; }
+      || sin_poner_al_dia || return 1
   fi
 }
 

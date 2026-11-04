@@ -79,7 +79,11 @@ código con la referencia «auditoría del 07-10-2026».
    preguntar por ese commit en 15 minutos; si la API no responde, se
    despliega como antes y se dice. El reloj del NAS mueve la copia con
    `prepara` también en las pasadas programadas, así que un commit fallido no
-   llega por ninguna vía.
+   llega por ninguna vía. Si lo que falla es traer `main` (el `git fetch`),
+   el reloj publica con el commit que ya tiene y lo dice en el registro
+   (`sin_poner_al_dia` en `nas/reloj.sh`, 3.211.1): el 04-11-2026, una
+   incidencia de las operaciones git de GitHub dejó la web con los datos de
+   las 10:30 hasta que se publicó a mano a las 11:01.
 10. **Bot sin rastro de fallos** (`bot/bot.py`, `registra`): cada fallo de
     Telegram queda en `errors.log` (junto al estado, sin identificadores de
     nadie: el aviso, cuántos chats y el motivo), y un aviso de riera o de
