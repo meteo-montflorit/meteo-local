@@ -143,6 +143,8 @@ fi
 # La web pública, a su repositorio, con su propia clave de despliegue si la
 # hay (en el NAS). Un fallo aquí no detiene nada: se reintenta en la próxima
 # pasada, porque la marca de «ya publicado» solo se apunta si el push entra.
+# Si GitHub rechaza la conexión, se vuelve a probar al momento
+# (eines/ssh-reintenta.sh, incidencia del 04-11-2026).
 if [ -z "$DESTINO_MONTFLORIT" ]; then
   [ -z "$ESTAT_DIR" ] || echo "$(date +%s) $codi" > "$estat_gh"
 else
@@ -155,7 +157,7 @@ else
     python3 montflorit.py web "$publica" \
     && { [ ! -f "$dades/avisos.json" ] || cp "$dades/avisos.json" "$publica/avisos.json"; } \
     && [ -f "$publica/index.html" ] && [ -f "$publica/montflorit.json" ] \
-    && { [ ! -f "$CLAU_MONTFLORIT" ] || export GIT_SSH_COMMAND="ssh -i $CLAU_MONTFLORIT -o IdentitiesOnly=yes"; } \
+    && { [ ! -f "$CLAU_MONTFLORIT" ] || export GIT_SSH_COMMAND="$PWD/eines/ssh-reintenta.sh -i $CLAU_MONTFLORIT -o IdentitiesOnly=yes"; } \
     && git -C "$publica" init -q -b gh-pages \
     && git -C "$publica" add -A \
     && git -C "$publica" -c user.name="Juan José de Haro" -c user.email="8707929+jjdeharo@users.noreply.github.com" \

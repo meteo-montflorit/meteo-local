@@ -58,6 +58,17 @@ hosting de `bilateria.org`. Juanjo propuso IONOS y aprobó hacerlo así.
   GitHub.
 - En un día de aviso, unas 240 pasadas: Open-Meteo, unas 2.000 llamadas de
   las 10.000 diarias gratuitas; Montflorit, 240 consultas.
+- La subida de la web a GitHub vuelve a probar si GitHub rechaza la conexión
+  (`eines/ssh-reintenta.sh`, 3.212.1): hasta 8 intentos separados 3
+  segundos, con 10 segundos como mucho para conectar. El 04-11-2026, durante
+  una incidencia de GitHub, la mitad de las conexiones se rechazaban y la web
+  se quedó de 10:32 a 12:07 sin subir, con un solo intento por pasada; con
+  reintentos entró a la primera. Solo se repite cuando falla ssh (código
+  255), antes de que git envíe nada. Riesgo de bloqueo: GitHub no publica un
+  límite de conexiones SSH; como mucho son 8 conexiones cada 30 minutos
+  (`GH_CADA_MIN`), frente a las 60 por hora con que el reloj ya mira cada
+  minuto si `main` ha cambiado (`hay_cambios`). El peor caso, sin red, alarga
+  la pasada unos dos minutos.
 
 ## Evidencia
 
