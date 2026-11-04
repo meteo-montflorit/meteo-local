@@ -2,7 +2,7 @@
 """Datos fijos de «Temps a Montflorit»: lugares, horario, fuentes y umbrales.
 Se cambian aquí, no en los programas."""
 
-VERSION = "3.210.1"
+VERSION = "3.211.0"
 
 # Coordenadas con tres decimales (unos 100 m), no las exactas: para el tiempo
 # da igual una calle u otra, y el repositorio es público.
@@ -297,8 +297,8 @@ RIERA_VEINES_MIN = 3
 RIERA_VEINES_FRESCA_MIN = 20
 RIERA_VEINES_MAX_DIA = 500
 # También se consultan si llueve de forma moderada o más en el barrio: 1 mm o
-# más en media hora (2 mm/h, el primer escalón de la escala de intensidad de la
-# web) en la red del barrio (Juanjo, 18-10-2026), por si el radar aún no la ve.
+# más en media hora (2 mm/h; hasta la 3.210.1, el primer escalón de la escala de
+# intensidad de la web, la de AEMET) en la red del barrio (Juanjo, 18-10-2026), por si el radar aún no la ve.
 RIERA_VEINES_BARRI_MM = 1.0
 
 # Trenes de cerca (trens.py, ADR 0029): línea, operador y dónde para en

@@ -95,8 +95,8 @@ class Avis(unittest.TestCase):
         textos, _, _ = self.passades([(18, 30, False)])
         self.assertIn("Seria feble", textos[0])
         text, _ = PA.compara({"episodi": None}, salida(a(18), 30, mm_h=6.0), a(18))
-        self.assertIn("Seria moderada", text)       # franges de l'AEMET, com el radar
-        text, _ = PA.compara({"episodi": None}, salida(a(18), 30, mm_h=20.0), a(18))
+        self.assertIn("Seria moderada", text)       # franges de Meteocat, com el radar
+        text, _ = PA.compara({"episodi": None}, salida(a(18), 30, mm_h=45.0), a(18))
         self.assertIn("Seria forta", text)
 
     def test_plou_segons_la_web_no_nomes_casa(self):

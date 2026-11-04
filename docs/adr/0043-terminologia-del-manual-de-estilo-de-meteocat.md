@@ -56,3 +56,30 @@ y la imagen de la gráfica del bot (`grafica.js` `celNuvols`, `bot.icona_cel`,
 que en los mensajes de texto sigue siendo ☁️, porque no hay emoji de cielo
 cubierto). Juanjo, 25-10-2026: «cobert y molt ennuvolat tienen el mismo
 icono, no convendría diferenciarlos?».
+
+## Cambio del 04-11-2026 (3.211.0): el radar, también con la escala de Meteocat
+
+El radar (el cuadro, el mapa y su leyenda), la «pluja … a X km» del titular,
+el aviso de lluvia que llega («Serà moderada») y el bot usaban las franjas de
+AEMET por hora (`nowcast.FRANGES_MMH` = 2, 15, 30 y 60 mm/h, con «molt
+forta»), mientras la tabla por horas usaba las de este manual. El revisor
+(03-11-2026) vio 3,9 y 4,2 mm/h como «Pluja feble» en la tabla, lo que el
+radar llamaba «moderada». Recomendé AEMET por ser la escala oficial por
+hora; Juanjo: «y no es mejor la del meteocat que es la de aqui?». Ahora todo
+usa las del manual, en mm/h: feble < 6, moderada 6–40, forta 40–80,
+torrencial ≥ 80; «molt forta» desaparece y el mapa pasa de cinco colores a
+cuatro (azul claro, azul, naranja y rojo).
+
+- **Lo que no cambia de comportamiento.** La lluvia intensa que el titular
+  dice aunque no venga hacia aquí (`nowcast.forta`, ADR del 17-10-2026, con
+  truenos) sigue saliendo desde 15 mm/h (`INTENSA_MMH`), con la palabra de
+  Meteocat: una tormenta de 20 mm/h a 10 km es «Pluja moderada a 10 km».
+  Con el umbral de «forta» de Meteocat (40) no se habría dicho. La distancia
+  de la lluvia de 2 mm/h del registro del crecimiento (`km_moderada`,
+  `MODERADA_REGISTRE_MMH`) se mantiene, porque la medida está en curso.
+- **El aviso de lluvia** dice «Serà …» hasta moderada y «Pot ser …» desde
+  forta (antes, desde 15 mm/h).
+- **Validación**: `tests/test_nowcast.py` (las franjas, en los límites:
+  5,9 feble, 6 moderada, 40 forta, 80 torrencial; la lluvia intensa de
+  20 mm/h, que se dice como moderada), `test_bot.py`, `test_pluja_arriba.py`
+  y `test_web.py`; 761 pruebas.

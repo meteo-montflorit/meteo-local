@@ -54,8 +54,8 @@ radar.
   «demà», porque la ficha se relee otros días. Una ficha de un aviso que aún
   no ha empezado dice «Previst · Comença …», no «Actiu ara» (`comenca`).
 - **Umbrales y palabras, una sola regla**: la intensidad del aviso de lluvia
-  usa las franjas de AEMET del radar (2, 15, 30 y 60 mm/h; antes, «forta»
-  desde 4); las etiquetas del tramo «ratxes» y «calor», los umbrales del
+  usa las franjas del radar, las de Meteocat desde la 3.211.0 (6, 40 y 80
+  mm/h, ADR 0043; antes, las de AEMET, y antes aún, «forta» desde 4); las etiquetas del tramo «ratxes» y «calor», los umbrales del
   riesgo propio (más de 72 km/h y de 36,8 °C; una prueba lo comprueba); la
   nieve, con un decimal y redondeada (no «0 cm»); el riesgo «Pluja intensa
   prevista» y las etiquetas «pluja forta / torrencial» solo cuentan las horas

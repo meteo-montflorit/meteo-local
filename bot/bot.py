@@ -1678,7 +1678,7 @@ def text_radar_bot(dades, idioma, moment):
     elif r.get("possible"):
         que = (f"Puede llegar lluvia a Montflorit hacia las {h(r['possible'])}." if idioma == "es" else f"Pot arribar pluja a Montflorit cap a les {h(r['possible'])}.")
     elif (r.get("forta") or {}).get("km", 0) >= 1:
-        # Pluja forta o més a 15 km o menys, com a la web (17-10-2026).
+        # Pluja de 15 mm/h o més a 15 km o menys, com a la web (17-10-2026).
         f = r["forta"]
         cap = ("al " + DIRECCIO_ES.get(f["rumb"], f["rumb"]).removeprefix("el ")) if es else f["rumb"]
         nom = INTENSITAT_RADAR[idioma][f["classe"]]
@@ -1723,9 +1723,9 @@ def text_radar_bot(dades, idioma, moment):
     return f"{que}\n{detall}\n{vist}: {enllac}"
 
 
-# Les franges d'intensitat de l'AEMET, com nowcast.FRANGES_MMH (la 0, sense pluja).
-INTENSITAT_RADAR = {"ca": [None, "feble", "moderada", "forta", "molt forta", "torrencial"],
-                    "es": [None, "débil", "moderada", "fuerte", "muy fuerte", "torrencial"]}
+# Les franges d'intensitat de Meteocat, com nowcast.FRANGES_MMH (la 0, sense pluja).
+INTENSITAT_RADAR = {"ca": [None, "feble", "moderada", "forta", "torrencial"],
+                    "es": [None, "débil", "moderada", "fuerte", "torrencial"]}
 FASE_ES = {"prealerta": "prealerta", "alerta": "alerta", "emergència": "emergencia"}
 PLA_ES = {"d'inundacions": "de inundaciones", "de vent": "de viento", "de neu": "de nieve",
           "per onada de calor": "por ola de calor", "per onada de fred": "por ola de frío",

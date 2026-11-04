@@ -498,8 +498,11 @@ def rumb(v):
 # que el «quan arriba», perquè diguin el mateix. ---
 MAPA_KM = 30                # el mapa, de 30 km al voltant de casa
 PROPERA_MAX_KM = 60         # més lluny, no es diu
-FORTA_KM = 15               # la pluja forta o més, fins aquí (forta())
-FORTA_CLASSE = 3            # forta
+FORTA_KM = 15               # la pluja intensa, fins aquí (forta())
+# La pluja que el requadre diu encara que no vingui: des de 15 mm/h, com
+# abans amb la «forta» de l'AEMET. Amb la de Meteocat (des de 40) una
+# tempesta de 20 mm/h a 10 km no es diria; ara surt com a «moderada».
+INTENSA_MMH = 15
 CREIX_KM = 15               # creixement(): la pluja d'aquí al voltant
 CREIX_MIN = 30              # comparada amb la de fa 30 minuts, del mateix radar
 CREIX_MARGE_MIN = 5
@@ -507,22 +510,30 @@ CREIX_GUANY_KM2 = 50        # perquè es digui: 50 km² més que fa 30 minuts
 # (unes 7 parts de cada 100 del cercle); el doble de 10 km² no és res i el
 # doble de 216 és molt (Juanjo, 17-10-2026: «no es lo mismo el doble de 10km²
 # que de 216»; fins a la 3.131.0, el doble i 20 km²).
-# Les franges d'intensitat de l'AEMET (mm/h): feble, moderada, forta, molt
-# forta i torrencial; per sota de PLOU_MMH, sense pluja.
-FRANGES_MMH = (2, 15, 30, 60)
-INTENSITATS = {"ca": ("feble", "moderada", "forta", "molt forta", "torrencial"),
-               "es": ("débil", "moderada", "fuerte", "muy fuerte", "torrencial")}
+# Les franges d'intensitat del manual d'estil de Meteocat (feble < 3 mm en
+# 30 minuts, moderada 3–20, forta 20–40, torrencial > 40), en mm/h: el doble,
+# com la taula per hores (ADR 0043). Per sota de PLOU_MMH, sense pluja. Fins
+# a la 3.210.1, les de l'AEMET (2, 15, 30 i 60, amb «molt forta»): la taula
+# deia «feble» amb 4 mm/h i el radar, «moderada» (revisor, 03-11-2026; Juanjo,
+# 04-11-2026: «no es mejor la del meteocat que es la de aqui?»).
+FRANGES_MMH = (6, 40, 80)
+INTENSITATS = {"ca": ("feble", "moderada", "forta", "torrencial"),
+               "es": ("débil", "moderada", "fuerte", "torrencial")}
+# La distància de la pluja de 2 mm/h o més al registre del creixement
+# (creixement.csv, «km_moderada»): es manté, perquè la mesura en curs
+# segueixi sent comparable.
+MODERADA_REGISTRE_MMH = 2
 
 
 def nom_intensitat(mm_h, idioma="ca"):
-    """La paraula de les franges de l'AEMET per a una intensitat en mm/h: la
+    """La paraula de les franges de Meteocat per a una intensitat en mm/h: la
     mateixa per al requadre del radar i per a l'avís de pluja (abans l'avís
     deia «forta» des de 4 mm/h i el radar, des de 15; inventari del 18-10-2026)."""
     return INTENSITATS[idioma][sum(mm_h >= l for l in FRANGES_MMH)]
 
 
 def classe(mm):
-    """0 sense pluja; 1 feble … 5 torrencial."""
+    """0 sense pluja; 1 feble, 2 moderada, 3 forta, 4 torrencial."""
     import numpy as np
     return np.digitize(mm, [PLOU_MMH, *FRANGES_MMH])
 
@@ -567,18 +578,20 @@ def propera(camp, fila, col, km_px, max_km=PROPERA_MAX_KM):
 
 
 def forta(camp, fila, col, km_px, max_km=FORTA_KM):
-    """La pluja més intensa, si és forta o més, a max_km o menys de casa: a
-    quants km i cap a on hi ha el punt més proper amb aquesta intensitat.
+    """La pluja més intensa, si és de INTENSA_MMH o més, a max_km o menys de
+    casa: a quants km i cap a on hi ha el punt més proper amb la classe més
+    alta.
     None si no n'hi ha. Perquè el requadre no digui només «la més propera,
     feble» amb una tempesta a 10 km (Juanjo, 17-10-2026: «esta tronando… y
     el radar decía que no había nada»)."""
     import numpy as np
     yy, xx = np.ogrid[:camp.shape[0], :camp.shape[1]]
     dist = np.hypot((yy - fila) * km_px, (xx - col) * km_px)
-    cl = np.where(dist <= max_km, classe(camp), 0)
-    maxim = int(cl.max())
-    if maxim < FORTA_CLASSE:
+    intensa = (dist <= max_km) & (camp >= INTENSA_MMH)
+    if not intensa.any():
         return None
+    cl = np.where(intensa, classe(camp), 0)
+    maxim = int(cl.max())
     d = np.where(cl == maxim, dist, np.inf)
     f, c = np.unravel_index(np.argmin(d), d.shape)
     angle = math.degrees(math.atan2(c - col, -(f - fila))) % 360
@@ -612,7 +625,7 @@ def creixement(r, fila, col, km_px):
         return round(float(((camp >= PLOU_MMH) & a_prop).sum() * km_px ** 2))
 
     def km_moderada(camp):
-        m = camp >= FRANGES_MMH[0]
+        m = camp >= MODERADA_REGISTRE_MMH
         return round(float(dist[m].min()), 1) if m.any() else None
 
     ara, abans = km2(rv["mm_h"][-1]), km2(rv["mm_h"][j])

@@ -981,7 +981,7 @@ function textRadar(r, plou) {
   if (estat === 'no' && r.pluja && r.pluja.plugim) {
     return ['possible', T('El radar veu pluja molt feble a sobre (plugim), que les estacions no mesuren')];
   }
-  // Pluja forta o més a 15 km o menys que no ve cap aquí: es diu al titular,
+  // Pluja de 15 mm/h o més a 15 km o menys que no ve cap aquí: es diu al titular,
   // amb el color de «pot arribar» (Juanjo, 17-10-2026, amb trons i el radar
   // dient «no veu pluja que vingui cap aquí»: «esta imagen es compatible con
   // el mensaje?»).
@@ -1099,8 +1099,9 @@ function blocRadar(r, plou, hores) {
 // gran. A sota, el Mapa base estàndard gris de l'ICGC del mateix quadrat
 // (img/radar-fons.webp, fet amb eines/fons_radar.py), amb els noms dels
 // pobles, la costa i les carreteres. ---
-const NOM_INTENSITAT = () => [null, T('feble'), T('moderada'), T('forta'), T('molt forta'), T('torrencial')];
-const COLOR_INTENSITAT = [null, '#93c5fd', '#2563eb', '#facc15', '#f97316', '#dc2626'];
+// Les franges de Meteocat (nowcast.FRANGES_MMH; fins a la 3.210.1, les cinc de l'AEMET).
+const NOM_INTENSITAT = () => [null, T('feble'), T('moderada'), T('forta'), T('torrencial')];
+const COLOR_INTENSITAT = [null, '#93c5fd', '#2563eb', '#f97316', '#dc2626'];
 // El plugim que només es diu si el veuen els dos radars (ADR 0019): lila clar,
 // com la franja més baixa del radar de Meteocat.
 const COLOR_PLUGIM = '#c4b5fd';

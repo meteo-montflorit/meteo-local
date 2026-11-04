@@ -1124,9 +1124,9 @@ class Web(unittest.TestCase):
         lluny = {"arriba": "2026-10-08T19:30", "pluja": {"estat": "arriba"}}
         self.assertTrue(self.avalua(ara, f"textRadar({json.dumps(lluny)}, false)")[1][0].startswith("Pluja "))
         # Pluja forta a prop que no ve cap aquí: al titular (17-10-2026, amb trons).
-        forta = {"arriba": None, "possible": None, "forta": {"km": 10.2, "rumb": "al nord", "classe": 4}}
+        forta = {"arriba": None, "possible": None, "forta": {"km": 10.2, "rumb": "al nord", "classe": 3}}
         self.assertEqual(self.avalua(ara, f"textRadar({json.dumps(forta)}, false)"),
-                         ["a-prop", "Pluja molt forta a 10\u00a0km al nord, que de moment no ve cap aquí"])
+                         ["a-prop", "Pluja forta a 10\u00a0km al nord, que de moment no ve cap aquí"])
         # La pluja que creix al voltant (17-10-2026).
         c = {"creixement": {"creix": True, "km2": 216, "km2_abans": 113, "pct": 31, "pct_abans": 16}}
         self.assertEqual(self.avalua(ara, f"textCreixement({json.dumps(c)})"),

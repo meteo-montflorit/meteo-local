@@ -276,10 +276,10 @@ def calcula_veines(ahora, nc, consulta):
 
 def cal_veines(res, nc, ahora, pluja_barri=None):
     """Si cal mirar les estacions: plou a Meteocat, el radar en veu sobre la
-    conca en l'hora que ve, plou de manera moderada o més al barri o hi ha un
+    conca en l'hora que ve, plou de 2 mm/h o més al barri o hi ha un
     episodi obert. pluja_barri: la pluja de la darrera mitja hora de la xarxa
-    del barri (casa.consens, la mediana); des d'1 mm, 2 mm/h, el primer graó
-    de l'escala d'intensitat de la web: amb plugim la riera no puja (Juanjo,
+    del barri (casa.consens, la mediana); des d'1 mm, 2 mm/h (fins a la 3.210.1, el
+    primer graó de l'escala d'intensitat de la web, la de l'AEMET): amb plugim la riera no puja (Juanjo,
     18-10-2026: «que llueva, pero de forma importante»). Cobreix la pluja que
     el radar encara no veu sobre la conca mentre Meteocat no s'ha actualitzat.
     Sense dades recents de Meteocat, sempre: les estacions el substitueixen

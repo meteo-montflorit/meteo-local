@@ -590,8 +590,10 @@ cada vez más cerca, como la tormenta del 17-10-2026, que pasó de 0 a 118 km²
 a 15 km o menos de casa en media hora sin acercarse. Desde ese día se
 registra también, para cada imagen de RainViewer (`creixement.csv`), la
 superficie con lluvia (0,5 mm/h o más) a 15 km o menos, $`A_t`$, la de 30
-minutos antes, $`A_{t-30}`$, y la distancia de la lluvia moderada (2 mm/h o
-más) en las dos. La página solo dice lo medido, como parte del círculo de
+minutos antes, $`A_{t-30}`$, y la distancia de la lluvia de 2 mm/h o
+más en las dos (la «moderada» de AEMET; el campo conserva el nombre,
+`km_moderada`, y el umbral, para que el registro siga siendo comparable
+aunque desde la 3.211.0 la web use las franjas de Meteocat). La página solo dice lo medido, como parte del círculo de
 15 km (unos 707 km²) que ocupa la lluvia ahora y hace media hora («ja ocupa
 el 31 % del terreny a 15 km o menys; fa mitja hora, el 16 %»), cuando ha
 ganado al menos 50 km²: $`A_t - A_{t-30} \ge 50`$ km². Se cuenta lo que gana

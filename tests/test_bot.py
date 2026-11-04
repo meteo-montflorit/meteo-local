@@ -392,13 +392,13 @@ class Resum(unittest.TestCase):
         # 17-10-2026: amb trons, deia «El radar no veu pluja que vingui cap a Montflorit».
         d = dades()
         d["radar"] = {"hora": ARA.isoformat(timespec="minutes"), "imatge": "rainviewer", "arriba": None, "possible": None,
-                      "forta": {"km": 10.2, "rumb": "al nord", "classe": 4},
+                      "forta": {"km": 10.2, "rumb": "al nord", "classe": 3},
                       "propera": {"km": 6.4, "rumb": "al nord-est", "mm_h": 0.6, "classe": 1}}
         ca = B.text_radar_bot(d, "ca", ARA)
-        self.assertTrue(ca.startswith("Pluja molt forta a 10\u00a0km al nord, que de moment no ve cap a Montflorit.\n"
+        self.assertTrue(ca.startswith("Pluja forta a 10\u00a0km al nord, que de moment no ve cap a Montflorit.\n"
                                       "La més propera, a 6\u00a0km al nord-est (feble)."))
         self.assertTrue(B.text_radar_bot(d, "es", ARA).startswith(
-            "Lluvia muy fuerte a 10\u00a0km al norte, que de momento no viene hacia Montflorit."))
+            "Lluvia fuerte a 10\u00a0km al norte, que de momento no viene hacia Montflorit."))
         # La pluja que creix al voltant, com a la web.
         d["radar"]["creixement"] = {"creix": True, "km2": 216, "km2_abans": 113, "pct": 31, "pct_abans": 16}
         self.assertIn("\nLa pluja s'està formant a prop: ja ocupa el 31\u00a0% del terreny a 15\u00a0km o menys; "
@@ -962,12 +962,12 @@ class AvisosPublics(unittest.TestCase):
         # notificació, en tocar-la (Juanjo, 08-10-2026).
         def salida(imatge, arriba="2026-10-07T07:15+02:00"):
             return {"radar": {"imatge": imatge, "hora": "2026-10-07T07:00+02:00", "arriba": arriba,
-                              "arriba_mm_h": 5}}
+                              "arriba_mm_h": 8}}
         with unittest.mock.patch.object(AB.PA, "falta_min", return_value=12):
             t = AB.text_pluja(salida("rainviewer"), ARA)
         self.assertEqual(t["url"], AB.C.RADAR_EN_DIRECTE["rainviewer"])
         self.assertTrue(t["ca"].endswith(f'Radar en directe: <a href="{AB.html.escape(t["url"])}">RainViewer</a>'))
-        # 5 mm/h: moderada, com al radar (franges de l'AEMET, 18-10-2026).
+        # 8 mm/h: moderada, com al radar (franges de Meteocat, des de la 3.211.0).
         self.assertIn("Será moderada.\nRadar en directo:", t["es"])
         self.assertTrue(t["push"]["ca"].endswith("Serà moderada. Toca per veure el radar."))
         self.assertNotIn("<a ", t["push"]["es"])

@@ -137,7 +137,8 @@ def text_pluja(salida, ahora):
     mm = r.get("arriba_mm_h")
     forca = {"ca": "", "es": ""}
     if mm is not None:
-        # Les franges de l'AEMET, com el requadre del radar (N.nom_intensitat).
+        # Les franges de Meteocat, com el requadre del radar (N.nom_intensitat):
+        # «Serà» fins a moderada i «Pot ser» des de forta.
         segura = mm < N.FRANGES_MMH[1]
         forca = {"ca": f" {'Serà' if segura else 'Pot ser'} {N.nom_intensitat(mm, 'ca')}.",
                  "es": f" {'Será' if segura else 'Puede ser'} {N.nom_intensitat(mm, 'es')}."}

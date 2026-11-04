@@ -29,11 +29,12 @@ class MapaIPropera(unittest.TestCase):
         self.assertIsNone(N.propera(camp, fila, col, km))
         self.assertIsNone(N.mapa(camp, fila, col, km))
         camp[374, 384] = 1.0          # feble, uns 9 km al nord
-        camp[384, 395] = 20.0         # forta, uns 9,4 km a l'est
+        camp[384, 395] = 45.0         # forta, uns 9,4 km a l'est
         p = N.propera(camp, fila, col, km)
         self.assertEqual((p["rumb"], p["classe"]), ("al nord", 1))
         self.assertAlmostEqual(p["km"], 9.3, delta=0.2)
-        self.assertEqual([int(N.classe(x)) for x in (0.4, 0.5, 2, 15, 30, 60)], [0, 1, 2, 3, 4, 5])
+        # Les franges de Meteocat en mm/h (el doble de les de 30 minuts).
+        self.assertEqual([int(N.classe(x)) for x in (0.4, 0.5, 5.9, 6, 39.9, 40, 80)], [0, 1, 1, 2, 2, 3, 4])
         m = N.mapa(camp, fila, col, km)
         self.assertEqual(len(m["classes"]), m["n"] ** 2)
         n0 = (m["n"] - 1) // 2
@@ -96,10 +97,12 @@ class MapaIPropera(unittest.TestCase):
         camp = np.zeros((N.MIDA, N.MIDA))
         camp[380, 384] = 1.0          # feble, uns 4 km al nord
         self.assertIsNone(N.forta(camp, fila, col, km))
-        camp[384, 395] = 20.0         # forta, uns 9,4 km a l'est
-        camp[373, 384] = 35.0         # molt forta, uns 10 km al nord: mana la més intensa
+        camp[384, 395] = 20.0         # moderada però intensa (15 mm/h o més), uns 9,4 km a l'est: es diu
         f = N.forta(camp, fila, col, km)
-        self.assertEqual((f["rumb"], f["classe"]), ("al nord", 4))
+        self.assertEqual((f["rumb"], f["classe"]), ("a l'est", 2))
+        camp[373, 384] = 45.0         # forta, uns 10 km al nord: mana la més intensa
+        f = N.forta(camp, fila, col, km)
+        self.assertEqual((f["rumb"], f["classe"]), ("al nord", 3))
         self.assertAlmostEqual(f["km"], 10.2, delta=0.3)
         # Més lluny de FORTA_KM, no.
         lluny = np.zeros((N.MIDA, N.MIDA))

@@ -558,7 +558,6 @@ var IDIOMA = {
     "feble": "débil",
     "moderada": "moderada",
     "forta": "fuerte",
-    "molt forta": "muy fuerte",
     "torrencial": "torrencial",
     "La més propera, a {0}\u00a0km {1} ({2}).": "La más cercana, a {0}\u00a0km {1} ({2}).",
     "Pluja {0} a {1}\u00a0km {2}, que de moment no ve cap aquí": "Lluvia {0} a {1}\u00a0km {2}, que de momento no viene hacia aquí",
