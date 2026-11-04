@@ -26,6 +26,17 @@ actualizarse y enlace al tiempo en casa.
   `MARGE_RETARD_MIN` de retraso. Contada desde el reloj, una página abierta a
   las 13:31 con datos de las 13:15 decía «propera: 13:45» y no leía la de las
   13:30 hasta las 13:47.
+- **La línea nunca da una «propera» que ya ha pasado** (`properaVisible`,
+  3.212.0): pasados `MARGE_AVIS_RETARD_MIN` (3 minutos) de la hora en que la
+  página lee una actualización sin que haya llegado, la línea muestra la
+  siguiente del horario y avisa «L'actualització de les… no s'ha fet». La
+  página sigue esperando la que falta como antes (`properaPendent`, hasta
+  `MARGE_RETARD_MIN`). El aviso salía a los 20 minutos: el 04-11-2026, con
+  GitHub caído, a las 10:58 decía «Actualitzat a les 10:30 · propera: 10:47»
+  sin explicación (Juanjo: «marca mal las horas»). Los 3 minutos salen de lo
+  medido ese día: nueve de cada diez publicaciones llegan unos 2 minutos
+  después de su hora, alguna hasta 7, así que con retrasos largos el aviso
+  puede salir y quitarse al poco.
 - **Las horas de «Actualitzat a les… · propera…» son las reales** (desde la
   3.185.0; Juanjo, 22-10-2026: «la gente se queda mirando la hora y ve que no
   pasa»). La primera, la hora en que los datos llegaron al servidor (la

@@ -2,8 +2,13 @@
 // Peces comunes de les dues pàgines: utilitats, horari d'actualització,
 // versió i commutador de tema.
 
-// Marge abans de dir que una actualització prevista no s'ha fet.
+// Marge que la pàgina continua esperant una actualització que no arriba
+// abans de passar a la següent de l'horari (lectures, properaPendent).
 const MARGE_RETARD_MIN = 20;
+// Minuts, passada l'hora en què la pàgina llegeix una actualització, abans de
+// dir que no ha arribat. Nou de cada deu arriben al servidor uns 2 minuts
+// després de l'hora (ESPERA_PUBLICACIO_MIN), alguna fins a 7 (04-11-2026).
+const MARGE_AVIS_RETARD_MIN = 3;
 
 const $ = (id) => document.getElementById(id);
 
@@ -437,8 +442,8 @@ function avisosFonts(dades, fonts) {
     }
   }
   if (vistos.size) {
-    const pendent = dades.horari && properaPendent(dades);
-    const quan = pendent && horaCurta(new Date(pendent.getTime() + ESPERA_PUBLICACIO_MIN * 60000));
+    const propera = dades.horari && properaVisible(dades).propera;
+    const quan = propera && horaCurta(propera);
     avisos[avisos.length - 1] += ' ' + (!ara ? T('Es torna a provar a cada actualització.')
       : quan ? T`Es torna a provar a la propera actualització, a les ${quan}.`
         : T('Es torna a provar a la propera actualització.'));
@@ -501,13 +506,11 @@ const TEXT_FONT_FALLA = () => {
 function pintaHorari(dades, fonts = FONTS_TEMPS) {
   const ara = new Date();
   const generat = horaDades(dades);
-  const hores = horesActualitzacio(dades.horari);
   // La propera, quan la pàgina tornarà a llegir les dades: l'hora prevista i
   // el marge que deixa perquè s'hagin publicat (Juanjo, 22-10-2026: amb l'hora
-  // prevista, «la gente se queda mirando la hora y ve que no pasa»).
-  const pendent = properaPendent(dades, ara);
-  const propera = pendent && new Date(pendent.getTime() + ESPERA_PUBLICACIO_MIN * 60000);
-  const darreraPrevista = hores.filter((t) => t <= ara).pop();
+  // prevista, «la gente se queda mirando la hora y ve que no pasa»); mai una
+  // que ja ha passat (properaVisible).
+  const { propera, fallida } = properaVisible(dades, ara);
   // L'hora d'actualització, destacada, al capdamunt de la pàgina (Juanjo, 09-10-2026:
   // «visible nada más abrir»).
   const dia = mateixDia(generat, ara) ? '' : T` del ${textData(generat)}`;
@@ -523,10 +526,7 @@ function pintaHorari(dades, fonts = FONTS_TEMPS) {
   // Calculades fora de casa perquè el servidor habitual no publica (ADR 0032).
   if (dades.reserva) linia.append(' ', element('span', 'reserva', T('Dades del servidor de reserva.')));
   const avisos = [];
-  if (darreraPrevista && new Date(dades.generat) < darreraPrevista - 5 * 60000
-      && ara - darreraPrevista > MARGE_RETARD_MIN * 60000) {
-    avisos.push(T`L’actualització de les ${horaCurta(new Date(darreraPrevista.getTime() + ESPERA_PUBLICACIO_MIN * 60000))} no s’ha fet: les dades són de les ${horaCurta(generat)}.`);
-  }
+  if (fallida) avisos.push(T`L’actualització de les ${horaCurta(fallida)} no s’ha fet: les dades són de les ${horaCurta(generat)}.`);
   avisos.push(...avisosFonts(dades, fonts));
   $('avis-dades').textContent = avisos.join(' ');
   $('avis-dades').hidden = !avisos.length;
@@ -553,6 +553,24 @@ function properaPendent(dades, ara = new Date()) {
   const pendent = hores.find((t) => t > generat);
   if (pendent && ara - pendent <= MARGE_RETARD_MIN * 60000) return pendent;
   return hores.find((t) => t > ara) || null;
+}
+
+// La «propera» que es mostra i, si n'hi ha, l'última que no ha arribat. Mai
+// una hora que ja ha passat: el 04-11-2026, amb GitHub caigut, a les 10:58
+// deia «Actualitzat a les 10:30 · propera: 10:47» i l'avís no sortia fins
+// als 20 minuts (Juanjo: «marca mal las horas»). Passats
+// MARGE_AVIS_RETARD_MIN de l'hora de lectura sense dades noves, es diu que
+// no s'ha fet i la propera és la següent de l'horari. Les hores són les de
+// lectura (la prevista més ESPERA_PUBLICACIO_MIN); propera, null si avui ja
+// no en queda cap.
+function properaVisible(dades, ara = new Date()) {
+  const generat = new Date(dades.generat);
+  const lectura = (t) => new Date(t.getTime() + ESPERA_PUBLICACIO_MIN * 60000);
+  const limit = ara - MARGE_AVIS_RETARD_MIN * 60000;
+  const pendents = horesActualitzacio(dades.horari).filter((t) => t > generat).map(lectura);
+  const fallida = pendents.filter((t) => t < limit).pop() || null;
+  const propera = pendents.find((t) => t >= limit) || null;
+  return { propera, fallida };
 }
 
 // Propera actualització segons l'horari: avui o, si ja no n'hi ha cap, la

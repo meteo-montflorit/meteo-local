@@ -1179,6 +1179,24 @@ class Web(unittest.TestCase):
         tard = {**dades, "generat": "2026-10-11T23:45+02:00"}
         self.assertIsNone(self.avalua("2026-10-11T23:50:00+02:00", f"properaPendent({json.dumps(tard)})"))
 
+    def test_propera_mai_passada(self):
+        # 04-11-2026: a les 10:58, amb dades de les 10:30 (GitHub caigut),
+        # deia «propera: 10:47» i no avisava fins als 20 minuts.
+        dades = {"generat": "2026-11-04T10:30+01:00", "horari": {"trams": [["00:00", "23:45"]], "cada_min": 15}}
+        expr = (f"(({{propera, fallida}}) => [propera && propera.toISOString(), fallida && fallida.toISOString()])"
+                f"(properaVisible({json.dumps(dades)}))")
+        # Mentre arriba (fins a 3 minuts després de la lectura de les 10:47),
+        # la de les 10:47 i cap avís.
+        self.assertEqual(self.avalua("2026-11-04T10:49:00+01:00", expr), ["2026-11-04T09:47:00.000Z", None])
+        # Passat el marge, la següent i l'avís de la que no ha arribat.
+        self.assertEqual(self.avalua("2026-11-04T10:58:00+01:00", expr),
+                         ["2026-11-04T10:02:00.000Z", "2026-11-04T09:47:00.000Z"])
+        # Si en falten dues, l'avís diu la darrera.
+        self.assertEqual(self.avalua("2026-11-04T11:06:00+01:00", expr),
+                         ["2026-11-04T10:17:00.000Z", "2026-11-04T10:02:00.000Z"])
+        # Al final del dia, cap propera.
+        self.assertEqual(self.avalua("2026-11-04T23:51:00+01:00", expr)[0], None)
+
     def test_dades_velles(self):
         # Amb més de 2 hores, la previsió ja no es mostra (ADR 0031).
         expr = ("[dadesVelles({generat: '2026-10-07T06:50:00+02:00'}), "
