@@ -141,6 +141,24 @@ inclúyelas si son reales, explicando por qué.
   la vuelta tuvieran más probabilidad en un medio que en otro.
 - La diferencia de la parte alta se dice redondeada al grado: 0,5 °C sale
   como «1 °C més» (Juanjo, 13-10-2026), y no sale si redondeada es 0.
+- «Fins a 17 °C a la part alta» es el máximo, hora por hora, de la
+  temperatura más su `dif_alta` prevista (en `hores`), no la máxima del día
+  más la diferencia de ahora (`mesurat_ara.dif_alta`): de noche la diferencia
+  es de medio grado y en una tarde soleada pasa de 2 °C. Compáralo con la
+  `dif_alta` de las horas de la máxima (falsas alarmas del 03 y 04-11-2026).
+- La sensación de cada tramo («fred», «molt de fred»…) usa la temperatura que
+  se nota, con el índice de viento de Environment Canada desde 5 km/h y
+  10 °C o menos, hora por hora: 6 °C con 9 km/h se notan como 4 °C, «molt de
+  fred». No la juzgues con la temperatura del aire sola.
+- En «Riera», el bloque «Ara» dice de dónde sale su lluvia: la estación de
+  Meteocat o, si dan más, la mediana de las estaciones particulares de Sant
+  Cugat; la frase de las 24 horas es siempre de Meteocat. Con la mediana,
+  sus 6 horas pueden superar las 24 horas de Meteocat: son fuentes distintas.
+  El «Índex» es el peor momento de aquí a una hora (la lluvia medida de 3 y
+  de 6 horas hasta ese momento más la que trae el radar), así que su cifra
+  de 6 horas puede quedar por debajo de la medida ahora si ese momento deja
+  fuera lluvia antigua mientras sube la de 3 horas. Sí es un error que sin
+  subir la de 3 horas el índice de 6 quede por debajo de lo medido.
 - La hora «propera» de la actualización sale de un horario fijo (cada 15
   minutos, o cada 6 en vigilancia, en horas fijas), no de sumar el intervalo
   a la última; una publicación fuera de horario (por código nuevo) puede

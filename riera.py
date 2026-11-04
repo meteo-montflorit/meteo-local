@@ -155,7 +155,11 @@ def nivell_amb_radar(filas, fins, nc, ahora):
         mm6 = round(acumulat(filas, fins, max(6 - minuts / 60, 0)) + radar, 1)
         d_aqui = max(0, int(minuts - (ahora - fins).total_seconds() / 60))
         n = nivell(mm3, mm6)
-        clau = (NIVELLS.index(n), mm3, d_aqui)
+        # A igual nivell i pluja de 3 hores, la de més pluja de 6 i, després,
+        # el moment més proper: fins a la 3.210.0 guanyava el més llunyà, i
+        # sense pluja en 3 hores l'índex de 6 deixava fora la mesurada fa 5 o
+        # 6 hores («0,0 en 6» amb 3,0 mesurats; revisor, 04-11-2026).
+        clau = (NIVELLS.index(n), mm3, mm6, -minuts)
         if millor is None or clau > millor[0]:
             millor = (clau, n, mm3, mm6, d_aqui)
     return millor[1:]
@@ -262,7 +266,7 @@ def calcula_veines(ahora, nc, consulta):
         mm3 = round(med(max(C.RIERA_HORES - minuts / 60, 0)) + radar, 1)
         mm6 = round(med(max(6 - minuts / 60, 0)) + radar, 1)
         n = nivell(mm3, mm6)
-        clau = (NIVELLS.index(n), mm3, minuts)
+        clau = (NIVELLS.index(n), mm3, mm6, -minuts)   # com nivell_amb_radar
         if millor is None or clau > millor[0]:
             millor = (clau, n, mm3, mm6, minuts)
     return {"n": len(series), "estacions": sorted(series), "fins": H.clau(fins),

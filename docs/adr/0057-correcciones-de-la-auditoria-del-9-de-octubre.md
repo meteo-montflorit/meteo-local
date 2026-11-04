@@ -28,6 +28,12 @@ del informe.
    `index_6h` e `index_d_aqui_a_min` son los de la pareja que lo alcanza
    (la de más lluvia de 3 horas, como antes). El caso del informe pasa de
    peligro a atención; con 10 mm más antes del chaparrón, sigue en peligro.
+   A igual nivel y lluvia de 3 horas, gana la pareja con más lluvia de 6 y,
+   después, el momento más cercano (3.210.1). Hasta entonces ganaba el más
+   lejano: sin lluvia en 3 horas, el índice de 6 dejaba fuera la medida
+   hace 5 o 6 horas y la página decía «0,0 en 6» con 3,0 mm medidos
+   (revisor, 04-11-2026; `test_sense_pluja_en_3_hores_l_index_de_6_es_el_mesurat`).
+   El nivel no cambia: solo las cifras que se muestran.
 2. **La publicación se detiene si falla el generador** (`publica.sh`).
    Dentro de la condición de un `if`, Bash no aplica `set -e`: con
    `montflorit.py web` fallando, seguían el `git add`, el `commit` y el

@@ -76,9 +76,9 @@ function pintaPrevisio(p) {
   }
   if (p.mm_6h_max >= 1) frases.push(T`En 6 hores, fins a ${coma(p.mm_6h_max)} mm.`);
   // El sòl mullat, només si ha plogut almenys 1 mm: amb 0 mm no hi ha res mullat (revisor, 02-11-2026).
-  if (p.xv_24h >= 1) frases.push(T`A Sant Cugat han caigut ${coma(p.xv_24h)} mm en les últimes 24 hores: el sòl mullat fa pujar la riera abans.`);
-  else if (p.xv_24h > 0) frases.push(T`A Sant Cugat han caigut ${coma(p.xv_24h)} mm en les últimes 24 hores.`);
-  else if (p.xv_24h != null) frases.push(T('A Sant Cugat no ha plogut en les últimes 24 hores.'));
+  if (p.xv_24h >= 1) frases.push(T`A Sant Cugat (Meteocat) han caigut ${coma(p.xv_24h)} mm en les últimes 24 hores: el sòl mullat fa pujar la riera abans.`);
+  else if (p.xv_24h > 0) frases.push(T`A Sant Cugat (Meteocat) han caigut ${coma(p.xv_24h)} mm en les últimes 24 hores.`);
+  else if (p.xv_24h != null) frases.push(T('A Sant Cugat (Meteocat) no ha plogut en les últimes 24 hores.'));
   if (p.generat) frases.push(T`Previsió llegida a les ${horaCurta(p.generat)}.`);
   detall.replaceChildren(element('p', 'riera-detalls', frases.join(' ')));
 }
@@ -109,7 +109,7 @@ function pintaAra(dades) {
       : T('El radar no hi veu pluja per a l’hora següent.'));
   }
   if (r.index != null) {
-    frases.push(T`Índex: ${coma(r.index)} mm en 3 hores i ${coma(r.index_6h)} en 6 (mesurat més radar); atenció des de 35, perill des de 50 i 60.`);
+    frases.push(T`Índex: ${coma(r.index)} mm en 3 hores i ${coma(r.index_6h)} en 6 (mesurat més radar, en el pitjor moment d’aquí a una hora); atenció des de 35, perill des de 50 i 60.`);
   }
   if (r.capcalera) frases.push(T`Al Fabra (Collserola), ${coma(r.capcalera.mm_3h)} mm en 3 hores.`);
   if (r.incomplet) frases.push(T('A l’estació li falten mesures: la pluja real pot ser més alta.'));

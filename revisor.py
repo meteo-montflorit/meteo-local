@@ -328,9 +328,13 @@ def toca(estat, casa, avisos, moment, problemes_regles):
 def context(casa, avisos, textos, moment, motiu, problemes_regles, resum=None, informats=None, config=None):
     """Todo lo que el revisor necesita, en un solo texto: lo que dice la web, lo
     que se ha enviado y los datos de los que sale."""
-    hores = [{k: h.get(k) for k in ("hora", "temperatura", "probabilitat", "pluja_mm", "plou_ara", "segons_radar",
-                                    "segons_estacio", "cel", "vent", "ratxa")}
-             for h in (casa.get("hores") or [])[:12]]
+    # Amb la diferència de la part alta de cada hora i fins a 24 hores: «fins a
+    # 17 °C a la part alta» surt de la de la tarda (2 °C), i amb 12 hores i
+    # sense aquest camp el revisor la comparava amb la d'ara (0,5 °C) i ho
+    # donava per error quatre vegades (03 i 04-11-2026).
+    hores = [{k: h.get(k) for k in ("hora", "temperatura", "dif_alta", "probabilitat", "pluja_mm", "plou_ara",
+                                    "segons_radar", "segons_estacio", "cel", "vent", "ratxa")}
+             for h in (casa.get("hores") or [])[:24]]
     dades = {
         "ara": moment.isoformat(timespec="minutes"),
         "mesurat_ara": casa.get("ara_casa"),

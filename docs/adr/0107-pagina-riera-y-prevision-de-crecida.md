@@ -52,7 +52,12 @@ partes («hazlo así»).
   lluvia de las últimas 24 horas en Sant Cugat (el suelo mojado, 12.3). La
   página solo dice que el suelo mojado hace subir antes la riera desde 1 mm;
   con menos, da la cifra sola, y con 0, «no ha plogut» (3.209.1, a raíz del
-  revisor: con 0,0 mm hablaba de suelo mojado).
+  revisor: con 0,0 mm hablaba de suelo mojado). La frase dice que la cifra
+  es de Meteocat («A Sant Cugat (Meteocat)…», 3.210.1): cuando el bloque
+  «Ara» toma la mediana de las estaciones particulares, sus 6 horas podían
+  superar las 24 horas de Meteocat y parecía una contradicción (revisor,
+  03-11-2026: 6,1 mm en 6 horas y 5,8 en 24). El «Índex» del detalle dice
+  que es el peor momento de aquí a una hora (ADR 0057).
   «Risc de crescuda possible» desde `RIERA_PREVISIO_MM = 20`. Va en
   `casa.json` (`riera_previsio`) y en `avisos.json`, para la pestaña.
 - **No es un aviso**: no sale por Telegram, ni en el navegador, ni en «Avisos
