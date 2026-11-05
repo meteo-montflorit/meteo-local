@@ -342,7 +342,7 @@ function textActualitzacio(horari) {
   const totElDia = horari.trams.length === 1 && inici === '00:00';
   const franges = horari.trams.map(([a, b]) => `${a}\u2013${b}`).join(T(' i '));
   const trams = totElDia ? '' : T` Només s’actualitza de ${franges}.`;
-  return motiuActualitzacio(horari, avis) + T`La pàgina s’actualitza cada ${normal} minuts, i cada ${avis} quan hi ha un avís del Meteocat o de l’AEMET en vigor, un pla de Protecció Civil en alerta o emergència, pluja a Montflorit o pluja al radar a menys de ${horari.radar_km || 15} km.` + trams;
+  return motiuActualitzacio(horari, avis) + T`La pàgina s’actualitza cada ${normal} minuts, i cada ${avis} quan hi ha un avís del Meteocat o de l’AEMET en vigor, un pla de Protecció Civil en alerta o emergència, pluja a Montflorit, o pluja al radar a ${horari.radar_km || 15} km o menys o que pot arribar en la propera hora.` + trams;
 }
 
 // En mode avís, el motiu d'ara, al davant (Juanjo, 20-10-2026: «por qué se

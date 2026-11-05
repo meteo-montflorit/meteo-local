@@ -168,3 +168,12 @@ hora, según el radar llevado hacia delante). Y el «?» de «Actualitzat a
 les…» dice primero el motivo de ahora («Ara cada 6 minuts perquè el radar veu
 pluja a 13 km.»), con la distancia (`horari.km_pluja`). Con el radar de ese
 momento, la lluvia de 0,5 mm/h más cercana estaba a 61 km: sin modo aviso.
+
+Desde la 3.212.2 (05-11-2026), la distancia solo se dice cuando es el motivo
+(`km_pluja` a `RADAR_AVISO_KM` o menos, `prevision.horario`). Si el modo aviso
+viene de la otra regla (lluvia que el radar prevé en casa en la próxima hora),
+el «?» dice «el radar veu pluja que pot arribar en la propera hora». El
+revisor (ADR 0101) lo vio dos veces el 05-11-2026: «perquè el radar veu
+pluja a 21 km» (y «a 15 km», con 15,4) junto a una explicación que pedía
+menos de 15 km. La explicación nombra ahora las dos reglas: «pluja al radar
+a 15 km o menys o que pot arribar en la propera hora».

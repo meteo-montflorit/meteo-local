@@ -57,7 +57,11 @@ partes («hazlo así»).
   «Ara» toma la mediana de las estaciones particulares, sus 6 horas podían
   superar las 24 horas de Meteocat y parecía una contradicción (revisor,
   03-11-2026: 6,1 mm en 6 horas y 5,8 en 24). El «Índex» del detalle dice
-  que es el peor momento de aquí a una hora (ADR 0057).
+  que es el peor momento de aquí a una hora (ADR 0057). La frase del radar
+  da los milímetros desde 0,1 (3.212.2): hasta entonces, por debajo de 1 mm
+  decía «El radar no hi veu pluja per a l'hora següent» mientras el índice
+  los sumaba (revisor, 04 y 05-11-2026: índice de 0,4 y 0,5 mm con 0,0
+  medidos).
   «Risc de crescuda possible» desde `RIERA_PREVISIO_MM = 20`. Va en
   `casa.json` (`riera_previsio`) y en `avisos.json`, para la pestaña.
 - **No es un aviso**: no sale por Telegram, ni en el navegador, ni en «Avisos

@@ -105,7 +105,9 @@ function pintaAra(dades) {
     T`${qui} han caigut ${coma(mm3)} mm en 3 hores i ${coma(mm6)} en 6 (fins a les ${fins}).`);
   const frases = [];
   if (r.radar_1h != null) {
-    frases.push(r.radar_1h >= 1 ? T`El radar hi preveu uns ${coma(r.radar_1h)} mm més fins d’aquí a una hora.`
+    // Amb menys d'1 mm també es diu: l'índex el suma, i «no hi veu pluja» al
+    // costat d'un índex de 0,5 amb 0,0 mesurats no quadrava (revisor, 05-11-2026).
+    frases.push(r.radar_1h > 0 ? T`El radar hi preveu uns ${coma(r.radar_1h)} mm més fins d’aquí a una hora.`
       : T('El radar no hi veu pluja per a l’hora següent.'));
   }
   if (r.index != null) {

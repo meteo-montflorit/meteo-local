@@ -592,7 +592,11 @@ def horario(trams, cada_min, motivos_aviso, km_pluja=None):
     distancia está la lluvia del radar (km_pluja), para decir el motivo de
     ahora («Ara cada 6 minuts: …»)."""
     explica = {"normal_min": cada_min, "avis_min": C.MODO_AVISO_INTERVALO_MIN, "radar_km": C.RADAR_AVISO_KM}
-    if motivos_aviso and km_pluja is not None:
+    # Solo si la distancia es el motivo: con lluvia más lejos, el modo aviso
+    # viene de la que el radar prevé para la próxima hora, y «el radar veu
+    # pluja a 21 km» contradecía el «a 15 km o menys» de la explicación
+    # (revisor, 05-11-2026).
+    if motivos_aviso and km_pluja is not None and km_pluja <= C.RADAR_AVISO_KM:
         explica["km_pluja"] = km_pluja
     if motivos_aviso:
         return {"trams": trams, "cada_min": C.MODO_AVISO_INTERVALO_MIN,

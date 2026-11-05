@@ -37,6 +37,14 @@ class QueToca(unittest.TestCase):
         self.assertEqual(Q.que_toca("10:00", c), "")
         self.assertEqual(Q.que_toca("10:20", c), "")
 
+    def test_distancia_solo_si_es_el_motivo(self):
+        # Con la lluvia más lejos de RADAR_AVISO_KM, el modo aviso viene de la
+        # que el radar prevé en casa: sin distancia (revisor, 05-11-2026).
+        cerca = P.horario([C.HORARIO_CASA_AVISO], C.INTERVALO_CASA_MIN, ["pluja al radar"], 12.6)
+        lejos = P.horario([C.HORARIO_CASA_AVISO], C.INTERVALO_CASA_MIN, ["pluja al radar"], 15.4)
+        self.assertEqual(cerca["km_pluja"], 12.6)
+        self.assertNotIn("km_pluja", lejos)
+
     def test_sin_datos_de_hoy_usa_el_horario_normal(self):
         self.assertEqual(Q.que_toca("13:00", "/no/existe"), "casa")
 
