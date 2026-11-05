@@ -1377,15 +1377,13 @@ function vistaGrafica(historialInicial = null) {
   const desa = () => {
     try { localStorage.setItem(CLAU_GRAFICA, JSON.stringify(fixes)); } catch (_) {}
   };
-  // L'historial: un botó que canvia la gràfica pel que es va mesurar; ‹ i ›
-  // per anar d'un dia a l'altre i, al mig, el nom del dia, que obre el
-  // calendari per saltar a qualsevol (ADR 0124). Comença per les darreres 24 h.
+  // L'historial: ‹ i › per anar d'un dia a l'altre i, al mig, el nom del dia,
+  // que obre el calendari per saltar a qualsevol (ADR 0124). Comença per les
+  // darreres 24 h. S'hi entra amb el botó «Historial» de fora, al costat
+  // d'«Opcions»: el de dins, que canviava entre previsió i historial, sobrava
+  // (Juanjo, 05-11-2026: «ya se elige desde fuera… es redundante»).
   let historial = null;      // null: la previsió; '24h' o 'AAAA-MM-DD'
   let index = null;
-  const botoHist = element('button', 'vg-opcio');
-  botoHist.type = 'button';
-  botoHist.title = T('El que es va mesurar al barri, hora a hora');
-  botoHist.append(icona('i-history'), T('Historial'));
   const navega = element('div', 'vg-dia');
   const fletxa = (d, text) => {
     const b = element('button', 'boto-icona');
@@ -1409,7 +1407,7 @@ function vistaGrafica(historialInicial = null) {
   calendari.setAttribute('aria-hidden', 'true');
   navega.append(enrere, nomDia, endavant, calendari);
   const barraHist = element('div', 'vg-historial');
-  barraHist.append(botoHist, navega);
+  barraHist.append(navega);
   const resumHist = element('p', 'vg-resum-historial');
   resumHist.setAttribute('aria-live', 'polite');
   // Les posicions, de la més antiga a la més nova: cada dia i, al final, les 24 h.
@@ -1461,7 +1459,6 @@ function vistaGrafica(historialInicial = null) {
     history.replaceState(null, '', pos ? adrecaHistorial(pos) : '#grafica');
     dibuixa();
   };
-  botoHist.addEventListener('click', () => posaHistorial(historial ? null : '24h'));
   // Un enllaç de l'historial amb la finestra ja oberta hi va directament.
   dlg._posaHistorial = posaHistorial;
   enrere.addEventListener('click', () => {
@@ -1488,7 +1485,7 @@ function vistaGrafica(historialInicial = null) {
 
   const dibuixa = () => {
     const ambHist = Boolean(historial);
-    botoHist.setAttribute('aria-pressed', String(ambHist));
+    barraHist.hidden = !ambHist;
     navega.hidden = !ambHist;
     resumHist.hidden = !ambHist;
     titol.textContent = ambHist ? T('Historial') : T('Previsió');

@@ -251,3 +251,9 @@ Validado: `test_les_hores_en_que_potser_va_plovisquejar`, `pluja_dubtosa` en
 registro real del 19-10-2026 (casa 0,0; ICERDA6 0,2 a las 6 h e ICERDA18 0,2
 a las 22 h), en Chromium, Firefox y WebKit, en el ordenador y el móvil, en
 claro y oscuro.
+
+Desde la 3.212.3 (05-11-2026), la ventana ya no tiene botón «Historial»: al
+historial se entra con el de fuera, junto a «Opcions», y dentro solo queda la
+fila de días (‹, el día con su calendario, ›), oculta en la previsión. Juanjo:
+«no debe aparecer en esta ventana puesto que ya se elige desde fuera… es
+redundante». Para volver a la previsión se cierra la ventana.

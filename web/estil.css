@@ -1429,6 +1429,7 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 /* L'historial de la gràfica en gran (ADR 0124): el botó i, al costat, el dia
    amb les fletxes; el nom del dia obre el calendari. */
 .vg-historial { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: .6rem 0; }
+.vg-historial[hidden] { display: none; }
 .vg-historial .vg-dia { gap: .3rem; }
 /* El calendari s'obre sota el nom del dia. */
 .vg-historial .vg-dia { position: relative; }
