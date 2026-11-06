@@ -182,3 +182,12 @@ class HorariDesat(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ContextTls(unittest.TestCase):
+    """Des del 06-11-2026 el servidor de l'AMB no envia el certificat
+    intermedi: el context l'ha de portar, a més dels del sistema."""
+
+    def test_porta_l_intermedi_de_globalsign(self):
+        noms = [dict(x[0] for x in c["subject"]).get("commonName") for c in BU.context_tls().get_ca_certs()]
+        self.assertIn("GlobalSign RSA OV SSL CA 2018", noms)

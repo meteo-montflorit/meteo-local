@@ -24,6 +24,7 @@ import html
 import io
 import json
 import os
+import ssl
 import sys
 import time
 import urllib.request
@@ -64,8 +65,23 @@ LINIES = {
 }
 
 
+# Des del 06-11-2026 el servidor de l'AMB no envia el certificat intermedi
+# de GlobalSign, i sense ell Python no pot verificar la connexió (els
+# navegadors el van a buscar sols). S'afegeix als del sistema: la cadena es
+# continua verificant sencera fins a l'arrel de GlobalSign (ADR 0120).
+INTERMEDI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tercers", "globalsign-rsa-ov-ssl-ca-2018.pem")
+
+
+def context_tls():
+    ctx = ssl.create_default_context()
+    if os.path.exists(INTERMEDI):
+        ctx.load_verify_locations(cafile=INTERMEDI)
+    return ctx
+
+
 def baixa(url, segons=30):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=segons) as r:
+    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=segons,
+                                context=context_tls()) as r:
         return r.read()
 
 

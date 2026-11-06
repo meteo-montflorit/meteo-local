@@ -124,3 +124,24 @@ adelantados. Desde la 3.202.0 el archivo lleva `format` (`FORMAT_HORARI`): el
 de hoy solo vale si tiene el formato de ahora; si no, se vuelve a calcular.
 Sin red, se sigue sirviendo el guardado de pocos días, aunque sea de antes:
 solo fallaba los días del cambio de hora.
+
+## Cambio del 06-11-2026 (3.212.4): el certificado intermedio va con el programa
+
+Desde las 10:45 del 06-11-2026 el servidor de l'AMB (`www.ambmobilitat.cat`)
+envía solo su certificado, sin el intermedio de GlobalSign («GlobalSign RSA
+OV SSL CA 2018») que lo une a la raíz. Los navegadores lo van a buscar solos
+(la dirección va dentro del certificado), pero Python no, y todas las
+lecturas fallaban con `CERTIFICATE_VERIFY_FAILED`: los autobuses se quedaron
+sin tiempo real ni avisos. Comprobado con `openssl s_client`: «unable to
+verify the first certificate».
+
+El intermedio es público y lo publica GlobalSign
+(<http://secure.globalsign.com/cacert/gsrsaovsslca2018.crt>, válido hasta el
+21-11-2028). Se guarda en `tercers/` y `busos.context_tls` lo añade a los
+certificados de confianza del sistema: la cadena se sigue verificando entera
+hasta la raíz de GlobalSign, no se desactiva ninguna comprobación. Si el AMB
+vuelve a enviar la cadena completa, no cambia nada.
+
+Riesgo: el certificado del AMB caduca el 15-11-2026. Si el nuevo cuelga de
+otro intermedio y el servidor sigue sin enviarlo, volverá a fallar; el aviso
+de fuente caída lo dirá y habrá que guardar el intermedio nuevo.
