@@ -140,3 +140,25 @@ Al cambiar algo:
   (ADR 0049); los pesos de los modelos del cielo y cuánto se equivoca cada
   uno contra el aeropuerto de Sabadell, `docker exec meteo-local python3
   /proyecto/nuvols.py estat` (ADR 0088).
+
+Antes de tocar las fuentes (pasado aquí desde la memoria de Claude el
+07-11-2026, para que lo lean todos los agentes):
+
+- **Es la red del barrio, no una estación** (ADR 0070): la lluvia y la
+  previsión salen de las estaciones vecinas, Meteocat, el radar y los
+  modelos; de la estación de casa solo cuenta la temperatura y, con sus
+  límites, la lluvia (ADR 0017: el anemómetro no se usa). No describas la
+  página como «basada en la estación de casa». Antes de culpar a un aparato,
+  comprueba cómo tratamos sus datos: el «fallo» del pluviómetro de octubre era
+  del registro (3.27.5).
+- **Weather Underground tiene cuota** (ADR 0059 y 0060): 1.500 consultas al
+  día y 30 por minuto, y la web gasta unas 400. Antes de bajar histórico,
+  cuenta lo gastado ese día y repártelo en varios (unas 600 al día como
+  mucho): si se agota, la web se queda sin vecinas hasta el día siguiente. La
+  clave caduca el 10-04-2027 (`config.WU_CLAU_CADUCA`, `casa.py` avisa antes)
+  y se regenera desde la versión antigua de la página de claves.
+- **meteocerdanyola.com está fuera del todo** (ADR 0058): ni se usa, ni se
+  compara, ni se propone contactar con su responsable.
+- **La app de Android** (ADR 0082): en Play Console, crear la app, preparar
+  la versión de producción y enviarla a revisión lo pulsa Juanjo. Los avisos
+  en iPhone no se pueden probar aquí (ADR 0048).
