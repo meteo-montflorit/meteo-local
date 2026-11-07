@@ -233,7 +233,19 @@ de las tres vecinas fiables (ICERDA6, ICERDA18 e ICERDA28): el pluviómetro de
 casa a veces no marca la lluvia débil, y el 03-10-2026 no marcó ni la fuerte.
 Con cero en casa, la hora cuenta como seca si ninguna de esas vecinas ve
 lluvia; si solo una la ve, no se sabe y la hora no se usa. Sin vecinas, como
-antes: seca si Sabadell y Sant Cugat tampoco recogieron nada (ADR 0058). En
+antes: seca si Sabadell y Sant Cugat tampoco recogieron nada (ADR 0058). Sin
+dato de casa deciden las vecinas: lluviosa con dos, no se sabe con una y
+seca si las que tengan dato marcan cero. Desde la 3.213.0, los
+milímetros de una hora lluviosa son la mediana de casa y de las vecinas
+fiables que tengan dato, con el umbral como mínimo para que la hora siga
+siendo lluviosa:
+
+```math
+\text{mm} = \max\left(0{,}2,\ \operatorname{mediana}(\text{casa}, \text{ICERDA6}, \text{ICERDA18}, \text{ICERDA28})\right)
+```
+
+(el 17-10-2026 de 23 a 24 UTC el pluviómetro de casa no marcó nada y las
+vecinas recogieron de 3,8 a 4,8 mm; ADR 0070). En
 75 días, las tres vecinas vieron la lluvia de casa en 33 o 34 de cada 36
 horas; Sabadell, en 28, y Sant Cugat, en 32; y una vecina sola casi nunca
 marca en falso (de 0 a 2 horas de 1.643).

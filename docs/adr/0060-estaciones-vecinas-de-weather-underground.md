@@ -4,7 +4,9 @@ Fecha: 2026-10-10 · Estado: aceptado
 
 > Desde la 3.57.0 (ADR 0070), las tres vecinas fiables confirman las horas secas
 > y, con dos, dan lluvia aunque casa no la marque; Sabadell y Sant Cugat
-> quedan de respaldo.
+> quedan de respaldo. Desde la 3.213.0, los milímetros de la hora son la
+> mediana de casa y las tres vecinas fiables; «plou ara» con una vecina sola
+> se revisó el 07-11-2026 y se mantiene (ADR 0070).
 
 ## Contexto
 

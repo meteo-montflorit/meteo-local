@@ -75,8 +75,9 @@ radar.
 
 Se dejan, con su motivo: la hora en que pararía la lluvia (radar, en
 entrenamiento, ADR 0049) frente a la persistencia de la tabla, que es
-estadística y está validada; los ecos débiles que ponen el modo vigilancia
-(pendiente de decidir con un mes de datos, a partir del 07-11-2026); los
+estadística y está validada; los ecos débiles que ponían el modo vigilancia
+(desde la 3.166.2 ya no lo ponen, ADR 0010; seguimiento cerrado el
+07-11-2026 sin más cambios, ADR 0019); los
 umbrales aprendidos de «Si surts» (ADR 0069), y el plan de Protecció Civil
 oculto por no tener motivo meteorológico (ADR 0062).
 

@@ -197,15 +197,42 @@ class Rasgos(unittest.TestCase):
         self.assertIsNone(A.pluja_observada(None, [sec, sec]))
         self.assertIsNone(A.pluja_observada({"pluja_mm": ""}, [sec, sec]))
 
+    def test_mm_de_l_hora_amb_la_mediana(self):
+        # Els mm de l'hora: la mediana de casa i de les veïnes que compten amb dada
+        # (3.213.0, ADR 0070). ICERDA48 no hi entra.
+        mm = lambda x: {"pluja_mm": x}
+        # Casa normal: la mediana de les quatre.
+        self.assertAlmostEqual(A.pluja_observada(mm("2.0"), (), {"ICERDA6": mm("1.1"), "ICERDA18": mm("0.8"),
+                                                                 "ICERDA28": mm("2.0"), "ICERDA48": mm("9.0")}), 1.55)
+        # Casa a zero amb les veïnes molles (17-10-2026, de 23 a 24 UTC): la mediana, no el zero.
+        v17 = {"ICERDA6": mm("4.8"), "ICERDA18": mm("3.8"), "ICERDA28": mm("4.3")}
+        self.assertAlmostEqual(A.pluja_observada(mm("0.0"), (), v17), 4.05)
+        # Casa sense dada: la mediana de les que n'hi ha; i seca si les que confirmen estan a zero.
+        self.assertAlmostEqual(A.pluja_observada(None, (), v17), 4.3)
+        self.assertAlmostEqual(A.pluja_observada(mm(""), (), v17), 4.3)
+        seca = {k: mm("0.0") for k in ("ICERDA6", "ICERDA18", "ICERDA28")}
+        self.assertEqual(A.pluja_observada(None, (), seca), 0.0)
+        self.assertIsNone(A.pluja_observada(None, (), {**seca, "ICERDA6": mm("0.6")}))    # una sola: no se sap
+        self.assertIsNone(A.pluja_observada(None, [mm("0.0"), mm("0.0")], {}))              # sense veïnes, Meteocat no n'hi ha prou
+        # Una veïna sense dada: la mediana de casa i les altres dues.
+        self.assertAlmostEqual(A.pluja_observada(mm("4.1"), (), {"ICERDA6": mm("3.1"), "ICERDA18": None,
+                                                                 "ICERDA28": mm("2.8")}), 3.1)
+        # Si la mediana queda sota el llindar però plou (casa a zero i dues veïnes amb poc), el llindar.
+        self.assertEqual(A.pluja_observada(mm("0.0"), (), {"ICERDA6": mm("0.2"), "ICERDA18": mm("0.5"),
+                                                           "ICERDA28": mm("0.0")}), C.UMBRAL_MM)
+        # Casa sola amb pluja i cap veïna llegida: la de casa, com abans.
+        self.assertEqual(A.pluja_observada(mm("1.2"), (), {}), 1.2)
+
     def test_montflorit_primer(self):
         # ADR 0070: les veïnes de Montflorit manen sobre Sabadell i Sant Cugat.
         z, p = {"pluja_mm": "0.0"}, {"pluja_mm": "0.6"}
         seca = {k: z for k in A.C.VEINES}
         # Casa i les veïnes a zero: seca, encara que plogui a Sabadell i a Sant Cugat.
         self.assertEqual(A.pluja_observada(z, [p, p], seca), 0.0)
-        # Casa a zero però plou en dues veïnes que compten: plou (el pluviòmetre no ho va veure).
+        # Casa a zero però plou en dues veïnes que compten: plou (el pluviòmetre no ho va veure),
+        # amb la mediana de casa i les tres veïnes (0, 0, 0,6 i 1,0).
         dues = {**seca, "ICERDA18": p, "ICERDA28": {"pluja_mm": "1.0"}}
-        self.assertGreaterEqual(A.pluja_observada(z, [z, z], dues), 0.6)
+        self.assertAlmostEqual(A.pluja_observada(z, [z, z], dues), 0.3)
         # Una sola veïna amb pluja: no se sap.
         self.assertIsNone(A.pluja_observada(z, [z, z], {**seca, "ICERDA28": p}))
         # I llavors, els seus mm: potser va plovisquejar (l'historial ho diu).
@@ -246,10 +273,12 @@ class PlouAra(unittest.TestCase):
         self.assertTrue(A.plou_ara_barri(casa, [self.veina("ICERDA6", 0.2), self.veina("ICERDA28", 0.1)]))
         self.assertIsNone(A.plou_ara_barri(casa, [self.veina("ICERDA6", 0.2), self.veina("ICERDA28", 0.0)]))
         self.assertFalse(A.plou_ara_barri(casa, [self.veina("ICERDA6", 0.0), self.veina("ICERDA18", 0.0)]))
-        # ICERDA48 no compta ni confirma: amb ella sola, no se sap. Sense casa, tampoc.
+        # ICERDA48 no compta ni confirma: amb ella sola, no se sap.
         self.assertIsNone(A.plou_ara_barri(casa, [self.veina("ICERDA48", 0.0)]))
         self.assertIsNone(A.plou_ara_barri(casa, []))
-        self.assertIsNone(A.plou_ara_barri(None, [self.veina("ICERDA6", 0.0), self.veina("ICERDA18", 0.0)]))
+        # Sense casa, les veïnes que confirmen decideixen (des de la 3.213.0, ADR 0070); sense res, no se sap.
+        self.assertFalse(A.plou_ara_barri(None, [self.veina("ICERDA6", 0.0), self.veina("ICERDA18", 0.0)]))
+        self.assertIsNone(A.plou_ara_barri(None, [self.veina("ICERDA48", 0.0)]))
         # Plugim segons el radar: el zero és dubtós.
         self.assertIsNone(A.plou_ara_barri(casa, [self.veina("ICERDA6", 0.0), self.veina("ICERDA18", 0.0)], plugim=True))
 

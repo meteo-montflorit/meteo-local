@@ -86,3 +86,18 @@ reserva de IONOS no fallen.
 - Con el registro del NAS copiado el 18-10-2026, `fi_pluja.pluja_5min` da los
   mismos episodios que antes mientras no haya `veines-5min.csv` (los ceros de
   casa pasan a desconocidos y los tramos con lluvia de casa se conservan).
+
+## Cambio del 07-11-2026 (3.213.0): la mediana y las horas sin casa
+
+La regla única cambia en dos cosas, en las tres escalas a la vez (detalle y
+cifras en el ADR 0070, revisión del 07-11-2026): cuando llueve, los
+milímetros son la mediana de casa y de las vecinas que cuentan, de las que
+tengan dato (con el umbral como mínimo, para que un tramo lluvioso no pase a
+seco); y sin dato de casa deciden las vecinas, en lugar de quedar siempre
+como desconocido: seco si las que confirman marcan cero. Para «ahora»,
+`plou_ara_barri` sin la lectura de casa da «no llueve» si las vecinas que
+confirman están a cero (antes, «no se sabe»), como el recuadro «Ara» cuando
+falla la estación de casa (ADR 0087). Lo que se descartó arriba (tratar como
+seco el cero de casa cuando no se pueden leer las vecinas) sigue igual: sin
+casa ni vecinas, no se sabe. En los 5 minutos del registro, 22 tramos pasan
+de desconocidos a secos y los episodios no cambian.

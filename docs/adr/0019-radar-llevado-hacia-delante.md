@@ -137,8 +137,17 @@ de Meteocat, que es el que él mira.
   apunta en `radar-a-prop-AAAA-MM.jsonl` del NAS (`registre.py`) los píxeles
   con lluvia a 15 km o menos de cada radar (distancia, rumbo y mm/h, los 40
   más cercanos), el modo aviso y sus motivos y qué estaciones medían lluvia.
-  Con un mes de datos se decidirá si un eco suelto de la franja más baja deja
-  de contar como lluvia cerca; hasta entonces no cambia nada.
+  Desde la 3.166.2 (20-10-2026, ADR 0010) el modo aviso solo cuenta la
+  lluvia de 0,5 mm/h o más, y el seguimiento se cerró el 07-11-2026 sin más
+  cambios: ver «Cierre del seguimiento de los ecos cercanos» al final.
+- **El eco fijo del Meteocat** (mismo seguimiento): a 12,7 km y 203° (el
+  píxel de entre Esplugues y Cornellà) aparece en el 46 % de las imágenes sin
+  lluvia en ninguna estación y llega a 0,6 mm/h en 362 de 3.141, por encima
+  del umbral del modo aviso. Hoy no pesa porque manda RainViewer, que no
+  tiene ecos fijos (ninguno pasa del 5,6 % de las imágenes secas), pero si la
+  comparación diaria (ADR 0026) vuelve a elegir el Meteocat, ese eco puede
+  encender el modo aviso sin lluvia. Si pasa, lo primero es medirlo con el
+  mismo registro (`radar-a-prop-AAAA-MM.jsonl`) antes de quitar píxeles.
 - Las teselas de Meteocat no son una API documentada: si cambian, se usa
   RainViewer. Su API oficial, con clave y cuotas mensuales por plan, no
   tiene radar: su documentación
@@ -440,3 +449,45 @@ en lugar de la cuenta atrás, que ya está en la etiqueta de arriba.
 Si la respuesta llega más de 30 minutos después de la pregunta, el mensaje
 pide para qué hora vale, la de la pregunta o la de la respuesta, y la elección
 va a la columna `val_per` (detalle en el ADR 0100).
+
+
+## Cierre del seguimiento de los ecos cercanos (07-11-2026)
+
+El seguimiento que abrió el riesgo de los ecos sueltos (10-10-2026) y el
+plugim (3.140.0) se revisó con el registro del NAS del 10-10 al 07-11-2026
+(`radar-a-prop-AAAA-MM.jsonl`, `estacio-casa-5min.csv`, `veines-5min.csv`
+y las horas de Meteocat). Una pasada en modo aviso solo por el radar es
+falsa si ninguna estación, ni de Montflorit ni de Meteocat, midió lluvia
+de 30 minutos antes a 60 minutos después.
+
+- **La 3.166.2 ya lo resolvió.** Aplicadas a todo el periodo, la regla
+  antigua (ecos desde 0,08 mm/h) habría dado 1.012 pasadas falsas (en 291
+  horas) y la de ahora (0,5 mm/h o más), 260 (en 107). Desde el 20-10, con
+  la regla nueva en servicio, quedan 88 (21 horas), casi todas chubascos
+  reales que pasaron cerca sin tocar las estaciones.
+- **Los ecos débiles no anuncian la lluvia.** Con ecos de menos de
+  0,5 mm/h, llovió en las estaciones en la hora siguiente el 0,7 % de las
+  veces con el Meteocat y el 3,3 % con RainViewer, frente al 5,0 % y el
+  10,2 % con ecos de 0,5 mm/h o más. En los 9 episodios que empezaron en el
+  periodo, dos horas antes ya había ecos de 0,5 mm/h o más: la regla actual
+  no pierde ningún inicio por no contar los débiles.
+- **Opciones descartadas**, con las mismas pasadas: exigir 2 píxeles
+  contiguos (123 falsas en 47 horas, pero pierde 1 de los 9 inicios); contar
+  desde 16 dBZ (430 falsas en 147 horas); exigir los dos radares (101 en 27
+  horas, pierde 1 inicio); quitar los píxeles fijos del Meteocat (181 en 67
+  horas, pierde 1). Desde el 20-10, exigir 2 píxeles contiguos o los dos
+  radares solo bajaría las 88 falsas a 80 y a 83: no compensa perder un
+  inicio.
+- **Qué radar manda.** RainViewer, en 2.090 de las 2.092 pasadas del
+  periodo, con una seguridad de 0,994 en la comparación diaria (ADR 0026).
+  El riesgo del eco fijo del Meteocat queda en «Riesgos y limitaciones».
+- **El plugim** (`plugim.py resum`): 6 preguntas y 5 respuestas, ninguna
+  «sí», 4 «no» y 1 «no lo sé» (la del 18-10, que no es una confirmación).
+  Con eso no se puede decir si la señal acierta: **no entra en la
+  previsión**. La página sigue diciendo «Plugim segons el radar» y
+  preguntando como hasta ahora, y se revisa el 07-12-2026 o al llegar a 10
+  respuestas, lo que llegue antes.
+
+Decisión de Juanjo (07-11-2026): cerrar el seguimiento sin cambiar el
+código. Scripts del análisis, fuera del repositorio (sesión del
+07-11-2026); los datos son los del registro del NAS.

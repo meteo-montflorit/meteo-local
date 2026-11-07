@@ -380,6 +380,15 @@ def _num(x):
         return None
 
 
+def _mediana(valors):
+    """La mediana de los valores que no son None; None si no queda ninguno."""
+    v = sorted(x for x in valors if x is not None)
+    if not v:
+        return None
+    n = len(v)
+    return v[n // 2] if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2
+
+
 def pluja_observada(casa, meteocat=(), veines=None, llindar=None):
     """mm de la hora en Montflorit, con lo de Montflorit primero (Juanjo,
     10-10-2026: «si está lloviendo en 2 estaciones de montflorit eso no puede
@@ -391,10 +400,17 @@ def pluja_observada(casa, meteocat=(), veines=None, llindar=None):
     - Llueve si la estación de casa lo marca, o si lo marcan al menos
       C.VEINES_PLUJA_MIN vecinas de las que cuentan para la lluvia (`plou`):
       el pluviómetro de casa a veces no recoge la lluvia débil (ADR 0017).
-    - Seca si casa marca cero, ninguna vecina que cuenta ve lluvia y las que
-      confirman horas secas (`sec`) están a cero, con una al menos.
+      Los mm, la mediana de casa y de esas vecinas, de las que tengan dato
+      (desde la 3.213.0, ADR 0070: el 17-10-2026 de 23 a 24 UTC casa marcó
+      0 y las vecinas de 3,8 a 4,8 mm); si la mediana queda por debajo de
+      llindar (casa a cero y dos vecinas con poco), llindar: la hora sigue
+      siendo lluviosa.
+    - Seca si casa marca cero (o no tiene dato), ninguna vecina que cuenta ve
+      lluvia y las que confirman horas secas (`sec`) están a cero, con una
+      al menos.
     - Sin ninguna vecina que confirme, como antes: el cero de casa vale si
-      tampoco recogieron nada las estaciones de Meteocat (meteocat).
+      tampoco recogieron nada las estaciones de Meteocat (meteocat). Sin casa
+      ni vecinas, no se sabe.
     - Si solo una vecina ve lluvia y casa no, no se sabe.
     veines: {id: lo medido en la hora}; meteocat: lo de cada estación;
     llindar: desde cuántos mm cuenta como lluvia (C.UMBRAL_MM)."""
@@ -403,15 +419,15 @@ def pluja_observada(casa, meteocat=(), veines=None, llindar=None):
     v = {k: _num((x or {}).get("pluja_mm")) for k, x in (veines or {}).items()}
     plou = [x for k, x in v.items() if C.VEINES.get(k, {}).get("plou") and x is not None]
     mullen = [x for x in plou if x >= llindar]
-    if c is not None and c >= llindar:
-        return c
-    if len(mullen) >= C.VEINES_PLUJA_MIN:
-        return sorted(mullen)[len(mullen) // 2]
-    if c is None or mullen:
+    if (c is not None and c >= llindar) or len(mullen) >= C.VEINES_PLUJA_MIN:
+        return max(round(_mediana([c, *plou]), 2), llindar)
+    if mullen:
         return None
     sec = [x for k, x in v.items() if C.VEINES.get(k, {}).get("sec") and x is not None]
     if sec:
         return 0.0 if all(x < llindar for x in sec) else None
+    if c is None:
+        return None
     prop = [_num((m or {}).get("pluja_mm")) for m in meteocat]
     prop = [x for x in prop if x is not None]
     return 0.0 if prop and all(x < llindar for x in prop) else None
@@ -434,8 +450,9 @@ def plou_ara_barri(casa, veines, plugim=False):
     (radar_fonts.py; ADR 0102): True, False o None si no se sabe. La regla de
     pluja_observada con la lluvia de los últimos C.PLOU_ARA_MIN minutos de
     casa (ecowitt.resum_ara) y de las vecinas (wunderground.veina_ara): llueve
-    si lo marca casa o dos vecinas que cuentan; seco si casa marca cero y las
-    vecinas que confirman también; si no, no se sabe. Un cero dudoso tampoco
+    si lo marca casa o dos vecinas que cuentan; seco si casa marca cero (o no
+    se ha podido leer, desde la 3.213.0) y las vecinas que confirman también;
+    si no, no se sabe. Un cero dudoso tampoco
     vale: con «plugim segons el radar» (los dos radares ven ecos débiles sobre
     el barrio y ninguna estación mide nada, casa.plugim_radar) la pasada no
     cuenta, porque el pluviómetro no recoge la llovizna."""

@@ -167,7 +167,14 @@ coste.
   falta.
 - Si el pluviómetro empeora y deja de marcar también la lluvia fuerte, la
   lluvia de casa dejaría de servir incluso en positivo. Si se arregla, basta
-  mover `PLUVIOMETRE_CASA_FIABLE_FINS`.
+  mover `PLUVIOMETRE_CASA_FIABLE_FINS`. Ya no es solo la lluvia débil: el
+  17-10-2026 de 23 a 24 UTC no marcó nada mientras las tres vecinas fiables
+  recogían de 3,8 a 4,8 mm, y su propio historial de Ecowitt da el acumulado
+  y la intensidad a cero toda esa noche (el fallo es del aparato, no del
+  registro; detalle en el ADR 0070, revisión del 07-11-2026). Un cero así
+  no deja la hora seca: con dos vecinas mojadas es lluviosa (desde la
+  3.57.0) y, desde la 3.213.0, sus milímetros son la mediana de casa y de
+  las vecinas fiables.
 - Los acumulados semanal, mensual y anual de la estación no se usan: el anual
   (2.221 mm) no cuadra con la suma de los días.
 

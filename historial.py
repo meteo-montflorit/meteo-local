@@ -113,11 +113,12 @@ MIN_CASOS_PLUJA = 20                     # para dar el acierto de la lluvia (en 
 # franjas; 3.143.0: los mm esperados; 3.194.0: humedad, presión, viento,
 # nubes y las alertas de cada hora; 3.194.1: la parte alta; 3.195.0: su
 # previsión y su acierto; 3.198.0: las horas en que solo una vecina vio
-# lluvia), y lo apunta en el registro. Por tandas: IONOS
+# lluvia; 3.213.0: los mm de la hora, la mediana de casa y las vecinas
+# fiables, ADR 0070), y lo apunta en el registro. Por tandas: IONOS
 # acepta como mucho 12 archivos por envío (reserva/rep-dades.sh, ADR 0057), y
 # todos de golpe se rechazaron (18-10-2026, 22 archivos). Con los 2 días de
 # siempre, el índice, los datos y las 4 imágenes, caben 3 más por pasada.
-FORMAT = 10
+FORMAT = 11
 REFER_PER_PASSADA = 3
 # Si mejora con el tiempo (ADR 0110; Juanjo, 20-10-2026: «dado que la pagina
 # aprende, estaria bien una comparación semana a semana»): por semanas de
