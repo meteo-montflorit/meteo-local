@@ -983,7 +983,8 @@ function blocEntorn(entorn) {
     return item;
   };
   for (const i of (entorn && entorn.incendis) || []) {
-    const km = i.km != null ? T`, a ${coma(i.km)}\u00a0km de Montflorit` : '';
+    // Fins a la vora del barri, o «dins» (Juanjo, 08-11-2026; ADR 0071).
+    const km = i.dins ? T(', dins de Montflorit') : i.km != null ? T`, a ${distancia(i.km)} de Montflorit` : '';
     // Dins del parc, dit clarament (Juanjo, 11-10-2026; ADR 0071).
     const item = nouItem('vermell', i.collserola ? T`Bombers: incendi forestal dins del Parc de Collserola (${i.municipi})`
       : T`Bombers: incendi forestal a ${i.municipi}`,

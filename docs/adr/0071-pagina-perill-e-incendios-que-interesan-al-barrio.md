@@ -201,6 +201,20 @@ actius» («hazlo así»).
   plegada de «Perill» (Juanjo: «tiene que poner la distancia a Montflorit,
   siempre»): «Incendi forestal a Montcada i Reixac, a 2,5 km de Montflorit».
   El texto ya no la repite.
+- Desde la 3.214.0, esa distancia se mide **hasta el borde del barrio**, el
+  contorno de `montflorit-limits.geojson` (el de «Llum» y la riera), y no
+  hasta el centro (`CASA`). Si el punto de Bombers cae dentro, el título dice
+  «dins de Montflorit»; por debajo de 1 km va en metros, de 50 en 50, como en
+  el tráfico («a 150 m de Montflorit»). El 08-11-2026 uno de Collserola tocaba
+  el barrio y salía «a 0,6 km de Montflorit» (Juanjo: «el incendio estaba
+  tocando a montflorit … pero ponía 0.6km porque lo mira con el centro»;
+  «también debería indicar si está dentro de montflorit»). Bombers solo da un
+  punto por actuación, el del aviso, no el perímetro del fuego: «dins» quiere
+  decir que ese punto está dentro. La zona que interesa (2 km, y 5 en
+  Collserola) se sigue midiendo desde el centro, para no cambiar qué
+  incendios avisan; el orden de la lista, por la distancia al borde. Si el
+  contorno no se puede leer, la distancia vuelve a ser desde el centro
+  (`entorn.lloc_barri`).
 
 ### Página «Perill» (`web/perill.html`, `web/perill.js`)
 

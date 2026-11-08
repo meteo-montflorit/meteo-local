@@ -361,7 +361,7 @@ var IDIOMA = {
     "Cap a les {0}\u00a0h s\u2019acaba l\u2019avís oficial.": "Hacia las {0}\u00a0h se acaba el aviso oficial.",
     "Sense pluja ni vent fort.": "Sin lluvia ni viento fuerte.",
     "Avisos actius": "Avisos activos",
-    ", a {0}\u00a0km de Montflorit": ", a {0}\u00a0km de Montflorit",
+    ", a {0} de Montflorit": ", a {0} de Montflorit", ", dins de Montflorit": ", dentro de Montflorit",
     "Bombers: incendi forestal a {0}": "Bombers: incendio forestal en {0}",
     "Bombers: incendi forestal dins del Parc de Collserola ({0})": "Bombers: incendio forestal dentro del Parque de Collserola ({0})",
     "{0}, des de les {1}.": "{0}, desde las {1}.",

@@ -31,6 +31,7 @@ import urllib.request
 
 import config as C
 import hora as H
+import llum
 
 ARCGIS = "https://services7.arcgis.com/ZCqVt1fRXwwK6GF4/arcgis/rest/services"
 BOMBERS = ARCGIS + "/ACTUACIONS_URGENTS_online_PRO_AMB_FASE_VIEW/FeatureServer/0"
@@ -166,7 +167,23 @@ def interessa(municipi, dist, collserola):
     return dist <= C.ENTORN_RADI_KM or (bool(collserola) and dist <= C.COLLSEROLA_RADI_KM)
 
 
-def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None, alies=None):
+def lloc_barri(lat, lon, anells=None):
+    """(dins, km): si el punto cae dentro de los límites de Montflorit
+    (montflorit-limits.geojson, los de «Llum» y la riera) y, si no, a cuántos
+    km de su borde. Un incendio a pocos metros del barrio salía «a 0,6 km»
+    porque se medía desde el centro (Juanjo, 08-11-2026: «el incendio estaba
+    tocando a montflorit»; ADR 0071). None si el contorno no se puede leer."""
+    try:
+        anells = anells if anells is not None else llum.limits()
+    except (OSError, ValueError, KeyError):
+        return None
+    p = (lat, lon)
+    if any(llum.dins(p, a) for a in anells):
+        return True, 0.0
+    return False, min(llum.km_segment(p, a, b) for anell in anells for a, b in zip(anell, anell[1:]))
+
+
+def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None, alies=None, barri=None):
     """Incendios de vegetación forestal en curso que interesan al barrio
     (interessa), del más cercano al más lejano. En «fora», si se pasa, los
     identificadores de los que siguen en curso pero quedan fuera de la zona:
@@ -175,7 +192,10 @@ def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None, alie
     INCENDI_PARAT_H horas, con la hora del último cambio: se dan por apagados
     (25-10-2026, ADR 0071). Cada incendio se identifica por el número de la
     actuación; en «alies», el GlobalID de cada fila con ese número, el
-    identificador de antes (28-10-2026, ADR 0071)."""
+    identificador de antes (28-10-2026, ADR 0071). «km» es la distancia al
+    borde del barrio (0 si está dentro, y entonces «dins»); la zona que
+    interesa se sigue midiendo desde el centro (interessa, CASA). En
+    «barri», los anillos del contorno (para las pruebas)."""
     ara = ara or H.ara()
     xmin, ymin, xmax, ymax = C.INCENDIS_CAIXA
     d = dades or get(BOMBERS + "/query", {
@@ -226,7 +246,10 @@ def incendis(dades=None, collserola=None, fora=None, parats=None, ara=None, alie
             if parats is not None:
                 parats[iid] = hora_iso(canvi)
             continue
-        res.append({"id": iid, "municipi": municipi, "km": round(dist, 1), "mapa": mapa(g["y"], g["x"]),
+        on = lloc_barri(g["y"], g["x"], barri)
+        dins, al_limit = on if on else (False, dist)
+        res.append({"id": iid, "municipi": municipi, "km": round(al_limit, 2), "dins": dins,
+                    "mapa": mapa(g["y"], g["x"]),
                     "collserola": al_parc, "inici": hora_iso(a.get("ACT_DAT_INICI")),
                     "vehicles": a.get("ACT_NUM_VEH"), "fase": a.get("COM_FASE")})
     return sorted(res, key=lambda i: i["km"])

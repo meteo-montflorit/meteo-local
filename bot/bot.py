@@ -1820,7 +1820,9 @@ def blocs_entorn(entorn, idioma):
     focs = []
     for i in entorn.get("incendis") or []:
         h = hora_local(i["inici"]).strftime("%H:%M") if i.get("inici") else "?"
-        dist = f", a {str(i['km']).replace('.', ',')} km de Montflorit" if i.get("km") is not None else ""
+        # Fins a la vora del barri, o «dins» (08-11-2026, ADR 0071).
+        dist = ((", dentro de Montflorit" if es else ", dins de Montflorit") if i.get("dins") else
+                f", a {distancia(i['km'])} de Montflorit" if i.get("km") is not None else "")
         # Dins del parc, dit clarament (Juanjo, 11-10-2026; ADR 0071).
         lloc = ((f"dentro del Parque de Collserola ({i['municipi']})" if es else
                  f"dins del Parc de Collserola ({i['municipi']})") if i.get("collserola") else

@@ -713,7 +713,7 @@ class Consultes(unittest.TestCase):
         json.dump(d, open(os.path.join(self.dir.name, "montflorit.json"), "w"))
         subs = {"7": {"idioma": "ca", "avisos": [], "resum": None}}
         r = self.ordre("/avisos_actius", subs)
-        self.assertIn("<b>Bombers</b>\n🔥 Bombers: incendi forestal a Sant Cugat del Vallès, a 3,2 km de Montflorit", r)
+        self.assertIn("<b>Bombers</b>\n🔥 Bombers: incendi forestal a Sant Cugat del Vallès, a 3,2\u00a0km de Montflorit", r)
         self.assertIn("<b>Pla Alfa</b>\n🔴 Nivell 4 avui a Cerdanyola", r)
         self.assertNotIn("nivell 2", r)
         self.assertNotIn("Avisos actius", r)             # sense títol: l'ordre ja diu què és

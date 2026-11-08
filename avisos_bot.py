@@ -45,6 +45,7 @@ Uso: python3 avisos_bot.py CASA.json AVISOS.json [ANTERIOR]
 import datetime as dt
 import html
 import json
+import math
 import os
 import re
 import sys
@@ -111,6 +112,25 @@ RISCOS_ES = {
 
 def coma(x):
     return f"{x:.0f}" if x >= 10 else f"{x:.1f}".replace(".", ",")
+
+
+def distancia(km):
+    """Como en la web y en el bot: en metros (de 50 en 50) por debajo de 1 km;
+    si no, en km con un decimal."""
+    if km < 1:
+        return f"{max(50, math.floor(km * 20 + 0.5) * 50)}\u00a0m"
+    x = math.floor(km * 10 + 0.5) / 10
+    return f"{x:g}".replace(".", ",") + "\u00a0km"
+
+
+def a_montflorit(i, idioma):
+    """«dins de Montflorit» o «a 150 m de Montflorit», medido hasta el borde
+    del barrio (entorn.lloc_barri, 08-11-2026); "" sin distancia."""
+    if i.get("dins"):
+        return "dins de Montflorit" if idioma == "ca" else "dentro de Montflorit"
+    if i.get("km") is None:
+        return ""
+    return f"a {distancia(i['km'])} de Montflorit"
 
 
 # --- Textos ------------------------------------------------------------------
@@ -338,9 +358,8 @@ def lloc_incendi(i, idioma):
         on = f"dins del Parc de Collserola ({m})" if ca else f"dentro del Parque de Collserola ({m})"
     else:
         on = f"a {m}" if ca else f"en {m}"
-    if i.get("km") is not None:
-        on += f", a {coma(i['km'])} km de Montflorit"
-    return on
+    dist = a_montflorit(i, idioma)
+    return f"{on}, {dist}" if dist else on
 
 
 def enllac_bombers(idioma, mapa=None):
@@ -358,9 +377,9 @@ def text_incendi(i, acabat=False, parat=None):
     parc_ca = ", dins del Parc Natural de Collserola" if i.get("collserola") else ""
     parc_es = ", dentro del Parque Natural de Collserola" if i.get("collserola") else ""
     if acabat:
-        dist = f", a {coma(i['km'])} km de Montflorit" if i.get("km") is not None else ""
-        on_ca = (f"al Parc de Collserola ({lloc})" if i.get("collserola") else f"a {lloc}") + dist
-        on_es = (f"en el Parque de Collserola ({lloc})" if i.get("collserola") else f"en {lloc}") + dist
+        dist_ca, dist_es = (f", {d}" if d else "" for d in (a_montflorit(i, "ca"), a_montflorit(i, "es")))
+        on_ca = (f"al Parc de Collserola ({lloc})" if i.get("collserola") else f"a {lloc}") + dist_ca
+        on_es = (f"en el Parque de Collserola ({lloc})" if i.get("collserola") else f"en {lloc}") + dist_es
         if parat:
             return {"ca": negreta(f"Bombers: incendi {on_ca}: probablement ja s'ha apagat", "fi")
                           + "\nBombers de la Generalitat el mantenen obert, però sense cap vehicle i sense cap "
