@@ -159,6 +159,26 @@ Decisión:
   y las consultas también), ninguna ventana evita el fallo; un radio mayor
   dejaría de distinguir un servicio parcial.
 
+## Cambio del 08-11-2026 (3.213.1): «Circulació restablerta» también decide
+
+El revisor vio a las 05:50 (hora de Madrid, domingo) la R4 «Sense trens» con
+su aviso de Rodalies del día anterior (17:29 UTC, sin fin) «Circulació
+restablerta entre Sabadell Sud i Cerdanyola del Vallès. Els trens circulen amb
+demores que poden superar els 30 minuts de mitjana». No era un aviso viejo (la
+API de Rodalies lo seguía dando como vigente) ni la hora: la R4 está dentro de
+horario desde las 05:50 (primer tren a las 05:20 y media hora de margen) y en
+la última hora no se había visto ningún tren cerca de la estación, con las demoras que el
+propio aviso anuncia; a las 06:15 ya se veía uno. La causa: «Circulació
+restablerta» no se reconocía como aviso de servicio y no aplicaba la regla del
+09-10-2026.
+
+Decisión: **«Circulació restablerta» / «Circulación restablecida» y «Servei
+restablert» / «Servicio restablecido» son avisos de servicio con circulación
+ferroviaria**. Sin trenes en la última hora, la línea sale «Amb incidències»
+con la contradicción dicha; con trenes, «Amb incidències», como antes. Como
+el más nuevo de servicio, deja de mostrarse un aviso anterior de servicio por
+carretera.
+
 ## Consecuencias
 
 - Los datos públicos llevan `trens` y, en cada hora, `uv`.

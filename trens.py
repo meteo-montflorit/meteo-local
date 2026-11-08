@@ -389,8 +389,11 @@ def es_mouen(trens, abans, ara):
 
 
 # Avisos que diuen com va el servei: per carretera o amb trens. Entre els
-# propis d'una línia, mana el més recent d'aquests.
-SERVEI = re.compile(r"carretera|circulaci[oó]n? (ferrovi|normali)|servei ferrovi|servicio ferrovi", re.I)
+# propis d'una línia, mana el més recent d'aquests. També «Circulació
+# restablerta» / «Circulación restablecida» (revisor, 08-11-2026: la R4 sortia
+# «Sense trens» a les 05:50 amb l'avís «Circulació restablerta entre Sabadell
+# Sud i Cerdanyola del Vallès. Els trens circulen amb demores…»).
+SERVEI = re.compile(r"carretera|circulaci[oó]n? (ferrovi|normali|restabl)|(servei|servicio) (ferrovi|restabl)", re.I)
 # Un avís que només diu que el servei és normal a tota la línia (Rodalies el
 # publica quan es recupera): no és una incidència (ADR 0078). També
 # «Circulació normalitzada» (13-10-2026, R8).

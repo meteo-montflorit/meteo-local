@@ -7,6 +7,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config as C  # noqa: E402
+import hora as H  # noqa: E402
 import trens as T  # noqa: E402
 
 ARA = dt.datetime(2026, 10, 7, 7, 50).astimezone()
@@ -159,6 +160,29 @@ class Estat(unittest.TestCase):
         r = T.estat_linia("R8", [], None, [normal], ara)
         self.assertEqual(r["estat"], "incidencies")
         self.assertTrue(r["no_vist"])
+
+    def test_circulacio_restablerta(self):
+        # Revisor, 08-11-2026: a les 05:50 (hora de Madrid) l'R4 sortia «Sense
+        # trens» amb l'avís de Rodalies del dia abans «Circulació restablerta…».
+        ara = H.llegeix("2026-11-08T04:50Z")
+        avis = self.avis(["R4"], "Circulació restablerta entre Sabadell Sud i Cerdanyola del Vallès. Els trens "
+                         "circulen amb demores que poden superar els 30 minuts de mitjana",
+                         "Circulación restablecida entre Sabadell Sud y Cerdanyola del Vallès. Los trenes "
+                         "circulan con demoras que pueden superar los 30 minutos de media.", "2026-11-07T17:29Z")
+        avis["font"] = "rodalies"
+        r = T.estat_linia("R4", [], None, [avis], ara)
+        self.assertEqual((r["estat"], r.get("no_vist")), ("incidencies", True))
+        # Amb trens vistos, «amb incidències», com fins ara.
+        mou = [tren("R4", *C.TRENS_ESTACIONS["R4"])]
+        self.assertEqual(T.estat_linia("R4", mou, None, [avis], ara)["estat"], "incidencies")
+        # Més nou que un de servei per carretera, mana ell; el de carretera ja no es mostra.
+        bus = self.avis(["R4"], "Servei alternatiu per carretera entre Sabadell Sud i Cerdanyola del Vallès.",
+                        inici="2026-11-07T15:00Z")
+        bus["font"] = "rodalies"
+        r = T.estat_linia("R4", [], None, [bus, avis], ara)
+        self.assertEqual((r["estat"], len(r["avisos"])), ("incidencies", 1))
+        # Abans del primer tren, «fora d'horari», com sempre.
+        self.assertEqual(T.estat_linia("R4", [], None, [avis], H.llegeix("2026-11-08T04:00Z"))["estat"], "fora_horari")
 
     def avis(self, linies, ca, es=None, inici=None):
         return {"linies": set(linies), "text": {"ca": ca, "es": es or ca}, "inici": inici}
