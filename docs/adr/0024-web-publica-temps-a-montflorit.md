@@ -62,10 +62,14 @@ clon con otro nombre y si se verían datos suyos o de su NAS.
   código, cookies ni nada que siga a quien las visita, y por eso se eligió
   esta vía y no las de Google Analytics o Tag Manager. Lo que Search
   Console enseña sale del buscador de Google, no de la web.
-  También está dada de alta en Bing Webmaster Tools (3.216.2), añadida a
-  mano y verificada del mismo modo, con `montflorit/BingSiteAuth.xml`, que
-  tampoco se puede borrar. No se usó la importación desde Search Console,
-  que habría dado a Microsoft acceso a los datos de Google.
+  También está dada de alta en Bing Webmaster Tools, importada desde
+  Search Console con su sitemap: Bing da la web por verificada porque lo
+  está en Google, y para comprobarlo de vez en cuando tiene permiso de
+  solo lectura sobre Search Console. Así la web no lleva ningún archivo ni
+  código de Bing: el `BingSiteAuth.xml` de la 3.216.2 se retiró en la
+  3.216.3 (Juanjo, 09-11-2026: «no quiero códigos de bing en mis
+  páginas»). Si se quita ese permiso en la cuenta de Google o la web deja
+  de estar verificada en Search Console, Bing pierde la verificación.
 - **En catalán y, aparte, en castellano** (ADR 0025).
 - **El código fuente y los ADR, enlazados** (07-10-2026). «Fonts i crèdits»
   (apartado «Codi font i decisions», y el «Codi font» del pie) y el README del

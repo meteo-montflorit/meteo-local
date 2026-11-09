@@ -95,10 +95,10 @@ Al cambiar algo:
   «casa» ni nada del trayecto (en «Si surts» sí «moto» y «cotxe»; los créditos
   y el README enlazan este repositorio y sus ADR). Si cambias
   un texto que esté en sus listas de cambios, cámbialo también allí; las
-  pruebas avisan. En ese repositorio no se edita nada a mano. Los archivos
-  `montflorit/google0f64171555c8a8ac.html` y `montflorit/BingSiteAuth.xml`
-  verifican la web en Google Search Console y en Bing Webmaster Tools: no
-  se borran (ADR 0024).
+  pruebas avisan. En ese repositorio no se edita nada a mano. El archivo
+  `montflorit/google0f64171555c8a8ac.html` verifica la web en Google Search
+  Console, y de esa verificación depende también la de Bing Webmaster
+  Tools: no se borra (ADR 0024).
 - La web pública está también en castellano (ADR 0025). Todo texto visible de
   `web/comu.js`, `web/casa.js` y `web/sortir.js` va con `T` (o `TD` si viene
   en los datos) y tiene su traducción en `montflorit/es.js`; los textos fijos
