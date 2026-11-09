@@ -35,6 +35,10 @@ Versión 3.72.0. `sol_estacio.py`:
   los últimos 30 minutos (al menos dos) más la **diferencia habitual** de la
   estación, la mediana de (casa − vecinas) en las horas en punto de los últimos
   30 días, sin las horas con sol directo. Así la zona más fría se conserva.
+  Desde la 3.215.0, de la **franja de 3 horas de hora solar** (UTC,
+  `prevision.hora_solar`, ADR 0090) de la hora que se corrige: 0-2, 3-5, 6-8
+  h…; si la franja tiene menos de 10 horas comparables, la de todo el día
+  (`sol_estacio.ofsets`; ver «Validación»).
 - **Mientras dura**, «Ara» muestra la temperatura esperada, sin nota: en la
   3.72.1 se quitó la que decía «Estimada: el sol toca l'estació» (Juanjo:
   «quita lo de que está dando el sol... esos detalles no interesan a la
@@ -84,11 +88,11 @@ Versión 3.72.0. `sol_estacio.py`:
 - Sin 24 horas comparables o sin dos vecinas leídas en la última media hora,
   no se corrige; la reserva de IONOS tampoco corrige (no tiene el registro de
   la estación ni el de las vecinas).
-- La diferencia habitual es una para todo el día, pero cambia con la hora: del
-  9 al 12-10-2026, de −0,5 a −0,9 °C de 8 a 10 h y hasta −2,7 °C por la tarde
-  (mediana −1,2 °C). A primera hora la temperatura esperada puede quedar unos
-  0,5 °C baja. Hipótesis pendiente: con un mes de datos (desde el
-  09-11-2026), decidir si se calcula por franjas horarias.
+- Las franjas se han validado con un mes de otoño (10-10 al 09-11-2026). En
+  invierno o en verano el reparto puede cambiar; como cada franja es una
+  mediana móvil de 30 días, se ajusta sola. Las franjas de la noche tienen
+  menos datos (unas 75 horas frente a 90), pero de sobra por encima del
+  mínimo de 10.
 
 ## Validación
 
@@ -101,3 +105,21 @@ Versión 3.72.0. `sol_estacio.py`:
   el registro del NAS del 12-10-2026 (diferencia habitual −1,1 °C), las 9 h
   pasan a 12,9 °C (vecinas 14, 14, 14 y 15) y las 10 h a 14,9 °C (16, 15, 16 y
   16). 412 pruebas en verde.
+- 3.215.0, franjas de hora solar. Hasta la 3.214 la diferencia habitual era
+  una para todo el día, y del 9 al 12-10-2026 ya se veía que cambiaba con la
+  hora (de −0,5 a −0,9 °C de 8 a 10 h y hasta −2,7 °C por la tarde). Juanjo
+  aceptó revisarlo con un mes de datos (12-10-2026: «si, de acuerdo») y aprobó
+  el cambio el 09-11-2026. Con el registro del NAS del 10-10 al 09-11-2026
+  (684 horas comparables, sin las 4 de episodios de sol), la diferencia de
+  todo el día es −0,8 °C, y por franjas de hora solar: 0-2 h −0,5; 3-5 h
+  −0,5; 6-8 h −0,4; 9-11 h −1,4; 12-14 h −1,8; 15-17 h −1,4; 18-20 h −0,7;
+  21-23 h −0,5 °C (de 74 a 90 horas cada una). Validado dejando fuera un día
+  cada vez y calculando con los demás, el error medio de la temperatura
+  esperada baja de 0,71 a 0,59 °C en todo el día y de 0,70 a 0,61 °C de 6 a
+  9 h. Prueba pareada de permutación de signos por días (20.000 repeticiones)
+  con bootstrap por días para el intervalo: en todo el día, 0,12 °C menos de
+  error (IC 95 %: 0,06 a 0,18; p = 0,002), mejor en 22 de 31 días; de 6 a
+  9 h, 0,09 °C menos (IC 95 %: 0,02 a 0,15; p = 0,014), mejor en 21 de 30.
+  Hora a hora casi no gana más (0,58 °C) con un tercio de los datos por
+  hora; con franjas de 6 h, menos (0,69 °C de 6 a 9 h).
+  `test_diferencia_habitual_per_franges_d_hora_solar`.

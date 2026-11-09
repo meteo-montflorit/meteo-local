@@ -57,6 +57,30 @@ class Sol(unittest.TestCase):
         self.assertEqual(SE.hores_tocades(casa, eps), {c9})
         self.assertIsNone(SE.ofset({k: v for k, v in list(casa.items())[:10]}, veines, ara, eps))
 
+    def test_diferencia_habitual_per_franges_d_hora_solar(self):
+        # Del 10-10 al 09-11-2026 la casa estaba −0,4 °C de 6 a 9 h y −1,8 de
+        # 12 a 15 h (hora solar, UTC): cada hora usa la de su franja.
+        ara = dt.datetime(2026, 11, 9, 0, tzinfo=dt.timezone.utc)
+        casa, veines = {}, {"A": {}, "B": {}}
+        for h in range(24 * 12):
+            t = ara - dt.timedelta(hours=h + 1)
+            c = t.strftime("%Y-%m-%dT%H:%MZ")
+            veines["A"][c] = veines["B"][c] = 10.0
+            casa[c] = 10.0 + (-0.4 if 6 <= t.hour < 9 else -1.8 if 12 <= t.hour < 15 else -1.0)
+        mati = dt.datetime(2026, 11, 9, 7, 30, tzinfo=dt.timezone.utc)
+        migdia = dt.datetime(2026, 11, 9, 13, tzinfo=dt.timezone.utc)
+        self.assertAlmostEqual(SE.ofset(casa, veines, ara, [], hora=mati), -0.4)
+        self.assertAlmostEqual(SE.ofset(casa, veines, ara, [], hora=migdia), -1.8)
+        self.assertAlmostEqual(SE.ofset(casa, veines, ara, [], hora="2026-11-09T22:00Z"), -1.0)
+        self.assertAlmostEqual(SE.ofset(casa, veines, ara, []), -1.0)   # sin hora, la de todo el día
+        self.assertEqual(SE.franja("2026-11-09T08:59Z"), 2)
+        # Con la hora de Madrid (09:30 CET = 08:30 UTC), la misma franja.
+        self.assertEqual(SE.franja(dt.datetime(2026, 11, 9, 9, 30, tzinfo=dt.timezone(dt.timedelta(hours=1)))), 2)
+        # Una franja con menos de FRANJA_MIN horas usa la de todo el día.
+        pocs = {c: v for c, v in casa.items() if not (6 <= SE.H.utc(c).hour < 9) or SE.H.utc(c).day == 8}
+        self.assertEqual(len([c for c in pocs if 6 <= SE.H.utc(c).hour < 9]), 3)
+        self.assertAlmostEqual(SE.ofset(pocs, veines, ara, [], hora=mati), -1.0)
+
     def test_les_hores_de_sol_amb_la_temperatura_esperada(self):
         # El 12-10-2026 faltaban las 9 y las 10 en la comparación con ayer:
         # ahora llevan la mediana de las vecinas más la diferencia habitual.

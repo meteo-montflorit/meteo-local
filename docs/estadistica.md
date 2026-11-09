@@ -1501,9 +1501,13 @@ hora (al menos dos), la temperatura esperada en casa es
 ```
 
 con $`d`$, la **diferencia habitual**, sobre las horas en punto de los últimos
-30 días sin sol en el termómetro (hacen falta 24). La estación está en una
-zona algo más fría del barrio: el 12-10-2026, $`d = -1\text{,}0`$ °C. La mediana
-evita que una vecina con un fallo arrastre el resultado.
+30 días sin sol en el termómetro (hacen falta 24) que caen en la misma franja
+de 3 horas de hora solar (UTC: 0-2, 3-5, 6-8 h…) que la hora que se corrige;
+si la franja tiene menos de 10 horas, se usa la de todo el día. La estación
+está en una zona algo más fría del barrio, y más a mediodía que de noche o a
+primera hora: del 10-10 al 09-11-2026, $`d`$ era −0,4 °C de 6 a 9 h y
+−1,8 °C de 12 a 15 h (−0,8 °C con una sola cifra para todo el día). La
+mediana evita que una vecina con un fallo arrastre el resultado.
 
 **Cuándo hay sol en el termómetro.** De día (radiación mayor que cero), con
 $`T`$ la lectura de ahora y $`T_{30}`$ la más baja de los últimos 30 minutos,
@@ -1547,11 +1551,13 @@ esperado.
 
 **Límites.** Las vecinas dan grados enteros: $`\hat T`$ tiene un margen de
 unos ±0,5 °C. Una subida real muy brusca del aire, de día, podría tomarse por
-sol si las vecinas no la registran a la vez. La diferencia habitual es una sola para
-todo el día, pero cambia con la hora: del 9 al 12-10-2026, entre −0,5 y
-−0,9 °C de 8 a 10 h y hasta −2,7 °C por la tarde, con una mediana de −1,2 °C.
-A primera hora, $`\hat T`$ puede quedar unos 0,5 °C por debajo de la real. Con
-más días se decidirá si se calcula por franjas horarias.
+sol si las vecinas no la registran a la vez. Las franjas (desde la 3.215.0)
+se validaron con un mes de otoño: dejando fuera un día cada vez, el error
+medio de $`\hat T`$ bajó de 0,71 a 0,59 °C en todo el día y de 0,70 a
+0,61 °C de 6 a 9 h, cuando entra el sol (0,12 °C menos de error al día, con
+un intervalo de confianza del 95 % de 0,06 a 0,18 °C; mejor en 22 de 31
+días). En otra época del año el reparto puede ser otro; al ser una mediana
+de los últimos 30 días, se va ajustando sola.
 
 ## 17 bis. Cómo acierta la previsión
 

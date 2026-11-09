@@ -12,8 +12,13 @@ sino el salto de la propia estación comparado con las vecinas.
 
 - **Diferencia habitual**: la mediana de (casa − mediana de las vecinas) en
   las horas en punto de los últimos DIES_OFSET días, sin las horas con sol
-  directo. La estación de casa está en una zona más fría del barrio (Juanjo,
-  12-10-2026: «quiero que siga siendo así»): esa diferencia se conserva.
+  directo, de la misma franja de FRANJA_H horas de hora solar (UTC,
+  prevision.hora_solar) que la hora que se corrige: a primera hora la casa
+  está menos por debajo que a mediodía (del 10-10 al 09-11-2026, −0,4 °C de 6
+  a 9 h y −1,8 °C de 12 a 15 h). Si la franja tiene menos de FRANJA_MIN
+  horas, la de todo el día. La estación de casa está en una zona más fría del
+  barrio (Juanjo, 12-10-2026: «quiero que siga siendo así»): esa diferencia
+  se conserva.
 - **Empieza** un episodio, de día (radiación > 0), si la estación ha subido
   SALT_MIN °C o más en los últimos SALT_MIN_MINUTS minutos y está EXCES_INICI
   °C o más por encima de lo esperado (vecinas + diferencia habitual).
@@ -57,6 +62,8 @@ EXCES_SEGUIR = 0.7
 DURADA_MAX_H = 3
 DIES_OFSET = 30
 HORES_OFSET_MIN = 24      # sin tantas horas comparables, no se corrige
+FRANJA_H = 3              # horas de hora solar de cada franja de la diferencia habitual
+FRANJA_MIN = 10           # horas comparables de la franja para usarla
 VEINES_MIN = 2            # vecinas con temperatura para comparar
 
 
@@ -111,21 +118,43 @@ def mediana_veines(temperatures):
     return statistics.median(ts) if len(ts) >= VEINES_MIN else None
 
 
-def ofset(casa_hores, veines_hores, ara, eps=None):
+def franja(t):
+    """La franja de FRANJA_H horas de hora solar (UTC, ADR 0090) de una hora
+    (clave o datetime): 0 para las 0-2 h, 1 para las 3-5 h…"""
+    import prevision as P
+    return P.hora_solar(t) // FRANJA_H
+
+
+def ofsets(casa_hores, veines_hores, ara, eps=None):
     """La diferencia habitual casa − vecinas ({fins: °C} de casa; {estacio:
-    {fins: °C}}), en las horas de los últimos DIES_OFSET días sin sol directo.
-    None si no hay HORES_OFSET_MIN horas comparables."""
-    desde = H.clau(ara - dt.timedelta(days=DIES_OFSET))
-    claus = [c for c in casa_hores if c >= desde]
+    {fins: °C}}), en las horas de los últimos DIES_OFSET días sin sol directo:
+    (la de todo el día, {franja: la de la franja}). La de todo el día es None
+    si no hay HORES_OFSET_MIN horas comparables; una franja solo está si tiene
+    FRANJA_MIN horas."""
+    desde = H.utc(ara - dt.timedelta(days=DIES_OFSET))
+    claus = [c for c in casa_hores if H.utc(c) >= desde]
     fora = hores_tocades(claus, eps)
-    difs = []
+    difs, per_franja = [], {}
     for c in claus:
         if c in fora or casa_hores[c] is None:
             continue
         m = mediana_veines([v.get(c) for v in veines_hores.values()])
         if m is not None:
             difs.append(casa_hores[c] - m)
-    return statistics.median(difs) if len(difs) >= HORES_OFSET_MIN else None
+            per_franja.setdefault(franja(c), []).append(casa_hores[c] - m)
+    if len(difs) < HORES_OFSET_MIN:
+        return None, {}
+    return statistics.median(difs), {f: statistics.median(d) for f, d in per_franja.items() if len(d) >= FRANJA_MIN}
+
+
+def ofset(casa_hores, veines_hores, ara, eps=None, hora=None):
+    """La diferencia habitual de la franja de `hora` (sin `hora`, la de todo
+    el día); si la franja tiene menos de FRANJA_MIN horas, la de todo el día.
+    None si no hay HORES_OFSET_MIN horas comparables."""
+    dia, franges = ofsets(casa_hores, veines_hores, ara, eps)
+    if dia is None or hora is None:
+        return dia
+    return franges.get(franja(hora), dia)
 
 
 def amb_esperades(temperatures, ara, eps=None, casa_hores=None, veines_hores=None):
@@ -140,10 +169,11 @@ def amb_esperades(temperatures, ara, eps=None, casa_hores=None, veines_hores=Non
         casa_hores = _llegeix_hores(os.path.join(DIR, "estacio-casa.csv"))
     if veines_hores is None:
         veines_hores = {e: _llegeix_hores(os.path.join(DIR, f"veina-{e}.csv")) for e in C.VEINES}
-    ofs = ofset(casa_hores, veines_hores, ara, eps)
+    dia, franges = ofsets(casa_hores, veines_hores, ara, eps)
     res = {}
     for c, v in temperatures.items():
         if c in fora:
+            ofs = franges.get(franja(c), dia) if dia is not None else None
             m = mediana_veines([vh.get(c) for vh in veines_hores.values()]) if ofs is not None else None
             if m is None:
                 continue
@@ -209,7 +239,7 @@ def corregeix(ara_casa, files, veines, ara):
         return ara_casa
     casa_hores = _llegeix_hores(os.path.join(DIR, "estacio-casa.csv"))
     veines_hores = {e: _llegeix_hores(os.path.join(DIR, f"veina-{e}.csv")) for e in C.VEINES}
-    ofs = ofset(casa_hores, veines_hores, ara)
+    ofs = ofset(casa_hores, veines_hores, ara, hora=ara)
     estat = None
     if os.path.exists(ESTAT):
         try:
@@ -245,7 +275,7 @@ def omple(dies=10, ara=None):
     ara = ara or H.ara()
     casa_hores = _llegeix_hores(os.path.join(DIR, "estacio-casa.csv"))
     veines_hores = {e: _llegeix_hores(os.path.join(DIR, f"veina-{e}.csv")) for e in C.VEINES}
-    ofs = ofset(casa_hores, veines_hores, ara, eps=[])
+    ofs, franges = ofsets(casa_hores, veines_hores, ara, eps=[])
     if ofs is None:
         print("Encara no hi ha prou hores per saber la diferència habitual.")
         return []
@@ -256,7 +286,7 @@ def omple(dies=10, ara=None):
         h = P.clau_hora((t + dt.timedelta(minutes=30)).replace(minute=0, second=0, microsecond=0))
         veines = [v.get(h) for v in veines_hores.values()]
         lectures = [(g["t"], g["temperatura"]) for g in files[max(0, i - 12):i + 1]]
-        nou, _, _ = avalua(lectures, veines, ofs, estat, t, f.get("solar"))
+        nou, _, _ = avalua(lectures, veines, franges.get(franja(t), ofs), estat, t, f.get("solar"))
         if nou and not estat:
             trobats.append([t, t, nou["exces_max"]])
         elif nou:
@@ -267,7 +297,8 @@ def omple(dies=10, ara=None):
     for a, b, e in trobats:
         apunta(a, b, e)
         print(f"{H.local(a):%d/%m %H:%M}–{H.local(b):%H:%M}: fins a {e:+.1f} °C sobre l'esperada")
-    print(f"Diferència habitual: {ofs:+.1f} °C. Episodis: {len(trobats)} (fins a {H.local(ultima):%d/%m %H:%M}).")
+    print("Diferència habitual: " + f"{ofs:+.1f} °C (" + ", ".join(
+        f"{f * FRANJA_H}-{f * FRANJA_H + FRANJA_H - 1} h UTC {v:+.1f}" for f, v in sorted(franges.items())) + f"). Episodis: {len(trobats)} (fins a {H.local(ultima):%d/%m %H:%M}).")
     return trobats
 
 
