@@ -100,7 +100,10 @@ class Web(unittest.TestCase):
         arrel = "https://meteo-montflorit.github.io/"
         sitemap = self.llegeix("sitemap.xml")
         ET.fromstring(sitemap)          # XML vàlid
-        pagines = sorted(n for n in os.listdir(self.tmp.name) if n.endswith(".html"))
+        # El fitxer de verificació de Google Search Console no és cap pàgina.
+        verificacio = "google0f64171555c8a8ac.html"
+        self.assertEqual(self.llegeix(verificacio), f"google-site-verification: {verificacio}")
+        pagines = sorted(n for n in os.listdir(self.tmp.name) if n.endswith(".html") and n != verificacio)
         self.assertEqual(sorted(os.listdir(os.path.join(self.tmp.name, "es"))), pagines)
         for nom in pagines:
             for carpeta in ("", "es/"):

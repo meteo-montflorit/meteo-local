@@ -54,6 +54,14 @@ clon con otro nombre y si se verían datos suyos o de su NAS.
   de esto. Las pruebas
   (`test_per_als_cercadors`) fallan si una página se queda sin descripción,
   sin dirección canónica o fuera del sitemap.
+  El mismo día la web se dio de alta en Google Search Console, para avisar
+  a Google de que existe y enviarle el sitemap (3.216.1). La propiedad se
+  verifica con el archivo `montflorit/google0f64171555c8a8ac.html`, que
+  tiene que seguir publicado: si se borra, se pierde la verificación. Es un
+  archivo de texto que ningún visitante carga; no añade a las páginas
+  código, cookies ni nada que siga a quien las visita, y por eso se eligió
+  esta vía y no las de Google Analytics o Tag Manager. Lo que Search
+  Console enseña sale del buscador de Google, no de la web.
 - **En catalán y, aparte, en castellano** (ADR 0025).
 - **El código fuente y los ADR, enlazados** (07-10-2026). «Fonts i crèdits»
   (apartado «Codi font i decisions», y el «Codi font» del pie) y el README del

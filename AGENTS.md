@@ -95,7 +95,9 @@ Al cambiar algo:
   «casa» ni nada del trayecto (en «Si surts» sí «moto» y «cotxe»; los créditos
   y el README enlazan este repositorio y sus ADR). Si cambias
   un texto que esté en sus listas de cambios, cámbialo también allí; las
-  pruebas avisan. En ese repositorio no se edita nada a mano.
+  pruebas avisan. En ese repositorio no se edita nada a mano. El archivo
+  `montflorit/google0f64171555c8a8ac.html` verifica la web en Google Search
+  Console: no se borra (ADR 0024).
 - La web pública está también en castellano (ADR 0025). Todo texto visible de
   `web/comu.js`, `web/casa.js` y `web/sortir.js` va con `T` (o `TD` si viene
   en los datos) y tiene su traducción en `montflorit/es.js`; los textos fijos
