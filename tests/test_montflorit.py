@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import config as C  # noqa: E402
@@ -92,6 +93,30 @@ class Web(unittest.TestCase):
                       self.llegeix("index.html"))
         for imatge in ("img/compartir-capvespre-ca.jpg", "img/compartir-capvespre-es.jpg"):
             self.assertTrue(os.path.exists(os.path.join(self.tmp.name, imatge)), imatge)
+
+    def test_per_als_cercadors(self):
+        # Cada pàgina, en cada llengua: sense «noindex», amb descripció, amb la
+        # seva adreça com a canònica i a la llista de pàgines (ADR 0024).
+        arrel = "https://meteo-montflorit.github.io/"
+        sitemap = self.llegeix("sitemap.xml")
+        ET.fromstring(sitemap)          # XML vàlid
+        pagines = sorted(n for n in os.listdir(self.tmp.name) if n.endswith(".html"))
+        self.assertEqual(sorted(os.listdir(os.path.join(self.tmp.name, "es"))), pagines)
+        for nom in pagines:
+            for carpeta in ("", "es/"):
+                html = self.llegeix(carpeta + nom)
+                adreca = arrel + carpeta + ("" if nom == "index.html" else nom)
+                self.assertNotIn("noindex", html, carpeta + nom)
+                self.assertEqual(html.count(f'<link rel="canonical" href="{adreca}">'), 1, carpeta + nom)
+                self.assertEqual(html.count('<meta name="description" content="'), 1, carpeta + nom)
+                self.assertEqual(sitemap.count(f"<loc>{adreca}</loc>"), 1, carpeta + nom)
+        self.assertEqual(sitemap.count("<loc>"), 2 * len(pagines))
+        self.assertIn(f'<xhtml:link rel="alternate" hreflang="es" href="{arrel}es/riera.html"/>', sitemap)
+        self.assertEqual(self.llegeix("robots.txt"), f"User-agent: *\nAllow: /\n\nSitemap: {arrel}sitemap.xml\n")
+        # Cap descripció repetida: cada pàgina diu què és.
+        descripcions = [re.search(r'<meta name="description" content="([^"]*)"', self.llegeix(c + n)).group(1)
+                        for n in pagines for c in ("", "es/")]
+        self.assertEqual(len(set(descripcions)), len(descripcions))
 
     def test_app_d_android(self):
         # La app de Google Play obre la web sense barra d'adreça si la web

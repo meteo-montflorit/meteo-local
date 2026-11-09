@@ -43,6 +43,17 @@ clon con otro nombre y si se verían datos suyos o de su NAS.
   responsable de meteocerdanyola.com respondiera sobre el uso de su
   estación (ADR 0004). Respondió el mismo día sin oponerse, y Juanjo lo dio
   por permiso: desde entonces se puede indexar (`INDEXABLE = True`).
+  Desde la 3.216.0 (09-11-2026) lleva además lo que ayuda a los buscadores
+  a encontrarla entera: cada página dice cuál es su dirección
+  (`rel="canonical"`, una por lengua; la otra lengua va con `hreflang`),
+  todas tienen descripción (faltaba en «Com funciona», «Fonts i crèdits» y
+  «Privacitat»), y `montflorit.py` genera `sitemap.xml`, con las 11 páginas
+  en las dos lenguas, y `robots.txt`, que lo permite todo y dice dónde está
+  el sitemap. El sitemap no lleva fecha de cambio: los datos cambian cada
+  pocos minutos y la página no. Hasta entonces era indexable, pero sin nada
+  de esto. Las pruebas
+  (`test_per_als_cercadors`) fallan si una página se queda sin descripción,
+  sin dirección canónica o fuera del sitemap.
 - **En catalán y, aparte, en castellano** (ADR 0025).
 - **El código fuente y los ADR, enlazados** (07-10-2026). «Fonts i crèdits»
   (apartado «Codi font i decisions», y el «Codi font» del pie) y el README del

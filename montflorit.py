@@ -382,9 +382,32 @@ def open_graph(html, nom, es=False):
                  ("og:image:alt", OG_NOM[es])]
     if desc:
         etiquetes.insert(3, ("og:description", desc.group(1)))
-    linies = "".join(f'\n  <meta property="{p}" content="{v}">' for p, v in etiquetes)
+    # La adreça pròpia de la pàgina, per als cercadors: cada llengua és la
+    # seva (les altres van amb hreflang, a alternes).
+    linies = f'\n  <link rel="canonical" href="{url}">'
+    linies += "".join(f'\n  <meta property="{p}" content="{v}">' for p, v in etiquetes)
     linies += '\n  <meta name="twitter:card" content="summary_large_image">'
     return canvia(html, [("\n</head>", linies + "\n</head>")], nom)
+
+
+# Per als cercadors (ADR 0024): la llista de totes les pàgines, cadascuna amb
+# la seva versió en l'altra llengua, i el robots.txt que diu on és. Sense data
+# de canvi: les dades canvien cada pocs minuts i la pàgina no.
+def sitemap(noms):
+    def adreca(nom, es):
+        return WEB + ("es/" if es else "") + ("" if nom == "index.html" else nom)
+    blocs_url = []
+    for es in (False, True):
+        for nom in noms:
+            alternes_xml = "".join(f'\n    <xhtml:link rel="alternate" hreflang="{codi}" href="{adreca(nom, e)}"/>'
+                                   for codi, e in (("ca", False), ("es", True), ("x-default", False)))
+            blocs_url.append(f"  <url>\n    <loc>{adreca(nom, es)}</loc>{alternes_xml}\n  </url>\n")
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+            ' xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' + "".join(blocs_url) + "</urlset>\n")
+
+
+ROBOTS_TXT = f"User-agent: *\nAllow: /\n\nSitemap: {WEB}sitemap.xml\n"
 
 
 def alternes(html, nom):
@@ -559,6 +582,9 @@ def construeix(desti, web=None):
     for nom, pagina in pagines.items():
         escriu(nom, open_graph(pagina, nom))
         escriu("es/" + nom, open_graph(castella(pagina, nom), nom, es=True))
+    if INDEXABLE:
+        escriu("sitemap.xml", sitemap(list(pagines)))
+        escriu("robots.txt", ROBOTS_TXT)
     escriu("sw.js", service_worker(llegeix("sw.js")))
     for nom in ("estil.css", "comu.js", "grafica.js", "casa.js", "sortir.js", "perill.js", "riera.js", "consultes.js",
                 "avisos.js", "fiabilitat.js"):
