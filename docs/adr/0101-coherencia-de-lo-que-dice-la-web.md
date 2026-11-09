@@ -33,7 +33,10 @@ radar la pone encima, llegada en 5 minutos o menos o ya pasada, y ninguna
 estación la mide), `arriba` y `possible` (el radar la ve venir, 50 % y 20 %)
 o `no`. Manda lo medido, luego el radar, luego el modelo. De él salen el
 recuadro del radar de la portada y del bot, que con `radar_sobre` dice «Pluja
-a sobre segons el radar · cap estació del barri no en mesura». Las tres
+a sobre segons el radar · cap estació del barri no en mesura», y la línea
+«Ara mateix» del resumen (bot y «Consultes», `bot.text_ara`), que dice «pluja
+a sobre segons el radar» en lugar de «no plou» (desde la 3.216.4, tras
+contradecirse con la portada el 09-11-2026). Las tres
 primeras horas de la tabla se ajustan a él (`ajusta_hores`): si el radar la
 pone encima o la ve llegar dentro de una hora, esa hora no puede decir «sense
 pluja». Esto vale también con la previsión anterior, que no llevaba el

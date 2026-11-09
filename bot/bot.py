@@ -519,14 +519,21 @@ def text_ara(dades, idioma, lloc="", moment=None):
     f = hora_ara(dades, moment or ara())
     # Si no plou, el cel sense pluja: «no plou» amb un núvol de pluja es
     # contradeia (inventari del 18-10-2026).
-    icona = marca("i-umbrella") if plou else (f and (marca("i-cloud") if icona_cel(f) in ORDRE_PLUJA
-                                                     else emoji_cel(f)))
+    pa = dades.get("pluja_ara") or {}
+    # Si el radar la posa a sobre i cap estació no la mesura, ho diu, com la
+    # portada i el requadre del radar: «no plou» les contradeia (revisor,
+    # 09-11-2026; ADR 0101).
+    radar = not plou and pa.get("estat") == "radar_sobre"
+    icona = marca("i-umbrella") if plou else marca("i-cloud-rain") if radar else (
+        f and (marca("i-cloud") if icona_cel(f) in ORDRE_PLUJA else emoji_cel(f)))
     # Plugim que només veu el radar, com a la web (Juanjo, 18-10-2026; ADR 0019).
-    plugim = not plou and (dades.get("pluja_ara") or {}).get("plugim")
+    plugim = not plou and not radar and pa.get("plugim")
     if idioma == "es":
-        que = "llueve" if plou else "llovizna según el radar" if plugim else "no llueve"
+        que = ("llueve" if plou else "lluvia encima según el radar" if radar
+               else "llovizna según el radar" if plugim else "no llueve")
         return amb_icona(icona, f"Ahora mismo{lloc and ' en ' + lloc}: {graus(t)}, {que}.")
-    que = "plou" if plou else "plugim segons el radar" if plugim else "no plou"
+    que = ("plou" if plou else "pluja a sobre segons el radar" if radar
+           else "plugim segons el radar" if plugim else "no plou")
     return amb_icona(icona, f"Ara mateix{lloc and ' a ' + lloc}: {graus(t)}, {que}.")
 
 
