@@ -103,6 +103,8 @@ class Web(unittest.TestCase):
         # El fitxer de verificació de Google Search Console no és cap pàgina.
         verificacio = "google0f64171555c8a8ac.html"
         self.assertEqual(self.llegeix(verificacio), f"google-site-verification: {verificacio}")
+        # El de Bing Webmaster Tools.
+        self.assertIn("<user>E9FEA2776A9EB8C595517016D82B5C64</user>", self.llegeix("BingSiteAuth.xml"))
         pagines = sorted(n for n in os.listdir(self.tmp.name) if n.endswith(".html") and n != verificacio)
         self.assertEqual(sorted(os.listdir(os.path.join(self.tmp.name, "es"))), pagines)
         for nom in pagines:
