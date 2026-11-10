@@ -376,6 +376,7 @@ var IDIOMA = {
     "tempesta": "tormenta", "pluja forta": "lluvia fuerte", "pluja torrencial": "lluvia torrencial", "neu": "nieve", "calor": "calor", "glaçada": "helada",
     "ratxes de {0}\u00a0km/h": "rachas de {0}\u00a0km/h",
     "{0} sense incidències; de {1} ara no hi ha dades.": "{0} sin incidencias; de {1} ahora no hay datos.",
+    "{0} sense incidències; {1}, fora d’horari.": "{0} sin incidencias; {1}, fuera de horario.",
     "De {0} ara no hi ha dades.": "De {0} ahora no hay datos.",
     "Ara plou amb molta intensitat al barri ({0}\u00a0mm en mitja hora): millor no agafar el cotxe.": "Ahora llueve con mucha intensidad en el barrio ({0}\u00a0mm en media hora): mejor no coger el coche.",
     "Ara plou amb força al barri ({0}\u00a0mm en mitja hora): condueix amb compte.": "Ahora llueve con fuerza en el barrio ({0}\u00a0mm en media hora): conduce con cuidado.",

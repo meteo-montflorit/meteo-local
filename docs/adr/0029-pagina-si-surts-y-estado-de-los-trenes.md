@@ -49,7 +49,13 @@ y otros transportes.
   moto y no llovió.
 - **Transporte público según los trenes**: «Bé» si circulan todos, «Amb
   incidències» si alguno no circula, va por carretera o tiene avisos, «Sense
-  trens» si no circula ninguno. El estado de cada línea iba en un bloque
+  trens» si no circula ninguno. Si alguna línea está fuera de horario y las
+  demás circulan sin avisos, el motivo dice cuáles («S2 sense incidències; R4,
+  R7, R8, fora d'horari») en lugar de «Cap incidència als trens de
+  Cerdanyola», que hablaba también de ellas: el 10-11-2026 a las 05:31 lo
+  decía con Rodalies fuera de horario y su aviso de huelga debajo (revisor;
+  3.216.5). En cuanto esas líneas entran en horario, su aviso las pone «amb
+  incidències». El estado de cada línea iba en un bloque
   «Trens ara» debajo de las fichas; desde el 09-10-2026 va dentro de la ficha,
   plegado («Estat de cada línia»), para no tener que saltar a otro sitio de la
   página (Juanjo: «creo que debería estar todo junto», ADR 0052). El enlace

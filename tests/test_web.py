@@ -737,6 +737,12 @@ class Web(unittest.TestCase):
         r = public(sd + [{"linia": "S2", "estat": "circula"}])
         self.assertEqual((r["nivell"], r["etiqueta"]), ("neutre", "Dades parcials"))
         self.assertEqual(r["motius"], ["S2 sense incidències; de R4, R7, R8 ara no hi ha dades."])
+        # Revisor, 10-11-2026: a les 05:31, amb Rodalies fora d'horari (i l'avís de vaga), deia
+        # «cap incidència als trens de Cerdanyola»; ara diu quines línies no circulen encara.
+        fh = [{"linia": x, "estat": "fora_horari"} for x in ("R4", "R7", "R8")]
+        r = public(fh + [{"linia": "S2", "estat": "circula"}])
+        self.assertEqual(r["nivell"], "be")
+        self.assertEqual(r["motius"], ["S2 sense incidències; R4, R7, R8, fora d’horari."])
         r = public(sd + [{"linia": "S2", "estat": "incidencies"}])
         self.assertEqual(r["nivell"], "compte")
         self.assertEqual(r["motius"], ["Trens: S2 amb incidències.", "De R4, R7, R8 ara no hi ha dades."])

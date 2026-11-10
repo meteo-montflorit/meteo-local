@@ -301,6 +301,13 @@ function estatPublic(trens) {
   const malament = deDia.filter((l) => l.estat !== 'circula');
   // Si falten dades d'alguna línia, no es pot dir que tot vagi bé (auditoria del 08-10-2026).
   if (!malament.length) {
+    // Si alguna línia encara no circula (o ja no), «cap incidència als trens de
+    // Cerdanyola» parlava també d'ella: a les 05:31 del 10-11-2026 ho deia amb
+    // l'R4, l'R7 i l'R8 fora d'horari i l'avís de vaga de Rodalies (revisor).
+    const fora = (trens || []).filter((l) => l.estat === 'fora_horari');
+    if (!senseDades.length && fora.length) {
+      return { nivell: 'be', motius: [T`${noms(deDia)} sense incidències; ${noms(fora)}, fora d’horari.`] };
+    }
     if (!senseDades.length) return { nivell: 'be', motius: [T('Cap incidència als trens de Cerdanyola.')] };
     return { nivell: 'neutre', etiqueta: 'Dades parcials',
       motius: [T`${noms(deDia)} sense incidències; de ${noms(senseDades)} ara no hi ha dades.`] };
