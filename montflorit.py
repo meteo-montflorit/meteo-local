@@ -69,7 +69,7 @@ def nav_publica(actual, sagnat="  "):
                        for href, text, icona in PAGINES_PUBLIQUES)
     return f'\n{sagnat}<nav class="pagines" aria-label="Pàgines">{enllacos}\n{sagnat}</nav>'
 ROBOTS = '  <meta name="robots" content="noindex">\n'
-DESCRIPCIO = "La predicció del temps del barri, alertes i què cal saber si surts, a Cerdanyola del Vallès."
+DESCRIPCIO = "Montflorit, Cerdanyola del Vallès: la predicció del temps del barri, les alertes i què cal saber si surts."
 
 # Les llengües, a la botonera de la capçalera i no al text de sota el títol
 # (Juanjo, 09-10-2026), sense la icona: «CA ES», amb la triada marcada, ja

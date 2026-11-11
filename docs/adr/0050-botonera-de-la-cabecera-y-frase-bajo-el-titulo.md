@@ -16,9 +16,12 @@ mòbil» fuera a la misma botonera, con la campana, y que siguiera saliendo el
 ## Decisión
 
 - **Frase bajo el título de la portada** (`DESCRIPCIO` en `montflorit.py`),
-  con el texto de Juanjo: «La predicció del temps del barri, alertes i què
-  cal saber si surts, a Cerdanyola del Vallès.» Las demás páginas mantienen
-  «Montflorit, Cerdanyola del Vallès».
+  con el texto de Juanjo: «Montflorit, Cerdanyola del Vallès: la predicció
+  del temps del barri, les alertes i què cal saber si surts.» El lugar va
+  delante y separado: hasta el 11-11-2026 iba al final («…i què cal saber si
+  surts, a Cerdanyola del Vallès.») y parecía que «si surts» quería decir ir
+  a Cerdanyola. Las demás páginas mantienen «Montflorit, Cerdanyola del
+  Vallès».
 - **Una botonera a la derecha del título** (`.cap-botons`), igual en todas
   las páginas y en este orden: idioma, avisos y tema.
   - **Idioma** (solo en la web pública, `selector_idioma`): el icono
