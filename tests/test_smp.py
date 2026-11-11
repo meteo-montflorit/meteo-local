@@ -484,6 +484,48 @@ class Smp(unittest.TestCase):
         self.assertEqual(e["allargat_de"], v["fin"])
         self.assertEqual(e["ca"].split("\n")[1], "Dijous 12, de les 0 h a les 18 h.")
 
+    def test_la_fitxa_de_l_aemet_no_diu_retirat_si_l_aemet_n_ha_canviat_les_hores(self):
+        # 11-11-2026, 11:45: el groc de vent del 12-11 de 0 a 15 h (la fitxa, de 0 a 7 h: Meteocat avisava
+        # de 7 a 19 h) va passar a ser de 7 a 15 h, tot cobert per Meteocat. La fitxa es va tancar amb
+        # «L'AEMET l'ha retirat abans d'hora» i l'AEMET continuava amb avís groc de vent (revisor).
+        ara = dt.datetime.fromisoformat("2026-11-11T11:45:00+01:00")
+        k, nou = "aemet:vent:2026-11-11T23:00Z", "aemet:vent:2026-11-12T06:00Z"
+        fitxa = {"clau": k, "tipus": "perill", "inici": "2026-11-11T00:15+01:00", "nivell": "groc", "ca": "x", "es": "x",
+                 "fins": "2026-11-12T06:59:59+01:00", "comenca": "2026-11-12T00:00+01:00",
+                 "fins_aemet": "2026-11-12T14:59:59+01:00"}
+        mc = {"clau": "meteocat:2026-11-10T17:15Z", "tipus": "perill", "inici": "2026-11-10T18:15+01:00", "nivell": "mig",
+              "ca": "m", "es": "m"}
+        v = {"fin": "2026-11-12T14:59:59+01:00", "fin_visible": "2026-11-12T14:59:59+01:00",
+             "comenca": "2026-11-12T07:00+01:00", "cobert": True}
+        estat = lambda f, vigents: {"historial": [dict(mc), dict(f)], "aemet_vigents": vigents,
+                                    "oficials": {"smp": {"episodi": mc["clau"]}}}
+        e = AB.historial(estat(fitxa, {nou: dict(v)}), [], ara)[1]
+        self.assertEqual((e["fi"], e["fi_ca"], e["fi_es"]), ("2026-11-11T10:45Z", AB.MOGUT_COBERT["ca"], AB.MOGUT_COBERT["es"]))
+        self.assertEqual(e["substituit_per"], {"clau": mc["clau"], "inici": mc["inici"]})
+        # La que ja es va tancar com a retirada es rectifica a la passada següent, amb l'hora del tancament.
+        tancada = dict(fitxa, fi="2026-11-11T10:45Z", fi_ca=AB.RETIRAT["ca"], fi_es=AB.RETIRAT["es"])
+        despres = dt.datetime.fromisoformat("2026-11-11T18:15:00+01:00")
+        e = AB.historial(estat(tancada, {nou: dict(v)}), [], despres)[1]
+        self.assertEqual((e["fi"], e["fi_ca"]), ("2026-11-11T10:45Z", AB.MOGUT_COBERT["ca"]))
+        self.assertEqual(e["substituit_per"], {"clau": mc["clau"], "inici": mc["inici"]})
+        # Si Meteocat no cobreix les hores noves, l'altre avís de l'AEMET té fitxa i s'hi enllaça.
+        nova = dict(fitxa, clau=nou, inici="2026-11-11T11:45+01:00", fins=v["fin"], comenca=v["comenca"])
+        est = {"historial": [dict(fitxa), nova], "aemet_vigents": {nou: dict(v, cobert=False)}}
+        h = AB.historial(est, [], ara)
+        self.assertEqual((h[0]["fi_ca"], h[0]["substituit_per"]), (AB.MOGUT["ca"], {"clau": nou, "inici": nova["inici"]}))
+        self.assertNotIn("fi", h[1])
+        # Retirat de veritat (l'AEMET no en té cap altre de vent), o sense lectura: com abans.
+        e = AB.historial(estat(fitxa, {"aemet:pluja:2026-11-12T06:00Z": dict(v)}), [], ara)[1]
+        self.assertEqual(e["fi_ca"], AB.RETIRAT["ca"])
+        self.assertNotIn("substituit_per", e)
+        self.assertEqual(AB.historial(estat(tancada, None), [], despres)[1]["fi_ca"], AB.RETIRAT["ca"])
+        # Una retirada ja no es rectifica quan ha passat el final que tenia l'avís sencer, ni si torna la mateixa clau.
+        passat = dt.datetime.fromisoformat("2026-11-12T15:15:00+01:00")
+        tardana = {"aemet:vent:2026-11-12T13:00Z": dict(v, fin="2026-11-12T20:59:59+01:00")}
+        self.assertEqual(AB.historial(estat(tancada, tardana), [], passat)[1]["fi_ca"], AB.RETIRAT["ca"])
+        e = AB.historial(estat(tancada, {k: dict(v, cobert=False), nou: dict(v)}), [], despres)[1]
+        self.assertEqual((e["fi_ca"], e["fins"]), (AB.RETIRAT["ca"], fitxa["fins"]))
+
     def test_avis_a_juanjo_en_el_moment(self):
         # Si la passada no ha pogut llegir Meteocat, una vegada; i quan torna.
         from unittest import mock

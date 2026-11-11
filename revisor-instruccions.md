@@ -81,6 +81,14 @@ inclúyelas si son reales, explicando por qué.
 - Un aviso de AEMET acaba a su hora final (`fins`) sin mensaje de final: el
   aviso que se envió ya decía hasta cuándo. Su ficha no lleva `fi` y
   «Perill» la da por acabada con `fins`; no es un cierre que falte.
+- Si AEMET cambia las horas de un aviso (deja de publicarlo y publica otro
+  del mismo fenómeno que empieza más tarde), la ficha del viejo se cierra con
+  «L'AEMET n'ha canviat les hores…» y enlaza la del nuevo, o la de Meteocat
+  si las horas nuevas las cubre Meteocat (desde la 3.216.10). Esa ficha
+  cerrada sigue diciendo las horas con que se publicó: no es un error que no
+  coincidan con las del aviso nuevo. «L'AEMET l'ha retirat abans d'hora»
+  queda para cuando AEMET ya no tiene ningún aviso de ese fenómeno en esas
+  horas.
 - Si en los datos `aemet` (los avisos de AEMET) es null, es que esa pasada no se
   ha podido leer AEMET (la página lo dice con «No s'han pogut llegir totes
   les fonts»): las fichas de AEMET abiertas se mantienen tal cual hasta que se

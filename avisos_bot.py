@@ -1019,6 +1019,16 @@ INCLOS = {"ca": "L'AEMET l'ha inclòs en un altre avís seu, que continua actiu.
           "es": "La AEMET lo ha incluido en otro aviso suyo, que sigue activo."}
 RETIRAT = {"ca": "L'AEMET l'ha retirat abans d'hora.",
            "es": "La AEMET lo ha retirado antes de tiempo."}
+# L'AEMET no l'ha retirat: n'ha mogut les hores i ara el publica com un altre
+# avís, que comença més tard (revisor, 11-11-2026: el groc de vent del 12-11
+# de 0 a 15 h va passar a ser de 7 a 15 h, hores que cobreix Meteocat, i la
+# fitxa es va tancar amb «L'AEMET l'ha retirat abans d'hora»).
+MOGUT = {"ca": "L'AEMET n'ha canviat les hores: ara és un altre avís seu.",
+         "es": "La AEMET le ha cambiado las horas: ahora es otro aviso suyo."}
+MOGUT_COBERT = {"ca": "L'AEMET n'ha canviat les hores i, per a les noves, Meteocat té avís al Vallès Occidental: "
+                      "ara es mostra el seu.",
+                "es": "La AEMET le ha cambiado las horas y, para las nuevas, Meteocat tiene aviso en el Vallès "
+                      "Occidental: ahora se muestra el suyo."}
 
 
 def aemet_que_inclou(clau, vigents, ahora):
@@ -1035,6 +1045,26 @@ def aemet_que_inclou(clau, vigents, ahora):
         if t == tipus and k != clau and H.llegeix(i) <= des_de <= H.llegeix(v["fin"]):
             return k
     return None
+
+
+def aemet_mogut(e, vigents, ahora):
+    """El aviso vigente de AEMET del mismo fenómeno al que han pasado las horas
+    de uno que ya no publica, cuando no abarca lo que quedaba
+    (`aemet_que_inclou`): empieza más tarde, pero antes de que acabara el viejo
+    entero (`fins_aemet`, con las horas que cubría Meteocat). El de viento del
+    12-11-2026 de 0 a 15 h pasó a ser de 7 a 15 h. Uno que empieza cuando el
+    viejo ya habría acabado es otro aviso: el viejo se ha retirado."""
+    _, tipus, inici = e["clau"].split(":", 2)
+    final = e.get("fins_aemet") or e.get("fins")
+    if not final:
+        return None
+    des_de = max(H.llegeix(inici), ahora)
+    moguts = []
+    for k in vigents:
+        _, t, i = k.split(":", 2)
+        if t == tipus and k != e["clau"] and des_de < H.llegeix(i) <= H.llegeix(final):
+            moguts.append((H.llegeix(i), k))
+    return min(moguts)[1] if moguts else None
 
 
 def posa_fins(e, fins, fin_aemet=None):
@@ -1095,15 +1125,25 @@ def tanca_aemet(h, vigents, ahora):
     17-10-2026: «Perill» enseñaba como activos dos avisos que AEMET ya había
     juntado en otro). Si alarga uno, su ficha también; si uno desaparece antes
     de acabar, la ficha se cierra diciendo si está dentro de otro (con el
-    enlace a su ficha, o a la de Meteocat si lo cubre Meteocat) o si se ha
-    retirado. Sin lectura de AEMET (None), no se toca nada."""
+    enlace a su ficha, o a la de Meteocat si lo cubre Meteocat), si AEMET le
+    ha cambiado las horas (igual) o si se ha retirado. Sin lectura de AEMET
+    (None), no se toca nada.
+
+    Una cerrada como retirada se vuelve a mirar mientras no llegue el final
+    que tenía el aviso entero: si AEMET publica otro que la incluye o con las
+    horas cambiadas, el motivo se rectifica y la hora del cierre se queda."""
     if vigents is None:
         return
     ara = H.clau(ahora)
     for e in h:
-        if not e["clau"].startswith("aemet:") or e.get("fi"):
+        if not e["clau"].startswith("aemet:"):
+            continue
+        tancada = bool(e.get("fi"))
+        if tancada and e.get("fi_ca") != RETIRAT["ca"]:
             continue
         v = vigents.get(e["clau"])
+        if v and tancada:
+            continue        # torna a ser vigent: se n'avisa amb una fitxa nova
         if v:
             # El final que diu ara la línia, abans de canviar-lo.
             fins_text = e.get("franja_fins") or e.get("allargat_de") or e.get("fins")
@@ -1113,19 +1153,25 @@ def tanca_aemet(h, vigents, ahora):
                     H.llegeix(v["comenca"]) < H.llegeix(e["comenca"]):
                 e["comenca"] = v["comenca"]
             continue
-        if e.get("fins") and H.llegeix(e["fins"]) <= ahora:
+        final = (e.get("fins_aemet") or e.get("fins")) if tancada else e.get("fins")
+        if (final and H.llegeix(final) <= ahora) or (tancada and not final):
             continue        # ja ha acabat a la seva hora
         k = aemet_que_inclou(e["clau"], vigents, ahora)
         if k and vigents[k]["cobert"]:
-            # El substituït_per de Meteocat el posa el pas de sota.
-            e.update(fi=ara, fi_ca=SUBSTITUIT["ca"], fi_es=SUBSTITUIT["es"])
+            # El substituït_per de Meteocat el posa `historial`.
+            motiu = SUBSTITUIT
         elif k:
-            e.update(fi=ara, fi_ca=INCLOS["ca"], fi_es=INCLOS["es"])
+            motiu = INCLOS
+        else:
+            k = aemet_mogut(e, vigents, ahora)
+            motiu = (MOGUT_COBERT if vigents[k]["cobert"] else MOGUT) if k else RETIRAT
+        if tancada and motiu is RETIRAT:
+            continue
+        e.update(fi=e.get("fi") or ara, fi_ca=motiu["ca"], fi_es=motiu["es"])
+        if motiu in (INCLOS, MOGUT):
             altra = next((x for x in h if x["clau"] == k and not x.get("fi")), None)
             if altra:
                 e["substituit_per"] = {"clau": altra["clau"], "inici": altra["inici"]}
-        else:
-            e.update(fi=ara, fi_ca=RETIRAT["ca"], fi_es=RETIRAT["es"])
 
 
 def cos_avis(text):
@@ -1209,7 +1255,7 @@ def historial(estat, nous, ahora, anterior=None):
     for e in h:
         if e["clau"] in (estat.get("aemet_coberts") or []) and not e.get("fi"):
             e.update(fi=H.clau(ahora), fi_ca=SUBSTITUIT["ca"], fi_es=SUBSTITUIT["es"])
-        if mc and e.get("fi_ca") == SUBSTITUIT["ca"] and not e.get("substituit_per"):
+        if mc and e.get("fi_ca") in (SUBSTITUIT["ca"], MOGUT_COBERT["ca"]) and not e.get("substituit_per"):
             e["substituit_per"] = {"clau": mc["clau"], "inici": mc["inici"]}
     # Un incendio que sigue en curso pero ha salido de la zona: su ficha se
     # cierra diciéndolo, sin darlo por apagado.

@@ -597,3 +597,39 @@ Validación: `tests/test_smp.py`
 (`test_la_fitxa_de_l_aemet_diu_la_part_que_no_cobreix_meteocat`: el caso del
 11-11, la ficha ya estropeada, Meteocat que retira el suyo y AEMET que alarga
 de verdad).
+
+
+## Cambio del 11-11-2026 (3.216.10): AEMET cambia las horas de un aviso
+
+El revisor (11:47) encontró la ficha cerrada del mismo groc de viento con
+«L'AEMET l'ha retirat abans d'hora», mientras AEMET seguía con aviso amarillo
+de viento para el jueves 12. AEMET no lo había retirado: a las 11:45 su aviso
+de 0 a 15 h pasó a ser de 7 a 15 h, horas que cubre el de Meteocat (de 7 a
+19 h). Como la clave de un aviso lleva su comienzo, el de 7 h es otro para el
+programa, y `aemet_que_inclou` solo busca el que abarca lo que queda del
+viejo: uno que empieza más tarde caía en «retirado».
+
+Ahora `tanca_aemet` distingue ese caso (`aemet_mogut`): si AEMET publica otro
+aviso del mismo fenómeno que empieza más tarde, pero antes de que acabara el
+viejo entero (`fins_aemet`), la ficha se cierra con «L'AEMET n'ha canviat les
+hores: ara és un altre avís seu», enlazada a la ficha del nuevo; si las horas
+nuevas las cubre Meteocat, con «L'AEMET n'ha canviat les hores i, per a les
+noves, Meteocat té avís al Vallès Occidental: ara es mostra el seu», enlazada
+a la de Meteocat. Uno que empieza cuando el viejo ya habría acabado es otro
+aviso, y el viejo sigue constando como retirado. La web no cambia: ya
+enseñaba «Substituït per…» con el enlace.
+
+Una ficha cerrada como retirada se vuelve a mirar mientras no llegue el final
+que tenía su aviso: si AEMET publica uno que la incluye o con las horas
+cambiadas, el motivo se rectifica y la hora del cierre se queda. Así se
+corrige sola la del 11-11 y la de una pasada en que AEMET quite un aviso
+antes de publicar el que lo sustituye.
+
+Validación: `tests/test_smp.py`
+(`test_la_fitxa_de_l_aemet_no_diu_retirat_si_l_aemet_n_ha_canviat_les_hores`:
+el caso del 11-11, la ficha ya cerrada, las horas nuevas sin Meteocat, el
+retirado de verdad, sin lectura de AEMET y pasado el final) y
+`tests/test_bot.py` (`test_l_aemet_substituit_per_un_que_comenca_mes_tard`,
+que daba por retirado el que empieza más tarde). Con el historial y los
+avisos publicados el 11-11 a las 17:30, solo cambia esa ficha; vista en
+«Perill» con Chromium y Firefox, en escritorio y móvil.

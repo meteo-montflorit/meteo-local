@@ -1274,11 +1274,20 @@ class FitxesDelRevisor(unittest.TestCase):
         h = {e["clau"]: e for e in AB.historial(estat, [], ara)}
         self.assertEqual(h[vell]["fi_ca"], AB.INCLOS["ca"])
         self.assertEqual(h[vell]["substituit_per"], {"clau": nou, "inici": "2026-10-19T19:27+02:00"})
-        # Un altre fenomen, o un que no arriba a cobrir el que en queda, continua essent retirat.
-        estat = {"historial": [fitxa(vell, "2026-10-18T00:15+02:00")],
-                 "aemet_vigents": {"aemet:tempestes:2026-10-19T21:00:00+02:00": {"fin": "2026-10-20T08:59:59+02:00",
-                                                                                 "cobert": False}}}
-        self.assertEqual(AB.historial(estat, [], ara)[0]["fi_ca"], AB.RETIRAT["ca"])
+        # Un que comença més tard, abans que acabés el vell: l'AEMET n'ha canviat les hores (revisor,
+        # 11-11-2026). Un altre fenomen, o un que comença quan el vell ja hauria acabat, és retirat.
+        tard = "aemet:tempestes:2026-10-19T21:00:00+02:00"
+        estat = {"historial": [fitxa(vell, "2026-10-18T00:15+02:00"), fitxa(tard, "2026-10-19T19:27+02:00")],
+                 "aemet_vigents": {tard: {"fin": "2026-10-20T08:59:59+02:00", "cobert": False}}}
+        h = {e["clau"]: e for e in AB.historial(estat, [], ara)}
+        self.assertEqual((h[vell]["fi_ca"], h[vell]["fi_es"]), (AB.MOGUT["ca"], AB.MOGUT["es"]))
+        self.assertEqual(h[vell]["substituit_per"], {"clau": tard, "inici": "2026-10-19T19:27+02:00"})
+        for altre in ("aemet:vent:2026-10-19T21:00:00+02:00", "aemet:tempestes:2026-10-20T09:00:00+02:00"):
+            estat = {"historial": [fitxa(vell, "2026-10-18T00:15+02:00")],
+                     "aemet_vigents": {altre: {"fin": "2026-10-20T14:59:59+02:00", "cobert": False}}}
+            e = AB.historial(estat, [], ara)[0]
+            self.assertEqual(e["fi_ca"], AB.RETIRAT["ca"], altre)
+            self.assertNotIn("substituit_per", e)
 
     def test_meteocat_retirat_queda_en_pausa(self):
         # Revisor, 20-10-2026: retirat l'avís de 5 a 6 h, la fitxa seguia «Actiu ara» la mitja hora de relleu.
