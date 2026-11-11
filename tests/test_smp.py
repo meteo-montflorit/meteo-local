@@ -454,6 +454,36 @@ class Smp(unittest.TestCase):
         self.assertEqual(e["ca"], sense["ca"])
         self.assertNotIn("franja_fins", e)
 
+    def test_la_fitxa_de_l_aemet_diu_la_part_que_no_cobreix_meteocat(self):
+        # 11-11-2026: groc de vent de 0 a 15 h, amb Meteocat des de les 7 h. La fitxa deia «de les
+        # 0 h a les 15 h. L'AEMET l'ha allargat» i la portada i l'avís enviat, de 0 a 7 h (revisor).
+        k = "aemet:vent:2026-11-11T23:00Z"
+        ca = "🟡 <b>AEMET: avís groc per vent al Vallès</b>\nDijous 12, de les 0 h a les 7 h.\n«80 km/h.»"
+        es = "🟡 <b>AEMET: aviso amarillo por viento en el Vallès</b>\nJueves 12, de las 0 h a las 7 h.\n«80 km/h.»"
+        fitxa = {"clau": k, "tipus": "perill", "inici": "2026-11-11T00:15+01:00", "nivell": "groc", "ca": ca, "es": es,
+                 "fins": "2026-11-12T06:59:59+01:00", "comenca": "2026-11-12T00:00+01:00"}
+        v = {"fin": "2026-11-12T14:59:59+01:00", "fin_visible": "2026-11-12T06:59:59+01:00", "cobert": False}
+        e = AB.historial({"historial": [dict(fitxa)], "aemet_vigents": {k: dict(v)}}, [], AHORA)[0]
+        self.assertEqual((e["fins"], e["ca"]), (fitxa["fins"], ca))
+        self.assertNotIn("allargat_de", e)
+        # La que ja s'havia fet malbé torna a dir de 0 a 7 h, sense «l'ha allargat».
+        mal = dict(fitxa, ca=ca.replace("7 h", "15 h"), es=es.replace("7 h", "15 h"), fins=v["fin"],
+                   allargat_de=fitxa["fins"], franja_fins=v["fin"])
+        estat = {"historial": [mal], "aemet_vigents": {k: dict(v)}}
+        e = AB.historial(estat, [], AHORA)[0]
+        self.assertEqual((e["fins"], e["ca"], e["es"]), (fitxa["fins"], ca, es))
+        self.assertNotIn("allargat_de", e)
+        # Si Meteocat retira el seu, es mostra fins a les 15 h, però l'AEMET no l'ha allargat.
+        estat["aemet_vigents"][k]["fin_visible"] = v["fin"]
+        e = AB.historial(estat, [], AHORA)[0]
+        self.assertEqual((e["fins"], e["ca"].split("\n")[1]), (v["fin"], "Dijous 12, de les 0 h a les 15 h."))
+        self.assertNotIn("allargat_de", e)
+        # I si després l'AEMET l'allarga de veritat, sí.
+        estat["aemet_vigents"][k] = dict(v, fin="2026-11-12T17:59:59+01:00", fin_visible="2026-11-12T17:59:59+01:00")
+        e = AB.historial(estat, [], AHORA)[0]
+        self.assertEqual(e["allargat_de"], v["fin"])
+        self.assertEqual(e["ca"].split("\n")[1], "Dijous 12, de les 0 h a les 18 h.")
+
     def test_avis_a_juanjo_en_el_moment(self):
         # Si la passada no ha pogut llegir Meteocat, una vegada; i quan torna.
         from unittest import mock

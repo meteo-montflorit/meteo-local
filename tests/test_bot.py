@@ -1310,7 +1310,8 @@ class FitxesDelRevisor(unittest.TestCase):
             AB.decideix(estat, {"avisos": avisos}, dt.datetime.fromisoformat("2026-10-19T19:57:00+02:00"))
             self.assertEqual(estat["aemet_coberts"], [])
             self.assertEqual(estat["aemet_vigents"][k], {"fin": "2026-10-20T08:59:59+02:00", "cobert": False,
-                                                        "comenca": "2026-10-20T06:00:00+02:00"})
+                                                        "comenca": "2026-10-20T06:00:00+02:00",
+                                                        "fin_visible": "2026-10-20T08:59:59+02:00"})
 
 
 if __name__ == "__main__":

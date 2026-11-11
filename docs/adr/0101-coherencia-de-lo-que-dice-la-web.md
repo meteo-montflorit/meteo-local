@@ -572,3 +572,28 @@ versión) y `tests/test_historial_grafica.py`
 (`test_el_revisor_no_avanca_la_feina_de_publica`); las páginas nuevas,
 dibujadas en el NAS con los datos reales (Riera 3.444 caracteres, Consultes
 1.282, Fiabilitat con su historial).
+
+
+## Cambio del 11-11-2026 (3.216.6): la ficha de AEMET con horas que cubre Meteocat
+
+El revisor (00:19) encontró la ficha del groc de viento de AEMET del 12-11
+con «Dijous 12, de les 0 h a les 15 h» y «L'AEMET l'ha allargat», mientras la
+portada, la tabla por horas y el aviso enviado decían de 0 a 7 h. AEMET no lo
+había alargado: su aviso iba de 0 a 15 h desde el principio y Meteocat avisaba
+de 7 a 19 h, así que se mostraba de 0 a 7 (`smp.marca_coberts`). El aviso y la
+ficha se escribieron con esa parte, pero `aemet_vigents` guardaba el final del
+aviso entero, y `tanca_aemet` lo tomaba por un alargamiento.
+
+Ahora `aemet_vigents` guarda también el final de lo que se muestra
+(`fin_visible`), y la ficha sigue ese. «Alargado» quiere decir que AEMET ha
+movido el final de su aviso: la ficha guarda el de AEMET (`fins_aemet`) y solo
+lo dice si ese crece. Si lo que se muestra cambia porque Meteocat deja de
+cubrir unas horas, o pasa a cubrirlas, la línea de cuándo dura se rehace con
+el final nuevo, sin la nota. Si la ficha vuelve a quedar dentro del final con
+que se publicó, deja de constar como alargada. La ficha estropeada se corrige
+sola en la pasada siguiente.
+
+Validación: `tests/test_smp.py`
+(`test_la_fitxa_de_l_aemet_diu_la_part_que_no_cobreix_meteocat`: el caso del
+11-11, la ficha ya estropeada, Meteocat que retira el suyo y AEMET que alarga
+de verdad).

@@ -884,8 +884,13 @@ def decideix(estat, salida, ahora):
         # Amb quan comença la part que no cobreix Meteocat, que s'avança si
         # Meteocat retira el seu (revisor, 20-10-2026: «Previst · Comença a les
         # 6 h» a les 5:40 amb l'avís de Meteocat ja retirat).
+        # I amb on acaba la part que es mostra: la fitxa diu aquest final, no el
+        # de l'avís sencer. Amb el de 0 a 15 h que Meteocat cobria des de les
+        # 7 h, la fitxa deia «de les 0 h a les 15 h. L'AEMET l'ha allargat» i la
+        # portada i l'avís enviat, de 0 a 7 h (revisor, 11-11-2026).
         estat["aemet_vigents"] = {f"aemet:{k}": {"fin": a["fin"], "cobert": bool(a.get("cobert")),
-                                                 "comenca": SMP.visible(a)["inicio"]}
+                                                 "comenca": SMP.visible(a)["inicio"],
+                                                 "fin_visible": SMP.visible(a)["fin"]}
                                   for k, a in aemet.items()}
     else:
         estat["aemet_vigents"] = None
@@ -1032,27 +1037,43 @@ def aemet_que_inclou(clau, vigents, ahora):
     return None
 
 
-def posa_fins(e, fins):
+def posa_fins(e, fins, fin_aemet=None):
     """El final nuevo de una ficha. Si AEMET la alarga, se guarda el que tenía
     al publicarse (`allargat_de`): su texto dice ese final y la ficha tiene que
     decir que lo ha alargado (revisor, 18-10-2026: «fins a mitjanit» con final
-    a las 03:59; ADR 0101)."""
+    a las 03:59; ADR 0101).
+
+    `fins` es el final de lo que se muestra (sin las horas que cubre
+    Meteocat) y `fin_aemet`, el del aviso entero, que se guarda en
+    `fins_aemet`: solo es «alargado» si AEMET ha movido el suyo. Si el que se
+    muestra crece porque Meteocat retira el suyo, la línea cambia, pero AEMET
+    no ha alargado nada (revisor, 11-11-2026). Si vuelve a quedar dentro del
+    final con que se publicó, deja de estar alargado."""
     vell = e.get("fins")
+    abans_aemet = e.get("fins_aemet") or vell
+    if fin_aemet:
+        e["fins_aemet"] = fin_aemet
     if not fins or fins == vell:
         return
-    if vell and e["clau"].startswith("aemet:") and H.llegeix(fins) > H.llegeix(vell):
+    if vell and e["clau"].startswith("aemet:") and H.llegeix(fins) > H.llegeix(vell) and \
+            (not fin_aemet or not abans_aemet or H.llegeix(fin_aemet) > H.llegeix(abans_aemet)):
         e.setdefault("allargat_de", vell)
+    elif e.get("allargat_de") and H.llegeix(fins) <= H.llegeix(e["allargat_de"]):
+        e.pop("allargat_de")
     e["fins"] = fins
 
 
-def refa_franja(e):
+def refa_franja(e, fins_text=None):
     """La línea de cuándo dura, con el final que AEMET ha alargado: «de les 6 h
     a les 7 h» pasa a «de les 6 h a les 9 h», en lugar de dejarla y decir
     debajo hasta cuándo va (revisor, 19-10-2026: la ficha decía las dos cosas
     y la portada, de 6 a 9). `franja_fins` es el final que dice ahora la línea;
     con él la web sabe que ya no hace falta repetir la hora. Si la línea no
-    está (la quitó el revisor o es de un texto antiguo, con «demà»), no se toca."""
-    fins_text = e.get("franja_fins") or e.get("allargat_de")
+    está (la quitó el revisor o es de un texto antiguo, con «demà»), no se toca.
+    `fins_text`, el final que decía la línea antes de cambiar `fins`: lo que se
+    muestra también cambia sin que AEMET alargue nada (Meteocat cubre o deja
+    de cubrir unas horas)."""
+    fins_text = fins_text or e.get("franja_fins") or e.get("allargat_de")
     if not fins_text or not e.get("fins") or fins_text == e["fins"]:
         return
     ini = e.get("comenca") or e["clau"].split(":", 2)[2]
@@ -1084,8 +1105,10 @@ def tanca_aemet(h, vigents, ahora):
             continue
         v = vigents.get(e["clau"])
         if v:
-            posa_fins(e, v["fin"])
-            refa_franja(e)
+            # El final que diu ara la línia, abans de canviar-lo.
+            fins_text = e.get("franja_fins") or e.get("allargat_de") or e.get("fins")
+            posa_fins(e, v.get("fin_visible") or v["fin"], v["fin"])
+            refa_franja(e, fins_text)
             if v.get("comenca") and e.get("comenca") and \
                     H.llegeix(v["comenca"]) < H.llegeix(e["comenca"]):
                 e["comenca"] = v["comenca"]
