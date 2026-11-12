@@ -1350,6 +1350,23 @@ class Web(unittest.TestCase):
                 f"ordreActius({json.dumps(actius)}, new Date('{ara}')).map((e) => e.clau)")
         self.assertEqual(self.avalua(ara, expr, pagina="perill.js"), ["smp:pluja", "smp:nou", "smp:vist"])
 
+    def test_avis_de_meteocat_no_torna_a_ser_nou_cada_hora(self):
+        # Juanjo, 12-11-2026: el vent de Meteocat de 7 a 19 h tornava a dir «Nou» a les 17:03,
+        # amb «actualitzat ahir 10:00»: a cada hora en surt la passada, i les hores eren a la clau.
+        ara = "2026-11-12T17:03:00+01:00"
+        smp = lambda h: {"fenomens": [{"fenomen": "vent", "nivell": "mig", "dies": {"2026-11-12": [[h, 19]]}}]}
+        claus = [self.avalua(ara, f"curtsSmp({json.dumps(smp(h))}, 'perill.html#x', new Date()).map((p) => p.dataset.clau)")
+                 for h in (16, 17)]
+        self.assertEqual(claus, [["smp:vent:mig"], ["smp:vent:mig"]])
+        # El que ja s'havia vist amb la clau d'abans (amb les hores) i la mateixa hora de publicació, tampoc.
+        hora = "|2026-11-11T09:00:00.000Z"
+        antiga = 'smp:vent:mig:{"2026-11-12":[[16,19]]}' + hora
+        expr = (f"LLEGITS_ABANS = new Set({json.dumps([antiga])});"
+                f"[llegitAmbClauAntiga('smp:vent:mig', 'smp:vent:mig{hora}'),"
+                f" llegitAmbClauAntiga('smp:vent:mig', 'smp:vent:mig|2026-11-12T09:00:00.000Z'),"
+                f" llegitAmbClauAntiga('smp:vent:alt', 'smp:vent:alt{hora}')]")
+        self.assertEqual(self.avalua(ara, expr), [True, False, False])
+
     def test_perill_avui_i_dema_d_un_altre_dia(self):
         # Revisor, 20-10-2026: la fitxa acabada del vent del dilluns deia «avui de 17 a 18 h» el dimarts.
         propi = {"clau": "propi", "inici": "2026-10-19T13:09+02:00", "escrit": "2026-10-19T15:00+02:00",

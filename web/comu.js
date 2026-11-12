@@ -1058,14 +1058,19 @@ function curtsSmp(smp, href, ara) {
   if (!fenomens.length) {
     return (smp.linies || []).filter((l) => COLOR_SMP[l.nivell]).map((l, n) => {
       const p = element('p', `avis-item curt ${COLOR_SMP[l.nivell]}`, es ? l.es : l.ca);
-      p.dataset.clau = `smp:${n}:${l.nivell}:${l.ca}`;
+      p.dataset.clau = `smp:${n}:${l.nivell}`;
       return ambDetall(p, href);
     });
   }
+  // La clau, sense les hores: a cada hora en surt la que ja ha passat
+  // (smp.pendents), i amb les hores a la clau l'avís tornava a dir «Nou» cada
+  // hora (Juanjo, 12-11-2026: el vent de 7 a 19 h, «Nou» a les 17:03 amb
+  // «actualitzat ahir 10:00»). Un canvi de debò de Meteocat canvia l'hora de
+  // publicació (darrer), que també és a la clau de «Nou» (marcaPublicacio).
   return fenomens.map((f) => {
     const p = element('p', `avis-item curt ${COLOR_SMP[f.nivell]}`);
     p.append(T`Meteocat: perill ${GRAU_SMP[f.nivell]()} per ${TD(f.fenomen)}, ${quanDies(f.dies, ara)}`);
-    p.dataset.clau = `smp:${f.fenomen}:${f.nivell}:${JSON.stringify(f.dies)}`;
+    p.dataset.clau = `smp:${f.fenomen}:${f.nivell}`;
     return ambDetall(p, href);
   });
 }
@@ -1332,6 +1337,15 @@ function llegeixLlegits() {
   try { return JSON.parse(localStorage.getItem(CLAU_AVISOS_LLEGITS) || '[]'); } catch (e) { return []; }
 }
 
+// Fins a la 3.216.11, la clau d'un avís de Meteocat duia les hores
+// («smp:vent:mig:{…}|hora»): el que ja s'havia vist amb aquella clau i la
+// mateixa hora de publicació no torna a dir «Nou».
+function llegitAmbClauAntiga(base, clau) {
+  if (!base.startsWith('smp:')) return false;
+  const hora = clau.slice(base.length);
+  return [...LLEGITS_ABANS].some((k) => k.startsWith(`${base}:`) && k.endsWith(hora));
+}
+
 function marcaPublicacio(curts, desDe, ara) {
   // Sense l'historial encara no se sap l'hora: ni «Nou» ni es recorda res.
   const ambHistorial = Array.isArray(HISTORIAL_PERILL);
@@ -1346,7 +1360,7 @@ function marcaPublicacio(curts, desDe, ara) {
     const clau = `${c.dataset.clau}|${pub ? pub.hora.toISOString() : ''}`;
     ara_.push(clau);
     c.dataset.llegit = clau;
-    if (!LLEGITS_ABANS.has(clau)) {
+    if (!LLEGITS_ABANS.has(clau) && !llegitAmbClauAntiga(c.dataset.clau, clau)) {
       const nou = element('span', 'avis-nou', T('Nou'));
       c.insertBefore(nou, c.firstChild);
       // En pulsar-lo ja s'ha vist: fora el «Nou», també a les repintades
