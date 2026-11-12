@@ -71,13 +71,15 @@ Versión 3.78.0.
   Juanjo: «en el temps avui también hay que ponerlo»).
 - **Un grau, arrodonit**: la diferencia sale desde 0,5 °C, que se redondea a
   1 (Juanjo, 13-10-2026: «0.9 yo lo consideraría como 1»); hasta la 3.78.1
-  hacía falta 1 °C justo. En el resumen del día, la cifra de arriba es la
-  máxima redondeada más la diferencia redondeada, lo mismo que se lee en los
-  tramos («18 °C» y «+2»): redondear la suma daba «fins a 21 °C» con 18,2 y
-  2,4 (revisor, 20-10-2026; 3.170.2). Así nunca repite la máxima: con 15,6 y
-  16,4 °C salía «entre 11 °C y 16 °C (hasta 16 °C en la parte alta)» (Juanjo,
-  20-10-2026: «el 2º 16 sobra»), y ahora «hasta 17 °C», como la fila
-  («16 °C» y «+1»).
+  hacía falta 1 °C justo. En el resumen del día, la cifra de arriba es el
+  máximo, hora por hora, de la temperatura más su diferencia, redondeado al
+  final: lo que enseña la gráfica con la parte alta elegida desde la 3.191.0
+  (ADR 0123), que ya no tiene los «+2» de los tramos. Entre la 3.170.2 y la
+  3.216.10 era la máxima redondeada más la diferencia redondeada, como se
+  leía entonces en los tramos, y con 20,5 + 1,6 °C decía 23 °C en lugar de 22
+  (revisor, 11-11-2026; 3.216.11). Si redondeada sale la misma cifra que la
+  máxima, no se dice: «entre 11 °C y 16 °C (hasta 16 °C en la parte alta)»
+  la repetía (Juanjo, 20-10-2026: «el 2º 16 sobra»).
 - **Si falla la estación de casa**, «Ara» sale de las vecinas
   (`casa.ara_sense_casa`): la temperatura, la de ICERDA6, para que siga
   siendo la de la riera; sin ella, la de la parte alta menos su diferencia

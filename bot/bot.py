@@ -681,19 +681,27 @@ def hores_avis_pluja(files):
         f for f in files if any(set(a.get("tipus") or []) & TIPUS_AVIS_PLUJA for a in f.get("avisos") or []))]
 
 
-def text_pluja(tram, idioma, icona=True, avis=None):
+def text_pluja(tram, idioma, icona=True, avis=None, de_dia=False):
     """Sense pluja, sense icona: la línia destaca només quan n'hi ha (ADR 0065).
     Si la previsió no en dona però hi ha avís oficial per pluja (avis: les
     hores on mirar-lo, per defecte el tram), es diu (revisor, 19-10-2026:
-    «Sense pluja prevista» per a demà amb avisos de Meteocat i AEMET de 0 a 9 h)."""
+    «Sense pluja prevista» per a demà amb avisos de Meteocat i AEMET de 0 a 9 h).
+    de_dia: la nit ja té la seva línia de pluja, i aquesta parla només del dia
+    (revisor, 11-11-2026: «Aquesta nit: pluja de 20 a 6 h» i, més avall, «La
+    previsió no dona pluja»)."""
     pluges = franges(tram)
     if not pluges:
         es = idioma == "es"
         trams = [f"de {a.hour} a {b.hour} h" for a, b in hores_avis_pluja(tram if avis is None else avis)]
         if trams:
             quan = (" y " if es else " i ").join(trams)
+            if de_dia:
+                return (f"De día, la previsión no da lluvia, pero hay aviso oficial por lluvia {quan}." if es
+                        else f"De dia, la previsió no dona pluja, però hi ha avís oficial per pluja {quan}.")
             return (f"La previsión no da lluvia, pero hay aviso oficial por lluvia {quan}." if es
                     else f"La previsió no dona pluja, però hi ha avís oficial per pluja {quan}.")
+        if de_dia:
+            return "De día, sin lluvia prevista." if es else "De dia, sense pluja prevista."
         return "Sin lluvia prevista." if es else "Sense pluja prevista."
     text = text_franges(pluges, idioma)
     return amb_icona(emoji_pluja(tram) if icona else None, text[0].upper() + text[1:] + ".")
@@ -779,19 +787,18 @@ def text_alta(tram, idioma):
     files = [f for f in tram if f.get("temperatura") is not None]
     if not files:
         return ""
-    alta = max(f["temperatura"] + (f.get("dif_alta") or 0) for f in files)
-    maxima = max(f["temperatura"] for f in files)
-    # La xifra de dalt és la màxima arrodonida més la diferència arrodonida,
-    # com «18 °C» i «+2» a les files dels trams (arrodoneixAlta, grafica.js):
-    # arrodonir la suma donava «fins a 21 °C» amb 18,2 i 2,4, i a les files es
-    # llegia 20 (revisor, 20-10-2026). Si la diferència arrodonida és zero,
-    # «entre 11 °C i 16 °C (fins a 16 °C…)» repetiria la xifra (Juanjo,
-    # 20-10-2026: «el 2º 16 sobra»).
-    d = alta - maxima
-    r = int(math.copysign(math.floor(abs(d) + 0.5), d))
-    if r == 0:
+    r = lambda x: math.floor(x + 0.5)
+    alta = r(max(f["temperatura"] + (f.get("dif_alta") or 0) for f in files))
+    maxima = r(max(f["temperatura"] for f in files))
+    # La xifra de dalt és la màxima, hora per hora, de la temperatura més la
+    # seva diferència, arrodonida al final, la que mostra la gràfica amb la
+    # part alta triada (tempZona, grafica.js). Sumar la màxima i la diferència
+    # ja arrodonides, com feien abans les files dels trams, donava 23 °C amb
+    # 20,5 + 1,6 (revisor, 11-11-2026). Si surt la mateixa xifra, «entre 11 °C
+    # i 16 °C (fins a 16 °C…)» la repetiria (Juanjo, 20-10-2026: «el 2º 16 sobra»).
+    if alta <= maxima:
         return ""
-    xifra = graus(math.floor(maxima + 0.5) + r)
+    xifra = graus(alta)
     return f" (hasta {xifra} en la parte alta)" if idioma == "es" else f" (fins a {xifra} a la part alta)"
 
 
@@ -1122,7 +1129,8 @@ def resum(dades, idioma, moment, dema=False, avui=False, telegram=False):
             linies.append(amb_icona(emoji_pluja(nit), ("Esta noche: " if idioma == "es" else "Aquesta nit: ")
                                     + text_franges(franges(nit), idioma) + "."))
         linies.append(text_temperatura(dia, idioma, "Temperatura", compara_resum(dades, dia), "avui"))
-        linies.append(text_pluja(dia, idioma, avis=[f for f in nit + dia if hora(f).date() == dema]))
+        linies.append(text_pluja(dia, idioma, avis=[f for f in nit + dia if hora(f).date() == dema],
+                                  de_dia=bool(franges(nit))))
         roba = text_roba(dia, idioma)
         paraigua = text_paraigua(dia, idioma, nit)
         linies += linies_perill_dia(dades, idioma, dema, moment)

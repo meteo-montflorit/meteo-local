@@ -633,3 +633,8 @@ retirado de verdad, sin lectura de AEMET y pasado el final) y
 que daba por retirado el que empieza más tarde). Con el historial y los
 avisos publicados el 11-11 a las 17:30, solo cambia esa ficha; vista en
 «Perill» con Chromium y Firefox, en escritorio y móvil.
+
+En el resumen de mañana, si la noche tiene su línea de lluvia, la del día
+dice que habla del día («De dia, la previsió no dona pluja, però hi ha avís
+oficial…»): sin eso contradecía «Aquesta nit: pluja de 20 a 6 h» de arriba
+(revisor, 11-11-2026; 3.216.11).

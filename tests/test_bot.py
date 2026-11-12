@@ -230,6 +230,11 @@ class Resum(unittest.TestCase):
                          "La previsió no dona pluja, però hi ha avís oficial per pluja de 0 a 9 h.")
         self.assertEqual(B.text_pluja(files[6:], "es"), "La previsión no da lluvia, pero hay aviso oficial por lluvia de 6 a 9 h.")
         self.assertEqual(B.text_pluja([fila(10, ["vent"]), fila(11)], "ca"), "Sense pluja prevista.")
+        # Amb la pluja de la nit ja a la seva línia, la del dia diu que és del dia
+        # (revisor, 11-11-2026: «Aquesta nit: pluja de 20 a 6 h» i «La previsió no dona pluja»).
+        self.assertEqual(B.text_pluja(files[6:], "ca", avis=files, de_dia=True),
+                         "De dia, la previsió no dona pluja, però hi ha avís oficial per pluja de 0 a 9 h.")
+        self.assertEqual(B.text_pluja([fila(10), fila(11)], "es", de_dia=True), "De día, sin lluvia prevista.")
 
     def test_graus_mes_o_menys_que_el_dia_abans(self):
         # ADR 0061: la màxima prevista d'avui contra les mateixes hores mesurades ahir.
@@ -247,22 +252,22 @@ class Resum(unittest.TestCase):
         self.assertEqual(B.text_temperatura(avui, "ca", "Temperatura", 3), "Temperatura: entre 20 °C i 23 °C, 3 graus més que ahir.")
         # Si la mínima i la màxima coincideixen, una xifra (ADR 0074: sortia «entre 16 °C i 16 °C»).
         self.assertEqual(B.text_temperatura([fila(11, 5, 16.2), fila(11, 6, 15.8)], "es", "Temperatura"), "Temperatura: 16 °C.")
-        # La part alta (ADR 0087): la màxima de dalt, si es separa un grau o més, arrodonit.
+        # La part alta (ADR 0087): la màxima de dalt, hora per hora, si arrodonida no és la mateixa xifra.
         alta = [dict(f, dif_alta=1.8) for f in avui]
         self.assertEqual(B.text_temperatura(alta, "ca", "Temperatura", 3),
                          "Temperatura: entre 20 °C i 23 °C (fins a 25 °C a la part alta), 3 graus més que ahir.")
         self.assertIn("(hasta 25 °C en la parte alta)", B.text_temperatura(alta, "es", "Temperatura"))
-        self.assertEqual(B.text_temperatura([dict(f, dif_alta=0.4) for f in avui], "ca", "Temperatura"),
+        self.assertEqual(B.text_temperatura([dict(f, dif_alta=0.05) for f in avui], "ca", "Temperatura"),
                          "Temperatura: entre 20 °C i 23 °C.")
-        # La xifra de dalt, com a les files: 18,2 + 2,4 es llegeix «18 °C» i «+2»,
-        # així que 20 °C, no els 21 de la suma arrodonida (revisor, 20-10-2026).
-        tarda = [fila(20, 17, 18.2), fila(20, 18, 17.0)]
-        tarda = [dict(tarda[0], dif_alta=2.4), dict(tarda[1], dif_alta=1.0)]
-        self.assertIn("(fins a 20 °C a la part alta)", B.text_temperatura(tarda, "ca", "Temperatura"))
-        # La xifra de dalt no repeteix mai la màxima: amb 15,6 i 0,8, la fila diu
-        # «16 °C» i «+1», i el resum «fins a 17» (abans, «entre 11 i 16 (fins a 16)»).
+        # La xifra de dalt, com la gràfica amb la part alta triada: la suma de cada hora,
+        # arrodonida al final. 20,5 + 1,6 és 22 °C, no els 23 de sumar 21 i 2 (revisor, 11-11-2026).
+        migdia = [dict(fila(11, 11, 20.2), dif_alta=1.6), dict(fila(11, 12, 20.5), dif_alta=1.6), dict(fila(11, 13, 20.1), dif_alta=1.6)]
+        self.assertIn("(fins a 22 °C a la part alta)", B.text_temperatura(migdia, "ca", "Temperatura"))
+        tarda = [dict(fila(20, 17, 18.2), dif_alta=2.4), dict(fila(20, 18, 17.0), dif_alta=1.0)]
+        self.assertIn("(fins a 21 °C a la part alta)", B.text_temperatura(tarda, "ca", "Temperatura"))
+        # La xifra de dalt no repeteix mai la màxima (abans, «entre 11 i 16 (fins a 16)»).
         self.assertEqual(B.text_temperatura([fila(11, 5, 11.0), dict(fila(11, 15, 15.6), dif_alta=0.8)], "es", "Temperatura"),
-                         "Temperatura: entre 11 °C y 16 °C (hasta 17 °C en la parte alta).")
+                         "Temperatura: entre 11 °C y 16 °C.")
         # La nit compara la mínima; si falta una hora del dia abans, no es diu res.
         self.assertEqual(B.compara_temp(d, avui, nit=True), 0)              # 20 contra 19,5: es llegeix 20 i 20
         self.assertIsNone(B.compara_temp({"temperatura_mesurada": {"2026-10-09T14:00": 19.0}, "hores": avui}, avui))
