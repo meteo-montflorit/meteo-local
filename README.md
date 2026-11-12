@@ -140,8 +140,9 @@ Fuentes de la previsión:
    aprender (ADR 0058). El viento de ahora es
    el de Sant Cugat, por medias horas: el anemómetro de la particular no
    funciona bien (ADR 0037). Además se estima con las vecinas que lo siguen
-   bien, llevadas a 10 m con un factor que se aprende cada día; está en
-   prueba y la página no lo muestra hasta que se decida (ADR 0064). Las nubes,
+   bien, llevadas a 10 m con un factor que se aprende cada día; la página no
+   lo muestra, porque con viento acertó menos que el dato de Sant Cugat
+   (ADR 0064). Las nubes,
    del METAR del aeropuerto de Sabadell, cada media hora, para las nubes bajas
    de la hora en curso (las altas, que el METAR no da, salen de los modelos) y
    para elegir qué mezcla de modelos acierta más (ADR 0088).

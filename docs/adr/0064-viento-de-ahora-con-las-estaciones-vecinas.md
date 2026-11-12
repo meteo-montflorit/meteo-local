@@ -1,6 +1,6 @@
 # 64. Viento de ahora con las estaciones vecinas, en prueba
 
-Fecha: 2026-10-10 · Estado: aceptado (la página aún no lo muestra)
+Fecha: 2026-10-10 · Estado: aceptado; la página no lo muestra (decidido el 12-11-2026, tras un episodio de viento)
 
 ## Contexto
 
@@ -45,8 +45,9 @@ resguardadas y casi siempre marcan cero.
 - **Se comprueba dejando fuera cada día**: error medio contra Sant Cugat de la
   estimación, de Sabadell (otra estación oficial a 5 km) y de Sant Cugat de la
   media hora anterior (lo que enseña hoy la página, que llega con retraso).
-- **La página sigue con Sant Cugat** hasta que Juanjo lo decida
-  (`config.VENT_VEINES_ACTIU`, falso). La estimación se calcula en cada pasada
+- **La página sigue con Sant Cugat** (`config.VENT_VEINES_ACTIU`, falso).
+  Juanjo lo decidió el 12-11-2026 con las cifras del primer episodio de
+  viento (ver «Evidencia»): «de acuerdo, se queda así». La estimación se calcula en cada pasada
   y va en `vent_veines` de los datos, para compararla. Si se activa, la
   tarjeta dice «estacions veïnes» en lugar del nombre de la estación.
 - **Aviso único**: cuando la comprobación tenga 12 medias horas con 15 km/h o
@@ -64,6 +65,16 @@ resguardadas y casi siempre marcan cero.
 - Pasada completa en el NAS el 10-10-2026 hacia las 14:00: estimación 9,9 km/h y
   rachas de 19,7, con las vecinas hasta las 13:59; Sant Cugat, 10,8 y 18,4,
   de 13:00 a 13:30.
+- Del 10-10 al 11-11-2026, un mes de calma (ninguna media hora con 15 km/h):
+  error medio de la estimación 1,5 km/h; de Sabadell, 2,5; de Sant Cugat media
+  hora antes, 1,0.
+- Episodio del 12-11-2026, con aviso amarillo de viento de 7 a 19 h: 10 medias
+  horas con viento, de hasta 22 km/h de media y 52 km/h de racha. Error medio
+  en el viento medio: estimación 2,4 km/h, Sant Cugat media hora antes 1,9,
+  Sabadell 3,0. En las rachas: estimación 9,2, Sant Cugat media hora antes
+  5,0, Sabadell 7,4. Con viento, el dato con retraso de Sant Cugat sigue a
+  Sant Cugat mejor que la estimación, sobre todo en las rachas; activarla no
+  aporta. La muestra es corta, pero nada apunta a favor de activarla.
 - Pruebas: `tests/test_vent_veines.py` (medias horas completas, registro por
   columnas, portal en km/h, elección de vecinas, pesos, validación, aviso
   único y estimación de ahora).
@@ -78,7 +89,9 @@ resguardadas y casi siempre marcan cero.
 - Si una vecina cambia de sitio o de altura, su factor cambia; el aprendizaje
   diario lo recoge en unos días, y la correlación la deja fuera mientras tanto.
 - Medir contra Sant Cugat supone que es la referencia buena; Sabadell sirve
-  de contraste.
+  de contraste. La comprobación dice qué fuente imita mejor a Sant Cugat, no
+  cuál acierta más en Montflorit: en el barrio no hay ningún anemómetro
+  oficial a 10 m con que comprobarlo.
 
 ## Alternativas descartadas
 
@@ -86,3 +99,5 @@ resguardadas y casi siempre marcan cero.
 - **Una sola vecina.** Si deja de enviar (el Puig de la Guàrdia lo hizo el
   9-10 por la noche), no hay dato; con dos, la otra sigue.
 - **Activarlo ya.** Una semana de calma no basta para fiarse del factor.
+- **Activarlo tras el episodio del 12-11-2026.** Falló más que el dato de
+  Sant Cugat con media hora de retraso, sobre todo en las rachas.
