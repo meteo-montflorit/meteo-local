@@ -2,7 +2,7 @@
 """Datos fijos de «Temps a Montflorit»: lugares, horario, fuentes y umbrales.
 Se cambian aquí, no en los programas."""
 
-VERSION = "3.216.12"
+VERSION = "3.217.0"
 
 # Coordenadas con tres decimales (unos 100 m), no las exactas: para el tiempo
 # da igual una calle u otra, y el repositorio es público.
@@ -271,6 +271,15 @@ RIERA_ATENCIO_MM = 35
 RIERA_PERILL_MM = 50
 RIERA_PERILL_6H_MM = 60
 RIERA_FI_H = 3                      # horas por debajo del registro para cerrar el episodio
+# Un aviso que salió solo del radar, sin lluvia medida que lo confirme (menos
+# de RIERA_REGISTRE_MM en 3 horas en todo el episodio), se cierra cuando la
+# previsión lleva RIERA_FI_RADAR_MIN minutos por debajo de atención, sin
+# esperar las 3 horas (14-11-2026: atención a las 16:51 con 0,0 mm en Sant
+# Cugat; el radar preveía 50 y cayeron 0,1, y la web siguió diciendo «posible
+# desbordamiento» con 0 mm). Durante RIERA_FI_H horas después, un aviso nuevo
+# necesita esa lluvia medida: que el vaivén del radar no repita aviso y
+# contraaviso.
+RIERA_FI_RADAR_MIN = 30
 # La previsió de crescuda (riera.previsio, ADR 0107): si algun model preveu
 # RIERA_PREVISIO_MM o més en 3 hores a la conca en les properes
 # RIERA_PREVISIO_HORES, la pàgina «Riera» diu «risc de crescuda possible».

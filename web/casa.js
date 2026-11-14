@@ -513,8 +513,13 @@ function estatPortada(dades) {
   if (r && r.nivell && !blocRiera(HISTORIAL_PERILL).length) {
     // La pluja, d'on la compta «Riera»: Meteocat o, si falla, les estacions particulars.
     const v = r.font === 'veines' && r.veines ? r.veines : r;
-    files.push(fila('riera.html', COLOR_NIVELL[r.nivell] || 'be', 'i-waves', T`Riera: ${titolRiera(r.nivell).toLowerCase()}`,
-      T`A Sant Cugat, ${coma(v.mm_6h || 0)} mm en les últimes 6 hores.`));
+    // Les 3 hores dels llindars i, si en preveu, el que hi suma el radar: «0,0 mm
+    // en 6 hores» al costat d'«atenció» no deia per què (14-11-2026).
+    const mm = coma(v.mm_3h || 0);
+    const detall = r.radar_1h >= 1
+      ? T`A Sant Cugat, ${mm} mm en 3 hores; el radar en preveu uns ${Math.round(r.radar_1h)} a la conca fins d’aquí a una hora.`
+      : T`A Sant Cugat, ${mm} mm en les últimes 3 hores.`;
+    files.push(fila('riera.html', COLOR_NIVELL[r.nivell] || 'be', 'i-waves', T`Riera: ${titolRiera(r.nivell, r).toLowerCase()}`, detall));
   }
   if (!files.length) return null;
   const sec = element('section', 'targeta estat-portada');

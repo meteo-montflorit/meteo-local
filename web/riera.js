@@ -100,7 +100,7 @@ function pintaAra(dades) {
   const fins = horaCurta(v ? v.fins : r.fins);
   const qui = v ? T`Segons la mediana de ${v.n} estacions particulars de Sant Cugat,` : T('A Sant Cugat (Meteocat)');
   const estat = element('p', `avis-item riera-estat ${COLOR_NIVELL[r.nivell] || 'be'}`);
-  const titol = titolRiera(r.nivell);
+  const titol = titolRiera(r.nivell, r);
   estat.append(element('strong', null, titol), ' ',
     T`${qui} han caigut ${coma(mm3)} mm en 3 hores i ${coma(mm6)} en 6 (fins a les ${fins}).`);
   const frases = [];

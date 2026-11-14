@@ -934,11 +934,34 @@ class AvisosPublics(unittest.TestCase):
         for i, index in enumerate([38, 30, 10, 5, 5, 5, 5, 5, 5]):
             nous += AB.decideix(estat, {"riera": riera(index)}, ARA + dt.timedelta(minutes=30 * i))
         self.assertEqual([(a["nivell"], a["id"].split(":")[-1]) for a in nous], [("atencio", "atencio"), ("fi", "fi")])
-        self.assertTrue(nous[0]["ca"].startswith("🟠 <b>Temps a Montflorit: possible desbordament"))
+        self.assertTrue(nous[0]["ca"].startswith("🟠 <b>Temps a Montflorit: avís per la riera de Sant Cugat</b>\nHan caigut 38 mm"))
         self.assertTrue(nous[1]["ca"].startswith("🟢 <b>Temps a Montflorit: ja no hi ha risc de desbordament de la riera de Sant Cugat</b>"))
         self.assertIn("ya no hay riesgo de desbordamiento", nous[1]["es"])
         self.assertIn("Fa 3 hores que no plou fort a Sant Cugat", nous[1]["ca"])   # curt, sense la nota (ADR 0076)
         self.assertEqual(nous[0]["tipus"], nous[1]["tipus"], "riera")
+
+    def test_riera_avis_nomes_del_radar(self):
+        # 14-11-2026: atenció amb 0,0 mm a Sant Cugat i 50 previstos pel radar;
+        # el missatge diu que és la previsió, i quan baixa de 35 sense pluja
+        # mesurada, l'avís es tanca en mitja hora dient que no ha arribat.
+        def riera(index, mm=0.0):
+            return {"fins": ARA.isoformat(timespec="minutes"), "mm_3h": mm, "mm_6h": mm, "radar_1h": index - mm,
+                    "index": index, "index_6h": index, "veines": {"mm_3h": 0.1}}
+        estat, nous = {}, []
+        for i, index in enumerate([22, 50.4, 50.4, 31.7, 30, 28, 26, 25, 24, 23]):
+            nous += AB.decideix(estat, {"riera": riera(index)}, ARA + dt.timedelta(minutes=6 * i))
+        self.assertEqual([a["nivell"] for a in nous], ["atencio", "fi"])
+        self.assertIn("De moment a Sant Cugat no ha plogut (0,0 mm en 3 hores, a les", nous[0]["ca"])
+        self.assertIn("però el radar en preveu uns 50 mm a la conca fins d'aquí a una hora", nous[0]["ca"])
+        self.assertIn("pero el radar prevé unos 50 mm en la cuenca de aquí a una hora", nous[0]["es"])
+        self.assertIn("La pluja forta que preveia el radar no ha arribat: a Sant Cugat, 0,1 mm en 3 hores.", nous[1]["ca"])
+        self.assertIn("La lluvia fuerte que preveía el radar no ha llegado", nous[1]["es"])
+        # Durant 3 hores, un altre avís del radar sol no surt; amb pluja mesurada, sí.
+        t = ARA + dt.timedelta(minutes=60)
+        self.assertEqual(AB.decideix(estat, {"riera": riera(52)}, t), [])
+        nous = AB.decideix(estat, {"riera": riera(52, mm=25)}, t + dt.timedelta(minutes=6))
+        self.assertEqual([a["nivell"] for a in nous], ["atencio"])
+        self.assertIn("Han caigut 25 mm en 3 hores a Sant Cugat", nous[0]["ca"])
 
     def test_trens_ja_no_avisen(self):
         # ADR 0053: els trens es consulten amb /trens; l'estat vell es treu.

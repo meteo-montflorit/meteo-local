@@ -292,6 +292,29 @@ class Avisos(unittest.TestCase):
         self.assertIsNone(estat["episodi"])
         self.assertEqual(len(files), 1)
 
+    def test_avis_del_radar_que_no_es_compleix_es_tanca_abans(self):
+        # Amb la pluja mesurada per sota del registre, l'avís és només del
+        # radar: es tanca 30 minuts després de baixar d'atenció, no 3 hores.
+        def r(index, mm=0.0):
+            return {"fins": self.T0.isoformat(timespec="minutes"), "mm_3h": mm, "mm_6h": mm,
+                    "radar_1h": index - mm, "index": index, "index_6h": index, "capcalera": None}
+        estat, textos, files = {"episodi": None}, [], []
+        for i, index in enumerate([50, 30, 30, 30, 30]):
+            text, fila = RI.compara(estat, r(index), self.T0 + dt.timedelta(minutes=15 * i))
+            textos.append(text)
+            files += [fila] if fila else []
+        self.assertEqual([bool(t) for t in textos], [True, False, False, True, False])
+        self.assertIn("La pluja forta que preveia el radar no ha arribat", textos[3])
+        self.assertEqual(len(files), 1)
+        self.assertTrue(estat.get("radar_fallat"))
+        # Amb pluja mesurada de registre, l'avís del radar segueix la regla de les 3 hores.
+        estat, textos = {"episodi": None}, []
+        for i, index in enumerate([50, 30, 30, 30, 30]):
+            text, _ = RI.compara(estat, r(index, mm=25), self.T0 + dt.timedelta(minutes=15 * i))
+            textos.append(text)
+        self.assertEqual([bool(t) for t in textos], [True, False, False, False, False])
+        self.assertIsNotNone(estat["episodi"])
+
     def test_pluja_feble_no_obre_episodi(self):
         _, files, estat = self.passades([5, 12, 19, 8])
         self.assertIsNone(estat["episodi"])

@@ -253,3 +253,44 @@ la reemplazan? pensaba que era así».
   (`test_sense_meteocat_les_consulta_encara_que_no_plogui`,
   `test_darrera_meteocat_diu_des_de_quan_falta`) y `tests/test_web.py`
   (`test_cada_pagina_avisa_de_les_seves_fonts`).
+
+## Cambio del 14-11-2026 (3.217.0): el aviso que solo sale del radar
+
+- **Contexto**: el 14-11-2026 a las 16:51 salió el aviso de atención con
+  0,0 mm en 3 horas en Sant Cugat (Meteocat hasta las 16:30) y 0,1 en las
+  estaciones particulares: todo el índice (50,4) era la lluvia que el radar
+  preveía sobre la cuenca en la hora siguiente. No llegó: en el barrio llovió
+  a 1,9 mm/h donde el radar daba unos 30, y a las 17:03 la previsión ya había
+  bajado a 31,7. El mensaje («0,0 mm… y el radar ve venir más: si sigue
+  lloviendo fuerte, se puede desbordar») no decía cuánto preveía el radar, y
+  se reenvió fuera de los canales de la web. La web siguió diciendo «posible
+  desbordamiento» y, en el estado, «Llueve en la cuenca» con 0 mm medidos,
+  y el episodio no se habría cerrado hasta 3 horas por debajo de 20.
+- **Decisión**:
+  - Un episodio cuya lluvia medida no ha llegado al registro
+    (`riera.nomes_radar`: menos de 20 mm en 3 horas, el máximo de Meteocat y
+    de las estaciones particulares, `riera.mesurat`) se cierra cuando la
+    previsión lleva `RIERA_FI_RADAR_MIN` (30) minutos por debajo de atención
+    y lo medido sigue por debajo del registro, sin esperar las 3 horas. El
+    mensaje de final dice que la lluvia que preveía el radar no ha llegado,
+    con lo medido, y la ficha de «Perill» queda cerrada con ese motivo.
+  - Para no repetir aviso y contraaviso con el vaivén del radar, durante
+    `RIERA_FI_H` horas después de un cierre así un aviso nuevo necesita esa
+    misma lluvia medida (`estat["radar_fallat"]`).
+  - El aviso dice la cifra del radar. Sin lluvia medida (menos de 1 mm):
+    «De moment a Sant Cugat no ha plogut (0,0 mm…), però el radar en preveu
+    uns 50 mm a la conca fins d'aquí a una hora. Si es compleix, la riera es
+    pot desbordar: no t'hi acostis.» Con lluvia: «Han caigut 22 mm… i el
+    radar en preveu uns 30 més…». El título de atención pasa de «possible
+    desbordament» a «avís per la riera de Sant Cugat»; el de peligro no cambia.
+  - En la web, el estado de registro sin lluvia medida dice «El radar veu
+    pluja a la conca» y no «Plou a la conca» (`comu.titolRiera`), y la tarjeta
+    de la portada da la lluvia de 3 horas, la de los umbrales, y lo que prevé el radar,
+    en lugar de la de 6 horas sin el radar.
+- **Pendiente**: si el radar solo debe poder dar atención. La cifra de lluvia
+  medida que haría falta se comprobará antes con los cuatro desbordamientos
+  registrados, para no avisar tarde de ninguno.
+- **Validación**: `tests/test_riera.py`
+  (`test_avis_del_radar_que_no_es_compleix_es_tanca_abans`) y
+  `tests/test_bot.py` (`test_riera_avis_nomes_del_radar`, con los datos del
+  14-11-2026).

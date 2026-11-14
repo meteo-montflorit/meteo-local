@@ -1867,7 +1867,16 @@ let BOMBOLLA = null;
 // L'estat de la riera ara: el color i el títol, els mateixos a «Riera» i a la
 // portada (casa.estatPortada).
 const COLOR_NIVELL = { perill: 'vermell', atencio: 'taronja', registre: 'groc' };
-function titolRiera(nivell) {
+// La pluja mesurada en 3 hores a Sant Cugat: Meteocat o, si en donen més, les
+// estacions particulars (riera.mesurat).
+function rieraMesurada(r) {
+  return Math.max((r && r.mm_3h) || 0, (r && r.veines && r.veines.mm_3h) || 0);
+}
+
+// Amb «r», el registre sense pluja mesurada diu que és el radar: «Plou a la
+// conca» amb 0,0 mm no era cert (14-11-2026).
+function titolRiera(nivell, r = null) {
+  if (nivell === 'registre' && r && rieraMesurada(r) < 1) return T('El radar veu pluja a la conca.');
   return nivell === 'perill' ? T('Perill de desbordament.') : nivell === 'atencio' ? T('Atenció.')
     : nivell === 'registre' ? T('Plou a la conca.') : T('Sense risc de crescuda ara.');
 }

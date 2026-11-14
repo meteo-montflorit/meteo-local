@@ -293,32 +293,51 @@ def text_perill_fi(tipus, des_de, oficials=()):
 
 
 def text_riera(riera, nivell):
-    """Primer què cal fer; després, la pluja de Sant Cugat i si el radar en veu
-    venir més (ADR 0076). El detall, a la fitxa i a «Com funciona»."""
+    """Primer què cal fer; després, la pluja de Sant Cugat i quanta en preveu
+    el radar (ADR 0076). El detall, a la fitxa i a «Com funciona». Si encara no
+    ha plogut, es diu que l'avís surt de la previsió del radar (14-11-2026:
+    «0,0 mm … i el radar en veu venir més: si continua plovent fort» avisava
+    de desbordament sense dir per què)."""
     # La pluja de la font que ha decidit: Meteocat o, si dona més, la mediana de
     # les estacions particulars de Sant Cugat, i es diu (ADR 0027, 18-10-2026).
     v = riera.get("veines") if riera.get("font") == "veines" else None
     hora = H.local((v or riera)["fins"]).strftime("%H:%M")
-    mm3 = coma((v or riera)["mm_3h"])
+    mm = (v or riera)["mm_3h"]
+    mm3 = coma(mm)
     qui_ca = f"segons {v['n']} estacions particulars, a les {hora}" if v else f"a les {hora}"
     qui_es = f"según {v['n']} estaciones particulares, a las {hora}" if v else f"a las {hora}"
     radar = riera.get("radar_1h")
-    mes_ca = " i el radar en veu venir més" if radar and radar >= 1 else ""
-    mes_es = " y el radar ve venir más" if radar and radar >= 1 else ""
+    r = round(radar) if radar and radar >= 1 else None
     if nivell == "perill":
-        ca = (negreta("Temps a Montflorit: perill de desbordament de la riera de Sant Cugat", nivell) +
-              f"\nNo t'acostis a la riera.\n{mm3} mm en 3 hores a Sant Cugat ({qui_ca}){mes_ca}: "
-              "amb aquesta pluja ja s'ha desbordat altres vegades.")
-        es = (negreta("Temps a Montflorit: peligro de desbordamiento de la riera de Sant Cugat", nivell) +
-              f"\nNo te acerques a la riera.\n{mm3} mm en 3 horas en Sant Cugat ({qui_es}){mes_es}: "
-              "con esta lluvia ya se ha desbordado otras veces.")
+        titol_ca, titol_es = ("perill de desbordament de la riera de Sant Cugat",
+                              "peligro de desbordamiento de la riera de Sant Cugat")
+        cua_ca, cua_es = ("amb aquesta pluja ja s'ha desbordat altres vegades.",
+                          "con esta lluvia ya se ha desbordado otras veces.")
     else:
-        ca = (negreta("Temps a Montflorit: possible desbordament de la riera de Sant Cugat", nivell) +
-              f"\nNo t'acostis a la riera.\n{mm3} mm en 3 hores a Sant Cugat ({qui_ca}){mes_ca}: "
-              "si continua plovent fort, es pot desbordar.")
-        es = (negreta("Temps a Montflorit: posible desbordamiento de la riera de Sant Cugat", nivell) +
-              f"\nNo te acerques a la riera.\n{mm3} mm en 3 horas en Sant Cugat ({qui_es}){mes_es}: "
-              "si sigue lloviendo fuerte, se puede desbordar.")
+        titol_ca, titol_es = "avís per la riera de Sant Cugat", "aviso por la riera de Sant Cugat"
+        cua_ca, cua_es = "si continua plovent fort, es pot desbordar.", "si sigue lloviendo fuerte, se puede desbordar."
+    if nivell == "perill":
+        # El perill, com fins ara: primer què cal fer.
+        mes_ca = f" i el radar en preveu uns {r} més fins d'aquí a una hora" if r else ""
+        mes_es = f" y el radar prevé unos {r} más de aquí a una hora" if r else ""
+        res_ca = f"No t'acostis a la riera.\n{mm3} mm en 3 hores a Sant Cugat ({qui_ca}){mes_ca}: {cua_ca}"
+        res_es = f"No te acerques a la riera.\n{mm3} mm en 3 horas en Sant Cugat ({qui_es}){mes_es}: {cua_es}"
+    elif r and mm < 1:
+        res_ca = (f"De moment a Sant Cugat {'no ha plogut' if mm == 0 else 'gairebé no ha plogut'} "
+                  f"({mm3} mm en 3 hores, {qui_ca}), però el radar en preveu uns {r} mm a la conca fins d'aquí "
+                  "a una hora. Si es compleix, la riera es pot desbordar: no t'hi acostis.")
+        res_es = (f"Por ahora en Sant Cugat {'no ha llovido' if mm == 0 else 'casi no ha llovido'} "
+                  f"({mm3} mm en 3 horas, {qui_es}), pero el radar prevé unos {r} mm en la cuenca de aquí "
+                  "a una hora. Si se cumple, la riera se puede desbordar: no te acerques.")
+    else:
+        mes_ca = f" i el radar en preveu uns {r} més fins d'aquí a una hora" if r else ""
+        mes_es = f" y el radar prevé unos {r} más de aquí a una hora" if r else ""
+        res_ca = (f"Han caigut {mm3} mm en 3 hores a Sant Cugat ({qui_ca}){mes_ca}: {cua_ca}"
+                  " No t'acostis a la riera.")
+        res_es = (f"Han caído {mm3} mm en 3 horas en Sant Cugat ({qui_es}){mes_es}: {cua_es}"
+                  " No te acerques a la riera.")
+    ca = negreta(f"Temps a Montflorit: {titol_ca}", nivell) + "\n" + res_ca
+    es = negreta(f"Temps a Montflorit: {titol_es}", nivell) + "\n" + res_es
     if riera.get("incomplet"):
         ca += " A l'estació li falten mesures: pot haver plogut més."
         es += " A la estación le faltan medidas: puede haber llovido más."
@@ -327,15 +346,23 @@ def text_riera(riera, nivell):
 
 def text_riera_fi(riera, episodi):
     """Final d'un episodi amb avís (Juanjo, 08-10-2026): un sol missatge, i
-    només després de RIERA_FI_H hores per sota del registre. Curt (ADR 0076)."""
+    només després de RIERA_FI_H hores per sota del registre, o abans si l'avís
+    va sortir només del radar i la pluja no ha arribat. Curt (ADR 0076)."""
     h = C.RIERA_FI_H
     perill = bool(episodi["avisos"].get("perill"))
-    ca = (negreta("Temps a Montflorit: " + ("ha passat el perill de desbordament" if perill else "ja no hi ha risc de desbordament")
-                  + " de la riera de Sant Cugat", "fi")
-          + f"\nFa {h} hores que no plou fort a Sant Cugat. Si hi torna, tornarà l'avís.")
-    es = (negreta("Temps a Montflorit: " + ("ha pasado el peligro de desbordamiento" if perill else "ya no hay riesgo de desbordamiento")
-                  + " de la riera de Sant Cugat", "fi")
-          + f"\nLleva {h} horas sin llover fuerte en Sant Cugat. Si vuelve, volverá el aviso.")
+    ca = negreta("Temps a Montflorit: " + ("ha passat el perill de desbordament" if perill else "ja no hi ha risc de desbordament")
+                 + " de la riera de Sant Cugat", "fi")
+    es = negreta("Temps a Montflorit: " + ("ha pasado el peligro de desbordamiento" if perill else "ya no hay riesgo de desbordamiento")
+                 + " de la riera de Sant Cugat", "fi")
+    if RI.nomes_radar(episodi):
+        mm = coma(RI.mesurat(riera))
+        ca += (f"\nLa pluja forta que preveia el radar no ha arribat: a Sant Cugat, {mm} mm en 3 hores."
+               " Si torna a ploure fort, tornarà l'avís.")
+        es += (f"\nLa lluvia fuerte que preveía el radar no ha llegado: en Sant Cugat, {mm} mm en 3 horas."
+               " Si vuelve a llover fuerte, volverá el aviso.")
+    else:
+        ca += f"\nFa {h} hores que no plou fort a Sant Cugat. Si hi torna, tornarà l'avís."
+        es += f"\nLleva {h} horas sin llover fuerte en Sant Cugat. Si vuelve, volverá el aviso."
     return {"ca": ca, "es": es}
 
 
