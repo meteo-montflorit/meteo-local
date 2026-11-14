@@ -31,6 +31,14 @@ import hora as H
 
 ESTAT_DIR = os.environ.get("ESTAT_DIR", "/estat")
 FITXER = os.path.join(ESTAT_DIR, "fonts-falla.json")
+
+
+def hi_ha_estat():
+    """Si hi ha on apuntar (la carpeta de l'estat): només al NAS. La reserva
+    d'IONOS té el seu registre però no aquesta carpeta, i cada prova diària
+    deia «No he pogut vigilar les fonts» en voler escriure a /estat
+    (14-11-2026): allà, les fonts que fallen surten «des d'ara»."""
+    return os.path.isdir(ESTAT_DIR)
 LLINDAR_H = 3
 # Ja tenen el seu avís a Juanjo.
 APART = {"smp", "estació", "estació de casa", "estacions veïnes"}

@@ -71,6 +71,7 @@ ENTORN = dict(os.environ,
               TRENS_DIR=ESTAT,
               POLLEN_DIR=ESTAT,           # el pol·len, guardat 3 hores (pollen.py)
               AIRE_DIR=ESTAT,             # la correcció de l'aire, del dia (aire.py)
+              BUSOS_DIR=ESTAT,            # l'horari dels busos, del dia (busos.py): no es desava (14-11-2026)
               PATH=os.path.join(BASE, "bin") + os.pathsep + os.environ.get("PATH", ""))
 
 

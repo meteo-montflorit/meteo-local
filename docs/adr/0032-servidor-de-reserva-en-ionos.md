@@ -74,3 +74,29 @@ Ensayo en local con un entorno aislado y un aviso falso (07-10-2026): con
 datos de hace una hora, calcula, publica marcado y avisa; repetido enseguida,
 espera; con datos nuevos del NAS, se aparta y avisa. En IONOS: prueba diaria
 correcta y simulacro sobre los datos reales (ver el registro de instalación).
+
+## Cambio del 14-11-2026 (3.224.2): la reserva no vigila las fuentes ni baja el horario de los buses cada vez
+
+La prueba diaria escribía en `cron.log` «No he pogut vigilar les fonts:
+[Errno 30] Read-only file system: '/estat'», una línea al día desde que se
+añadió la vigilancia de las fuentes (25-10-2026, ADR 0031). `casa.py` decidía
+si apuntar desde cuándo falla cada fuente con `registre.hay_registro()`, que
+en la reserva también es cierto (tiene su propio registro), y
+`fonts_falla.py` guarda su estado en `ESTAT_DIR`, que la reserva no define:
+iba a `/estat`, que en IONOS no existe. La prueba salía «correcta», pero los
+datos de la reserva no llevaban `fonts_falla` (la web no decía desde cuándo
+no llegaba una fuente). De paso: `busos.py` guarda el horario del día en esa
+misma carpeta, y en la reserva lo bajaba entero en cada pasada sin poder
+guardarlo.
+
+**Decisión.** `casa.py` pregunta a `fonts_falla.hi_ha_estat()` (si existe su
+carpeta): solo el NAS apunta y avisa; en la reserva, las fuentes que fallan
+salen «desde ahora», como estaba previsto. No se le da `ESTAT_DIR` a la
+reserva a propósito: con una pasada al día, una fuente que fallara en dos
+pruebas seguidas parecería caída 24 horas y avisaría en falso. Para los
+buses, la reserva define `BUSOS_DIR`, como ya hacía con el polen y el aire.
+
+**Validación.** `tests/test_fonts_falla.py`
+(`test_nomes_s_apunta_on_hi_ha_la_carpeta_de_l_estat`) y, en IONOS, la prueba
+lanzada a mano: sin línea nueva en `cron.log` y con `busos-horari.json`
+guardado.

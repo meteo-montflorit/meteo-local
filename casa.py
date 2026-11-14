@@ -1174,7 +1174,7 @@ def recoger(anterior=None):
     # digui i, si dura, s'avisi Juanjo o s'encarregui al reparador. Només al
     # NAS, que té l'estat; a la reserva, des d'ara.
     try:
-        salida["fonts_falla"] = (FF.vigila(salida["errors"], P.AHORA) if R.hay_registro()
+        salida["fonts_falla"] = (FF.vigila(salida["errors"], P.AHORA) if FF.hi_ha_estat()
                                  else {FF.font(e): H.clau(P.AHORA) for e in salida["errors"]})
     except Exception as ex:
         print("No he pogut vigilar les fonts:", ex, file=sys.stderr)

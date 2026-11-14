@@ -52,6 +52,21 @@ class FontsFalla(unittest.TestCase):
         self.assertEqual(set(self.passa(e, 4)), {"smp", "estació de casa", "estacions veïnes"})
         self.assertEqual(self.enviats, [])
 
+    def test_nomes_s_apunta_on_hi_ha_la_carpeta_de_l_estat(self):
+        # 14-11-2026: la reserva d'IONOS té registre però no /estat, i cada prova
+        # diària deia «No he pogut vigilar les fonts». Allà, «des d'ara» (casa.py).
+        from unittest import mock
+        with mock.patch.object(FF, "ESTAT_DIR", self.dir.name):
+            self.assertTrue(FF.hi_ha_estat())
+        with mock.patch.object(FF, "ESTAT_DIR", os.path.join(self.dir.name, "no-hi-es")):
+            self.assertFalse(FF.hi_ha_estat())
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "casa.py"), encoding="utf-8") as f:
+            self.assertIn("if FF.hi_ha_estat()", f.read())
+        # La reserva desa on pot l'horari dels busos, com les altres dades del dia.
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "reserva", "reserva.py"),
+                  encoding="utf-8") as f:
+            self.assertIn("BUSOS_DIR=ESTAT", f.read())
+
     def test_la_font_de_cada_error(self):
         self.assertEqual(FF.font("entorn: incendis: HTTP Error 503"), "entorn: incendis")
         self.assertEqual(FF.font("final de la pluja: x"), "final de la pluja")
