@@ -2,6 +2,8 @@
 
 Fecha: 2026-10-06 · Estado: aceptado; el envío a Juanjo, retirado el 08-10-2026
 
+**14-11-2026 (3.224.0).** No se avisa de la lluvia débil, la hora de llegada solo se dice hasta media hora vista y se mide (y se corrige, si hace falta) el retraso de esa hora (al final).
+
 **08-10-2026:** Juanjo recibía este aviso dos veces, por Telegram y como
 notificación del navegador (ADR 0048), que sale de la misma cuenta
 (`avisos_bot.py` usa `pluja_arriba.compara`). Pidió quitar el de Telegram.
@@ -112,3 +114,57 @@ acercándose: no avisa). Pendiente de ver un aviso real.
 ## Cambio del 18-10-2026 (3.142.0): llueve según la web
 
 «Ya llueve» es el estado único de la lluvia de la web (`pluja_ara.estat`, ADR 0101: casa o una vecina que cuenta), no solo el pluviómetro de casa: el aviso no puede contradecir a la portada, y el registro del episodio apunta el comienzo de la lluvia según ese mismo estado. Detalle y motivo en el ADR 0102.
+
+## Cambio del 14-11-2026 (3.224.0): lluvia débil, hora solo a media hora vista y retraso
+
+**Contexto.** El umbral y los minutos eran una hipótesis «hasta que el
+registro tenga bastantes episodios». Juanjo, 14-11-2026: «el inicio de la
+lluvia es fiable? conviene revisarlo?». Medido con los datos del NAS del
+09-10 al 14-11-2026 (13 comienzos de lluvia, 10 de 0,5 mm o más; la lluvia
+del barrio cada 5 minutos, ADR 0102, y lo que daba el radar en cada pasada,
+`radar-fonts-*.jsonl`):
+
+- Un cuarto de hora antes de empezar a llover, el radar lo anunciaba en 9 de
+  los 10 comienzos de 0,5 mm o más, 7 con la hora a 15 minutos o menos.
+- Con la llegada a 15-30 minutos, la hora era buena (±15 minutos) el 57 % de
+  las pasadas y en el 14 % no llovió en tres horas. A 30-60 minutos, el 21 %
+  y el 45 %; a más de una hora, el 13 % y el 46 %.
+- De los 21 avisos enviados (`avisos-pluja.csv`), 14 no trajeron lluvia en 45
+  minutos; 12 de esos 14 eran de menos de 1,5 mm/h esperados, y 5 de los 7
+  aciertos, de 2 mm/h o más.
+- El registro del movimiento (`moviment_registre.py`) da la causa: llevar la
+  lluvia hacia delante acierta poco más que dejarla quieta (CSI de 0,38
+  frente a 0,34 a 30 minutos, y de 0,26 frente a 0,25 a 60).
+
+**Decisión** (Juanjo, 14-11-2026: «aplica las 3»):
+
+1. **Sin aviso de la lluvia débil.** Si la lluvia que llega es de menos de
+   `config.AVIS_PLUJA_MM_H_MIN` (1,5 mm/h), no se manda el aviso
+   (`pluja_arriba.feble`). El episodio se apunta igual, con la columna
+   `callat`, y `resum` dice cuántos callados habrían acertado: es la forma de
+   comprobar el umbral, que sale de los mismos 21 avisos. Si antes de empezar
+   a llover la lluvia que llega deja de ser débil, se avisa entonces. En la
+   web sigue saliendo.
+2. **La hora, solo hasta media hora vista.** A más de 30 minutos, la web
+   («Ara» y «Si surts», `comu.franjaRadar`) y el bot (`franja_radar`) dicen
+   «pot arribar pluja en la propera hora» o «d'aquí a una o dues hores», sin
+   hora ni cuenta atrás, también cuando el radar la da por probable.
+3. **El retraso de la hora** (`arribada.py`). El registro de los avisos daba
+   la lluvia unos 18 minutos más tarde de lo dicho, pero mira la lluvia solo
+   en cada pasada y casi todos sus avisos eran con el radar ya encima, que no
+   dan hora. Con la lluvia cada 5 minutos, cuando el radar daba la hora a
+   5-30 minutos vista el error mediano era de 0 minutos (35 pasadas de 12
+   comienzos; por comienzo, de −25 a +18): hoy no hay nada que corregir.
+   Queda el aprendizaje: cada día prueba retrasos de −10 a +20 minutos y, si
+   uno gana al que hay en el 95 % de los remuestreos por comienzos (ADR 0105)
+   con 10 comienzos o más, lo propone, avisa y se aplica al día siguiente
+   (`aprenentatge/arribada.json`; «atura» lo para). `casa.py` lo suma a
+   `radar.arriba` y `radar.possible` cuando el radar no la da ya encima.
+
+**Riesgos.** El umbral de 1,5 mm/h deja sin aviso lluvias débiles de verdad
+(2 de los 7 aciertos). Las cifras son de 13 comienzos de lluvia.
+
+**Validación.** `tests/test_pluja_arriba.py` (`test_la_pluja_feble_no_avisa_pero_s_apunta`,
+`test_el_registre_d_abans_guanya_la_columna_callat`), `tests/test_arribada.py`,
+`tests/test_montflorit.py` y `tests/test_web.py` (la franja sin hora) y
+`tests/test_bot.py`.

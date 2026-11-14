@@ -356,6 +356,22 @@ class Resum(unittest.TestCase):
         self.assertTrue(B.resum(d, "ca", vespre).startswith("<b>Previsió per a demà, dijous, a Montflorit</b>\n"))
         self.assertTrue(B.resum(d, "es", vespre).startswith("<b>Previsión para mañana, jueves, en Montflorit</b>\n"))
 
+    def test_radar_amb_hora_nomes_fins_a_mitja_hora(self):
+        # 14-11-2026 (ADR 0022): a més de mitja hora vista el radar encertava l'hora
+        # una de cada cinc vegades; es diu una franja, com a la web.
+        d = dades()
+        quan = lambda m: (ARA + dt.timedelta(minutes=m)).isoformat(timespec="minutes")
+        d["radar"] = {"hora": ARA.isoformat(timespec="minutes"), "imatge": "rainviewer", "arriba": quan(20), "possible": quan(10)}
+        self.assertTrue(B.text_radar_bot(d, "ca", ARA).startswith("Arribaria pluja a Montflorit cap a les 07:20."))
+        d["radar"].update(arriba=quan(45), possible=quan(40))
+        self.assertTrue(B.text_radar_bot(d, "ca", ARA).startswith("Pot arribar pluja a Montflorit en la propera hora."))
+        self.assertTrue(B.text_radar_bot(d, "es", ARA).startswith("Puede llegar lluvia a Montflorit en la próxima hora."))
+        d["radar"].update(arriba=None, possible=quan(90))
+        self.assertTrue(B.text_radar_bot(d, "ca", ARA).startswith("Pot arribar pluja a Montflorit d'aquí a una o dues hores."))
+        self.assertTrue(B.text_radar_bot(d, "es", ARA).startswith("Puede llegar lluvia a Montflorit dentro de una o dos horas."))
+        d["radar"].update(possible=quan(25))
+        self.assertTrue(B.text_radar_bot(d, "ca", ARA).startswith("Pot arribar pluja a Montflorit cap a les 07:25."))
+
     def test_radar_quan_ja_plou(self):
         # El que es mesura mana: si ja plou i el radar en veu una mica, «pluja a sobre» i quan pararia.
         d = dades()

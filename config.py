@@ -2,7 +2,7 @@
 """Datos fijos de «Temps a Montflorit»: lugares, horario, fuentes y umbrales.
 Se cambian aquí, no en los programas."""
 
-VERSION = "3.223.0"
+VERSION = "3.224.0"
 
 # Coordenadas con tres decimales (unos 100 m), no las exactas: para el tiempo
 # da igual una calle u otra, y el repositorio es público.
@@ -182,6 +182,9 @@ RISC_FI_H = 3
 # anunciada, y hay un aviso por episodio. El aviso cuenta como acierto si
 # empieza a llover en AVIS_PLUJA_VERIFICA_MIN minutos.
 AVIS_PLUJA_MIN = 15
+# Con menos mm/h esperados al llegar, no se avisa: casi todos los avisos sin
+# lluvia eran de ecos débiles (14-11-2026, ADR 0022).
+AVIS_PLUJA_MM_H_MIN = 1.5
 AVIS_PLUJA_REPOS_MIN = 60
 AVIS_PLUJA_VERIFICA_MIN = 45
 

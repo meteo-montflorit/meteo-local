@@ -227,6 +227,7 @@ Umbrales y lugares, en `config.py`. El porqué, en los ADR.
 | `fi_pluja.py` | Comprueba a qué hora para la lluvia según el radar, antes de enseñarlo (ADR 0049) |
 | `moviment_registre.py` | Registra si el movimiento del radar acierta, comparado con dejar la lluvia quieta y con el viento en altura, y cuánta lluvia crece a 15 km o menos de casa; se decide con un mes de datos (ADR 0019) |
 | `pluja_arriba.py` | Cuándo llegará la lluvia que ve el radar (la usa el aviso público de lluvia) y registro de sus aciertos (ADR 0022) |
+| `arribada.py` | Mide si la lluvia llega a la hora que dice el radar y aprende el retraso, si lo hay (ADR 0022) |
 | `riera.py` | Lluvia en la cuenca de la riera de Sant Cugat y aviso de atención o peligro de desbordamiento, con registro de episodios (ADR 0027) |
 | `radar_fonts.py` | Apunta lo que daba cada radar y, cada día, elige el que acierta más (ADR 0026) |
 | `nuvols.py` | El cielo de cada hora: mezcla las nubes de cuatro modelos, lee el METAR del aeropuerto de Sabadell y, cada día, elige los pesos que aciertan más (ADR 0088) |

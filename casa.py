@@ -34,6 +34,7 @@ import ecowitt as E
 import entorn as EN
 import estacions as ES
 import fonts_falla as FF
+import arribada as AR
 import fi_pluja as FP
 import nowcast as N
 import nuvols as NV
@@ -948,8 +949,9 @@ def recoger(anterior=None):
         # Els ecos febles a sobre del barri, per dir plugim (estat_pluja).
         salida["radar"]["plugim"] = plugim_radar(radar.get("a_prop"))
         # Cuándo llegaría: probable (50 %) o, si no, posible (20 %).
+        # Con el retraso aprendido, si lo hay (arribada.py, ADR 0022).
         for clau, prob in (("arriba", 0.5), ("possible", C.PROB_ATENCION)):
-            t = N.arribada(nc, "casa", prob)
+            t = AR.corregeix(N.arribada(nc, "casa", prob), P.AHORA)
             salida["radar"][clau] = t and H.clau(t)
         # Cómo sería al llegar, para el aviso de antes de llover (ADR 0022).
         salida["radar"]["arriba_mm_h"] = N.intensitat_arribada(nc, "casa")

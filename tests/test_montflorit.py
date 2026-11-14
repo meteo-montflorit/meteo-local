@@ -330,9 +330,14 @@ class Castella(unittest.TestCase):
         self.assertEqual(js("cel({hora: '2026-10-06T12:00', probabilitat: 0.1, pluja_mm: 0, codi: 3, nuvols: 10})[0]"), "Despejado")
         self.assertEqual(js("textRadar({arriba: null, possible: null}, false)[1]"), "El radar no ve lluvia que venga hacia aquí")
         # Quant falta i l'hora (17-10-2026); el compte s'actualitza sol a la pàgina.
-        self.assertEqual(js("textRadar({arriba: '2026-10-06T11:15:00+02:00'}, false)[1]"
+        self.assertEqual(js("textRadar({arriba: '2026-10-06T10:20:00+02:00'}, false)[1]"
                             ".map((x) => typeof x === 'string' ? x : x.textContent).join('')"),
-                         "Lluvia dentro de 1\u00a0h 15\u00a0min (hacia las\u00a011:15)")
+                         "Lluvia dentro de 20 minutos (hacia las\u00a010:20)")
+        # A més de mitja hora vista, sense hora (14-11-2026, ADR 0022).
+        self.assertEqual(js("textRadar({arriba: '2026-10-06T10:45:00+02:00'}, false)"),
+                         ["possible", "Puede llegar lluvia en la próxima hora"])
+        self.assertEqual(js("textRadar({arriba: null, possible: '2026-10-06T11:15:00+02:00'}, false)"),
+                         ["possible", "Puede llegar lluvia dentro de una o dos horas"])
         self.assertEqual(js("TD('al nord-est')"), "el nordeste")
         # La pluja més propera, al requadre del radar (17-10-2026).
         self.assertEqual(js("textPropera({km: 6.4, rumb: 'al nord-oest', classe: 2})"),

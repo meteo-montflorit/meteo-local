@@ -156,6 +156,17 @@ function horaCurta(data) {
   return llegeixHora(data).toLocaleTimeString(IDIOMA.codi, { hour: '2-digit', minute: '2-digit', timeZone: ZONA_HORA });
 }
 
+// Quan arribaria la pluja que veu el radar. A més de mitja hora vista, sense
+// hora: del 9-10 al 14-11-2026 l'encertava (±15 minuts) una de cada cinc
+// vegades, i gairebé la meitat no va ploure en tres hores (ADR 0022). Null si
+// encara es pot dir l'hora.
+const RADAR_HORA_MIN = 30;
+function franjaRadar(data, ara = new Date()) {
+  const min = (llegeixHora(data) - ara) / 60000;
+  if (min <= RADAR_HORA_MIN) return null;
+  return min <= 60 ? T('en la propera hora') : T('d’aquí a una o dues hores');
+}
+
 function element(etiqueta, classe, text) {
   const el = document.createElement(etiqueta);
   if (classe) el.className = classe;

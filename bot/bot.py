@@ -1653,6 +1653,25 @@ RADAR_EN_DIRECTE = {"rainviewer": "https://www.rainviewer.com/map.html?loc=41.48
                     "meteocat": "https://www.meteo.cat/observacions/radar"}
 
 
+# Fins a quants minuts vista es diu l'hora en què arribaria la pluja del
+# radar: més enllà l'encertava una de cada cinc vegades (ADR 0022, 14-11-2026).
+RADAR_HORA_MIN = 30
+
+
+def franja_radar(t, ara_u, es):
+    """«en la propera hora» o «d'aquí a una o dues hores» si la pluja del
+    radar arribaria a més de RADAR_HORA_MIN minuts; None si es pot dir l'hora
+    (o no n'hi ha)."""
+    if not t:
+        return None
+    minuts = (dt.datetime.fromisoformat(t) - ara_u).total_seconds() / 60
+    if minuts <= RADAR_HORA_MIN:
+        return None
+    if minuts <= 60:
+        return "en la próxima hora" if es else "en la propera hora"
+    return "dentro de una o dos horas" if es else "d'aquí a una o dues hores"
+
+
 def text_radar_bot(dades, idioma, moment):
     vell = dades_velles(dades, idioma, moment)
     if vell:
@@ -1693,6 +1712,10 @@ def text_radar_bot(dades, idioma, moment):
         # Ecos febles estesos a sobre als dos radars, com a la web (18-10-2026).
         que = ("El radar ve lluvia muy débil encima de Montflorit (llovizna), que las estaciones no miden." if es
                else "El radar veu pluja molt feble a sobre de Montflorit (plugim), que les estacions no mesuren.")
+    elif franja_radar(r.get("arriba") or r.get("possible"), ara_u, es):
+        # A més de mitja hora vista, sense hora, com a la web (ADR 0022).
+        franja = franja_radar(r.get("arriba") or r.get("possible"), ara_u, es)
+        que = f"Puede llegar lluvia a Montflorit {franja}." if es else f"Pot arribar pluja a Montflorit {franja}."
     elif r.get("arriba"):
         que = (f"Llegaría lluvia a Montflorit hacia las {h(r['arriba'])}." if idioma == "es" else f"Arribaria pluja a Montflorit cap a les {h(r['arriba'])}.")
     elif r.get("possible"):

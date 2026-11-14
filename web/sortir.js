@@ -98,14 +98,15 @@ function plujaEntremig(tram, entorn, futur) {
   const pa = (entorn || {}).pluja_ara || {};
   const t = !futur && (pa.estat === 'arriba' || pa.estat === 'possible') ? pa[pa.estat] : null;
   const fi = new Date(tram[tram.length - 1].hora).getTime() + 3600e3;
-  if (t && new Date(t).getTime() < fi) return { radar: horaCurta(t) };
+  // Amb l'hora només fins a mitja hora vista (franjaRadar, ADR 0022).
+  if (t && new Date(t).getTime() < fi) return { radar: franjaRadar(t) || T`cap a les ${horaCurta(t)}` };
   const f = tram.find((x) => !senseDades(x));
   return f ? { hora: hora(f) } : null;
 }
 
 function textNomesAvis(q, entremig, cua) {
   if (!entremig) return T`Avís oficial per pluja ${q}: ni el radar, ni les estacions, ni els models hi veuen pluja.` + cua;
-  return (entremig.radar ? T`Avís oficial per pluja ${q}, i el radar veu pluja que pot arribar cap a les ${entremig.radar}.`
+  return (entremig.radar ? T`Avís oficial per pluja ${q}, i el radar veu pluja que pot arribar ${entremig.radar}.`
     : T`Avís oficial per pluja ${q}, i entremig pot ploure, cap a les ${entremig.hora}\u00a0h.`) + cua;
 }
 

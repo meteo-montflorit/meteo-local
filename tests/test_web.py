@@ -925,9 +925,12 @@ class Web(unittest.TestCase):
                                f"avalua({json.dumps(mitja)}, {json.dumps(nit)}, [], false, null, {json.dumps(entorn)})",
                                "sortir.js")["motius"][0]
         radar = {"pluja_ara": {"estat": "possible", "possible": "2026-10-20T02:10:00+02:00"}}
+        # A més de mitja hora vista, sense hora (14-11-2026, ADR 0022).
         self.assertEqual(entremig("bici", radar), "Avís oficial per pluja a l’anada i a la tornada, "
-                                                  "i el radar veu pluja que pot arribar cap a les 02:10.")
-        self.assertTrue(entremig("moto", radar).endswith("02:10. Per si de cas, porta l’impermeable."))
+                                                  "i el radar veu pluja que pot arribar en la propera hora.")
+        self.assertTrue(entremig("moto", radar).endswith("en la propera hora. Per si de cas, porta l’impermeable."))
+        aviat = {"pluja_ara": {"estat": "possible", "possible": "2026-10-20T01:50:00+02:00"}}
+        self.assertTrue(entremig("bici", aviat).endswith("i el radar veu pluja que pot arribar cap a les 01:50."))
         self.assertEqual(entremig("cotxe", {"hores": nit}), "Avís oficial per pluja a l’anada i a la tornada, "
                                                             "i entremig pot ploure, cap a les 2\u00a0h. Condueix amb compte.")
         consells = self.avalua("2026-10-07T18:10:00+02:00",

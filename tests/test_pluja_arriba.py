@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Pruebas del aviso de antes de llover en casa (sin red ni Telegram)."""
+import csv
 import datetime as dt
 import json
 import os
@@ -18,7 +19,7 @@ def a(minuts):
     return T0 + dt.timedelta(minutes=minuts)
 
 
-def salida(ahora, arriba=None, plou=False, mm_h=0.6):
+def salida(ahora, arriba=None, plou=False, mm_h=2.0):
     """Datos de casa en una pasada: la llegada que da el radar (minutos desde
     T0) y si llueve en casa."""
     radar = {"hora": (ahora - dt.timedelta(minutes=15)).isoformat(timespec="minutes"),
@@ -31,11 +32,11 @@ def salida(ahora, arriba=None, plou=False, mm_h=0.6):
 
 
 class Avis(unittest.TestCase):
-    def passades(self, casos):
-        """Pasadas seguidas: (minuto, llegada, llueve) -> textos y filas."""
+    def passades(self, casos, mm_h=2.0):
+        """Pasadas seguidas: (minuto, llegada, llueve[, mm/h]) -> textos y filas."""
         estat, textos, files = {"episodi": None}, [], []
-        for minut, arriba, plou in casos:
-            text, fila = PA.compara(estat, salida(a(minut), arriba, plou), a(minut))
+        for minut, arriba, plou, *mm in casos:
+            text, fila = PA.compara(estat, salida(a(minut), arriba, plou, *(mm or [mm_h])), a(minut))
             textos.append(text)
             if fila:
                 files.append(fila)
@@ -77,6 +78,27 @@ class Avis(unittest.TestCase):
                                           (66, 72, False), (72, None, True)])
         self.assertEqual(sum(bool(t) for t in textos), 1)
         self.assertEqual(files, [])
+
+    def test_la_pluja_feble_no_avisa_pero_s_apunta(self):
+        # 14-11-2026 (ADR 0022): de 21 avisos, 14 sense pluja, gairebé tots d'ecos
+        # febles. Amb menys d'1,5 mm/h no s'avisa; el registre l'apunta com a callat,
+        # amb el que hauria passat, per comprovar el llindar.
+        textos, files, _ = self.passades([(18, 30, False), (24, 30, False), (30, None, False),
+                                          (86, None, False), (92, None, False)], mm_h=0.7)
+        self.assertEqual(sum(bool(t) for t in textos), 0)
+        self.assertEqual((files[0]["resultat"], files[0]["callat"], files[0]["mm_h"]), ("avís sense pluja", "sí", 0.7))
+        # Si abans de ploure deixa de ser feble, s'avisa llavors, un sol cop.
+        textos, files, _ = self.passades([(18, 30, False, 0.7), (24, 36, False, 3.0), (30, 36, False, 3.0),
+                                          (36, None, True), (100, None, False), (106, None, False)])
+        self.assertEqual([bool(t) for t in textos], [False, True, False, False, False, False])
+        self.assertEqual((files[0]["resultat"], files[0]["callat"], files[0]["mm_h"]), ("encert", "", 3.0))
+        # Just al llindar s'avisa; sense la dada, també.
+        self.assertTrue(self.passades([(18, 30, False, 1.5)])[0][0])
+        self.assertTrue(self.passades([(18, 30, False, None)])[0][0])
+        # Un cop ha plogut, la pluja feble que torna dins de l'episodi no reobre res.
+        textos, _, estat = self.passades([(18, 30, False, 0.7), (24, None, True), (40, 50, False, 5.0)])
+        self.assertEqual(sum(bool(t) for t in textos), 0)
+        self.assertTrue(estat["episodi"]["avis"]["callat"])
 
     def test_pluja_sense_avis(self):
         # Empieza a llover sin que el radar la anunciara: no se manda nada
@@ -144,6 +166,24 @@ class AlNas(unittest.TestCase):
         self.assertIsNone(PA.llegeix_estat()["episodi"])
         self.assertIn("Episodis: 1. Encerts: 1.", PA.resum())
         self.assertIn("12 minuts després", PA.resum())
+
+    def test_el_registre_d_abans_guanya_la_columna_callat(self):
+        # Un registre d'abans de la 3.224.0, sense «callat»: es reescriu amb la
+        # capçalera d'ara i el resum compta a part els callats.
+        os.makedirs(PA.DIR)
+        with open(PA.REGISTRO, "w", encoding="utf-8") as f:
+            f.write("inici,avisat,arribada_prevista,minuts_previstos,imatge,mm_h,pluja_mesurada,minuts_reals,resultat\n"
+                    "2026-11-09T14:22Z,2026-11-09T14:22Z,2026-11-09T14:40Z,18,2026-11-09T14:20Z,2.14,"
+                    "2026-11-09T14:58Z,36,encert\n")
+        fila = dict.fromkeys(PA.CAMPOS, "")
+        fila.update(inici="2026-11-14T12:10Z", avisat="2026-11-14T12:10Z", resultat="avís sense pluja", callat="sí")
+        PA.apunta(fila)
+        with open(PA.REGISTRO, encoding="utf-8") as f:
+            files = list(csv.DictReader(f))
+        self.assertEqual([list(x) for x in files], [PA.CAMPOS] * 2)
+        self.assertEqual([(x["resultat"], x["callat"]) for x in files], [("encert", ""), ("avís sense pluja", "sí")])
+        self.assertIn("Episodis: 1. Encerts: 1.", PA.resum())
+        self.assertIn("Avisos callats per pluja feble (menys de 1.5 mm/h): 1; haurien encertat 0", PA.resum())
 
     def test_dades_velles_no_avisen(self):
         # La pasada ha fallado y los datos son de hace media hora.

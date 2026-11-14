@@ -841,6 +841,14 @@ def diari(avui=None, avisa=True):
             print(text_fi)
     except Exception as ex:
         print("No he pogut comprovar el final de la pluja:", ex)
+    # Si la lluvia llega a la hora que dice el radar (arribada.py, ADR 0022).
+    try:
+        import arribada
+        text_arribada = arribada.verifica(avisa, avui)
+        if text_arribada:
+            print(text_arribada)
+    except Exception as ex:
+        print("No he pogut comprovar l'arribada de la pluja:", ex)
     # Que la página de Meteocat sigue trayendo sus avisos de peligro (ADR 0067).
     try:
         import prevision as P

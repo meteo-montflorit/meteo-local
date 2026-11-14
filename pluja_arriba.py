@@ -38,7 +38,7 @@ DIR = os.environ.get("REGISTRE_DIR", "/estat/registre")
 ESTADO = os.path.join(os.path.dirname(DIR), "avis-pluja.json")
 REGISTRO = os.path.join(DIR, "avisos-pluja.csv")
 CAMPOS = ["inici", "avisat", "arribada_prevista", "minuts_previstos", "imatge", "mm_h",
-          "pluja_mesurada", "minuts_reals", "resultat"]
+          "pluja_mesurada", "minuts_reals", "resultat", "callat"]
 FONTS = {"meteocat": "Meteocat", "rainviewer": "RainViewer"}
 
 
@@ -60,6 +60,15 @@ def falta_min(salida, ahora):
     if not arriba:
         return None
     return (H.llegeix(arriba) - ahora).total_seconds() / 60
+
+
+def feble(salida):
+    """La lluvia que llega es débil: menos de C.AVIS_PLUJA_MM_H_MIN mm/h. No
+    se avisa (desde la 3.224.0): de los 21 avisos del 6-10 al 14-11-2026, 14
+    no trajeron lluvia y 12 de esos eran de menos de 1,5 mm/h (ADR 0022). Se
+    apunta igual (callat), para comprobar el umbral. Sin el dato, no lo es."""
+    mm = (salida.get("radar") or {}).get("arriba_mm_h")
+    return mm is not None and mm < C.AVIS_PLUJA_MM_H_MIN
 
 
 def intensitat(mm_h):
@@ -90,7 +99,7 @@ def fila_registro(ep):
     if avis:
         enviat = H.llegeix(avis["enviat"])
         fila.update(avisat=avis["enviat"], arribada_prevista=avis["arribada"], imatge=avis["imatge"],
-                    mm_h="" if avis.get("mm_h") is None else avis["mm_h"],
+                    mm_h="" if avis.get("mm_h") is None else avis["mm_h"], callat="sí" if avis.get("callat") else "",
                     minuts_previstos=round((H.llegeix(avis["arribada"]) - enviat).total_seconds() / 60))
         reals = pluja and (H.llegeix(pluja) - enviat).total_seconds() / 60
         if pluja:
@@ -118,13 +127,20 @@ def compara(estat, salida, ahora):
             fila = fila_registro(ep)
             ep = None
     if senyal:
-        if not ep:
+        nou = not ep
+        if nou:
             ep = {"inici": ara, "avis": None, "pluja": None}
-            if not mullat:
-                r = salida["radar"]
+        # El aviso, al empezar el episodio sin lluvia. Si la que llega es débil,
+        # se apunta callado, sin mensaje; si antes de empezar a llover deja de
+        # serlo, se avisa entonces.
+        callat = (ep["avis"] or {}).get("callat")
+        if not mullat and not ep["pluja"] and (nou or callat) and falta is not None and falta <= limit:
+            r = salida["radar"]
+            if not feble(salida):
                 text = missatge(salida, ahora)
+            if nou or text:
                 ep["avis"] = {"enviat": ara, "arribada": r["arriba"], "imatge": r["hora"],
-                              "mm_h": r.get("arriba_mm_h")}
+                              "mm_h": r.get("arriba_mm_h"), **({} if text else {"callat": True})}
         ep["vist"] = ara
         if mullat and not ep["pluja"]:
             ep["pluja"] = ara
@@ -151,6 +167,17 @@ def desa_estat(estat):
 def apunta(fila):
     nou = not os.path.exists(REGISTRO)
     os.makedirs(DIR, exist_ok=True)
+    if not nou:
+        # Un registro de antes de la 3.224.0, sin la columna «callat»: se
+        # reescribe con la cabecera de ahora.
+        with open(REGISTRO, encoding="utf-8") as f:
+            files = list(csv.DictReader(f))
+        if files and list(files[0]) != CAMPOS:
+            with open(REGISTRO + ".tmp", "w", newline="", encoding="utf-8") as f:
+                w = csv.DictWriter(f, fieldnames=CAMPOS, extrasaction="ignore")
+                w.writeheader()
+                w.writerows({c: x.get(c) or "" for c in CAMPOS} for x in files)
+            os.replace(REGISTRO + ".tmp", REGISTRO)
     with open(REGISTRO, "a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=CAMPOS)
         if nou:
@@ -181,9 +208,17 @@ def resum():
         return "Encara no hi ha cap episodi apuntat."
     with open(REGISTRO, encoding="utf-8") as f:
         files = list(csv.DictReader(f))
+    callats = [f for f in files if f.get("callat")]
+    files = [f for f in files if not f.get("callat")]
     n = {r: sum(f["resultat"] == r for f in files) for r in ("encert", "avís sense pluja", "pluja sense avís")}
     linies = [f"Episodis: {len(files)}. Encerts: {n['encert']}. Avisos sense pluja: {n['avís sense pluja']}. "
               f"Pluja sense avís: {n['pluja sense avís']}."]
+    if callats:
+        # Els que no s'han enviat perquè la pluja que venia era feble: si
+        # molts haurien encertat, el llindar és massa alt.
+        be = sum(f["resultat"] == "encert" for f in callats)
+        linies.append(f"Avisos callats per pluja feble (menys de {C.AVIS_PLUJA_MM_H_MIN:g} mm/h): {len(callats)}; "
+                      f"haurien encertat {be} i {len(callats) - be} haurien estat sense pluja.")
     reals = [int(f["minuts_reals"]) for f in files if f["resultat"] == "encert"]
     if reals:
         linies.append(f"Als encerts, va començar a ploure entre {min(reals)} i {max(reals)} minuts després "

@@ -976,9 +976,17 @@ function textRadar(r, plou) {
   // Quant falta, en minuts, i l'hora (Juanjo, 17-10-2026: «empezará a llover
   // en x horas o minutos (se actualizará en tiempo real) y la hora prevista»);
   // el compte s'actualitza sol cada minut (actualitzaComptes).
-  if (r.arriba) return ['arriba', [T('Pluja '), compte(r.arriba), T` (cap a les\u00a0${horaCurta(r.arriba)})`]];
+  // A més de mitja hora vista, sense hora ni compte: «pot arribar» i una franja
+  // (franjaRadar, ADR 0022).
+  if (r.arriba) {
+    const franja = franjaRadar(r.arriba);
+    if (franja) return ['possible', T('Pot arribar pluja ') + franja];
+    return ['arriba', [T('Pluja '), compte(r.arriba), T` (cap a les\u00a0${horaCurta(r.arriba)})`]];
+  }
   if (r.possible) {
     if (aviat(r.possible)) return ['possible', T('Pluja a prop: pot arribar')];
+    const franja = franjaRadar(r.possible);
+    if (franja) return ['possible', T('Pot arribar pluja ') + franja];
     return ['possible', [T('Pot arribar pluja '), compte(r.possible), T` (cap a les\u00a0${horaCurta(r.possible)})`]];
   }
   // Ecos febles estesos a sobre del barri als dos radars: plugim, que les

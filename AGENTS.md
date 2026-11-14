@@ -135,7 +135,8 @@ Al cambiar algo:
   bilateria.org/nas). Si se añade, cambia o retira uno, se actualiza allí.
 - El registro está en el NAS, en `/volume1/docker/meteo-local/estat/registre`
   (avisos de lluvia, episodios de la riera y lo medido). Resúmenes:
-  `docker exec meteo-local python3 /proyecto/pluja_arriba.py resum`,
+  `docker exec meteo-local python3 /proyecto/pluja_arriba.py resum` (y si
+  la lluvia llega a la hora que dice el radar, `… /proyecto/arribada.py resum`),
   `docker exec meteo-local python3 /proyecto/riera.py resum` y, lo que dijo
   «Si surts» de cada medio y lo que pasó, `docker exec meteo-local python3
   /proyecto/aprenentatge.py sortir` (ADR 0047 y 0068); el final de la lluvia según el
