@@ -130,3 +130,22 @@ revisión con todas las páginas). Juanjo: «arregla los fallos».
 - **27 días en `config.py`.** El comentario de `RIERA_PREVISIO_MM` daba la
   cifra del máximo por hora, descartado (ver «Alternativas descartadas»); la
   del método que se usa es 21, la de la página.
+
+## Cambio del 14-11-2026 (3.219.0): los modelos no contradicen a «Ara»
+
+- **Contexto**: con el aviso de atención abierto y «Ara» en atención (5,4 mm
+  medidos y unos 32 previstos por el radar en la hora siguiente), «Properes
+  hores» decía en verde «Cap senyal de crescuda en les properes 24 hores. Com
+  a molt, 0,2 mm en 3 hores segons els models». Las dos cosas salían de
+  fuentes distintas (radar para la hora siguiente, modelos para 24 horas) y
+  ninguna lo decía; la cifra del radar, además, estaba plegada en el detalle.
+  Juanjo: «el aviso y las properes hores dicen cosas contradictorias».
+- **Decisión**: si «Ara» tiene nivel (registro, atención o peligro), la línea
+  de los modelos va en gris (`avis-item neutre`) y dice «Els models no hi
+  veuen pluja forta: com a molt … Per a la propera hora mana el radar (a
+  «Ara»).»; sin nivel en «Ara», como antes. La línea de «Ara» lleva lo que
+  prevé el radar («…, i el radar en preveu uns 32 més fins d'aquí a una
+  hora.») cuando es 1 mm o más; por debajo, sigue en el detalle.
+- **Validación**: `probar-web` en Firefox móvil y Chromium de escritorio en
+  oscuro con los datos de las 17:09, y axe-core sin infracciones en «Riera»,
+  «Perill» y la portada.

@@ -640,6 +640,7 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 /* Tot bé, amb la franja verda: la riera sense risc i «Perill» sense cap
    situació de perill (Juanjo, 21-10-2026). */
 .avis-item.be { --nivell: var(--verd); }
+.avis-item.neutre { --nivell: var(--suau); }
 /* Nota de Protecció Civil sobre els veredictes de «Si surts». */
 .avis-pc { border-color: var(--vermell); background: var(--vermell-fons); }
 .taula-hores td.cel { white-space: normal; }

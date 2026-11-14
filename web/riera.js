@@ -47,7 +47,11 @@ function quanPrevisio(p) {
 // La nota de «fase de proves» només amb risc: si els models no hi veuen res,
 // no hi ha res a matisar (Juanjo, 19-10-2026: «esto solo debe aparecer cuando
 // hay algun riesgo si está en verde, no»).
-function pintaPrevisio(p) {
+// Amb «r» (l'estat d'«Ara»): si ja plou a la conca o hi ha avís, els models
+// no poden dir «Cap senyal de crescuda» en verd al costat (Juanjo, 14-11-2026:
+// «el aviso y las properes hores dicen cosas contradictorias»); per a la
+// propera hora mana el radar.
+function pintaPrevisio(p, r = null) {
   const cos = $('previsio-cos');
   const detall = $('previsio-detall');
   $('previsio-nota').hidden = !(p && p.nivell === 'possible');
@@ -57,10 +61,14 @@ function pintaPrevisio(p) {
     return;
   }
   const quan = quanPrevisio(p);
-  const linia = element('p', `avis-item riera-previsio ${p.nivell === 'possible' ? 'taronja' : 'be'}`);
+  const araActiva = Boolean(r && r.nivell);
+  const linia = element('p', `avis-item riera-previsio ${p.nivell === 'possible' ? 'taronja' : araActiva ? 'neutre' : 'be'}`);
   if (p.nivell === 'possible') {
     linia.append(element('strong', null, T('Risc de crescuda possible.')), ' ',
       T`Els models preveuen fins a ${coma(p.mm_3h_max)} mm en 3 hores a la conca ${quan}. L’avís d’atenció es dona a partir de 35 mm mesurats.`);
+  } else if (araActiva) {
+    linia.append(p.mm_3h_max > 0 ? T`Els models no hi veuen pluja forta: com a molt ${coma(p.mm_3h_max)} mm en 3 hores (${quan}).`
+      : T('Els models no hi preveuen pluja.'), ' ', T('Per a la propera hora mana el radar (a «Ara»).'));
   } else {
     // Amb 0 mm arreu, la finestra no diu res: sense hores.
     linia.append(element('strong', null, T`Cap senyal de crescuda en les properes ${p.horitzo_h} hores.`), ' ',
@@ -101,10 +109,14 @@ function pintaAra(dades) {
   const qui = v ? T`Segons la mediana de ${v.n} estacions particulars de Sant Cugat,` : T('A Sant Cugat (Meteocat)');
   const estat = element('p', `avis-item riera-estat ${COLOR_NIVELL[r.nivell] || 'be'}`);
   const titol = titolRiera(r.nivell, r);
-  estat.append(element('strong', null, titol), ' ',
-    T`${qui} han caigut ${coma(mm3)} mm en 3 hores i ${coma(mm6)} en 6 (fins a les ${fins}).`);
+  // El que hi suma el radar, a la línia (14-11-2026: plegat al detall, no es
+  // veia per què hi havia avís).
+  const radar = r.radar_1h >= 1 ? Math.round(r.radar_1h) : null;
+  estat.append(element('strong', null, titol), ' ', radar
+    ? T`${qui} han caigut ${coma(mm3)} mm en 3 hores i ${coma(mm6)} en 6 (fins a les ${fins}), i el radar en preveu uns ${radar} més fins d’aquí a una hora.`
+    : T`${qui} han caigut ${coma(mm3)} mm en 3 hores i ${coma(mm6)} en 6 (fins a les ${fins}).`);
   const frases = [];
-  if (r.radar_1h != null) {
+  if (r.radar_1h != null && !radar) {
     // Amb menys d'1 mm també es diu: l'índex el suma, i «no hi veu pluja» al
     // costat d'un índex de 0,5 amb 0,0 mesurats no quadrava (revisor, 05-11-2026).
     frases.push(r.radar_1h > 0 ? T`El radar hi preveu uns ${coma(r.radar_1h)} mm més fins d’aquí a una hora.`
@@ -159,7 +171,7 @@ function pinta(dades) {
     $('previsio-nota').hidden = true;
   } else {
     pintaAra(dades);
-    pintaPrevisio(dades.riera_previsio);
+    pintaPrevisio(dades.riera_previsio, dades.riera);
   }
   $('avis-dades').hidden = true;
   pintaHorari(dades, FONTS_RIERA);
