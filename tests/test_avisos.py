@@ -112,6 +112,27 @@ class PlansProteccioCivil(unittest.TestCase):
         # Un pla de vent amb avisos de pluja a fora: no és d'altres comarques.
         self.assertTrue(P.pla_per_temps(dict(pla, pla="VENTCAT", nom="de vent"), aemet, ara, fora))
 
+    def test_un_pla_d_altres_comarques_ho_continua_sent(self):
+        # 14-11-2026: l'INUNCAT en alerta per la pluja intensa al Montsià va sortir a
+        # la portada quan Meteocat va treure l'avís d'allà. Mentre no canvia de fase
+        # (clau_pla), continua sent d'aquelles comarques; si Meteocat avisa al Vallès, surt.
+        import datetime as dt
+        ara = dt.datetime(2026, 11, 14, 20, 9).astimezone()
+        pla = {"pla": "INUNCAT", "nom": "d'inundacions", "fase": "alerta", "des_de": "14/11/2026 16:33"}
+        fora = {"avisos": [], "fenomens_catalunya": ["pluja"]}
+        res = {"avisos": [], "fenomens_catalunya": []}
+        self.assertTrue(P.de_altres_comarques(pla, fora))
+        abans = {P.clau_pla(pla)}
+        self.assertTrue(P.pla_per_temps(pla, [], ara, res))                          # sense memòria, sortia
+        self.assertFalse(P.pla_per_temps(pla, [], ara, res, abans))
+        self.assertFalse(P.pla_per_temps(pla, [], ara, None, abans))                 # sense lectura, igual
+        al_valles = dict(res, avisos=[{"meteor": "Intensitat de pluja en 30 minuts", "tipus": "previsio",
+                                       "perill": 1, "dies": {"2026-11-14": [(20, 24)]}}])
+        self.assertTrue(P.pla_per_temps(pla, [], ara, al_valles, abans))
+        # En una altra fase és una activació nova: la regla de sempre.
+        self.assertTrue(P.pla_per_temps(dict(pla, fase="emergència"), [], ara, res, abans))
+        self.assertTrue(P.pla_per_temps(dict(pla, des_de="14/11/2026 19:00"), [], ara, res, abans))
+
     def test_un_pla_repetit_es_queda_amb_la_fase_mes_alta(self):
         r = self.plans([registre("INUNCAT", "PREALERTA", "NO"), registre("INUNCAT", "EMERGÈNCIA"),
                         registre("INUNCAT", "ALERTA")])

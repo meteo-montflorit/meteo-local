@@ -512,29 +512,46 @@ def motiu_pla(p):
     return next((m for clau, m in MOTIU_PLA if clau in nom), None)
 
 
-def de_altres_comarques(p, smp):
+def clau_pla(p):
+    """La activación de un plan: el plan, la fase y desde cuándo está en ella."""
+    return f"{p.get('pla')}:{p.get('fase')}:{p.get('des_de')}"
+
+
+def de_altres_comarques(p, smp, abans=()):
     """Si el plan es de otras comarcas: Protección Civil lo activa por los
     avisos de Meteocat (el comunicado del INUNCAT del 02-11-2026 nombraba las
     mismas ocho comarcas que sus avisos de intensidad de lluvia, sin el Vallès
     Occidental), y Meteocat tiene avisos de su fenómeno en Cataluña pero
     ninguno en la comarca del barrio. Sin la lectura de Meteocat, o con datos
-    de antes de la 3.208.0, no se sabe: no lo es."""
+    de antes de la 3.208.0, no se sabe: no lo es.
+
+    abans: las activaciones (clau_pla) que ya eran de otras comarcas en la
+    pasada anterior. Lo siguen siendo aunque se acaben los avisos de fuera,
+    hasta que el plan cambie de fase o Meteocat avise en el Vallès Occidental:
+    el 14-11-2026 el INUNCAT del Montsià salió en la portada al acabarse el
+    aviso de allí, sin ficha en «Perill»."""
     import smp as SMP
     motiu = motiu_pla(p)
-    if motiu is None or not smp or not set(smp.get("fenomens_catalunya") or ()) & motiu:
+    if motiu is None:
         return False
-    return not any(SMP.fenomen(m["meteor"]) in motiu for m in smp.get("avisos") or [])
+    al_valles = bool(smp) and any(SMP.fenomen(m["meteor"]) in motiu for m in smp.get("avisos") or [])
+    if clau_pla(p) in abans:
+        return not al_valles
+    if not smp or not set(smp.get("fenomens_catalunya") or ()) & motiu:
+        return False
+    return not al_valles
 
 
-def pla_per_temps(p, avisos_, ahora=None, smp=None):
+def pla_per_temps(p, avisos_, ahora=None, smp=None, comarques=()):
     """Si el plan tiene motivo meteorológico a la vista: un aviso de AEMET o de
     Meteocat (smp, ADR 0093) de su fenómeno en la zona, vigente o para las
-    próximas PLA_AVIS_H horas."""
+    próximas PLA_AVIS_H horas. comarques: las activaciones que ya eran de
+    otras comarcas (de_altres_comarques)."""
     import smp as SMP
     ahora = ahora or AHORA
     if p.get("fase") == "emergència":
         return True
-    if de_altres_comarques(p, smp):
+    if de_altres_comarques(p, smp, comarques):
         return False
     t = data_fase(p.get("des_de"))
     if t is None or ahora - t < dt.timedelta(hours=PLA_COMUNICAT_H):

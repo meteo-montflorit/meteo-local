@@ -4,6 +4,8 @@ Fecha: 2026-10-10 · Estado: aceptado
 
 **02-11-2026 (3.208.0):** tampoco se muestra un plan de otras comarcas (al final).
 
+**14-11-2026 (3.222.0):** un plan de otras comarcas lo sigue siendo al acabarse los avisos de fuera, y un plan que se muestra tras estar oculto desde el principio tiene su ficha en «Perill» (al final).
+
 **16-10-2026 (ADR 0093):** el motivo es un aviso del fenómeno del plan (lluvia para el INUNCAT, viento para el VENTCAT…), de AEMET o de Meteocat; un plan sin fenómeno meteorológico se muestra siempre.
 
 ## Contexto
@@ -116,7 +118,8 @@ avisa de final ni, si vuelve, de novedad en la misma fase.
 
 **Lo que no cambia.** La emergencia se muestra siempre. Si Meteocat no
 tiene avisos del fenómeno en ninguna comarca, el plan responde a otra cosa
-(recuperación, crecidas) y sigue la regla anterior. Sin lectura de Meteocat,
+(recuperación, crecidas) y sigue la regla anterior, salvo que ya fuera de
+otras comarcas (cambio del 14-11-2026). Sin lectura de Meteocat,
 o con datos de antes de la 3.208.0, se muestra. Los avisos de AEMET se
 muestran aparte como siempre: el 02-11-2026, el amarillo por lluvia en el
 Prelitoral de Barcelona de 22:00 a 04:00.
@@ -141,3 +144,30 @@ fenómeno. `tests/test_smp.py` (`test_fenomens_amb_avis_a_qualsevol_comarca`):
 avisos de previsión y de observación, sin los preavisos. Con los datos reales
 de las 12:33, Meteocat da `["pluja"]` en Cataluña y ningún aviso en el
 Vallès Occidental.
+
+## Cambio del 14-11-2026 (3.222.0): sigue siendo de otras comarcas
+
+A las 16:33 la Generalitat activó el INUNCAT en alerta por la lluvia intensa
+en el Montsià (más de 40 mm en 30 minutos en Ulldecona; comunicado
+`I-128912_INICI--ACTIVAT_INUNCAT_202611141717.pdf`, que solo nombra esa
+comarca). La web lo ocultó bien mientras Meteocat tuvo el aviso de allí,
+pero al retirarlo el plan dejó de parecer de otras comarcas y, con el
+comunicado de menos de 24 horas, salió arriba en «El temps». «Perill» decía
+a la vez «Ara no hi ha cap avís»: el plan no tenía ficha porque, oculto
+desde el principio, al mostrarse en la misma fase no era nuevo y no se
+apuntó nada. Juanjo: «en temps me sale aviso proteccion civil y en avisos
+dice que no hay ninguna alerta».
+
+**Decisión.** Cada pasada guarda en `casa.json` las activaciones de otras
+comarcas (`plans_comarques`, con `prevision.clau_pla`: plan, fase y
+`des_de`), y la siguiente las lee de la publicación anterior
+(`casa.llegeix_anterior`): una activación que ya era de otras comarcas lo
+sigue siendo, sin lectura de Meteocat también, hasta que el plan cambie de
+fase o Meteocat avise de su fenómeno en el Vallès Occidental. Y si, por lo
+que sea, un plan oculto desde el principio se muestra en la misma fase,
+`avisos_bot.py` le abre la ficha en «Perill» sin mandar mensaje (`silenci`):
+no es nuevo, pero lo que sale en la portada sale en «Perill» (ADR 0093).
+
+**Validación.** `tests/test_avisos.py` (`test_un_pla_d_altres_comarques_ho_continua_sent`)
+y `tests/test_bot.py` (`test_un_pla_ocult_des_del_principi_que_surt_te_fitxa`),
+con el caso del 14-11-2026.

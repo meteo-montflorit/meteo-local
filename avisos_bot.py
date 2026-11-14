@@ -942,11 +942,19 @@ def decideix(estat, salida, ahora):
         # ya no se estaba mostrando.
         ocults = {p["pla"]: p for p in salida.get("plans_ocults") or [] if p.get("fase") in actius}
         if of is not None:
+            oberts = {e["clau"] for e in estat.get("historial") or [] if not e.get("fi")}
             for k, p in plans.items():
                 abans = (of["plans"].get(k) or {}).get("fase")
                 if abans is None or FASES_PLA.index(p["fase"]) > FASES_PLA.index(abans):
                     afegeix("perill", f"pla:{k}:{p['fase']}:{hora}", text_pla(p), "pc",
                             episodi=f"pla:{k}", enllac=None if p.get("comunicat") else PROTECCIO_CIVIL)
+                elif (of["plans"].get(k) or {}).get("ocult") and f"pla:{k}" not in oberts:
+                    # Un plan que estaba oculto desde el principio y se muestra
+                    # en la misma fase: sin mensaje (no es nuevo), pero con su
+                    # ficha en «Perill», como en la portada (ADR 0093).
+                    afegeix("perill", f"pla:{k}:{p['fase']}:{hora}", text_pla(p), "pc",
+                            episodi=f"pla:{k}", enllac=None if p.get("comunicat") else PROTECCIO_CIVIL,
+                            silenci=True)
                 elif p.get("comunicat") and p["comunicat"] != (of["plans"].get(k) or {}).get("comunicat", p["comunicat"]):
                     # Un comunicado distinto del último avisado, también el
                     # primero si la alerta salió sin él (ADR 0091). Un estado

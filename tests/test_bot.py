@@ -832,7 +832,8 @@ class Consultes(unittest.TestCase):
         # sortir en la mateixa fase no és nou; si es desactiva mentre és amagat, no es diu.
         pla = {"pla": "INUNCAT", "nom": "d'inundacions", "fase": "alerta"}
         estat = {}
-        perill = lambda sal, m: [a for a in AB.decideix(estat, sal, ARA + dt.timedelta(minutes=m)) if a["tipus"] == "perill"]
+        perill = lambda sal, m: [a for a in AB.decideix(estat, sal, ARA + dt.timedelta(minutes=m))
+                                 if a["tipus"] == "perill" and not a.get("silenci")]
         self.assertEqual(perill({"avisos": [], "plans": [pla], "plans_ocults": []}, 0), [])      # s'apunta
         self.assertEqual(perill({"avisos": [], "plans": [], "plans_ocults": [pla]}, 6), [])      # s'amaga: res
         self.assertEqual(perill({"avisos": [], "plans": [pla], "plans_ocults": []}, 12), [])     # torna: res
@@ -845,6 +846,23 @@ class Consultes(unittest.TestCase):
         # «/avisos_actius» no diu que no hi ha cap pla, perquè n'hi ha un d'activat.
         d = {"generat": ARA.isoformat(timespec="minutes"), "plans": [], "plans_ocults": [pla], "avisos": []}
         self.assertEqual(B.text_avisos_actius(d, "ca", ARA), "No hi ha avisos de l'AEMET ni es preveu temps excepcional.")
+
+    def test_un_pla_ocult_des_del_principi_que_surt_te_fitxa(self):
+        # 14-11-2026: l'INUNCAT del Montsià, amagat en activar-se, va sortir a la
+        # portada en la mateixa fase i «Perill» deia que no hi havia cap avís. Sense
+        # missatge (ADR 0062), però amb la seva fitxa (ADR 0093), un sol cop.
+        pla = {"pla": "INUNCAT", "nom": "d'inundacions", "fase": "alerta"}
+        estat = {}
+        perill = lambda sal, m: [a for a in AB.decideix(estat, sal, ARA + dt.timedelta(minutes=m)) if a["tipus"] == "perill"]
+        self.assertEqual(perill({"avisos": [], "plans": [], "plans_ocults": []}, 0), [])
+        self.assertEqual(perill({"avisos": [], "plans": [], "plans_ocults": [pla]}, 6), [])
+        nous = perill({"avisos": [], "plans": [pla], "plans_ocults": []}, 12)
+        self.assertEqual([(a["episodi"], a.get("silenci")) for a in nous], [("pla:INUNCAT", True)])
+        estat["historial"] = [{"clau": "pla:INUNCAT", "inici": "2026-11-14T16:00Z"}]
+        self.assertEqual(perill({"avisos": [], "plans": [pla], "plans_ocults": []}, 18), [])
+        # Si ja tenia la fitxa oberta (s'havia mostrat abans), res.
+        self.assertEqual(perill({"avisos": [], "plans": [], "plans_ocults": [pla]}, 24), [])
+        self.assertEqual(perill({"avisos": [], "plans": [pla], "plans_ocults": []}, 30), [])
 
     def test_mati_i_nit(self):
         # Una hora al matí i, a part, la de demà a les 21 h (Juanjo, 09-10-2026).

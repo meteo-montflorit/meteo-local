@@ -770,6 +770,26 @@ def comprobacion_modelos(desde, h, filas_estacion, consens_3h=None):
             "prevista_mm": round(prevista, 1), "no_encerten": fallan}
 
 
+_ANTERIOR = {}
+
+
+def llegeix_anterior(anterior):
+    """La publicació d'abans (ruta o adreça), llegida un cop per pasada; si no
+    es pot llegir, buida."""
+    if anterior not in _ANTERIOR:
+        try:
+            if not anterior:
+                _ANTERIOR[anterior] = {}
+            elif anterior.startswith("http"):
+                _ANTERIOR[anterior] = json.loads(P.get(anterior))
+            else:
+                with open(anterior, encoding="utf-8") as f:
+                    _ANTERIOR[anterior] = json.load(f)
+        except Exception:
+            _ANTERIOR[anterior] = {}
+    return _ANTERIOR[anterior] if isinstance(_ANTERIOR[anterior], dict) else {}
+
+
 def recoger(anterior=None):
     salida = {"versio": C.VERSION, "generat": H.iso_local(P.AHORA),
               "errors": []}
@@ -895,10 +915,18 @@ def recoger(anterior=None):
     # temporal) no se muestran ni ponen la página en modo aviso; van aparte,
     # para que los avisos del canal no anuncien un final que no ha habido
     # (ADR 0062).
+    # Un plan de otras comarcas lo sigue siendo mientras no cambie de fase,
+    # aunque se acaben los avisos de fuera (plans_comarques, de la pasada
+    # anterior; ADR 0062).
     salida["plans_ocults"] = None
+    salida["plans_comarques"] = []
     if planes is not None:
-        salida["plans_ocults"] = [p for p in planes if not P.pla_per_temps(p, avisos, P.AHORA, salida["smp"])]
-        planes = [p for p in planes if P.pla_per_temps(p, avisos, P.AHORA, salida["smp"])]
+        comarques = set(llegeix_anterior(anterior).get("plans_comarques") or ())
+        salida["plans_comarques"] = sorted(P.clau_pla(p) for p in planes if p.get("fase") != "emergència"
+                                           and P.de_altres_comarques(p, salida["smp"], comarques))
+        mostra = [P.pla_per_temps(p, avisos, P.AHORA, salida["smp"], comarques) for p in planes]
+        salida["plans_ocults"] = [p for p, m in zip(planes, mostra) if not m]
+        planes = [p for p, m in zip(planes, mostra) if m]
     salida["avisos"], salida["plans"] = avisos, planes
     # Los umbrales de lluvia de «Si surts», los aprendidos (ADR 0069).
     try:
@@ -1053,17 +1081,7 @@ def recoger(anterior=None):
     except Exception as ex:
         # «anterior» és on és la publicació d'abans (ruta o adreça), amb l'hora
         # de Madrid: per dins, en UTC (ADR 0128). Si tampoc es pot llegir, res.
-        try:
-            if not anterior:
-                antes = {}
-            elif anterior.startswith("http"):
-                antes = json.loads(P.get(anterior))
-            else:
-                with open(anterior, encoding="utf-8") as f:
-                    antes = json.load(f)
-            salida["setmana"] = H.interna(antes.get("setmana"))
-        except Exception:
-            salida["setmana"] = None
+        salida["setmana"] = H.interna(llegeix_anterior(anterior).get("setmana"))
         salida["errors"].append(f"setmana: {ex}")
     # El sol y la calidad del aire, para «Consultes», /sol y /aire (ADR 0054), y
     # la Luna, para «Consultes», «Ara» y la gráfica (ADR 0127).
