@@ -17,7 +17,7 @@ function h(iso) {
   return `${horaLocal(iso)}`;
 }
 
-// --- L'avís de la riera, si n'hi ha: el mateix que a «Perill» -------------------------
+// --- L'avís de la riera, si n'hi ha, amb les dades d'ara a sota; el missatge enviat, a «Perill»
 
 function pintaAvis(historial) {
   const sec = $('riera-avis');
@@ -27,8 +27,8 @@ function pintaAvis(historial) {
     return;
   }
   const peces = actius.map((item) => {
-    const a = element('a', 'detall', T('vegeu l’avís'));
-    a.href = item.dataset.detall;
+    const a = element('a', 'detall', T('missatge enviat'));
+    a.href = item.dataset.fitxa;
     item.append(' ', a);
     return item;
   });

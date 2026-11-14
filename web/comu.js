@@ -931,7 +931,8 @@ function fitxaDeLinia(text) {
     return fitxaPerill((h) => h.clau.startsWith('aemet:')
       && [h.clau.split(':')[1], TD(h.clau.split(':')[1])].some((x) => t.includes(x.toLowerCase())));
   }
-  if (/riera/i.test(text)) return fitxaPerill((h) => h.clau.startsWith('riera:'));
+  // La riera, a «Riera», amb les dades d'ara (14-11-2026).
+  if (/riera/i.test(text)) return 'riera.html';
   if (/ncendi/.test(text)) return fitxaPerill((h) => h.clau.startsWith('incendi:'));
   if (/Alfa/.test(text)) return FITXA_ALFA;
   if (/oficial\)/.test(text)) return fitxaPerill((h) => h.clau === 'propi');
@@ -1123,7 +1124,11 @@ function blocRiera(historial, ara = new Date()) {
       item.append(element('strong', null, titol), '. ', T('No t’acostis a la riera.'));
       item.dataset.clau = `riera:${e.clau}:${e.nivell}`;
       item.dataset.curt = `${titol}. ${T('No t’acostis a la riera.')}`;
-      item.dataset.detall = `perill.html#${idFitxa(e)}`;
+      // Porta a «Riera», amb les dades d'ara; la fitxa de «Perill» és el
+      // missatge tal com es va enviar (Juanjo, 14-11-2026: «las alertas de la
+      // riera no deberían llevar a avisos sino al apartado riera»).
+      item.dataset.detall = 'riera.html';
+      item.dataset.fitxa = `perill.html#${idFitxa(e)}`;
       return item;
     });
 }

@@ -294,3 +294,21 @@ la reemplazan? pensaba que era así».
   (`test_avis_del_radar_que_no_es_compleix_es_tanca_abans`) y
   `tests/test_bot.py` (`test_riera_avis_nomes_del_radar`, con los datos del
   14-11-2026).
+
+## Cambio del 14-11-2026 (3.218.0): el aviso lleva a «Riera»
+
+- **Contexto**: la ficha de «Avisos» seguía diciendo «0,0 mm» del mensaje de
+  las 16:51 cuando en Sant Cugat ya habían caído 5,4, y la página «Riera»
+  daba el dato nuevo. Juanjo: «quizás las alertas de la riera no deberían
+  llevar a avisos sino al apartado riera. En avisos quedaría como historial».
+- **Decisión**: mientras está abierto, el aviso de la riera lleva a
+  `riera.html`, que tiene el aviso arriba y los datos de ahora debajo: la línea
+  de «Avisos actius» (`comu.blocRiera`), las líneas del resumen
+  (`comu.fitxaDeLinia`), la notificación y el «Més informació» de Telegram
+  (`avisos_bot.pagina`). El mensaje de final lleva a la ficha. La ficha de
+  «Perill» queda como registro: «Missatge enviat …:» antes del texto y,
+  mientras dura, «Estat actual, a «Riera»». En «Riera», el enlace del aviso es
+  «missatge enviat», a esa ficha. El aviso sigue saliendo con los demás en
+  «Avisos actius» (ADR 0093); solo cambia adónde lleva.
+- **Validación**: `tests/test_perills.py` (`test_la_portada_i_si_surts`) y
+  `tests/test_bot.py` (`test_riera_avis_nomes_del_radar`).

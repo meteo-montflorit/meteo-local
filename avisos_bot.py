@@ -1525,6 +1525,10 @@ MES_INFO = {"ca": "Més informació a Temps a Montflorit", "es": "Más informaci
 
 def pagina(a, hist):
     """La página del aviso, relativa a la web (perill.html#a-…, consultes.html#llum…)."""
+    # L'avís de la riera, a «Riera», amb les dades d'ara; el final, a la fitxa
+    # de «Perill», que en queda com a historial (Juanjo, 14-11-2026).
+    if a["tipus"] == "riera" and a.get("nivell") != "fi":
+        return "riera.html"
     ep = a.get("episodi")
     if ep:
         e = next((e for e in reversed(hist) if e["clau"] == ep), None)

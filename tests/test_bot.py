@@ -956,6 +956,9 @@ class AvisosPublics(unittest.TestCase):
         self.assertIn("pero el radar prevé unos 50 mm en la cuenca de aquí a una hora", nous[0]["es"])
         self.assertIn("La pluja forta que preveia el radar no ha arribat: a Sant Cugat, 0,1 mm en 3 hores.", nous[1]["ca"])
         self.assertIn("La lluvia fuerte que preveía el radar no ha llegado", nous[1]["es"])
+        # L'avís porta a «Riera»; el final, a la fitxa de «Perill» (Juanjo, 14-11-2026).
+        self.assertEqual(AB.pagina(nous[0], []), "riera.html")
+        self.assertTrue(AB.pagina(nous[1], estat.get("historial") or []).startswith("perill.html"))
         # Durant 3 hores, un altre avís del radar sol no surt; amb pluja mesurada, sí.
         t = ARA + dt.timedelta(minutes=60)
         self.assertEqual(AB.decideix(estat, {"riera": riera(52)}, t), [])

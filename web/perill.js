@@ -192,6 +192,19 @@ function fitxa(e, ara, sub = false) {
   if (pub && pub.actualitzat) estat.append(` · ${textPublicacio(pub)}`);
   art.append(cap, estat);
   const cos = nodesText(linies);
+  // La riera: el missatge tal com es va enviar, amb l'hora, i mentre dura,
+  // l'estat d'ara a «Riera» (14-11-2026: el «0,0 mm» de les 16:51 seguia aquí
+  // quan ja n'havien caigut 5,4).
+  if (e.tipus === 'riera') {
+    cos.unshift(element('p', 'nota', T`Missatge enviat ${moment(e.escrit || e.inici)}:`));
+    if (!fi) {
+      const p = element('p');
+      const a = element('a', null, T('Estat actual, a «Riera»'));
+      a.href = 'riera.html';
+      p.append(a);
+      cos.push(p);
+    }
+  }
   if (!fi && e.en_pausa) {
     cos.unshift(element('p', null, meteocat
       ? T`Meteocat ja no el mostra des de ${moment(e.en_pausa)}. Si no torna en mitja hora, es dona per acabat.`

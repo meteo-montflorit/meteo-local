@@ -132,9 +132,11 @@ class Perills(unittest.TestCase):
         # «Avisos actius» i a les línies del resum.
         # Amb un pla, les línies senceres de Meteocat van dins del del pla (ADR 0067) i hi porten;
         # la línia curta de Meteocat, sempre a la seva fitxa (ADR 0094).
-        self.assertEqual(set(r["detalls"]), set(FITXES), "«Avisos actius»: cada alerta, a la seva fitxa")
-        self.assertEqual(set(r["sensePla"]), set(FITXES) - {FITXES[0]}, "«Avisos actius» sense pla")
-        self.assertEqual(sorted(r["linies"]), sorted(FITXES), "el resum: cada alerta, a la seva fitxa")
+        # La riera, a «Riera», amb les dades d'ara; la fitxa en queda com a historial (Juanjo, 14-11-2026).
+        fitxes = [("riera.html" if "-riera-" in f else f) for f in FITXES]
+        self.assertEqual(set(r["detalls"]), set(fitxes), "«Avisos actius»: cada alerta, a la seva fitxa")
+        self.assertEqual(set(r["sensePla"]), set(fitxes) - {fitxes[0]}, "«Avisos actius» sense pla")
+        self.assertEqual(sorted(r["linies"]), sorted(fitxes), "el resum: cada alerta, a la seva fitxa")
 
     def test_perill_te_cada_tipus(self):
         # «Perill» és l'historial dels avisos: cada tipus que avisa hi té fitxa
