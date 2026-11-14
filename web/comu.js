@@ -1520,6 +1520,10 @@ function liniaIncidenciaBus(inc, des, ambLinia) {
     text.append(mateixDia(inici, des) ? T`, a partir de les ${horaCurta(inici)}.` : T`, a partir del ${diaBus(inici)} a les ${horaCurta(inici)}.`);
   } else if (fi) text.append(mateixDia(fi, des) ? T`, fins a les ${horaCurta(fi)}.` : T`, fins al ${diaBus(fi)}.`);
   else text.append('.');
+  // Les parades que l'AMB diu que toca, perquè dos avisos de la mateixa línia
+  // («sense afectació a parades» i «afectant parades») no semblin contradir-se
+  // (revisor, 14-11-2026). Els noms, com els publica l'AMB.
+  if ((inc.parades || []).length) text.append(T` Parades afectades: ${inc.parades.join(', ')}.`);
   return p;
 }
 

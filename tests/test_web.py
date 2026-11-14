@@ -302,6 +302,24 @@ class Web(unittest.TestCase):
                              ".map((f) => [f.className, f.textContent])")
         self.assertEqual(linies[1], ["resum-linia pluja-radar", "Pluja d’aquí a 25 minuts (cap a les\u00a015:55)."])
 
+    def test_l_avis_dels_busos_diu_les_parades_que_toca(self):
+        # Revisor, 14-11-2026: la CV1 amb «…sense afectació a parades…» i «…afectant parades…» alhora,
+        # dos avisos reals de l'AMB. Amb les parades que toca, no semblen contradir-se.
+        dom = ("const nou = (t) => ({ tag: t, fills: [], className: '', setAttribute() {}, addEventListener() {},"
+               " classList: Object.assign([], { add() {}, remove() {} }), dataset: {}, style: { setProperty() {} },"
+               " append(...c) { this.fills.push(...c); }, prepend(...c) { this.fills.unshift(...c); },"
+               " get textContent() { return this.fills.map((f) => (typeof f === 'string' ? f : f.textContent)).join(''); },"
+               " set textContent(v) { this.fills = [v]; } });"
+               "document.createElement = nou; document.createElementNS = (ns, t) => nou(t);")
+        inc = {"linies": ["CV1"], "titol": {"ca": "Desviament provisional afectant parades"}, "url": {},
+               "inici": "2026-11-13T17:00+01:00", "fi": "2026-11-15T23:59+01:00",
+               "parades": ["Escoles - Belles Arts", "Sant Ramon - Ptge. Codonyers"]}
+        text = lambda i: self.avalua(  # noqa: E731
+            "2026-11-14T18:22:00+01:00", dom + f"liniaIncidenciaBus({json.dumps(i)}, new Date(), true).textContent")
+        self.assertEqual(text(inc), "CV1: Desviament provisional afectant parades, fins al diumenge 15. "
+                                    "Parades afectades: Escoles - Belles Arts, Sant Ramon - Ptge. Codonyers.")
+        self.assertTrue(text({**inc, "parades": []}).endswith("15."))
+
     def test_al_mati_tambe_com_es_nota_despres(self):
         # Juanjo, 22-10-2026: la mínima del matí és la de l'alba, i si després
         # escalfa fins a una altra paraula, també es diu.
@@ -886,6 +904,14 @@ class Web(unittest.TestCase):
         self.assertTrue(cotxe["motius"][0].startswith("Avís oficial per pluja a l’anada (18\u00a0h)"))
         # El cas del 08-10-2026 a les 17 h: avís i un 10 %. Com la moto, «pot ploure».
         self.assertEqual(avalua("cotxe", 0.1)["motius"], ["Pot ploure a l’anada i a la tornada: condueix amb compte."])
+        # Revisor, 14-11-2026: avís a l'anada amb un 5 % i, a la tornada (21 h), un 15 % sense avís. El
+        # cotxe deia només «Poca probabilitat de pluja a la tornada (21 h)»; l'avís de l'anada també compta.
+        nov = [{"hora": f"2026-11-14T{h:02d}:00", "probabilitat": p, "pluja_mm": 0, "temperatura": 14,
+                "avisos": avis if h < 20 else []} for h, p in ((18, 0.05), (19, 0.08), (20, 0.1), (21, 0.15))]
+        for mitja, text in (("bici", "Pot ploure a l’anada i a la tornada."),
+                            ("cotxe", "Pot ploure a l’anada i a la tornada: condueix amb compte.")):
+            self.assertEqual(self.avalua("2026-11-14T18:22:00+01:00", f"avalua({json.dumps(mitja)}, {json.dumps(nov)}, [])",
+                                         "sortir.js")["motius"], [text])
         self.assertTrue(avalua("peu", 0.01)["motius"][0].startswith("Avís oficial per pluja mentre ets fora"))
         # Si els models també hi veuen pluja, com sempre.
         self.assertEqual(avalua("bici", 0.6)["motius"], ["Pluja probable a l’anada i a la tornada."])

@@ -42,7 +42,7 @@ def gtfs(fitxers):
 DIA = dt.date(2026, 10, 22)  # dijous
 MITJANIT = dt.datetime.combine(DIA, dt.time()).timestamp()
 
-ZIP = gtfs({
+ZIP_TEXTOS = {
     "routes.txt": "route_id,route_short_name,route_long_name,map_url,timetable_url\n"
                   "508,CV1,Canaletes-Flor de Maig,https://m/cv1.pdf,https://h/cv1.pdf\n"
                   "999,X,Una altra,,\n",
@@ -55,7 +55,8 @@ ZIP = gtfs({
                       "508.1,09:00:00,09:00:00,201243,1\n508.1,09:01:00,09:01:00,201464,2\n508.1,09:03:00,09:03:00,201463,3\n"
                       "508.2,10:00:00,10:00:00,201243,1\n"
                       "508.3,14:00:00,14:00:00,200075,1\n",
-})
+}
+ZIP = gtfs(ZIP_TEXTOS)
 
 
 class Horari(unittest.TestCase):
@@ -116,9 +117,10 @@ class TempsReal(unittest.TestCase):
 
 
 class Incidencies(unittest.TestCase):
-    def avis(self, ruta, inici, fi):
+    def avis(self, ruta, inici, fi, parades=()):
         text = lambda t, idioma: camp(1, camp(1, t) + camp(2, idioma))  # noqa: E731
         alerta = (camp(1, camp(1, inici) + camp(2, fi)) + camp(5, camp(2, ruta))
+                  + b"".join(camp(5, camp(5, p)) for p in parades)
                   + camp(10, text("Desviament", "ca")) + camp(10, text("Desvío", "es"))
                   + camp(8, text("https://amb/avis", "ca")))
         return camp(2, camp(1, "a") + camp(5, alerta))
@@ -132,6 +134,21 @@ class Incidencies(unittest.TestCase):
         incs = BU.incidencies(feed, rutes, MITJANIT + 12 * 3600)
         self.assertEqual(incs, [{"linies": ["CV1"], "titol": {"ca": "Desviament", "es": "Desvío"},
                                  "url": {"ca": "https://amb/avis"}, "inici": "2026-10-20T06:00Z", "fi": "2026-10-23T21:59Z"}])
+
+    def test_les_parades_que_toca_amb_el_seu_nom(self):
+        # 14-11-2026: dos avisos de la CV1 alhora, «sense afectació a parades» i «afectant parades»
+        # (tres del centre). Sense els noms semblaven contradir-se (revisor): es diuen, si són de la línia.
+        zip_ = gtfs({**{n: ZIP_TEXTOS[n] for n in ZIP_TEXTOS},
+                     "stops.txt": "stop_id,stop_name\n201243,Pl. de les Banderes\n201464,Av. Flor de Maig - Sant Jeroni\n"
+                                  "999999,Lluny\n"})
+        hor = BU.horari(zip_, [DIA])
+        self.assertEqual(hor["parades"], {"201243": "Pl. de les Banderes", "201464": "Av. Flor de Maig - Sant Jeroni"})
+        fi = int(dt.datetime(2026, 10, 23, 23, 59, tzinfo=dt.timezone.utc).timestamp())
+        inici = int(dt.datetime(2026, 10, 20, 8, 0, tzinfo=dt.timezone.utc).timestamp())
+        amb = self.avis("508", inici, fi, ["201464", "999999", "201243", "201464"])
+        incs = BU.incidencies(amb + self.avis("508", inici, fi), hor["rutes"], MITJANIT + 12 * 3600, hor["parades"])
+        self.assertEqual(incs[0]["parades"], ["Av. Flor de Maig - Sant Jeroni", "Pl. de les Banderes"])
+        self.assertNotIn("parades", incs[1])
 
     def test_les_acabades_no_surten(self):
         rutes = BU.horari(ZIP, [DIA])["rutes"]

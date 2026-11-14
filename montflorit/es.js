@@ -537,6 +537,7 @@ var IDIOMA = {
     ", a partir del {0} a les {1}.": ", a partir del {0} a las {1}.",
     ", fins a les {0}.": ", hasta las {0}.",
     ", fins al {0}.": ", hasta el {0}.",
+    " Parades afectades: {0}.": " Paradas afectadas: {0}.",
     "Busos de Montflorit": "Autobuses de Montflorit",
     "Fred, fresc, calor…": "Frío, fresco, calor…",
     "A la frase de dalt, com es nota cada tram, amb la temperatura que es nota (amb el vent, quan fa fred): la mínima a la nit i al matí i la màxima a la tarda; al matí, si després escalfa fins a una altra paraula, també aquesta («fresc i després agradable»). Fred intens, sota 0\u00a0°C; molt fred, de 0 a 4\u00a0°C; fred, de 5 a 10\u00a0°C; fresc, de 11 a 17\u00a0°C; temperatura agradable, de 18 a 25\u00a0°C; calor, de 26 a 32\u00a0°C, i molta calor, des de 33\u00a0°C. Són intervals orientatius, no una classificació oficial.": "En la frase de arriba, cómo se nota cada tramo, con la temperatura que se nota (con el viento, cuando hace frío): la mínima por la noche y por la mañana y la máxima por la tarde; por la mañana, si después sube hasta otra palabra, también esa («fresco y después agradable»). Frío intenso, bajo 0\u00a0°C; mucho frío, de 0 a 4\u00a0°C; frío, de 5 a 10\u00a0°C; fresco, de 11 a 17\u00a0°C; temperatura agradable, de 18 a 25\u00a0°C; calor, de 26 a 32\u00a0°C, y mucho calor, desde 33\u00a0°C. Son intervalos orientativos, no una clasificación oficial.",

@@ -638,3 +638,29 @@ En el resumen de mañana, si la noche tiene su línea de lluvia, la del día
 dice que habla del día («De dia, la previsió no dona pluja, però hi ha avís
 oficial…»): sin eso contradecía «Aquesta nit: pluja de 20 a 6 h» de arriba
 (revisor, 11-11-2026; 3.216.11).
+
+## Cambio del 14-11-2026 (3.221.1): los hallazgos del revisor de las 15:16 y las 17:22
+
+- **«Si surts», el coche se dejaba el aviso de la ida** (17:22): con un aviso
+  de AEMET por lluvia y tormentas hasta las 20 h, la ida a las 18 h con un 5 %
+  y la vuelta a las 21 h con un 15 % sin aviso, bici y moto decían «Pot ploure
+  a l'anada i a la tornada» y el coche, «Poca probabilitat de pluja a la
+  tornada (21 h)»: su texto solo contaba las horas con datos (probabilidad o
+  estaciones) en cuanto alguna los tenía, y el aviso de la otra hora se
+  perdía. Ahora cuenta las mismas horas que bici y moto (`mulla`), y dice lo
+  mismo. El nivel no cambia: ya era «compte» por el aviso, como dice «Com es
+  decideix». Prueba: `test_pluja_nomes_per_l_avis_de_l_aemet`.
+- **Dos avisos de la CV1 que parecían contradecirse** (17:22): «Desviament
+  provisional a Cerdanyola sense afectació a parades…» y «…afectant
+  parades…», los dos por las Festes de la Tardor. En la fuente del AMB eran
+  dos avisos reales y distintos (28523, un desvío de la CV1 y la CV2 sin
+  paradas anuladas, y 28520, otro de la CV1 que anulaba tres paradas del
+  centro, con parada alternativa). No se filtra ninguno: cada aviso dice
+  ahora «Parades afectades: …» con las paradas que el AMB indica, si son de
+  las líneas del barrio, en la web y en /busos (ADR 0120).
+- **Falsa alarma** (15:16): el aviso de lluvia decía «Serà moderada» (el
+  radar, 18 mm/h en un momento de la media hora tras la llegada) y la tabla,
+  «Pluja feble» para esa hora (5,1 mm en toda la hora, de la previsión), con
+  «La més propera… (feble)» (el punto de lluvia más cercano). Mismas franjas,
+  medidas distintas: no se cambia, y `revisor-instruccions.md` lo explica.
+  Lo medido después fue débil (como mucho 0,6 mm en una hora en una estación).

@@ -1303,7 +1303,12 @@ def linia_incidencia_bus(inc, des, idioma):
             else (f", hasta el {_dia_bus(fi, idioma)}" if es else f", fins al {_dia_bus(fi, idioma)}")
     else:
         quan = ""
-    return f"⚠️ {text}{quan}."
+    # Les parades que toca, com a la web (comu.liniaIncidenciaBus; revisor, 14-11-2026).
+    parades = ""
+    if inc.get("parades"):
+        llista = html.escape(", ".join(inc["parades"]), quote=False)
+        parades = f" Paradas afectadas: {llista}." if es else f" Parades afectades: {llista}."
+    return f"⚠️ {text}{quan}.{parades}"
 
 
 def text_busos_bot(dades, idioma, moment):

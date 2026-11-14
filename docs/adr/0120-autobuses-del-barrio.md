@@ -145,3 +145,19 @@ vuelve a enviar la cadena completa, no cambia nada.
 Riesgo: el certificado del AMB caduca el 15-11-2026. Si el nuevo cuelga de
 otro intermedio y el servidor sigue sin enviarlo, volverá a fallar; el aviso
 de fuente caída lo dirá y habrá que guardar el intermedio nuevo.
+
+## Cambio del 14-11-2026 (3.221.1): las paradas que toca cada aviso
+
+El 14-11-2026 la CV1 tenía dos avisos del AMB a la vez, «Desviament
+provisional a Cerdanyola sense afectació a parades…» y «…afectant
+parades…», y con solo el título parecían contradecirse (revisor). En el
+GTFS-RT de alertas eran dos avisos distintos: el segundo nombraba, además de
+la línea, tres paradas (`informed_entity` con `stop_id`), todas del centro.
+El horario guardado lleva ahora el nombre de las paradas de las líneas del
+barrio (`parades`, de `stops.txt`; `FORMAT_HORARI` 3, así que el del día se
+vuelve a calcular), y cada aviso, la lista de las que toca (`parades`), que
+la web y /busos añaden al final: «Parades afectades: Escoles - Belles Arts,
+Sant Ramon - Ptge. Codonyers, Mare de Déu del Pilar - Pl. Sant Ramon». Los
+nombres van como los publica el AMB. Las paradas que no son de esas líneas
+no se dicen. Pruebas: `tests/test_busos.py`, `tests/test_bot.py` y
+`tests/test_web.py`.

@@ -645,7 +645,8 @@ class Consultes(unittest.TestCase):
         d = json.load(open(os.path.join(self.dir.name, "montflorit.json")))
         d["busos"] = {"temps_real_de": h(-2), "incidencies": [
             {"linies": ["CV1"], "titol": {"ca": "Desviament <provisional>", "es": "Desvío"}, "url": {"ca": "https://amb/a"},
-             "inici": h(-3000), "fi": (ara_n + dt.timedelta(days=1)).replace(hour=23, minute=59).isoformat(timespec="minutes")},
+             "inici": h(-3000), "fi": (ara_n + dt.timedelta(days=1)).replace(hour=23, minute=59).isoformat(timespec="minutes"),
+             "parades": ["Escoles - Belles Arts", "Sant Ramon - Ptge. Codonyers"]},
             {"linies": ["CV1"], "titol": {"ca": "Ja acabada"}, "url": {}, "inici": h(-300), "fi": h(-10)}],
             "linies": [{"linia": "CV1", "nom": "Canaletes – Flor de Maig", "horari": "https://amb/cv1.pdf", "sentits": [
                 {"cap_a": "Flor de Maig", "parades": [{"parada": "Pl. de les Banderes", "hores": [h(-5), h(10), h(40), h(70)]}]},
@@ -660,6 +661,8 @@ class Consultes(unittest.TestCase):
         dema = ara_n + dt.timedelta(minutes=60 * 30)
         self.assertIn(f"• Canaletes: {B.DIES['ca'][dema.weekday()]} {dema.day} a les {hm(60 * 30)}", t)
         self.assertIn('⚠️ <a href="https://amb/a">Desviament &lt;provisional&gt;</a>, fins al ', t)
+        # Les parades que toca, com a la web (revisor, 14-11-2026).
+        self.assertIn(". Parades afectades: Escoles - Belles Arts, Sant Ramon - Ptge. Codonyers.\n", t)
         self.assertNotIn("Ja acabada", t)
         self.assertIn("Horari complet (PDF)", t)
         self.assertIn(f"amb dades de l'AMB de les {(ara_n - dt.timedelta(minutes=2)):%H:%M}.", t)

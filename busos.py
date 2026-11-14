@@ -149,13 +149,21 @@ def horari(zip_bytes, dies):
             exc = excepcions[servei].get(clau)
             if (actiu or exc == "1") and exc != "2" and pas[viatge]:
                 passos.append({"v": viatge, "cap_a": cap_a, "p": {p: mitjanit + s for p, s in pas[viatge].items()}})
-    return {"rutes": rutes, "viatges": passos}
+    # El nom de cada parada de les línies del barri, per dir quines toca un
+    # avís: el 14-11-2026 la CV1 en tenia dos alhora, «sense afectació a
+    # parades» i «afectant parades» (tres del centre), i sense els noms
+    # semblaven contradir-se (revisor).
+    servides = {p for v in pas.values() for p in v}
+    parades = ({r["stop_id"]: r["stop_name"].strip() for r in llegir("stops.txt") if r["stop_id"] in servides}
+               if "stops.txt" in z.namelist() else {})
+    return {"rutes": rutes, "viatges": passos, "parades": parades}
 
 
 # La forma de calcular l'horari desat: si canvia, el desat d'abans no val. El
 # 25-10-2026 el desat a les 0 h amb el càlcul anterior a la 3.199.1 duia tot
-# el dia els busos sense temps real una hora avançats.
-FORMAT_HORARI = 2
+# el dia els busos sense temps real una hora avançats. El 3 porta el nom de
+# les parades (3.221.1).
+FORMAT_HORARI = 3
 
 
 def horari_desat(avui):
@@ -233,10 +241,11 @@ def _text(al, camp):
             for k, v in al if k == camp for c, t in camps(v) if c == 1}
 
 
-def incidencies(feed, rutes, ara):
+def incidencies(feed, rutes, ara, parades=None):
     """Els avisos de l'AMB (GTFS-RT) per a les línies del barri, vigents o
-    futurs. Les hores del període hi són en hora local escrita com si fos UTC
-    (el 22-10-2026, «dijous a les 8:00» arribava com a 08:00Z)."""
+    futurs, amb el nom de les parades que diuen que afecten, si són de
+    les línies del barri. Les hores del període hi són en hora local escrita
+    com si fos UTC (el 22-10-2026, «dijous a les 8:00» arribava com a 08:00Z)."""
     # L'hora que escriu l'AMB és la de Madrid: se li posa aquesta zona.
     local = lambda t: dt.datetime.fromtimestamp(t, dt.timezone.utc).replace(tzinfo=ZONA)  # noqa: E731
     ara_local = dt.datetime.fromtimestamp(ara, dt.timezone.utc)
@@ -258,9 +267,14 @@ def incidencies(feed, rutes, ara):
             fi = max((p[2] for p in periodes if 2 in p), default=None)
             if fi and local(fi) < ara_local:
                 continue
-            res.append({"linies": afectades, "titol": _text(al, 10), "url": _text(al, 8),
-                        "inici": inici and H.clau(local(inici)),
-                        "fi": fi and H.clau(local(fi))})
+            inc = {"linies": afectades, "titol": _text(al, 10), "url": _text(al, 8),
+                   "inici": inici and H.clau(local(inici)),
+                   "fi": fi and H.clau(local(fi))}
+            ids = [dict(camps(v)).get(5, b"").decode() for k, v in al if k == 5]
+            noms_parades = list(dict.fromkeys((parades or {})[p] for p in ids if p in (parades or {})))
+            if noms_parades:
+                inc["parades"] = noms_parades
+            res.append(inc)
     return res
 
 
@@ -276,7 +290,7 @@ def calcula(ahora=None):
     except Exception as ex:
         errors.append(f"temps real: {ex}")
     try:
-        incs = incidencies(baixa(AVISOS), hor["rutes"], ara)
+        incs = incidencies(baixa(AVISOS), hor["rutes"], ara, hor.get("parades"))
     except Exception as ex:
         incs = []
         errors.append(f"avisos: {ex}")

@@ -235,8 +235,12 @@ function avalua(mitja, tram, trens, futur, transit, entorn) {
       const dades = (f) => sobre(f, llindars(f).risc, MM_RISC) || f.plou_ara;
       if (araPlou || viatge.some(plouRodes)) puja('compte', T`${textPlujaProbable(anada, tornada, plouRodes, araPlou)}: condueix amb compte.`);
       else if (viatge.some(dades)) {
-        puja('compte', pocaPluja(viatge.filter(dades)) ? T`Poca probabilitat de pluja ${quan(anada, tornada, dades)}: condueix amb compte.`
-          : T`Pot ploure ${quan(anada, tornada, dades)}: condueix amb compte.`);
+        // Si una hora té dades i l'altra només l'avís, compten totes dues, com
+        // en bici i en moto (mulla): el 14-11-2026, amb avís de l'AEMET a
+        // l'anada, el cotxe deia només «Poca probabilitat… a la tornada (21 h)»
+        // i els altres, «Pot ploure a l'anada i a la tornada» (revisor).
+        puja('compte', pocaPluja(viatge.filter(mulla)) ? T`Poca probabilitat de pluja ${quan(anada, tornada, mulla)}: condueix amb compte.`
+          : T`Pot ploure ${quan(anada, tornada, mulla)}: condueix amb compte.`);
       }
       else if (viatge.some(avisPluja)) {
         puja('compte', textNomesAvis(quan(anada, tornada, avisPluja), plujaEntremig(tram, entorn, futur), T(' Condueix amb compte.')));

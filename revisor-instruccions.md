@@ -147,6 +147,24 @@ inclúyelas si son reales, explicando por qué.
   «paraigua» mientras los vehículos dicen «pot ploure» o «sense pluja»: no es
   una contradicción (falsas alarmas del 03-11-2026). Sí lo sería que la ida o
   la vuelta tuvieran más probabilidad en un medio que en otro.
+- El aviso de lluvia («Serà feble / moderada…», «Pot ser forta…») dice la
+  intensidad que trae el radar al llegar: la mayor en mm/h, en un momento,
+  de la media hora siguiente a la llegada (`arriba_mm_h`). La tabla por horas
+  rotula cada hora por los milímetros que suma la previsión en toda la hora,
+  y «La més propera… (feble)» es la intensidad del punto de lluvia más
+  cercano ahora, que no tiene por qué ser el que llega. Las franjas son las
+  mismas (6, 40 y 80), pero miden cosas distintas: un chubasco de 18 mm/h
+  durante media hora es «moderada» en el aviso y deja menos de 6 mm en la
+  hora («Pluja feble» en la tabla). Que el aviso diga «moderada» y la tabla o
+  «La més propera» digan «feble» no es una contradicción (falsa alarma del
+  14-11-2026). Sí lo sería que el aviso y la portada dieran intensidades
+  distintas para la misma medida.
+- En «Busos», el AMB puede publicar varios avisos a la vez para la misma
+  línea, por desvíos distintos: el 14-11-2026 la CV1 tenía «…sense afectació
+  a parades…» (un desvío) y «…afectant parades…» (otro, que anulaba tres
+  paradas del centro). Son avisos reales y distintos, no un duplicado; cada
+  uno lleva su enlace y, si el AMB las indica, «Parades afectades: …» con
+  las paradas que toca (desde la 3.221.1). No es una contradicción.
 - La diferencia de la parte alta se dice redondeada al grado: 0,5 °C sale
   como «1 °C més» (Juanjo, 13-10-2026), y no sale si redondeada es 0.
 - «Fins a 17 °C a la part alta» es el máximo, hora por hora, de la
