@@ -13,6 +13,9 @@ import datetime as dt
 import fcntl
 import json
 import os
+import tempfile
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -23,12 +26,36 @@ CONFIG_BOT = os.path.expanduser("~/.config/avisar-juanjo/config.json")
 TARDA = dt.timedelta(minutes=30)
 
 
+# Telegram no deixa llegir les respostes d'un bot des de dos llocs alhora
+# (getUpdates respon 409, «Conflict»). Cada pregunta té el seu cadenat, però
+# el bot és un de sol: el 14-11-2026, amb una pregunta de la boira sense
+# resposta i una del cel sense triar l'hora, el bucle ràpid del rellotge i la
+# passada xocaven i «han fallat les respostes» sortia 29 vegades en 8 hores.
+# Un cadenat comú per a tot el que llegeix d'aquest programa i, si xoca amb
+# algú de fora, un segon intent.
+CADENAT_BOT = os.path.join(tempfile.gettempdir(), "meteo-local-getupdates.lock")
+ESPERA_CONFLICTE_S = 2
+
+
 def telegram(metode, config=None, **params):
     c = json.load(open(config or CONFIG_BOT, encoding="utf-8"))
     dades = urllib.parse.urlencode({k: json.dumps(v) if isinstance(v, (dict, list)) else v
                                     for k, v in params.items()}).encode()
-    with urllib.request.urlopen(f"https://api.telegram.org/bot{c['token']}/{metode}", dades, timeout=30) as r:
-        return json.load(r).get("result"), c
+
+    def crida():
+        with urllib.request.urlopen(f"https://api.telegram.org/bot{c['token']}/{metode}", dades, timeout=30) as r:
+            return json.load(r).get("result"), c
+    if metode != "getUpdates":
+        return crida()
+    with open(CADENAT_BOT, "w") as cadenat:
+        fcntl.flock(cadenat, fcntl.LOCK_EX)
+        try:
+            return crida()
+        except urllib.error.HTTPError as ex:
+            if ex.code != 409:
+                raise
+            time.sleep(ESPERA_CONFLICTE_S)
+            return crida()
 
 
 def capcalera(text):

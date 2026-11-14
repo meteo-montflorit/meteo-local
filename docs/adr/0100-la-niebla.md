@@ -123,3 +123,26 @@ respuestas de antes y las que llegan a tiempo, que se apuntan con
 la elección cada 15 segundos mientras haya respuestas sin elegir de las
 últimas 24 horas. La respuesta del 28-10 (mensaje 551) se marcó a mano como
 válida para las 7:01.
+
+## Cambio del 14-11-2026 (3.224.1): una sola lectura del bot a la vez
+
+Desde las 13:10 el registro del NAS decía «han fallat les respostes del cel»
+o «… de la boira» varias veces por hora (29 en 8 horas). Reproducido en el
+NAS: `getUpdates` respondía `HTTP Error 409: Conflict`, que es lo que da
+Telegram cuando dos programas leen a la vez las respuestas de un mismo bot.
+Había dos módulos consultando: la niebla, con una pregunta de las últimas 24
+horas sin responder, y el cielo, con una respuesta tardía sin elegir para qué
+hora vale. El candado de `confirmacio.respostes` es uno por pregunta, y el
+bucle rápido del reloj y la pasada (`publica.sh`) leían cada uno la suya a
+la vez. No se perdía ninguna pulsación (el bucle vuelve a leer a los 15
+segundos), pero cada choque era un fallo en el registro.
+
+**Decisión.** `confirmacio.telegram` toma un candado común
+(`CADENAT_BOT`) para todo `getUpdates` de este programa (niebla, llovizna,
+cielo, riera y revisor pasan por ahí) y, si Telegram responde 409 de todos
+modos (otro programa que use el mismo bot), espera 2 segundos y lo intenta
+una vez más. Cualquier otro error falla como antes.
+
+**Validación.** `tests/test_confirmacio.py`; en el NAS, el mismo bucle que
+reproducía el fallo (150 lecturas seguidas del cielo, una por segundo), sin
+ningún 409.
