@@ -168,3 +168,23 @@ modal abierta, el resto de la página queda inerte: el texto que se
 seleccionaba para copiar y el aviso iban fuera de la ventana. Ahora los dos
 van dentro de la ventana abierta, si la hay (`llocActiu` en `comu.js`).
 Comprobado en Chromium leyendo el portapapeles.
+
+## Simplificación del 14-11-2026 (3.221.0): la riera, sin cifras
+
+- **Contexto**: tras el aviso de la riera del 14-11-2026, que se reenvió por
+  WhatsApp, Juanjo: «demasiados números para la gente en los mensajes.
+  Simplifica los mensajes, que sean más fáciles de entender sin leer tanto».
+- **Decisión**: los mensajes de la riera dicen lo que pasa y qué hacer, sin
+  cifras ni horas; las cifras están en «Riera», adonde lleva el enlace del
+  mensaje (ADR 0027). Preaviso: «El radar ve venir lluvia fuerte, pero aún no
+  ha llovido mucho. Si empieza a llover fuerte, no te acerques a la riera. Te
+  avisaremos si se confirma.» Atención: «Ya llueve fuerte en Sant Cugat y
+  viene más. La riera se puede desbordar: no te acerques.» (sin más lluvia en
+  el radar: «Si sigue, la riera se puede desbordar…»). Peligro: «No te
+  acerques a la riera. Ha llovido tanto como otras veces en que se
+  desbordó.» Final: «Hace 3 horas que no llueve fuerte. Si vuelve, volverá el
+  aviso.» o, si salió del radar, «La lluvia fuerte que preveía el radar no ha
+  llegado…». Los avisos siguen con «Aviso en pruebas, orientativo y no
+  oficial».
+- **Validación**: `tests/test_bot.py` (`test_riera_avis_i_final` comprueba
+  que la línea del aviso no lleva cifras).

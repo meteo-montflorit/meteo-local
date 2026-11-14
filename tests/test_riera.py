@@ -387,8 +387,7 @@ class Veines(unittest.TestCase):
         self.assertEqual((r["font"], r["nivell"], r["veines"]["n"]), ("veines", "perill", 6))
         self.assertEqual(r["veines"]["mm_3h"], 60.0)
         import avisos_bot as AB
-        self.assertIn("60 mm en 3 hores a Sant Cugat (segons 6 estacions particulars, a les 14:00)",
-                      AB.text_riera(r, "perill")["ca"])
+        self.assertIn("Ha plogut tant com altres vegades que s'ha desbordat.", AB.text_riera(r, "perill")["ca"])
         self.assertIn("Mediana de 6 estacions particulars", RI.missatge(r, "perill"))
         # Si Meteocat en dona més, mana Meteocat.
         r = self.calcula(40, 5)
