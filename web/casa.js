@@ -576,6 +576,16 @@ function diesSetmana(dades, ara = new Date()) {
   for (const d of (dades.setmana || []).filter((x) => x.dia >= avui).slice(0, 7)) {
     const propi = res.length < 2 && diaDeLaPagina(dades.hores, mesuradaZona(dades), d.dia, ara, d.dia === avui ? lectura : null);
     if (propi) {
+      // Avui és de tot el dia també per a la pluja, com la màxima i la mínima
+      // (Juanjo, 14-11-2026, a les deu de la nit d'un dia de pluja, amb «Avui»
+      // sense paraigua: «por qué pone que hoy no ha llovido?»): si ja ha
+      // plogut (el mateix «mm avui» de la targeta d'«Ara»), pluja segura i els
+      // litres caiguts més els que encara s'esperen.
+      const plogut = d.dia === avui && c && c.hora && c.hora.slice(0, 10) === avui ? c.pluja_avui || 0 : 0;
+      if (plogut > 0) {
+        Object.assign(propi, { pluja: 'pluja', probabilitat: 1, plogut, queda: propi.pluja_si_plou,
+          pluja_mm: propi.pluja_mm + plogut, pluja_si_plou: propi.pluja_si_plou + plogut });
+      }
       res.push(propi);
       continue;
     }
@@ -626,6 +636,11 @@ function mmSetmana(v) {
 // «debe poner que es de todo el dia… que se entienda»).
 function textMmSetmana(d) {
   const quant = (v) => (v < 1 ? T('menys d’1\u00a0mm') : `${Math.round(v)}\u00a0mm`);
+  // Avui, amb el que ja ha caigut (diesSetmana).
+  if (d.plogut) {
+    return d.queda > 0 ? T`Avui ja han caigut ${coma(d.plogut)}\u00a0mm, i se n’esperen ${quant(d.queda)} més`
+      : T`Avui ja han caigut ${coma(d.plogut)}\u00a0mm`;
+  }
   const fins = d.pluja_fins != null && Math.round(d.pluja_fins) > Math.max(1, Math.round(d.pluja_si_plou));
   return fins ? T`Si plou, el més probable en tot el dia: ${quant(d.pluja_si_plou)}; fins a ${quant(d.pluja_fins)}`
     : T`Si plou, el més probable en tot el dia: ${quant(d.pluja_si_plou)}`;
@@ -685,7 +700,7 @@ function blocSetmana(dades, ara = new Date()) {
     li.append(caixa, element('span', 'setmana-max temp-max', `${max}°`), element('span', 'setmana-min temp-min', `${min}°`));
     if (ambPluja) {
       const pl = element('span', 'setmana-pluja', pct);
-      if (pct) pl.title = T`Probabilitat que plogui en algun moment del dia: ${pct}`;
+      if (pct) pl.title = d.plogut ? T('Avui ja ha plogut') : T`Probabilitat que plogui en algun moment del dia: ${pct}`;
       li.append(pl);
     }
     if (ambMm) {

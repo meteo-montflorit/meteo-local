@@ -556,6 +556,25 @@ class Web(unittest.TestCase):
         self.assertEqual(r[:3], [[22, 10.5], [14, 14], [32, 2.5]])
         self.assertEqual(r[3], [30, 1])                                             # sense part alta: la de la riera
 
+        # Avui és de tot el dia també per a la pluja (Juanjo, 14-11-2026): a la nit d'un dia
+        # en què ha plogut, sense pluja a les hores que queden, «Avui» deia només núvols.
+        nit = {"hores": [fila(23, h, 15.0) for h in range(22, 24)] + [fila(24, h, 12.0) for h in range(0, 21)],
+               "temperatura_mesurada": mesurada, "setmana": setmana,
+               "ara_casa": {"hora": "2026-10-23T22:20+02:00", "temperatura": 15.0, "pluja_avui": 1.7}}
+        expr = ".map((d) => [d.pluja, d.probabilitat, Math.round(d.pluja_si_plou * 10) / 10, celDia(d)[1], d.pluja ? textMmSetmana(d) : null])"
+        r = self.avalua("2026-10-23T22:21:00+02:00", f"diesSetmana({json.dumps(nit)}, new Date())" + expr)
+        self.assertEqual(r[0], ["pluja", 1, 1.7, "i-cloud-rain", "Avui ja han caigut 1,7\u00a0mm"])
+        self.assertEqual(r[1][0], None)                                             # demà, com abans
+        # Amb pluja que encara s'espera, la suma, i es diu.
+        nit["hores"][1].update(probabilitat=0.7, pluja_mm=2.0)
+        r = self.avalua("2026-10-23T22:21:00+02:00", f"diesSetmana({json.dumps(nit)}, new Date())" + expr)
+        self.assertEqual(r[0], ["pluja", 1, 3.7, "i-cloud-rain", "Avui ja han caigut 1,7\u00a0mm, i se n’esperen 2\u00a0mm més"])
+        # Sense pluja mesurada avui, o amb la lectura d'ahir (passada la mitjanit), com abans.
+        for casa in ({"hora": "2026-10-23T22:20+02:00", "temperatura": 15.0, "pluja_avui": 0.0},
+                     {"hora": "2026-10-22T23:50+02:00", "temperatura": 15.0, "pluja_avui": 4.0}):
+            sec = {**nit, "hores": [fila(23, h, 15.0) for h in range(22, 24)], "ara_casa": casa}
+            self.assertEqual(self.avalua("2026-10-23T22:21:00+02:00", f"diesSetmana({json.dumps(sec)}, new Date())[0].pluja"), None)
+
         # Sense dades de la setmana (la reserva d'abans), no hi ha bloc.
         self.assertIsNone(self.avalua("2026-10-23T09:30:00+02:00", f"blocSetmana({json.dumps({'hores': hores})}, new Date())"))
 

@@ -170,3 +170,25 @@ algun moment del dia: 25 %», el nombre del cielo, «Si plou, el més probable e
 tot el dia: 3 mm; fins a 9 mm» (que es de todo el día, dicho desde el
 02-11-2026: sin decirlo, no se entendía). Las temperaturas ya la tienen en
 «màx» y «mín».
+
+## Cambio del 14-11-2026 (3.224.3): hoy, de todo el día también en la lluvia
+
+A las diez de la noche de un día en que habían caído 1,7 mm, la columna de
+«Avui» salía solo con nubes, sin paraguas ni litros, mientras «Ara» decía
+«1,7 mm avui». Juanjo: «por qué pone que hoy no ha llovido?» y, al saber que
+la lluvia era solo la de las horas que quedan, «pero el resto de datos no son
+los que faltan, por qué la lluvia es distinta?». No había motivo: la máxima y
+la mínima de hoy ya contaban lo medido (23-10-2026) y la lluvia no.
+
+**Decisión.** Si hoy ya ha llovido (`ara_casa.pluja_avui`, el mismo dato del
+«mm avui» de «Ara», con la lectura de hoy), la columna de hoy da lluvia
+segura (100 % y el dibujo de la lluvia) y los litros caídos más los que aún
+se esperan; el rótulo dice «Avui ja han caigut 1,7 mm» y, si se espera más,
+cuánto (`casa.js`, `diesSetmana` y `textMmSetmana`).
+
+**Lo que no se hace** (Juanjo, 14-11-2026: «el 3, no lo haremos»): el cielo
+de hoy sigue siendo el de las horas que quedan cuando no ha llovido; para el
+del día entero habría que publicar también las horas ya pasadas.
+
+**Validación.** `tests/test_web.py`
+(`test_la_setmana_avui_i_dema_de_la_pagina_i_la_resta_d_ecmwf`).
