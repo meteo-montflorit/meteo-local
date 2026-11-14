@@ -2,6 +2,8 @@
 
 Fecha: 2026-10-08 · Estado: aceptado
 
+**14-11-2026 (3.223.0).** El final real deja fuera la llovizna de cola, se apunta en paralelo el borde de atrás de la lluvia (vora) y se archivan los recortes del radar con lluvia cerca (al final).
+
 
 **09-10-2026 (ADR 0058).** La verdad pasa a ser la lluvia de casa cada 5 minutos (`estacio-casa-5min.csv`), no la de Montflorit; un final visto antes de tiempo por no marcar la llovizna cuenta como error de la regla.
 
@@ -109,3 +111,69 @@ aprendizaje de la lluvia (ADR 0012). `tests/test_fi_pluja.py`:
 ## Cambio del 18-10-2026 (3.142.0): el final real con las vecinas
 
 El final real de un episodio sale de la lluvia del barrio cada 5 minutos (casa y las vecinas, `veines-5min.csv`), con la regla única de `aprenentatge.pluja_observada` desde 0,1 mm; un tramo del que no se sabe (None) ni corta ni alarga. Antes, el pluviómetro de casa solo, que daba finales antes de tiempo con lluvia débil; las cifras anteriores no son comparables. Detalle y motivo en el ADR 0102.
+
+## Cambio del 14-11-2026 (3.223.0): el borde de atrás, el final sin la llovizna de cola y los recortes
+
+**Contexto.** Con 20 episodios (280 pasadas) la regla en uso (menos del 30 %
+durante 10 minutos) acertaba a 15 minutos o menos 58 de las 147 veces que
+daba hora, con un error medio de 54 minutos, y de las 133 que decía «no
+s'acaba en 2 hores» acertaba 68. Juanjo: «no me creo que la observacion de
+tantos episodios no haga mejorar la prediccion, quizas haya que cambiar la
+metodologia». Comprobado con los datos del NAS:
+
+- Ninguna combinación de umbral y minutos (36 probadas, cada radar por
+  separado, la media de los dos y la duración esperada, la suma de la serie)
+  mejora de forma clara: todas, entre 30 y 50 minutos de error, y las que
+  ganan contando por pasadas pierden contando cada episodio igual.
+- La probabilidad es la fracción con lluvia de un círculo que crece (3 km
+  ahora, unos 13 km a dos horas): con chubascos sueltos se queda entre el 20 y
+  el 40 % durante horas, y el final depende del tamaño del círculo. Cuando
+  daba el final a 15 minutos o menos acertaba 30 de 57; a una hora o más, 3
+  de 40; la correlación entre lo que faltaba según el radar y lo que faltó,
+  0,22.
+- Contando cada episodio igual, decir siempre «parará en 15 minutos» se
+  equivocaba 34 minutos de media; la regla, 30.
+- De 55 finales «demasiado pronto», en 15 lo que seguía cayendo era medio
+  milímetro o menos: llovizna de cola, que para quien sale ya no es llover.
+- Solo se guardaba la serie de cada pasada, no la imagen: otro cálculo no se
+  podía probar con lo pasado.
+
+**Decisión** (Juanjo, 14-11-2026: «haz el 1 y el 2, y cambia el final
+también»):
+
+1. **El borde de atrás** (`nowcast.serie`, clave `vora`): en el mismo punto de
+   donde vendrá la lluvia, la fracción con lluvia de un círculo fijo de
+   `VORA_RADI_KM` (2 km), que no crece; el final es cuando esa fracción baja
+   del umbral durante los minutos de la regla. Mismo radar y mismo
+   movimiento: solo cambia lo que se mira.
+2. **En paralelo, sin enseñarlo.** Cada pasada apunta `vora` con `prob` en
+   `radar-fonts-*.jsonl` (`nowcast.fonts`). El aprendizaje compara las nueve
+   variantes de `prob` y nueve de `vora` (umbral del 30, 50 o 70 % durante 15,
+   20 o 30 minutos) cuando hay `MIN_EPISODIS_VORA` (10) episodios con `vora`
+   apuntado, todas con esas mismas pasadas, y cambia solo si la elegida gana
+   en el 95 % de los remuestreos por episodios (ADR 0105), como hasta ahora.
+   La regla guarda el método (`metode`) y la página lo usa (`fi_radar`). Con
+   esos 10 episodios, el resultado llega a Juanjo una vez (`AVIS_VORA`), gane
+   o no. `python3 fi_pluja.py resum` lo da en cualquier momento.
+3. **Los recortes del radar.** Los trozos de 60 km alrededor de casa que
+   guarda el registro del movimiento (`moviment_registre.py`), que se
+   borraban a las 3 horas, se archivan si tienen lluvia a 30 km o menos
+   (`registre/radar-retalls/AAAA-MM/`, unos 5 kB cada uno), con la hora y el
+   movimiento: otro cálculo del final se podrá probar con lo ya pasado.
+4. **El final real, sin la llovizna de cola** (`final_real`): el último tramo
+   del episodio después del cual caen `CUA_MM` (0,5 mm) o menos en total. Con
+   los 20 episodios, lo que queda fuera son dos o tres tramos sueltos de 0,1 a
+   0,25 mm al final. Con este final, la regla en uso acierta menos (27 de 101
+   con hora, error medio de 69 minutos): el círculo que crece sigue viendo
+   lluvia alrededor cuando en casa ya ha parado, el defecto que corrige el
+   borde de atrás. Las cifras de antes y de después no son comparables.
+
+**Riesgos.** El borde de atrás tampoco ve la lluvia que nace o se deshace, y
+con el círculo fijo depende más de que el movimiento sea bueno (el registro
+del movimiento lo mide, ADR 0019). Cuántos episodios hacen falta depende de
+cuánto llueva: al ritmo de este otoño, de tres a cinco semanas.
+
+**Validación.** `tests/test_nowcast.py` (`test_la_vora_de_darrere_de_la_pluja`),
+`tests/test_fi_pluja.py` (`test_el_final_sense_el_plugim_de_cua`,
+`test_la_vora_en_paral_lel_i_quan_entra`) y `tests/test_moviment_registre.py`
+(`test_els_trossos_amb_pluja_a_prop_es_guarden`).

@@ -58,6 +58,24 @@ class Registre(unittest.TestCase):
         with open(self.MR.FITXER, encoding="utf-8") as f:
             self.assertEqual(len(list(csv.DictReader(f))), 1)
 
+    def test_els_trossos_amb_pluja_a_prop_es_guarden(self):
+        # ADR 0049 (14-11-2026): passades les hores, el tros amb pluja a prop de casa
+        # va a l'arxiu del mes; el sec s'esborra.
+        tx, ty = N.geometria(*C.CASA)
+        km = N.km_px(C.CASA[0])
+        fila, col = N.pixel(C.CASA[0], C.CASA[1], tx, ty)
+        t0 = dt.datetime(2026, 11, 14, 16, 0, tzinfo=dt.timezone.utc)
+        for radar, camp in (("meteocat", xafec(fila, col + 10)), ("rainviewer", np.zeros((N.MIDA, N.MIDA)))):
+            r = {"tx": tx, "ty": ty, "km_px": km, radar: ({"hora": t0, "mm_h": camp} if radar == "meteocat"
+                                                           else {"hores": [t0], "mm_h": [camp]})}
+            self.MR.apunta(r, {"v": [0.0, 0.4], "moviment": "meteocat"}, ara=t0)
+        self.assertEqual(len(os.listdir(self.MR.TROSSOS)), 2)
+        for nom in os.listdir(self.MR.TROSSOS):
+            os.utime(os.path.join(self.MR.TROSSOS, nom), (t0.timestamp() - 4 * 3600,) * 2)
+        self.MR.neteja(t0)
+        self.assertEqual(os.listdir(self.MR.TROSSOS), [])
+        self.assertEqual(os.listdir(os.path.join(self.MR.ARXIU, "2026-11")), ["meteocat-202611141600Z.npz"])
+
     def test_fora_del_nas_no_fa_res(self):
         os.rmdir(os.environ["REGISTRE_DIR"])
         self.assertEqual(self.MR.apunta({}, None), 0)

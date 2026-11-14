@@ -271,6 +271,21 @@ class Endavant(unittest.TestCase):
         self.assertGreater(despres["mm"], 1)
         self.assertIsNone(N.en_tram(nc, "casa", T0 + dt.timedelta(hours=3), T0 + dt.timedelta(hours=4)))
 
+    def test_la_vora_de_darrere_de_la_pluja(self):
+        # ADR 0049 (14-11-2026): una banda de pluja sobre casa, de 30 píxels d'amplada,
+        # que va cap a l'est a 0,5 px/min. La vora (cercle fix) diu que passa en
+        # uns 60 minuts; el cercle que creix la dilueix i la prob baixa a poc a poc.
+        import numpy as np
+        ara = np.zeros((N.MIDA, N.MIDA))
+        c = int(round(self.c))
+        ara[:, c - 29:c + 5] = 5.0
+        s = N.serie(self.r, ara, (0.0, 0.5), *C.CASA)
+        vora = [p["vora"] for p in s]
+        self.assertEqual(vora[0], 1.0)
+        primer_sec = next(p["min"] for p in s if p["vora"] == 0)
+        self.assertTrue(55 <= primer_sec <= 70, primer_sec)
+        self.assertTrue(all(p["vora"] == 0 for p in s if p["min"] >= 70))
+
     def test_si_se_n_va_no_arriba(self):
         ara = camp((self.f, self.c - 30), radi=8)
         s = N.serie(self.r, ara, (0.0, -0.5), *C.CASA)

@@ -49,6 +49,11 @@ COINCIDENCIA_MIN = 0.3      # coincidencia mínima para fiarse del movimiento de
 PAS_MIN = 5
 HORITZO_MIN = 120
 RADI_KM = (3.0, 0.08)       # radio del círculo: 3 km + 0,08 km por minuto
+# El borde de atrás de la lluvia (vora, ADR 0049): la fracción con lluvia de
+# un círculo fijo de VORA_RADI_KM en el punto de donde vendrá, sin crecer
+# con el tiempo: con el círculo que crece, los chubascos sueltos dejan la
+# probabilidad entre el 20 y el 40 % durante horas y no se ve el final.
+VORA_RADI_KM = 2.0
 PLOU_MMH = 0.5              # unos 18 dBZ: lluvia que llega al suelo
 FEBLE_MMH = 0.08            # unos 6 dBZ: por debajo, ruido; hasta PLOU_MMH, eco débil (plugim)
 VEL_MAX_KMH = 120           # más rápido es un error del cálculo
@@ -422,7 +427,8 @@ def imatge(r, preferida=None):
 def serie(r, ara, v, lat, lon):
     """Cada PAS_MIN minutos, de ahora a HORITZO_MIN: la lluvia esperada (mm/h,
     la media del círculo) y la probabilidad de lluvia (fracción del círculo
-    con PLOU_MMH o más), para el lugar."""
+    con PLOU_MMH o más), para el lugar; y vora, la fracción con lluvia del
+    círculo fijo de VORA_RADI_KM en el mismo punto (el borde de atrás)."""
     import numpy as np
     fila, col = pixel(lat, lon, r["tx"], r["ty"])
     yy, xx = np.mgrid[:MIDA, :MIDA]
@@ -430,12 +436,15 @@ def serie(r, ara, v, lat, lon):
     for t in range(0, HORITZO_MIN + 1, PAS_MIN):
         f0, c0 = fila - v[0] * t, col - v[1] * t
         radi = (RADI_KM[0] + RADI_KM[1] * t) / r["km_px"]
-        dins = (yy - f0) ** 2 + (xx - c0) ** 2 <= radi ** 2
+        d2 = (yy - f0) ** 2 + (xx - c0) ** 2
+        dins = d2 <= radi ** 2
         if not dins.any():
             break
         valors = ara[dins]
+        fix = d2 <= (VORA_RADI_KM / r["km_px"]) ** 2
         res.append({"min": t, "mm_h": round(float(valors.mean()), 2),
-                    "prob": round(float((valors >= PLOU_MMH).mean()), 2)})
+                    "prob": round(float((valors >= PLOU_MMH).mean()), 2),
+                    "vora": round(float((ara[fix] >= PLOU_MMH).mean()), 2) if fix.any() else 0.0})
     return res
 
 
@@ -466,14 +475,15 @@ def resum(r, ahora=None):
 def fonts(r, v):
     """Lo que daría en casa cada fuente con su última imagen y el mismo
     movimiento, para compararlas (radar_fonts.py, ADR 0026): la hora de la
-    imagen y la probabilidad de cada PAS_MIN minutos desde ella."""
+    imagen y la probabilidad de cada PAS_MIN minutos desde ella; y la del
+    borde de atrás (vora), para el final de la lluvia (fi_pluja.py, ADR 0049)."""
     res = {}
     mc, rv = r.get("meteocat") or {}, r.get("rainviewer")
     for nom, hora, camp in (("meteocat", mc.get("hora"), mc.get("mm_h")),
                             ("rainviewer", rv and rv["hores"][-1], rv and rv["mm_h"][-1])):
         if camp is not None:
-            res[nom] = {"hora": H.clau(hora),
-                        "prob": [p["prob"] for p in serie(r, camp, v, *C.CASA)]}
+            s = serie(r, camp, v, *C.CASA)
+            res[nom] = {"hora": H.clau(hora), "prob": [p["prob"] for p in s], "vora": [p["vora"] for p in s]}
     return res
 
 

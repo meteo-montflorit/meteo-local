@@ -47,6 +47,8 @@ FITXER = os.path.join(REGISTRE, "moviment.csv")
 FITXER_CREIX = os.path.join(REGISTRE, "creixement.csv")
 CAMPS_CREIX = ["emes", "minuts", "km2", "km2_abans", "km_moderada", "km_moderada_abans", "km2_meteocat", "creix"]
 TROSSOS = os.path.join(os.path.dirname(REGISTRE), "moviment")
+ARXIU = os.path.join(REGISTRE, "radar-retalls")   # los trozos con lluvia cerca, sin borrar
+ARXIU_KM = 30
 CAMPS = ["emes", "radar", "antelacio_min", "font_moviment", "kmh", "graus",
          "csi_moviment", "csi_quieta", "px_vista", "px_prevista", "px_quieta"]
 RADI_KM = 60          # el trozo que se guarda
@@ -187,9 +189,27 @@ def ja_avaluat(radar, hora, antelacio):
 
 
 def neteja(ara):
+    """Los trozos de más de GUARDA_H horas se borran, salvo los que tienen
+    lluvia a ARXIU_KM o menos de casa: van al archivo (ARXIU, una carpeta por
+    mes), para probar con lo ya pasado otras formas de calcular el final de la
+    lluvia (fi_pluja.py, ADR 0049). Unos 5 kB cada uno."""
+    import numpy as np
     for ruta in glob.glob(os.path.join(TROSSOS, "*.npz")):
         if os.path.getmtime(ruta) < ara.timestamp() - GUARDA_H * 3600:
-            os.remove(ruta)
+            try:
+                d = np.load(ruta)
+                n = d["mm"].shape[0] // 2
+                yy, xx = np.mgrid[-n:n + 1, -n:n + 1]
+                plou = ((d["mm"] >= N.PLOU_MMH * 10) & (np.hypot(yy, xx) * float(d["km_px"]) <= ARXIU_KM)).any()
+                mes = H.utc(H.llegeix(str(d["hora"]))).strftime("%Y-%m")
+            except Exception:
+                plou = False
+            if plou:
+                desti = os.path.join(ARXIU, mes)
+                os.makedirs(desti, exist_ok=True)
+                os.replace(ruta, os.path.join(desti, os.path.basename(ruta)))
+            else:
+                os.remove(ruta)
 
 
 def vent_700(dies, get):

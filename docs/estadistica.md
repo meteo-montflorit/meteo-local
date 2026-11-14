@@ -976,14 +976,22 @@ Si no pasa en las dos horas del radar, «no s'acaba en 2 hores». La regla de
 partida es $`u = 0\text{,}2`$ y $`s = 3`$, es decir, menos del 20 % durante 15
 minutos.
 
+Desde el 14-11-2026 se apunta en paralelo otra serie, el borde de atrás
+$`b(t)`$: la fracción con lluvia de un círculo fijo de 2 km en el mismo
+punto, sin crecer con la antelación. Con 10 episodios que la tengan, el
+aprendizaje compara las variantes de las dos series con las mismas pasadas y
+cambia de serie solo si gana, como cualquier otra regla.
+
 **Qué es la verdad.** La lluvia del barrio cada 5 minutos (ADR 0102): la de
 casa y la de las vecinas, con la regla única del apartado 2.2 aplicada a
 cada tramo de 5 minutos desde 0,1 mm (llueve si lo marca casa o dos vecinas
 que cuentan; seco si casa y las que confirman marcan cero; si no, no se sabe
 y el tramo ni corta ni alarga). Un episodio son los tramos con lluvia
 separados por menos de 30 minutos secos, y su final, el último tramo con
-lluvia. Hasta el 18-10-2026 solo contaba el pluviómetro de casa, que no
-marca la lluvia débil y daba finales antes de tiempo. Se juzgan las pasadas registradas mientras llovía,
+lluvia después del cual caen 0,5 mm o menos (la llovizna de cola ya no
+cuenta; desde el 14-11-2026). Hasta el 18-10-2026 solo contaba el
+pluviómetro de casa, que no marca la lluvia débil y daba finales antes de
+tiempo. Se juzgan las pasadas registradas mientras llovía,
 con el radar que usaba la página. El error de una pasada es
 $`\lvert t_{\text{fi}} - t_{\text{real}} \rvert`$ en minutos. Si la regla no da
 final, el error es cero cuando el final real cae más allá del horizonte del

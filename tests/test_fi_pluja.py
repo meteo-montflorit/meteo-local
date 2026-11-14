@@ -55,18 +55,30 @@ class Final(unittest.TestCase):
                 self.assertIsNone(p[t("20:25")])                     # casa a zero sense veïnes
                 self.assertEqual(p[t("20:30")], 0.0)
                 # Els None ni tallen ni allarguen els episodis.
-                self.assertEqual(F.episodis({t("20:05"): 0.2, t("20:10"): None, t("20:15"): 0.2, t("21:00"): 0.0}),
+                self.assertEqual(F.episodis({t("20:05"): 1.0, t("20:10"): None, t("20:15"): 1.0, t("21:00"): 0.0}),
                                  [[t("20:00"), t("20:15")]])
             finally:
                 F.DIR = vell
 
     def test_episodis(self):
-        pluja = {t("20:05"): 0.2, t("20:10"): 1.0, t("20:35"): 0.2, t("21:20"): 0.2}
+        pluja = {t("20:05"): 1.0, t("20:10"): 1.0, t("20:35"): 1.0, t("21:20"): 1.0}
         pluja.update({t("22:00"): 0.0})
         # Una pausa de 25 minuts no talla; la de 45, sí. L'últim té 40 minuts de calma després: compta.
         self.assertEqual(F.episodis(pluja), [[t("20:00"), t("20:35")], [t("21:15"), t("21:20")]])
         # Si la pluja pot continuar (no hi ha prou calma registrada després), l'últim no compta.
         self.assertEqual(F.episodis({t("20:05"): 0.2, t("20:15"): 0.0}), [])
+
+    def test_el_final_sense_el_plugim_de_cua(self):
+        # Juanjo, 14-11-2026: el final és quan deixa de ploure de debò, no l'última
+        # gota. El que cau després, CUA_MM o menys, és plugim de cua i no compta.
+        pluja = {t("20:05"): 1.0, t("20:10"): 2.0, t("20:15"): 0.1, t("20:25"): 0.2, t("20:40"): 0.1,
+                 t("21:30"): 0.0}
+        self.assertEqual(F.episodis(pluja), [[t("20:00"), t("20:10")]])
+        # Si la cua passa de CUA_MM, encara plou: compta.
+        pluja[t("20:40")] = 0.6
+        self.assertEqual(F.episodis(pluja), [[t("20:00"), t("20:40")]])
+        # Un episodi només de plugim acaba al seu primer tram.
+        self.assertEqual(F.episodis({t("20:05"): 0.1, t("20:15"): 0.1, t("21:00"): 0.0}), [[t("20:00"), t("20:05")]])
 
     def test_fi_previst(self):
         prob = [1.0, 0.9, 0.5, 0.1, 0.1, 0.3, 0.1, 0.1, 0.1, 0.0]
@@ -116,7 +128,7 @@ class Final(unittest.TestCase):
             pluja, regs = {}, []
             for dia in (6, 7, 8):
                 for m in (5, 10, 15, 20):
-                    pluja[t(f"20:{m:02d}", dia)] = 0.4
+                    pluja[t(f"20:{m:02d}", dia)] = 1.0
                 pluja[t("21:00", dia)] = 0.0
                 for m in (0, 5):
                     regs.append({"t": t(f"20:{m:02d}", dia).isoformat(), "triada": "meteocat",
@@ -138,6 +150,42 @@ class Final(unittest.TestCase):
             os.remove(F.REGLA)
             self.assertIsNone(F.aprèn(pluja, regs, avisa=False))       # aturat
 
+    def test_la_vora_en_paral_lel_i_quan_entra(self):
+        # ADR 0049 (14-11-2026): la vora s'apunta en paral·lel i només entra a la
+        # comparació amb MIN_EPISODIS_VORA episodis que la tinguin; llavors totes
+        # les variants es mesuren amb les mateixes passades. Aquí la prob no veu mai
+        # el final (sempre 0,25) i la vora sí, quan para.
+        with tempfile.TemporaryDirectory() as d:
+            F.APRENENTATGE, F.REGLA, F.ATURA = d, os.path.join(d, "fi-pluja.json"), os.path.join(d, "atura")
+            F.PROPOSAT = os.path.join(d, "fi-pluja-proposat.json")
+            pluja, regs = {}, []
+            for dia in range(1, 13):
+                for m in (5, 10, 15, 20):
+                    pluja[t(f"20:{m:02d}", dia)] = 1.0
+                pluja[t("21:00", dia)] = 0.0
+                regs.append({"t": t("20:00", dia).isoformat(), "triada": "meteocat",
+                             "fonts": {"meteocat": {"hora": t("20:00", dia).isoformat(), "prob": [0.25] * 25,
+                                                    "vora": [1, 1, 1, 1] + [0] * 21}}})
+            vell = F.MIN_EPISODIS_VORA
+            try:
+                F.MIN_EPISODIS_VORA = 13
+                self.assertTrue(all(v["metode"] == "prob" for v in F.candidats(pluja, regs)[0]))
+                F.MIN_EPISODIS_VORA = 12
+                variants, comuns = F.candidats(pluja, regs)
+                self.assertTrue(any(v["metode"] == "vora" for v in variants))
+                text = F.aprèn(pluja, regs, avisa=False, avui="2026-10-13")
+                self.assertIn("vora de darrere", text)
+                self.assertIn("aplicada", F.aplica_proposta("2026-10-14"))
+                self.assertEqual(F.regla()["metode"], "vora")
+                # La pàgina, amb la vora; un nowcast sense vora (d'abans), amb la prob.
+                nc = {"hora": "2026-10-08T19:00+02:00",
+                      "llocs": {"casa": [{"min": 5 * k, "prob": 1, "vora": v} for k, v in enumerate([1, 1, 0, 0, 0, 0, 0])]}}
+                self.assertEqual(F.fi_radar(nc, t("19:00", 8))["fi"], "2026-10-08T17:10Z")
+                vell_nc = {**nc, "llocs": {"casa": [{"min": 5 * k, "prob": 1} for k in range(7)]}}
+                self.assertTrue(F.fi_radar(vell_nc, t("19:00", 8))["sense_fi"])
+            finally:
+                F.MIN_EPISODIS_VORA = vell
+
     def test_l_error_validat_deixa_fora_cada_episodi(self):
         # Auditoria del 09-10-2026: la variant es triava i es mesurava amb els
         # mateixos episodis. Dos episodis en què guanya el 30 % i un en què el
@@ -145,14 +193,14 @@ class Final(unittest.TestCase):
         pluja, regs = {}, []
         for dia, baixa in ((6, 0.25), (7, 0.25), (8, 0.25)):
             for m in (5, 10, 15, 20):
-                pluja[t(f"20:{m:02d}", dia)] = 0.4
+                pluja[t(f"20:{m:02d}", dia)] = 1.0
             pluja[t("21:00", dia)] = 0.0
             prob = [1, 1, 1, 1, baixa, baixa, baixa, baixa, baixa]
             if dia == 8:        # el radar s'equivoca: baixa del 30 % quan encara plou 15 minuts
                 prob = [1, baixa, baixa, baixa, baixa, baixa, baixa, baixa, baixa]
             regs.append({"t": t("20:00", dia).isoformat(), "triada": "meteocat",
                          "fonts": {"meteocat": {"hora": t("20:00", dia).isoformat(), "prob": prob}}})
-        millor = min(F.VARIANTS, key=lambda v: F.error(F.compara(pluja, regs, v)[0]))
+        millor = min((v for v in F.VARIANTS if v["metode"] == "prob"), key=lambda v: F.error(F.compara(pluja, regs, v)[0]))
         self.assertEqual(millor["llindar"], 0.3)
         # Amb tots: error 5 (0, 0 i 15 minuts). Deixant cada episodi fora, el
         # mateix: en triar amb els altres dos també surt el 30 %, i el tercer costa 15.
