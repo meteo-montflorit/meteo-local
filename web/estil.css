@@ -1115,6 +1115,7 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .riera .episodi-linia { padding: .15rem 0 .15rem .7rem; border-left: .3rem solid var(--nivell, var(--compte)); margin: .35rem 0; }
 .riera .episodi-linia.vermell { --nivell: var(--vermell); }
 .riera .episodi-linia.taronja { --nivell: #fb923c; }
+.riera .episodi-linia.groc { --nivell: #eab308; }
 .perill .episodi { padding: .5rem .8rem .5rem .9rem; background: var(--superficie); border: 1px solid var(--vora);
   border-left: .35rem solid var(--nivell, var(--compte)); border-radius: .5rem; }
 .perill .episodi + .episodi { margin-top: .6rem; }

@@ -312,3 +312,45 @@ la reemplazan? pensaba que era así».
   «Avisos actius» (ADR 0093); solo cambia adónde lleva.
 - **Validación**: `tests/test_perills.py` (`test_la_portada_i_si_surts`) y
   `tests/test_bot.py` (`test_riera_avis_nomes_del_radar`).
+
+## Cambio del 14-11-2026 (3.220.0): el preaviso
+
+- **Contexto**: el aviso de atención de las 16:51, con 0,0 mm medidos, se
+  reenvió por WhatsApp fuera de los canales de la web. Juanjo: «para evitar
+  sobresaltos a la gente en el mensaje inicial, en vez de aviso se podría
+  poner algo que indique que es provisional».
+- **Decisión**: si el índice llega a atención o peligro pero la lluvia medida
+  en Sant Cugat (Meteocat o, si dan más, las estaciones particulares) no llega
+  a `RIERA_CONFIRMA_MM` (10 mm en 3 horas), el aviso es un **preavís** 🟡
+  (`riera.nivell_avis`): «El radar preveu pluja forta a la conca: uns 50 mm…
+  A Sant Cugat encara no ha plogut (…). Si es compleix, la riera pot créixer
+  de pressa: si comença a ploure fort, no t'hi acostis. T'avisarem si la pluja
+  ho confirma.» Cuando la lluvia lo confirma, sale la atención o el peligro
+  como mensaje nuevo. Un preaviso que no se confirma se cierra a los 30
+  minutos por debajo de atención sin mensaje (`silenci`, que el historial
+  cierra y el bot no reparte); durante `RIERA_FI_H` horas no sale otro.
+  En la web, «Ara» dice «Preavís.» en amarillo (`comu.nivellRiera`) y la
+  línea de «Avisos actius», «Si comença a ploure fort, no t'hi acostis».
+  No se llama «prealerta» para no confundirlo con la fase de los planes de
+  Protección Civil, que la web también muestra.
+- **Por qué 10 mm y no 20**: con la lluvia de Sant Cugat por medias horas
+  (`calibracio/dades/obs_XV.csv`), con 30 minutos de retraso y el radar
+  perfecto para la hora siguiente:
+
+  | Episodio | Primer aviso (radar) | Atención con 20 mm | Con 10 mm | Agua |
+  |---|---|---|---|---|
+  | 29-04-2024 | 18:30 | 18:30 | 18:30 | 20:30 |
+  | 29-09-2026 | 10:30 (0,8 mm medidos) | 12:00 | 11:30 | 12:30 |
+  | 03/04-10-2026 | 23:00 | 23:30 | 23:00 | 01:00-02:00 |
+  | 13-09-2025 (no se desbordó) | 15:30 | 16:30 | 15:30 | — |
+
+  El 29-09-2026 a las 10:30 era como el 14-11 (casi nada medido y el radar
+  avisando) y dos horas después el agua entró en las casas: por eso el
+  preaviso no dice que no haya peligro. Con 5 mm, la atención habría salido
+  a las 17:09 del 14-11 (5,4 mm medidos y el índice en 37); con 10, no.
+- **Riesgos**: cuatro casos y un radar que no es perfecto; con las estaciones
+  particulares, sin el retraso de Meteocat, los 10 mm pueden llegar antes.
+- **Validación**: `tests/test_riera.py`
+  (`test_avis_del_radar_que_no_es_compleix_es_tanca_abans`) y
+  `tests/test_bot.py` (`test_riera_avis_nomes_del_radar`,
+  `test_preavis_que_es_confirma`, `test_el_final_silencios_no_es_reparteix`).

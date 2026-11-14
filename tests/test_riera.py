@@ -303,11 +303,20 @@ class Avisos(unittest.TestCase):
             text, fila = RI.compara(estat, r(index), self.T0 + dt.timedelta(minutes=15 * i))
             textos.append(text)
             files += [fila] if fila else []
-        self.assertEqual([bool(t) for t in textos], [True, False, False, True, False])
-        self.assertIn("La pluja forta que preveia el radar no ha arribat", textos[3])
+        # Sense pluja mesurada és un preavís, i es tanca sense missatge (14-11-2026).
+        self.assertEqual([bool(t) for t in textos], [True, False, False, False, False])
+        self.assertIn("preavís", textos[0])
         self.assertEqual(len(files), 1)
         self.assertTrue(estat.get("radar_fallat"))
-        # Amb pluja mesurada de registre, l'avís del radar segueix la regla de les 3 hores.
+        # Una atenció d'abans de la 3.220.0 amb poca pluja mesurada es tanca
+        # igual, dient que la pluja del radar no ha arribat.
+        estat = {"episodi": {"inici": "x", "avisos": {"atencio": "x"}, "index_max": 50, "mm_3h_max": 5.4,
+                             "mm_6h_max": 5.4, "capcalera_3h_max": 0, "hora_max": "x",
+                             "vist": self.T0.isoformat(), "sota_atencio": self.T0.isoformat()}}
+        text, fila = RI.compara(estat, r(14, mm=5.4), self.T0 + dt.timedelta(minutes=30))
+        self.assertIn("La pluja forta que preveia el radar no ha arribat: a Sant Cugat, 5,4 mm", text)
+        self.assertIsNone(estat["episodi"])
+        # Amb pluja mesurada de registre, l'atenció segueix la regla de les 3 hores.
         estat, textos = {"episodi": None}, []
         for i, index in enumerate([50, 30, 30, 30, 30]):
             text, _ = RI.compara(estat, r(index, mm=25), self.T0 + dt.timedelta(minutes=15 * i))

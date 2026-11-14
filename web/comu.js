@@ -1113,7 +1113,7 @@ function idFitxa(e) {
 // porten l'estat. Surt de l'historial de «Perill» (avisos.json), que la pàgina
 // ja llegeix per al punt vermell. El títol i què cal fer; la resta, a la fitxa.
 let HISTORIAL_PERILL = null;
-const NIVELL_RIERA = { perill: 'vermell', atencio: 'taronja' };
+const NIVELL_RIERA = { perill: 'vermell', atencio: 'taronja', preavis: 'groc' };
 
 function blocRiera(historial, ara = new Date()) {
   return (historial || []).filter((e) => e.tipus === 'riera' && !e.fi && !(e.fins && new Date(e.fins) <= ara))
@@ -1121,9 +1121,11 @@ function blocRiera(historial, ara = new Date()) {
       const text = e[IDIOMA.codi === 'es' ? 'es' : 'ca'] || e.ca;
       const titol = trossos(text)[0].map((t) => t.t).join('').replace(/^\S+\s/, '').trim();
       const item = element('p', `avis-item ${NIVELL_RIERA[e.nivell] || 'vermell'}`);
-      item.append(element('strong', null, titol), '. ', T('No t’acostis a la riera.'));
+      // El preavís, com el missatge: sense el «no t'acostis» ferm (14-11-2026).
+      const que = e.nivell === 'preavis' ? T('Si comença a ploure fort, no t’hi acostis.') : T('No t’acostis a la riera.');
+      item.append(element('strong', null, titol), '. ', que);
       item.dataset.clau = `riera:${e.clau}:${e.nivell}`;
-      item.dataset.curt = `${titol}. ${T('No t’acostis a la riera.')}`;
+      item.dataset.curt = `${titol}. ${que}`;
       // Porta a «Riera», amb les dades d'ara; la fitxa de «Perill» és el
       // missatge tal com es va enviar (Juanjo, 14-11-2026: «las alertas de la
       // riera no deberían llevar a avisos sino al apartado riera»).
@@ -1871,17 +1873,26 @@ let BOMBOLLA = null;
 
 // L'estat de la riera ara: el color i el títol, els mateixos a «Riera» i a la
 // portada (casa.estatPortada).
-const COLOR_NIVELL = { perill: 'vermell', atencio: 'taronja', registre: 'groc' };
+const COLOR_NIVELL = { perill: 'vermell', atencio: 'taronja', preavis: 'groc', registre: 'groc' };
 // La pluja mesurada en 3 hores a Sant Cugat: Meteocat o, si en donen més, les
 // estacions particulars (riera.mesurat).
 function rieraMesurada(r) {
   return Math.max((r && r.mm_3h) || 0, (r && r.veines && r.veines.mm_3h) || 0);
 }
 
+// El nivell d'«Ara» com el de l'avís: atenció o perill sense la pluja mesurada
+// que ho confirmi (config.RIERA_CONFIRMA_MM) és un preavís (riera.nivell_avis).
+const RIERA_CONFIRMA_MM = 10;
+function nivellRiera(r) {
+  if (!r) return null;
+  return ['atencio', 'perill'].includes(r.nivell) && rieraMesurada(r) < RIERA_CONFIRMA_MM ? 'preavis' : r.nivell;
+}
+
 // Amb «r», el registre sense pluja mesurada diu que és el radar: «Plou a la
 // conca» amb 0,0 mm no era cert (14-11-2026).
 function titolRiera(nivell, r = null) {
   if (nivell === 'registre' && r && rieraMesurada(r) < 1) return T('El radar veu pluja a la conca.');
+  if (nivell === 'preavis') return T('Preavís.');
   return nivell === 'perill' ? T('Perill de desbordament.') : nivell === 'atencio' ? T('Atenció.')
     : nivell === 'registre' ? T('Plou a la conca.') : T('Sense risc de crescuda ara.');
 }

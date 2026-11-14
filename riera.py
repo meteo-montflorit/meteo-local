@@ -382,7 +382,7 @@ def missatge(riera, nom):
         cap = ("Riera de Sant Cugat, perill de desbordament a Montflorit: a Sant Cugat han caigut "
                f"{coma(riera['mm_3h'])} mm en 3 hores i {coma(riera['mm_6h'])} en 6 (fins a les {hora})")
     else:
-        cap = ("Riera de Sant Cugat, atenció: a Sant Cugat han caigut "
+        cap = (f"Riera de Sant Cugat, {'atenció' if nom == 'atencio' else 'preavís'}: a Sant Cugat han caigut "
                f"{coma(riera['mm_3h'])} mm en 3 hores (fins a les {hora})")
     radar = riera.get("radar_1h")
     if radar and radar >= 1:
@@ -443,6 +443,19 @@ def fila_registro(ep):
     return fila
 
 
+def nivell_avis(riera):
+    """El nivel del aviso: el del índice, salvo que la lluvia medida no llegue a
+    C.RIERA_CONFIRMA_MM, que entonces es un preavís (lo da el radar)."""
+    nom = nivell(riera["index"], riera.get("index_6h", riera["mm_6h"]))
+    if nom in ("perill", "atencio") and mesurat(riera) < C.RIERA_CONFIRMA_MM:
+        return "preavis"
+    return nom
+
+
+def nomes_preavis(ep):
+    return set(ep.get("avisos") or {}) == {"preavis"}
+
+
 def compara(estat, riera, ahora):
     """Pone al día el episodio y devuelve (mensaje o None, fila del registro
     del episodio que acaba o None)."""
@@ -451,8 +464,8 @@ def compara(estat, riera, ahora):
         return None, None
     ara = H.clau(ahora)
     senyal = riera["index"] >= C.RIERA_REGISTRE_MM
-    nom = nivell(riera["index"], riera.get("index_6h", riera["mm_6h"]))
-    avisa = nom in ("perill", "atencio")
+    nom = nivell_avis(riera)
+    avisa = nom in ("perill", "atencio", "preavis")
     text = fila = None
     # Desde cuándo la previsión está por debajo de atención, para cerrar antes
     # un aviso que salió solo del radar (C.RIERA_FI_RADAR_MIN).
@@ -461,7 +474,7 @@ def compara(estat, riera, ahora):
             ep.pop("sota_atencio", None)
         else:
             ep.setdefault("sota_atencio", ara)
-    radar_fallat = bool(ep and ep["avisos"] and not avisa and nomes_radar(ep)
+    radar_fallat = bool(ep and ep["avisos"] and not avisa and (nomes_preavis(ep) or nomes_radar(ep))
                         and mesurat(riera) < C.RIERA_REGISTRE_MM
                         and ahora - H.llegeix(ep["sota_atencio"]) >= dt.timedelta(minutes=C.RIERA_FI_RADAR_MIN))
     # Con huecos en la estación, lo medido puede quedarse corto: el episodio
@@ -471,15 +484,16 @@ def compara(estat, riera, ahora):
         # Si es va avisar, es diu que ha passat (Juanjo, 08-10-2026): un sol
         # missatge per episodi, i només després de 3 hores de calma, perquè
         # no es converteixi en una successió d'avís i contraavís; si l'avís
-        # va sortir només del radar i la pluja no ha arribat, abans.
-        if ep["avisos"]:
+        # va sortir només del radar i la pluja no ha arribat, abans. Un preavís
+        # que no s'ha confirmat es tanca sense missatge (Juanjo, 14-11-2026).
+        if ep["avisos"] and not nomes_preavis(ep):
             text = missatge_fi(riera, ep)
         fila, ep = fila_registro(ep), None
         if radar_fallat:
             estat["radar_fallat"] = ara
             senyal = False
     # Després d'un avís del radar que no s'ha complert, durant RIERA_FI_H hores
-    # un de nou necessita pluja mesurada.
+    # no surt cap més preavís: només l'atenció, amb pluja mesurada.
     darrer = estat.get("radar_fallat")
     if darrer and ahora - H.llegeix(darrer) >= dt.timedelta(hours=C.RIERA_FI_H):
         estat.pop("radar_fallat", None)
@@ -495,9 +509,11 @@ def compara(estat, riera, ahora):
         ep["mm_6h_max"] = max(ep["mm_6h_max"], riera["mm_6h"])
         if riera.get("capcalera"):
             ep["capcalera_3h_max"] = max(ep["capcalera_3h_max"], riera["capcalera"]["mm_3h"])
-        if avisa and darrer and mesurat(riera) < C.RIERA_REGISTRE_MM:
-            avisa = False
-        if avisa and not ep["avisos"].get(nom):
+        if nom == "preavis":
+            if not ep["avisos"] and not darrer:
+                text = missatge(riera, nom)
+                ep["avisos"]["preavis"] = ara
+        elif avisa and not ep["avisos"].get(nom):
             text = missatge(riera, nom)
             ep["avisos"][nom] = ara
             ep["avisos"].setdefault("atencio", ara)

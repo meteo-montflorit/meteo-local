@@ -519,7 +519,8 @@ function estatPortada(dades) {
     const detall = r.radar_1h >= 1
       ? T`A Sant Cugat, ${mm} mm en 3 hores; el radar en preveu uns ${Math.round(r.radar_1h)} a la conca fins d’aquí a una hora.`
       : T`A Sant Cugat, ${mm} mm en les últimes 3 hores.`;
-    files.push(fila('riera.html', COLOR_NIVELL[r.nivell] || 'be', 'i-waves', T`Riera: ${titolRiera(r.nivell, r).toLowerCase()}`, detall));
+    const niv = nivellRiera(r);
+    files.push(fila('riera.html', COLOR_NIVELL[niv] || 'be', 'i-waves', T`Riera: ${titolRiera(niv, r).toLowerCase()}`, detall));
   }
   if (!files.length) return null;
   const sec = element('section', 'targeta estat-portada');

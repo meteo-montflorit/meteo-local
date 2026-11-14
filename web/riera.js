@@ -107,8 +107,9 @@ function pintaAra(dades) {
   const mm6 = v ? v.mm_6h : r.mm_6h;
   const fins = horaCurta(v ? v.fins : r.fins);
   const qui = v ? T`Segons la mediana de ${v.n} estacions particulars de Sant Cugat,` : T('A Sant Cugat (Meteocat)');
-  const estat = element('p', `avis-item riera-estat ${COLOR_NIVELL[r.nivell] || 'be'}`);
-  const titol = titolRiera(r.nivell, r);
+  const niv = nivellRiera(r);
+  const estat = element('p', `avis-item riera-estat ${COLOR_NIVELL[niv] || 'be'}`);
+  const titol = titolRiera(niv, r);
   // El que hi suma el radar, a la línia (14-11-2026: plegat al detall, no es
   // veia per què hi havia avís).
   const radar = r.radar_1h >= 1 ? Math.round(r.radar_1h) : null;
@@ -144,10 +145,10 @@ function pintaEpisodis(historial) {
   }
   const ul = element('ul', 'riera-episodis');
   for (const e of eps) {
-    const li = element('li', `episodi-linia ${e.nivell === 'perill' ? 'vermell' : 'taronja'}`);
+    const li = element('li', `episodi-linia ${NIVELL_RIERA[e.nivell] || 'taronja'}`);
     const d = new Date(e.inici);
     const quan = `${d.toLocaleDateString(IDIOMA.codi === 'es' ? 'es-ES' : 'ca-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: ZONA_HORA })}, ${horaCurta(e.inici)}`;
-    const nivell = e.nivell === 'perill' ? T('perill de desbordament') : T('atenció');
+    const nivell = e.nivell === 'perill' ? T('perill de desbordament') : e.nivell === 'preavis' ? T('preavís') : T('atenció');
     li.append(element('strong', null, quan), `: ${nivell}`, e.fi ? T` · acabat a les ${horaCurta(e.fi)}` : T(' · en curs'), ' · ');
     const a = element('a', null, T('vegeu l’avís'));
     a.href = `perill.html#${idFitxa(e)}`;

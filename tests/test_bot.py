@@ -941,30 +941,60 @@ class AvisosPublics(unittest.TestCase):
         self.assertEqual(nous[0]["tipus"], nous[1]["tipus"], "riera")
 
     def test_riera_avis_nomes_del_radar(self):
-        # 14-11-2026: atenció amb 0,0 mm a Sant Cugat i 50 previstos pel radar;
-        # el missatge diu que és la previsió, i quan baixa de 35 sense pluja
-        # mesurada, l'avís es tanca en mitja hora dient que no ha arribat.
+        # 14-11-2026: el radar en preveia 50 amb 0,0 mm a Sant Cugat. Ara és un
+        # preavís, que diu que és la previsió; si baixa de 35 sense pluja
+        # mesurada, es tanca en mitja hora sense missatge, només a la web.
         def riera(index, mm=0.0):
             return {"fins": ARA.isoformat(timespec="minutes"), "mm_3h": mm, "mm_6h": mm, "radar_1h": index - mm,
                     "index": index, "index_6h": index, "veines": {"mm_3h": 0.1}}
         estat, nous = {}, []
         for i, index in enumerate([22, 50.4, 50.4, 31.7, 30, 28, 26, 25, 24, 23]):
             nous += AB.decideix(estat, {"riera": riera(index)}, ARA + dt.timedelta(minutes=6 * i))
-        self.assertEqual([a["nivell"] for a in nous], ["atencio", "fi"])
-        self.assertIn("De moment a Sant Cugat no ha plogut (0,0 mm en 3 hores, a les", nous[0]["ca"])
-        self.assertIn("però el radar en preveu uns 50 mm a la conca fins d'aquí a una hora", nous[0]["ca"])
-        self.assertIn("pero el radar prevé unos 50 mm en la cuenca de aquí a una hora", nous[0]["es"])
-        self.assertIn("La pluja forta que preveia el radar no ha arribat: a Sant Cugat, 0,1 mm en 3 hores.", nous[1]["ca"])
-        self.assertIn("La lluvia fuerte que preveía el radar no ha llegado", nous[1]["es"])
+        self.assertEqual([a["nivell"] for a in nous], ["preavis", "fi"])
+        self.assertTrue(nous[0]["ca"].startswith("🟡 <b>Temps a Montflorit: preavís per la riera de Sant Cugat</b>\n"
+                                                 "El radar preveu pluja forta a la conca: uns 50 mm fins d'aquí a una hora. "
+                                                 "A Sant Cugat encara no ha plogut (0,0 mm en 3 hores, a les"))
+        self.assertIn("Si es compleix, la riera pot créixer de pressa: si comença a ploure fort, no t'hi acostis. "
+                      "T'avisarem si la pluja ho confirma.", nous[0]["ca"])
+        self.assertIn("Si se cumple, la riera puede crecer deprisa: si empieza a llover fuerte, no te acerques.", nous[0]["es"])
+        self.assertNotIn("No t'acostis a la riera", nous[0]["ca"])
+        self.assertTrue(nous[1].get("silenci"))
         # L'avís porta a «Riera»; el final, a la fitxa de «Perill» (Juanjo, 14-11-2026).
         self.assertEqual(AB.pagina(nous[0], []), "riera.html")
-        self.assertTrue(AB.pagina(nous[1], estat.get("historial") or []).startswith("perill.html"))
-        # Durant 3 hores, un altre avís del radar sol no surt; amb pluja mesurada, sí.
+        # Durant 3 hores, un altre preavís no surt; amb pluja mesurada, l'atenció sí.
         t = ARA + dt.timedelta(minutes=60)
         self.assertEqual(AB.decideix(estat, {"riera": riera(52)}, t), [])
         nous = AB.decideix(estat, {"riera": riera(52, mm=25)}, t + dt.timedelta(minutes=6))
         self.assertEqual([a["nivell"] for a in nous], ["atencio"])
         self.assertIn("Han caigut 25 mm en 3 hores a Sant Cugat", nous[0]["ca"])
+
+    def test_preavis_que_es_confirma(self):
+        # El 29-09-2026: a les 10:30, 0,8 mm i el radar ja ho veia (preavís); a
+        # les 11:30, amb 10 mm o més mesurats, l'atenció.
+        def riera(index, mm):
+            return {"fins": ARA.isoformat(timespec="minutes"), "mm_3h": mm, "mm_6h": mm, "radar_1h": index - mm,
+                    "index": index, "index_6h": index}
+        estat, nous = {}, []
+        for i, (index, mm) in enumerate([(40, 0.8), (45, 9.8), (55, 34.3), (70, 62)]):
+            nous += AB.decideix(estat, {"riera": riera(index, mm)}, ARA + dt.timedelta(minutes=30 * i))
+        self.assertEqual([a["nivell"] for a in nous], ["preavis", "atencio", "perill"])
+        self.assertTrue(all(not a.get("silenci") for a in nous))
+
+    def test_el_final_silencios_no_es_reparteix(self):
+        with tempfile.TemporaryDirectory() as d:
+            casa, sortida = os.path.join(d, "casa.json"), os.path.join(d, "avisos.json")
+            with unittest.mock.patch.object(AB, "ESTAT", os.path.join(d, "estat.json")):
+                for i, (index, mm) in enumerate([(50, 0.0)] + [(14, 0.0)] * 8):
+                    with open(casa, "w") as f:
+                        json.dump({"riera": {"fins": ARA.isoformat(timespec="minutes"), "mm_3h": mm, "mm_6h": mm,
+                                             "radar_1h": index, "index": index, "index_6h": index}}, f)
+                    AB.actualitza(casa, sortida, ahora=ARA + dt.timedelta(minutes=6 * i))
+            with open(sortida) as f:
+                pub = json.load(f)
+        self.assertEqual([a["nivell"] for a in pub["avisos"]], ["preavis"])
+        fitxa = [e for e in pub["historial"] if e["tipus"] == "riera"]
+        self.assertEqual(len(fitxa), 1)
+        self.assertTrue(fitxa[0].get("fi"))
 
     def test_trens_ja_no_avisen(self):
         # ADR 0053: els trens es consulten amb /trens; l'estat vell es treu.

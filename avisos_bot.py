@@ -142,7 +142,7 @@ def a_montflorit(i, idioma):
 # notificación del móvil (Juanjo, 10-10-2026; ADR 0065). El final, en verde.
 # Lo que no tiene nivel lleva su propio símbolo, no un círculo: el incendio,
 # 🔥 (Juanjo, 11-10-2026: «dejar los círculos para este tipo de niveles»; ADR 0071).
-CERCLE = {"groc": "🟡", "taronja": "🟠", "vermell": "🔴", "atencio": "🟠", "perill": "🔴", "incendi": "🔥",
+CERCLE = {"groc": "🟡", "taronja": "🟠", "vermell": "🔴", "atencio": "🟠", "perill": "🔴", "preavis": "🟡", "incendi": "🔥",
           "alerta": "🟠", "emergència": "🔴", "fi": "🟢", "llum": "🔌", "pluja": "🌧️", "nul": "⚪", "mig": "🟡", "alt": "🟠", "maxim": "🔴"}
 
 
@@ -308,6 +308,21 @@ def text_riera(riera, nivell):
     qui_es = f"según {v['n']} estaciones particulares, a las {hora}" if v else f"a las {hora}"
     radar = riera.get("radar_1h")
     r = round(radar) if radar and radar >= 1 else None
+    if nivell == "preavis":
+        # Provisional, sense alarmar ni tranquil·litzar de més: el 29-09-2026,
+        # a les 10:30, era igual que el 14-11 i a les 12:30 l'aigua va entrar
+        # a les cases (Juanjo, 14-11-2026).
+        plogut_ca = "encara no ha plogut" if mm == 0 else "encara ha plogut poc"
+        plogut_es = "aún no ha llovido" if mm == 0 else "aún ha llovido poco"
+        ca = (negreta("Temps a Montflorit: preavís per la riera de Sant Cugat", nivell) +
+              f"\nEl radar preveu pluja forta a la conca: uns {r or round(radar or 0)} mm fins d'aquí a una hora. "
+              f"A Sant Cugat {plogut_ca} ({mm3} mm en 3 hores, {qui_ca}). Si es compleix, la riera pot créixer "
+              "de pressa: si comença a ploure fort, no t'hi acostis. T'avisarem si la pluja ho confirma.")
+        es = (negreta("Temps a Montflorit: preaviso por la riera de Sant Cugat", nivell) +
+              f"\nEl radar prevé lluvia fuerte en la cuenca: unos {r or round(radar or 0)} mm de aquí a una hora. "
+              f"En Sant Cugat {plogut_es} ({mm3} mm en 3 horas, {qui_es}). Si se cumple, la riera puede crecer "
+              "deprisa: si empieza a llover fuerte, no te acerques. Te avisaremos si la lluvia lo confirma.")
+        return {"ca": f"{ca}\n{ORIENTATIU['ca']}", "es": f"{es}\n{ORIENTATIU['es']}"}
     if nivell == "perill":
         titol_ca, titol_es = ("perill de desbordament de la riera de Sant Cugat",
                               "peligro de desbordamiento de la riera de Sant Cugat")
@@ -759,15 +774,17 @@ def decideix(estat, salida, ahora):
     nous = []
     hora = H.clau(ahora)
 
-    def afegeix(tipus, clau, text, nivell=None, episodi=None, enllac=None, fins=None, nomes_avis=False, comenca=None):
+    def afegeix(tipus, clau, text, nivell=None, episodi=None, enllac=None, fins=None, nomes_avis=False, comenca=None,
+                silenci=False):
         # episodi: de qué suceso es parte, para el historial (ADR 0071); enllac,
         # más información si el texto no la enlaza; fins, cuándo acaba un
         # aviso que no tiene mensaje de final (los de AEMET); nomes_avis, que
         # lleva a la ficha del episodio sin cambiarla (el comunicado nuevo).
         # comenca: quan comença el que s'avisa, si és més tard (ADR 0101): la
         # fitxa diu «Previst» i no «Actiu ara» mentre no ha començat.
+        # silenci: només per a l'historial, no s'envia (el final d'un preavís).
         extra = {k: v for k, v in (("episodi", episodi), ("enllac", enllac), ("fins", fins),
-                                   ("nomes_avis", nomes_avis), ("comenca", comenca)) if v}
+                                   ("nomes_avis", nomes_avis), ("comenca", comenca), ("silenci", silenci)) if v}
         nous.append({"id": f"{tipus}:{clau}", "tipus": tipus, "nivell": nivell, "hora": hora, **text, **extra})
 
     # Lluvia en unos minutos: la lógica del aviso de Juanjo, con estado propio.
@@ -993,15 +1010,17 @@ def decideix(estat, salida, ahora):
         abans = set((episodi_abans or {}).get("avisos", {}))
         RI.compara(e, riera, ahora)
         despres = (e.get("episodi") or {}).get("avisos", {})
-        for nivell in ("perill", "atencio"):
+        for nivell in ("perill", "atencio", "preavis"):
             if nivell in despres and nivell not in abans:
                 afegeix("riera", f"{e['episodi']['inici']}:{nivell}", text_riera(riera, nivell), nivell,
                         episodi=f"riera:{e['episodi']['inici']}", enllac=ENLLAC_RIERA)
                 break
         # L'episodi s'ha tancat (3 hores de calma) després d'un avís: es diu que ha passat.
+        # Un preavís que no s'ha confirmat es tanca sense missatge, només a la
+        # web (Juanjo, 14-11-2026): ja deia que s'avisaria si es confirmava.
         if episodi_abans and not e.get("episodi") and abans:
             afegeix("riera", f"{episodi_abans['inici']}:fi", text_riera_fi(riera, episodi_abans), "fi",
-                    episodi=f"riera:{episodi_abans['inici']}")
+                    episodi=f"riera:{episodi_abans['inici']}", silenci=abans == {"preavis"})
     # Los avisos de trenes y de cortes ya no existen (ADR 0053): fuera su estado.
     estat.pop("trens", None)
     estat.pop("talls", None)
@@ -1576,7 +1595,7 @@ def actualitza(casa_json, sortida, ahora=None, anterior=None, avisa=True):
     # Los avisos de las últimas CONSERVA_H horas: el bot reparte los que no ha
     # mandado aún.
     limit = ahora - dt.timedelta(hours=CONSERVA_H)
-    llista = [a for a in estat.get("llista", []) if H.llegeix(a["hora"]) > limit] + nous
+    llista = [a for a in estat.get("llista", []) if H.llegeix(a["hora"]) > limit] + [a for a in nous if not a.get("silenci")]
     estat["llista"] = llista
     hist = comunicats(historial(estat, nous, ahora, anterior_publicat(anterior)), salida.get("plans"))
     hist = prealertes(estat, salida, hist, ahora)

@@ -605,7 +605,7 @@ def construeix(desti, web=None):
 
 
 # La riera, en la escala de los círculos del bot (avisos_bot.CERCLE).
-NIVELL_RIERA = {"perill": "maxim", "atencio": "alt"}
+NIVELL_RIERA = {"perill": "maxim", "atencio": "alt", "preavis": "mig"}
 
 
 def perill_riera(avisos):
