@@ -172,6 +172,10 @@ inclúyelas si son reales, explicando por qué.
   más la diferencia de ahora (`mesurat_ara.dif_alta`): de noche la diferencia
   es de medio grado y en una tarde soleada pasa de 2 °C. Compáralo con la
   `dif_alta` de las horas de la máxima (falsas alarmas del 03 y 04-11-2026).
+  En «Temperatura d'aquí a mitjanit», las dos cifras cuentan también lo de
+  ahora: la de la riera, la temperatura medida, y la de arriba, la medida
+  más `mesurat_ara.dif_alta` (desde la 3.224.4). Sí es un error que la de
+  arriba quede por debajo de la máxima que dice la frase.
 - La sensación de cada tramo («fred», «molt de fred»…) usa la temperatura que
   se nota, con el índice de viento de Environment Canada desde 5 km/h y
   10 °C o menos, hora por hora: 6 °C con 9 km/h se notan como 4 °C, «molt de
@@ -185,6 +189,13 @@ inclúyelas si son reales, explicando por qué.
   de 6 horas puede quedar por debajo de la medida ahora si ese momento deja
   fuera lluvia antigua mientras sube la de 3 horas. Sí es un error que sin
   subir la de 3 horas el índice de 6 quede por debajo de lo medido.
+  Por lo mismo, el índice puede ser igual a lo medido aunque «Ara» diga que
+  el radar prevé más: si la lluvia medida cayó hace más de dos horas, dentro
+  de media hora o de una ya no entra en las 3 horas, y lo medido que queda
+  más el radar suma menos que lo medido ahora. El 14-11-2026, con 6,0 mm en
+  3 horas (5,4 de ellos, de hacía casi tres) y unos 4 del radar, el peor
+  momento era ahora, 6,0, y diez minutos después lo medido bajó a 0,7 (falsa
+  alarma). Las dos cifras del índice son de ese mismo momento.
 - La hora «propera» de la actualización sale de un horario fijo (cada 15
   minutos, o cada 6 en vigilancia, en horas fijas), no de sumar el intervalo
   a la última; una publicación fuera de horario (por código nuevo) puede

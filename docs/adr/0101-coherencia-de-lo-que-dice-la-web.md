@@ -664,3 +664,24 @@ oficial…»): sin eso contradecía «Aquesta nit: pluja de 20 a 6 h» de arriba
   «La més propera… (feble)» (el punto de lluvia más cercano). Mismas franjas,
   medidas distintas: no se cambia, y `revisor-instruccions.md` lo explica.
   Lo medido después fue débil (como mucho 0,6 mm en una hora en una estación).
+
+## Cambio del 16-11-2026 (3.224.4): los hallazgos del revisor del 14-11 a las 18:59 y del 15-11 a las 20:02
+
+- **La parte alta, más fría que la riera en el resumen** (15-11, 20:02):
+  «Temperatura d'aquí a mitjanit: entre 12 °C i 14 °C (fins a 13 °C a la
+  part alta)». El 14 contaba la temperatura medida (13,5 °C) y el 13 salía
+  solo de las horas previstas (12,4 + 0,4). Ahora las dos cifras cuentan lo
+  de ahora: la de arriba suma a la medida lo que miden de más las estaciones
+  de arriba (`ara_casa.dif_alta`, 1,5 °C ese día: «fins a 15 °C»), y nunca
+  se dice si queda por debajo de la máxima de la frase (`bot.text_alta`, ADR
+  0087). Prueba: `test_graus_mes_o_menys_que_el_dia_abans`.
+- **Falsa alarma** (14-11, 18:59): en «Riera», «Índex: 6,0 mm en 3 hores i
+  6,0 en 6» con «han caigut 6,0 mm en 3 hores… i el radar en preveu uns 4
+  més». El índice es el peor de tres momentos (ahora, dentro de media hora y
+  de una), y de los 6,0 mm, 5,4 habían caído hacía casi tres horas (registro
+  de la estación de Meteocat): dentro de media hora ya no entraban en las 3
+  horas, y lo medido que quedaba más el radar sumaba menos que lo medido
+  ahora. A las 19:11 lo medido en 3 horas era 0,7 mm. No se cambia, y
+  `revisor-instruccions.md` lo explica.
+- **«Perill» sin el plan de Protecció Civil de la portada** (14-11, 18:59):
+  ya corregido en la 3.222.0 (ADR 0062).

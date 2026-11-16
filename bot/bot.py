@@ -780,36 +780,47 @@ def text_comparacio(n, idioma, respecte):
     return f", {abs(n)} graus {'més' if n > 0 else 'menys'} que {respecte}"
 
 
-def text_alta(tram, idioma):
+def text_alta(tram, idioma, ara=None, dif_ara=None):
     """« (fins a 26 °C a la part alta)»: la màxima a la part alta del barri,
     si es separa un grau o més (arrodonit) de la de vora la riera (ADR 0087;
-    Juanjo, 13-10-2026: «0.9 yo lo consideraría como 1»)."""
+    Juanjo, 13-10-2026: «0.9 yo lo consideraría como 1»). Amb la mesurada ara
+    (ara) i el que hi mesuren de més les estacions de dalt (dif_ara), totes
+    dues xifres compten també la d'ara, com la màxima de text_temperatura."""
     files = [f for f in tram if f.get("temperatura") is not None]
-    if not files:
+    baixes = [f["temperatura"] for f in files] + ([ara] if ara is not None else [])
+    # La de dalt d'ara és la mesurada més la diferència mesurada, la mateixa
+    # suma d'«Ara» amb la part alta triada (casa.js). Sense les estacions de
+    # dalt no se sap, i la xifra de dalt surt només de les hores previstes.
+    altes = ([f["temperatura"] + (f.get("dif_alta") or 0) for f in files]
+             + ([ara + dif_ara] if ara is not None and dif_ara is not None else []))
+    if not altes:
         return ""
     r = lambda x: math.floor(x + 0.5)
-    alta = r(max(f["temperatura"] + (f.get("dif_alta") or 0) for f in files))
-    maxima = r(max(f["temperatura"] for f in files))
+    alta, maxima = r(max(altes)), r(max(baixes))
     # La xifra de dalt és la màxima, hora per hora, de la temperatura més la
     # seva diferència, arrodonida al final, la que mostra la gràfica amb la
     # part alta triada (tempZona, grafica.js). Sumar la màxima i la diferència
     # ja arrodonides, com feien abans les files dels trams, donava 23 °C amb
     # 20,5 + 1,6 (revisor, 11-11-2026). Si surt la mateixa xifra, «entre 11 °C
     # i 16 °C (fins a 16 °C…)» la repetiria (Juanjo, 20-10-2026: «el 2º 16 sobra»).
+    # I mai per sota de la màxima que es diu, que compta la mesurada ara: amb
+    # 13,5 °C mesurats i 12,8 previstos a dalt sortia «entre 12 °C i 14 °C
+    # (fins a 13 °C a la part alta)», la zona càlida més freda que la riera
+    # (revisor, 15-11-2026).
     if alta <= maxima:
         return ""
     xifra = graus(alta)
     return f" (hasta {xifra} en la parte alta)" if idioma == "es" else f" (fins a {xifra} a la part alta)"
 
 
-def text_temperatura(tram, idioma, quan, comparacio=None, respecte="ahir", ara=None):
+def text_temperatura(tram, idioma, quan, comparacio=None, respecte="ahir", ara=None, dif_ara=None):
     # Amb la d'ara, la mesurada: la de les hores és prevista, i «entre 12 i
     # 17 °C» amb 17,5 °C a «Ara» es contradeia (inventari del 18-10-2026).
     temps = [f["temperatura"] for f in tram if f.get("temperatura") is not None] + ([ara] if ara is not None else [])
     i = " y " if idioma == "es" else " i "
     if not temps:
         return None
-    alta = text_alta(tram, idioma)
+    alta = text_alta(tram, idioma, ara, dif_ara)
     # Si la mínima i la màxima coincideixen, una xifra: «16 °C», no «entre 16 °C i 16 °C» (ADR 0074).
     if graus(min(temps)) == graus(max(temps)):
         return f"{quan}: {graus(min(temps))}{alta}{text_comparacio(comparacio, idioma, respecte)}."
@@ -1146,7 +1157,8 @@ def resum(dades, idioma, moment, dema=False, avui=False, telegram=False):
                   frase_cel(hores, idioma, moment.date()),
                   text_temperatura(tram, idioma, "Temperatura de aquí a medianoche" if idioma == "es"
                                    else "Temperatura d'aquí a mitjanit", compara_resum(dades, tram), "ahir",
-                                   (dades.get("ara_casa") or {}).get("temperatura")),
+                                   (dades.get("ara_casa") or {}).get("temperatura"),
+                                   (dades.get("ara_casa") or {}).get("dif_alta")),
                   text_pluja(tram, idioma)]
         roba = text_roba(tram, idioma)
         paraigua = text_paraigua(tram, idioma)

@@ -268,6 +268,19 @@ class Resum(unittest.TestCase):
         # La xifra de dalt no repeteix mai la màxima (abans, «entre 11 i 16 (fins a 16)»).
         self.assertEqual(B.text_temperatura([fila(11, 5, 11.0), dict(fila(11, 15, 15.6), dif_alta=0.8)], "es", "Temperatura"),
                          "Temperatura: entre 11 °C y 16 °C.")
+        # Amb la mesurada ara, la xifra de dalt la compta també (la mesurada més el que hi mesuren
+        # de més les estacions de dalt) i mai queda per sota de la màxima que es diu: sortia
+        # «entre 12 °C i 14 °C (fins a 13 °C a la part alta)» (revisor, 15-11-2026).
+        vespre = [dict(fila(15, 21, 12.4), dif_alta=0.4), dict(fila(15, 22, 12.0), dif_alta=0.4)]
+        self.assertEqual(B.text_temperatura(vespre, "ca", "Temperatura", ara=13.5, dif_ara=1.5),
+                         "Temperatura: entre 12 °C i 14 °C (fins a 15 °C a la part alta).")
+        # Sense les estacions de dalt, la d'ara de dalt no se sap: la xifra de les hores, només si passa de la màxima.
+        self.assertEqual(B.text_temperatura(vespre, "ca", "Temperatura", ara=13.5), "Temperatura: entre 12 °C i 14 °C.")
+        self.assertEqual(B.text_temperatura([dict(f, dif_alta=2.4) for f in vespre], "es", "Temperatura", ara=13.5),
+                         "Temperatura: entre 12 °C y 14 °C (hasta 15 °C en la parte alta).")
+        # Si la d'ara no passa de les previstes, res no canvia.
+        self.assertEqual(B.text_temperatura(vespre, "ca", "Temperatura", ara=12.2, dif_ara=0.2),
+                         "Temperatura: 12 °C (fins a 13 °C a la part alta).")
         # La nit compara la mínima; si falta una hora del dia abans, no es diu res.
         self.assertEqual(B.compara_temp(d, avui, nit=True), 0)              # 20 contra 19,5: es llegeix 20 i 20
         self.assertIsNone(B.compara_temp({"temperatura_mesurada": {"2026-10-09T14:00": 19.0}, "hores": avui}, avui))

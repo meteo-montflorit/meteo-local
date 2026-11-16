@@ -80,6 +80,14 @@ Versión 3.78.0.
   (revisor, 11-11-2026; 3.216.11). Si redondeada sale la misma cifra que la
   máxima, no se dice: «entre 11 °C y 16 °C (hasta 16 °C en la parte alta)»
   la repetía (Juanjo, 20-10-2026: «el 2º 16 sobra»).
+  En «Temperatura d'aquí a mitjanit», la máxima de la riera cuenta la
+  temperatura medida ahora, y desde la 3.224.4 la de arriba también: la
+  medida más lo que miden de más las estaciones de arriba
+  (`ara_casa.dif_alta`), la misma suma de «Ara» con la parte alta elegida.
+  Antes salía solo de las horas previstas y podía quedar por debajo de la
+  otra: «entre 12 °C i 14 °C (fins a 13 °C a la part alta)» con 13,5 °C
+  medidos (revisor, 15-11-2026). Sin las estaciones de arriba, la cifra sale
+  de las horas previstas y solo se dice si supera la máxima de la frase.
 - **Si falla la estación de casa**, «Ara» sale de las vecinas
   (`casa.ara_sense_casa`): la temperatura, la de ICERDA6, para que siga
   siendo la de la riera; sin ella, la de la parte alta menos su diferencia
