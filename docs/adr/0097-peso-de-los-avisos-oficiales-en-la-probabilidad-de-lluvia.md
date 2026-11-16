@@ -1,6 +1,6 @@
 # 97. Peso de los avisos oficiales en la probabilidad de lluvia
 
-Fecha: 2026-10-16 · Estado: en curso (AEMET probado y no adoptado; falta Meteocat)
+Fecha: 2026-10-16 · Actualizado: 2026-11-16 · Estado: probado con AEMET y con Meteocat; no adoptado
 
 ## Contexto
 
@@ -46,10 +46,19 @@ necesita, y no tenía los de Meteocat.
   lo usa solo si es true y la pasada tiene los avisos
   (`aprenentatge.prob_pluja`). Si no, todo sigue como antes.
 - **El histórico**: AEMET OpenData (`/api/avisos_cap/archivo`, desde el
-  18-06-2018) y la API v2 de Meteocat (`/smp/episodis-oberts?data=…`, la
-  misma estructura que lee la página), con `calibracio/avisos_descarrega.py`.
-  Las claves son de Juanjo y no van en el repositorio. Los datos de Meteocat
-  no se difunden (sus condiciones); se publican solo los pesos.
+  18-06-2018), con `calibracio/avisos_descarrega.py`. La API de Meteocat solo
+  da de hoy a tres días vista (ADR 0109), así que su histórico se pidió por su
+  formulario de solicitud de servicios (19-10-2026) y lo mandó su Unitat
+  d'Atenció a l'Usuari i al Client por correo el 16-11-2026: tres CSV con
+  todas las actualizaciones de los avisos del Vallès Occidental desde el
+  01-01-2024, en `calibracio/dades/smp_csv/` (`meteocat_csv`). Cada fila es
+  una franja de una actualización, con su hora de emisión; el aviso se
+  actualiza cada 12 horas y puede cambiar de franjas o de grado, así que en
+  cada momento cuenta la última actualización de cada episodio emitida hasta
+  entonces. Las franjas son horas UTC del día UTC de «Data Avís», como en la
+  API; Excel convirtió «06-12» y «12-18» en fechas («6-des», «des-18») y se
+  leen como tales. Las claves son de Juanjo y no van en el repositorio. Los
+  datos de Meteocat no se difunden; se publican solo los pesos.
 - **Desde la 3.97.0 el registro apunta también el aviso de Meteocat** de cada
   hora (`avis_meteocat`, `avis_meteocat_alt`; `casa.senyals_avis` y
   `smp.graus_pluja`), para que el modelo propio pueda aprenderlo.
@@ -65,11 +74,10 @@ necesita, y no tenía los de Meteocat.
 
 ## Riesgos y limitaciones
 
-- El histórico de Meteocat es el estado final de cada día: un aviso que se
-  rebajó o se anuló después no aparece, aunque se conociera al prever.
-- La cuota mensual del plan gratuito de Meteocat no está publicada; si es
-  baja, los unos 1.000 días del archivo tardarán meses en bajar, y mientras
-  el modelo se ajusta solo con AEMET.
+- Los CSV de Meteocat traen solo las filas del Vallès Occidental: si una
+  actualización sacó a la comarca de un episodio, no aparece, y se sigue
+  contando la anterior hasta que el episodio acaba. Puede sobrar alguna hora
+  con aviso, nunca faltar.
 - Las horas con aviso son pocas en el archivo: puede que la mejora no llegue
   al 95 % y el modelo no se adopte.
 
@@ -92,3 +100,19 @@ fiabilidad no empeora (desvío 0,0011 frente a 0,0012; 0,0049 frente a 0,0052).
 **No se adopta** (`adoptat: false`): la página sigue con el modelo con ECMWF.
 Queda probar con los avisos de Meteocat, por comarca y con su grado, cuando
 llegue la clave de su API; y el registro del barrio apunta ya los dos.
+
+**Resultado con Meteocat (16-11-2026).** Con los CSV del Meteocat, sobre el
+mismo archivo (01-01-2024 a 04-10-2026) y con el aviso de AEMET también
+dentro. En las horas con aviso de Meteocat ya emitido llovió el 25 % a corto
+plazo (2.330 muestras) y el 33 % un día antes (522). Los pesos: 0,49 el de
+AEMET, 0,39 el de Meteocat y 0,27 más si es de peligro alto. Pero los modelos
+ya lo ven: el error es el mismo a corto plazo (0,02194 frente a 0,02195;
+gana en el 50 % de los remuestreos) y baja un 0,5 % un día antes (65 %),
+lejos del 95 %, y la fiabilidad empeora (desvío 0,0014 frente a 0,0012;
+0,0058 frente a 0,0052). **No se adopta** (`adoptat: false`): la página sigue
+con el modelo con ECMWF y los avisos se muestran aparte. El registro del
+barrio sigue apuntando los dos avisos (desde la 3.97.0), por si el modelo
+propio (ADR 0047) encuentra con el tiempo lo que el archivo no da. Pruebas:
+`tests/test_avisos_meteocat_csv.py` (las franjas que Excel hizo fecha, los
+de tiempo violento sin franja y que solo cuente la última actualización ya
+emitida).

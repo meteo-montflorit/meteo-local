@@ -14,7 +14,7 @@ una muestra. A los rasgos del modelo con ECMWF se añaden:
 
 - avis_aemet: aviso de AEMET por lluvia o tormentas en el Prelitoral de
   Barcelona que cubre la hora;
-- avis_meteocat y avis_meteocat_alt (si hay su histórico): aviso de Meteocat
+- avis_meteocat y avis_meteocat_alt (si están sus CSV): aviso de Meteocat
   por lluvia o tiempo violento en el Vallès Occidental, y si es de peligro
   alto o más (grado 3 o más).
 
@@ -31,9 +31,11 @@ lo que llovió, ponderado por horas, no pasa del del modelo sin avisos. Escribe 
 página lo usa solo si es true y la pasada tiene los avisos
 (aprenentatge.prob_pluja).
 
-Necesita descarrega.py, ecmwf_descarrega.py y avisos_descarrega.py.
+Necesita descarrega.py, ecmwf_descarrega.py, avisos_descarrega.py (AEMET) y,
+para Meteocat, sus CSV en calibracio/dades/smp_csv/ (avisos_descarrega.py).
 Uso: python3 calibracio/pluja_casa_avisos.py
 """
+import bisect
 import datetime as dt
 import json
 import os
@@ -48,7 +50,8 @@ import remostreig as R  # noqa: E402
 import config as C  # noqa: E402
 import smp as SMP  # noqa: E402
 from calibracio.analitza import leer_obs, leer_prev  # noqa: E402
-from calibracio.avisos_descarrega import DIR_METEOCAT, SORTIDA_AEMET  # noqa: E402
+from calibracio.avisos_descarrega import (COBERTURA_METEOCAT_CSV, DIR_METEOCAT_CSV,  # noqa: E402
+                                          SORTIDA_AEMET, meteocat_csv)
 from calibracio.ecmwf_prova import leer_ecmwf  # noqa: E402
 from calibracio.pluja_casa import creuada, fiabilitat  # noqa: E402
 
@@ -101,26 +104,35 @@ def senyal_aemet(avisos, inici, fi, tall):
 # --- Meteocat ----------------------------------------------------------------------------
 
 def avisos_meteocat():
-    """Los avisos de la comarca de cada día descargado: {dia: [aviso]}, o {}
-    si no hay histórico."""
-    if not os.path.isdir(DIR_METEOCAT):
+    """Los avisos de los CSV del Meteocat, indexados por la hora que cubren:
+    {"emissions": {grup: [emissió]}, "per_hora": {clau_hora: [(grup,
+    emissió, avís)]}}, o {} si no están (avisos_descarrega.meteocat_csv)."""
+    if not os.path.isdir(DIR_METEOCAT_CSV):
         return {}
-    res = {}
-    for nom in os.listdir(DIR_METEOCAT):
-        with open(os.path.join(DIR_METEOCAT, nom), encoding="utf-8") as f:
-            res[nom[:10]] = json.load(f)["avisos"]
+    grups = meteocat_csv()
+    res = {"emissions": {g: [hora(e) for e, _ in v] for g, v in grups.items()}, "per_hora": {}}
+    for g, v in grups.items():
+        for e, avisos in v:
+            for a in avisos:
+                for h in SMP.hores_avis(a):
+                    res["per_hora"].setdefault(h, []).append((g, hora(e), a))
     return res
 
 
-def senyal_meteocat(per_dia, inici, tall):
+def senyal_meteocat(meteocat, inici, tall):
     """(avís, avís alt) de Meteocat por lluvia o tiempo violento que cubre la
-    hora que empieza en «inici», emitidos antes de «tall»; None si no hay
-    histórico de ese día."""
-    dia = inici.astimezone(LOCAL).date().isoformat()
-    if dia not in per_dia:
+    hora que empieza en «inici», según la última actualización de cada aviso
+    emitida antes de «tall»; None fuera de lo que cubren los CSV."""
+    cob0, cob1 = COBERTURA_METEOCAT_CSV
+    if tall < cob0 or inici >= cob1:
         return None
-    avisos = [a for a in per_dia[dia] if a.get("emissio") and hora(a["emissio"]) <= tall]
-    graus = SMP.graus_pluja(inici, {"avisos": avisos})
+    vigents = []
+    for g, e, a in meteocat["per_hora"].get(SMP.clau_hora(inici), []):
+        ems = meteocat["emissions"][g]
+        i = bisect.bisect_right(ems, tall)
+        if i and ems[i - 1] == e:
+            vigents.append(a)
+    graus = SMP.graus_pluja(inici, {"avisos": vigents})
     return float(bool(graus)), float(max(graus, default=0) >= 3)
 
 
@@ -231,6 +243,8 @@ def main():
               f"amb avís de l'AEMET {v['mostres_amb_avis_aemet']} (va ploure el {v['va_ploure_amb_avis_aemet']}). "
               f"Error sense avisos {v['error_sense_avisos']}, amb avisos {v['error']} ({v['millora_pct']:+} %), "
               f"guanya en el {100 * v['seguretat']:.1f} % dels remostrejos; per grups {v['per_grup_pct']}")
+        if amb_meteocat:
+            print(f"  amb avís de Meteocat {v['mostres_amb_avis_meteocat']} (va ploure el {v['va_ploure_amb_avis_meteocat']})")
         print(f"  desviació {v['desviacio']} (sense avisos {v['desviacio_sense_avisos']}); fiabilitat", " ".join(f"{100 * f['donada']:.0f}→{100 * f['va_ploure']:.0f} ({f['hores']})"
                                        for f in v["fiabilitat"]))
     print("Pesos dels avisos:", {n: w for n, w in zip(noms, resultado["w"]) if n.startswith("avis")})

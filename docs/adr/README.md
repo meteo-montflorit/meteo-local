@@ -98,7 +98,7 @@
 | [0094](0094-avisos-actius-plegados-cuando-no-hay-nada-nuevo.md) | «Avisos actius» plegado cuando no hay nada nuevo, y una sola hora en la portada | aceptado |
 | [0095](0095-releases-de-github-automaticas.md) | Las releases de GitHub las crea una acción con cada etiqueta | aceptado |
 | [0096](0096-grafica-de-la-prevision.md) | Una gráfica de la previsión encima de los tramos | aceptado |
-| [0097](0097-peso-de-los-avisos-oficiales-en-la-probabilidad-de-lluvia.md) | Peso de los avisos oficiales en la probabilidad de lluvia | en curso |
+| [0097](0097-peso-de-los-avisos-oficiales-en-la-probabilidad-de-lluvia.md) | Peso de los avisos oficiales en la probabilidad de lluvia | aceptado (probado; avisos no adoptados) |
 | [0098](0098-la-grafica-del-resumen-en-telegram-y-en-los-avisos.md) | La gráfica del resumen en Telegram y en los avisos | aceptado |
 | [0099](0099-historial-de-la-grafica-y-acierto-de-la-prevision.md) | Historial de la gráfica y acierto de la previsión | aceptado |
 | [0100](0100-la-niebla.md) | La niebla | en curso |

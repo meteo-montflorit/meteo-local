@@ -5,9 +5,11 @@ la probabilidad de lluvia (ADR 0097).
 
 - AEMET: el archivo de avisos CAP de AEMET OpenData (desde el 18-06-2018),
   por meses. Se queda con los del Prelitoral de Barcelona (C.ZONA_AVISOS).
-- Meteocat: los episodios de la Situació Meteorològica de Perill de cada día
-  (API v2, /smp/episodis-oberts?data=…), los del Vallès Occidental, leídos
-  con smp.de_la_comarca, igual que en la página.
+- Meteocat: su API (v2, /smp/episodis-oberts?data=…) solo da de hoy a tres
+  días vista (ADR 0109), así que el histórico lo mandó el propio Meteocat por
+  correo el 16-11-2026, a petición de Juanjo: tres CSV con todas las
+  actualizaciones de los avisos del Vallès Occidental desde el 01-01-2024
+  (calibracio/dades/smp_csv/), que lee meteocat_csv().
 
 Cada aviso se guarda con su hora de emisión, para usar al ajustar solo los
 que ya se conocían cuando se hizo la previsión. Las claves no van en el
@@ -37,6 +39,13 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 DADES = os.path.join(AQUI, "dades")
 SORTIDA_AEMET = os.path.join(DADES, "avisos_aemet.json")
 DIR_METEOCAT = os.path.join(DADES, "smp")
+DIR_METEOCAT_CSV = os.path.join(DADES, "smp_csv")
+# Lo que cubren los CSV del Meteocat: lo pedido (desde el 01-01-2024) hasta
+# que se mandaron, el 16-11-2026 a las 08:08 UTC.
+COBERTURA_METEOCAT_CSV = (dt.datetime(2024, 1, 1, tzinfo=dt.timezone.utc),
+                          dt.datetime(2026, 11, 16, 8, tzinfo=dt.timezone.utc))
+# Excel convirtió en fechas las franjas «06-12» y «12-18» («6-des», «des-18»).
+FRANGES_EXCEL = {"6-des": "06-12", "des-18": "12-18"}
 DES_DE, FINS = "2024-01-01", "2026-10-04"
 
 
@@ -206,6 +215,40 @@ def meteocat(des_de, fins):
             print(d, len(SMP.de_la_comarca(episodis)), "avisos del Vallès Occidental")
             time.sleep(1)
         d += dt.timedelta(days=1)
+
+
+def meteocat_csv(directori=DIR_METEOCAT_CSV):
+    """Los CSV del Meteocat, como {(episodi, meteor, tipus): [(emissio,
+    [aviso])]}, por orden de emisión; cada aviso como los de
+    smp.de_la_comarca ({meteor, tipus, perill, emissio, dies}). Cada fila es
+    una franja de una actualización del aviso (se actualiza cada 12 horas y
+    puede cambiar de franjas o de grado): la que vale en un momento es la
+    última emitida hasta entonces. Las franjas («00-06», …) son horas UTC del
+    día UTC de «Data Avís», como en la API (smp.de_la_comarca); los de
+    observación y de tiempo violent no llevan franja, sino su inicio y su fin."""
+    import csv
+    grups = {}
+    for nom in sorted(os.listdir(directori)):
+        if not nom.endswith(".csv"):
+            continue
+        with open(os.path.join(directori, nom), encoding="utf-8", newline="") as f:
+            for r in csv.DictReader(f, delimiter=";"):
+                perill = int(r["Perill"] or 0)
+                if not perill:
+                    continue
+                periode = FRANGES_EXCEL.get(r["Període"], r["Període"])
+                if periode:
+                    a, b = SMP.franja(periode)
+                    d0 = dt.datetime.fromisoformat(r["Data Avís"][:10]).replace(tzinfo=dt.timezone.utc)
+                    dies = SMP.hores(d0 + dt.timedelta(hours=a), d0 + dt.timedelta(hours=b))
+                else:
+                    dies = SMP.hores(r["Data Inici"], r["Data Fi"])
+                tipus = SMP.TIPUS.get(r["Tipus"].strip().lower(), "previsio")
+                g = grups.setdefault((r["Episodi"], r["Meteor"], tipus), {})
+                g.setdefault(r["Data Emissió"], []).append(
+                    {"meteor": r["Meteor"], "tipus": tipus, "perill": perill,
+                     "emissio": r["Data Emissió"], "dies": dies})
+    return {k: sorted(v.items()) for k, v in grups.items()}
 
 
 if __name__ == "__main__":
