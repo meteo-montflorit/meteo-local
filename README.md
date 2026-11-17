@@ -290,8 +290,8 @@ estaciones vecinas de [Weather Underground](https://www.wunderground.com/) (The
 Weather Company; uso personal y no comercial),
 nubes observadas en el aeropuerto de Sabadell (METAR) del
 [Aviation Weather Center](https://aviationweather.gov/data/api/) de la NOAA,
-radar y advección de [Meteocat](https://www.meteo.cat/observacions/radar) y,
-de reserva, de [RainViewer](https://www.rainviewer.com/), avisos de AEMET a
+radar y advección de [Meteocat](https://www.meteo.cat/observacions/radar) y
+radar de [RainViewer](https://www.rainviewer.com/), avisos de AEMET a
 través de [Meteoalarm](https://meteoalarm.org/), avisos de trenes de la
 [web de Rodalies de Catalunya](https://rodalies.gencat.cat/), y trenes de
 [Renfe](https://data.renfe.com/) y de las

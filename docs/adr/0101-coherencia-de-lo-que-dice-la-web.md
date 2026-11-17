@@ -685,3 +685,15 @@ oficial…»): sin eso contradecía «Aquesta nit: pluja de 20 a 6 h» de arriba
   `revisor-instruccions.md` lo explica.
 - **«Perill» sin el plan de Protecció Civil de la portada** (14-11, 18:59):
   ya corregido en la 3.222.0 (ADR 0062).
+
+## Cambio del 17-11-2026 (3.224.5): el hallazgo del revisor del 16-11 a las 20:01
+
+- **RainViewer, «de reserva» en los créditos** (16-11, 20:01): «Fonts i
+  crèdits» decía «composició de la XRAD i advecció del Servei Meteorològic
+  de Catalunya i, de reserva, RainViewer», mientras «Fiabilitat» dice que se
+  usa el radar de RainViewer desde el 7 de octubre y «Com funciona», que
+  cada día se elige el que más ha acertado el último mes. La frase era de
+  cuando RainViewer solo entraba si fallaba Meteocat. Ahora nombra los dos
+  sin decir cuál es el de reserva, que cambia con la comparación (también
+  en castellano y en el README); cuál se usa lo dicen «Fiabilitat», con el
+  dato del día, y «Com funciona».
