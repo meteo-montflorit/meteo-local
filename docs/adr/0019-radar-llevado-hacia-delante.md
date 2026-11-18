@@ -335,8 +335,9 @@ se acercó sino que se formó: a las 18:24 la más cercana estaba a 28 km y a
 las 18:30 había una a 8 km. Lo que creció sin parar fue la superficie con
 lluvia a 15 km o menos (Meteocat: 0, 42, 67, 94 y 118 km² de 18:24 a 19:00).
 La línea dice lo medido, no una hora de llegada; si anuncia la lluvia en
-casa lo dirá un mes de registro (`creixement.csv`, docs/estadistica.md),
-revisado junto con el del movimiento el 17-11-2026. Lo mismo en /radar.
+casa lo dirá el registro (`creixement.csv`, docs/estadistica.md): con el
+primer mes no bastaba (revisión del 18-11-2026, al final); se revisa de nuevo
+desde el 21-03-2027. Lo mismo en /radar.
 
 En la 3.132.0 la línea cuenta lo que gana la lluvia, no cuántas veces crece:
 sale si a 15 km o menos ha ganado 50 km² o más en media hora (unos 7 de cada
@@ -491,3 +492,64 @@ de 30 minutos antes a 60 minutos después.
 Decisión de Juanjo (07-11-2026): cerrar el seguimiento sin cambiar el
 código. Scripts del análisis, fuera del repositorio (sesión del
 07-11-2026); los datos son los del registro del NAS.
+
+## Revisión del 18-11-2026: el movimiento es correcto; el crecimiento no basta todavía
+
+El registro del movimiento (`moviment_registre.py`, 3.127.0) corrió del 17-10
+al 18-11-2026: 6.291 comparaciones en 33 días con lluvia cerca. Resumen con
+`moviment_registre.py resum` (índice CSI: 1 es un acierto perfecto):
+
+| Antelación | Movimiento de | Casos | CSI llevándola | CSI quieta | Gana / pierde |
+|---|---|---|---|---|---|
+| 30 min | Meteocat | 2.679 | 0,374 | 0,333 | 1.668 / 721 |
+| 30 min | RainViewer | 66 | 0,065 | 0,054 | 7 / 2 |
+| 60 min | Meteocat | 2.727 | 0,255 | 0,244 | 1.331 / 954 |
+| 60 min | RainViewer | 69 | 0,029 | 0,030 | 1 / 3 |
+
+- **El movimiento es correcto.** Llevar la lluvia hacia delante acierta más
+  que dejarla quieta: a 30 minutos, con el movimiento de Meteocat, gana en
+  el 70 % de los casos que se deciden; a 60, la mejora es pequeña (gana en
+  el 58 %).
+- **Va con el viento en altura.** En 5.476 casos con viento de 5 km/h o
+  más a 700 hPa (Open-Meteo), la dirección se aparta una mediana de 20° (el
+  90 %, menos de 106°), y la velocidad es el 80 % de la del viento (mediana).
+- **El movimiento de RainViewer** sale pocas veces (66 y 69 casos) y con
+  lluvias pequeñas: no se puede juzgar.
+
+**El crecimiento alrededor de casa** (`creixement.csv`, 3.131.0): con la
+lluvia medida en casa cada 5 minutos, se miró si la superficie con lluvia a
+15 km o menos ($`A_t`$), lo que ha crecido en 30 minutos
+($`\ln\frac{A_t + 1}{A_{t-30} + 1}`$) y la cercanía de la lluvia de 2 mm/h o
+más anuncian lluvia en casa (0,2 mm o más) en la hora siguiente, cuando aún
+no llovía en casa. Regresión logística con avance temporal (ADR 0106) y
+remuestreo por días (ADR 0105). Hubo 3.159 casos, pero solo 82 con lluvia en
+casa la hora siguiente, en 8 días; se evaluaron 2.489 (43 con lluvia):
+
+| Modelo | Error de Brier |
+|---|---|
+| Climatología (sin radar) | 0,0174 |
+| Solo $`A_t`$ | 0,0166 |
+| $`A_t`$ y crecimiento | 0,0161 |
+| $`A_t`$, crecimiento y cercanía de la moderada | 0,0161 |
+
+- $`A_t`$ gana a la climatología con seguridad 1,0, pero la mejora es del
+  4,6 %.
+- El crecimiento no añade nada seguro a $`A_t`$: seguridad 0,81 (0,77 con
+  la cercanía), por debajo del 0,95 que exige el ADR 0105.
+- Las probabilidades que salen son bajas: de 2.489 casos, solo 16 pasan del
+  20 % (llovió en 5).
+
+**Decisión** (Juanjo, 18-11-2026, «sí, aplícalo», sobre la propuesta del
+agente):
+
+1. El cálculo del movimiento se deja como está, y la comparación se retira
+   (3.225.0): `apunta` ya no escribe `moviment.csv`, que se conserva con el
+   mes registrado para `resum`. Los recortes del radar se siguen guardando,
+   y archivando los que tienen lluvia cerca, para el ADR 0049.
+2. No se da «Pot arribar» con hora a partir del crecimiento. El registro
+   del crecimiento sigue, sin coste (es un programa, sin IA), porque un mes
+   de otoño con 8 días de lluvia en casa no basta. Se vuelve a evaluar a
+   partir del 21-03-2027, con el mismo método.
+
+Análisis hecho en la sesión del 18-11-2026, con los datos del registro del
+NAS; el guion no se guardó en el repositorio.

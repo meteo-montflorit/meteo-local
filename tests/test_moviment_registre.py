@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""El registro del movimiento del radar (17-10-2026): compara la lluvia llevada
-hacia delante con la de después, y la de dejarla quieta."""
+"""El registro del movimiento del radar (17-10-2026): comparaba la lluvia llevada
+hacia delante con la de después, y la de dejarla quieta, hasta el 18-11-2026
+(ADR 0019); ahora guarda los trozos para el archivo (ADR 0049) y el crecimiento."""
 import csv
 import datetime as dt
 import importlib
@@ -33,30 +34,22 @@ class Registre(unittest.TestCase):
         del os.environ["REGISTRE_DIR"]
         self.dir.cleanup()
 
-    def test_el_moviment_encerta_i_quieta_no(self):
+    def test_guarda_els_trossos_i_no_compara(self):
+        # ADR 0019 (18-11-2026): la comparació del moviment s'ha retirat; els
+        # trossos es continuen guardant, un per imatge, per a l'arxiu (ADR 0049).
         tx, ty = N.geometria(*C.CASA)
         km = N.km_px(C.CASA[0])
         fila, col = N.pixel(C.CASA[0], C.CASA[1], tx, ty)
         t0 = dt.datetime(2026, 10, 17, 16, 0, tzinfo=dt.timezone.utc)
-        v = [0.0, 0.4]              # cap a l'est, 0,4 columnes per minut (uns 22 km/h)
-        nc = {"v": v, "moviment": "meteocat"}
+        nc = {"v": [0.0, 0.4], "moviment": "meteocat"}
         for minuts in (0, 30):
             r = {"tx": tx, "ty": ty, "km_px": km,
-                 "meteocat": {"hora": t0 + dt.timedelta(minutes=minuts),
-                              "mm_h": xafec(fila + 5, col - 20 + v[1] * minuts)}}
-            self.MR.apunta(r, nc, ara=t0 + dt.timedelta(minutes=minuts))
-        with open(self.MR.FITXER, encoding="utf-8") as f:
-            files = list(csv.DictReader(f))
-        self.assertEqual(len(files), 1)
-        x = files[0]
-        self.assertEqual((x["radar"], x["antelacio_min"], x["font_moviment"]), ("meteocat", "30", "meteocat"))
-        self.assertEqual(float(x["csi_moviment"]), 1.0)
-        self.assertLess(float(x["csi_quieta"]), 0.3)
-        self.assertEqual(x["graus"], "90")
-        # La mateixa imatge en una altra passada no es torna a comptar.
-        self.MR.apunta(r, nc, ara=t0 + dt.timedelta(minutes=35))
-        with open(self.MR.FITXER, encoding="utf-8") as f:
-            self.assertEqual(len(list(csv.DictReader(f))), 1)
+                 "meteocat": {"hora": t0 + dt.timedelta(minutes=minuts), "mm_h": xafec(fila + 5, col - 20)}}
+            self.assertEqual(self.MR.apunta(r, nc, ara=t0 + dt.timedelta(minutes=minuts)), 1)
+        self.assertEqual(self.MR.apunta(r, nc, ara=t0 + dt.timedelta(minutes=35)), 0)   # la mateixa imatge
+        self.assertEqual(sorted(os.listdir(self.MR.TROSSOS)),
+                         ["meteocat-202610171600Z.npz", "meteocat-202610171630Z.npz"])
+        self.assertFalse(os.path.exists(self.MR.FITXER))
 
     def test_els_trossos_amb_pluja_a_prop_es_guarden(self):
         # ADR 0049 (14-11-2026): passades les hores, el tros amb pluja a prop de casa

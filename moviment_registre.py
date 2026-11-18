@@ -1,32 +1,32 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """¿Acierta el movimiento del radar? Un mes de registro antes de decidir si
-hay que revisarlo (ADR 0019; Juanjo, 17-10-2026: «el calculo de la velocidad
+había que revisarlo (ADR 0019; Juanjo, 17-10-2026: «el calculo de la velocidad
 y direccion de la lluvia es correcto o habria que revisarlo?» y «monta el
 registro del movimiento»).
 
-El movimiento (nowcast.moviment) solo se comprobó con una tarde, la del
-06-10-2026 (ADR 0023), y no se guardaba. En cada pasada del NAS, sin pedir
-nada más a nadie (las imágenes son las que ya se han bajado):
+Decidido el 18-11-2026 (ADR 0019): el movimiento es correcto y se deja como
+está, así que la comparación se retiró. Lo que sigue en cada pasada del NAS,
+sin pedir nada más a nadie (las imágenes son las que ya se han bajado):
 
 - `apunta(r, nc)` (desde prevision.radar): guarda el trozo de 60 km alrededor de
   casa de la última imagen de cada radar (Meteocat y RainViewer), con el
-  movimiento que se ha usado, en /estat/moviment (se borran a las 3 horas).
-  Después, para cada trozo de hace unos 30 y 60 minutos del mismo radar, lleva
-  su lluvia hacia delante con el movimiento de entonces y la compara con la
-  de ahora, en el círculo de 50 km: el índice de acierto (CSI, aciertos entre
-  aciertos, fallos y falsas alarmas) del movimiento y el de dejarla quieta.
-  Una fila por comparación en registre/moviment.csv.
+  movimiento que se ha usado, en /estat/moviment; a las 3 horas se borra, o
+  va al archivo si tiene lluvia cerca (ADR 0049). Del 17-10 al 18-11-2026,
+  además, comparaba la lluvia de hace 30 y 60 minutos llevada hacia delante
+  con la que veía después el mismo radar, y con dejarla quieta, en
+  registre/moviment.csv, que se conserva.
 - `apunta_creixement(c)` (también desde prevision.radar): cuánta lluvia hay a
   15 km o menos de casa en la última imagen de RainViewer y en la de 30
   minutos antes, y a qué distancia está la moderada, una fila por imagen en
   registre/creixement.csv. Para comprobar con la lluvia medida en casa si la
   lluvia que crece alrededor anuncia la de casa (Juanjo, 17-10-2026: «no se
-  trata solo de la direccion de la lluvia sino de hacia donde crece»).
-- `resum`: el CSI medio del movimiento y de dejarla quieta, por antelación y
-  por de dónde sale el movimiento, en cuántos casos gana cada uno y, para las
-  horas con movimiento, cuánto se aparta del viento a 700 hPa (unos 3.000 m,
-  el que arrastra los chubascos) de Open-Meteo.
+  trata solo de la direccion de la lluvia sino de hacia donde crece»). Con el
+  primer mes no bastaba (ADR 0019): sigue hasta la revisión de primavera.
+- `resum`: con el registro del mes, el CSI medio del movimiento y de dejarla
+  quieta, por antelación y por de dónde sale el movimiento, en cuántos casos
+  gana cada uno y cuánto se aparta del viento a 700 hPa (unos 3.000 m, el que
+  arrastra los chubascos) de Open-Meteo.
 
   python3 moviment_registre.py resum
 """
@@ -49,14 +49,8 @@ CAMPS_CREIX = ["emes", "minuts", "km2", "km2_abans", "km_moderada", "km_moderada
 TROSSOS = os.path.join(os.path.dirname(REGISTRE), "moviment")
 ARXIU = os.path.join(REGISTRE, "radar-retalls")   # los trozos con lluvia cerca, sin borrar
 ARXIU_KM = 30
-CAMPS = ["emes", "radar", "antelacio_min", "font_moviment", "kmh", "graus",
-         "csi_moviment", "csi_quieta", "px_vista", "px_prevista", "px_quieta"]
 RADI_KM = 60          # el trozo que se guarda
-AVALUA_KM = 50        # donde se compara: margen para lo que entra de fuera
-ANTELACIONS = (30, 60)
-MARGE_MIN = 8         # la imagen de hace 30 min puede ser de hace 22 a 38
 GUARDA_H = 3
-PX_MIN = 20           # con menos lluvia, vista y prevista, no se compara
 
 
 def tros(camp, fila, col, n):
@@ -67,27 +61,10 @@ def tros(camp, fila, col, n):
     return np.clip(np.round(t * 10), 0, 255).astype(np.uint8)
 
 
-def desplaca(a, df, dc):
-    """a desplazada df filas y dc columnas, con ceros en lo que entra."""
-    import numpy as np
-    b = np.zeros_like(a)
-    n = a.shape[0]
-    if abs(df) >= n or abs(dc) >= n:
-        return b
-    b[max(df, 0):n + min(df, 0), max(dc, 0):n + min(dc, 0)] = a[max(-df, 0):n + min(-df, 0), max(-dc, 0):n + min(-dc, 0)]
-    return b
-
-
-def csi(prevista, vista):
-    encerts = (prevista & vista).sum()
-    total = (prevista | vista).sum()
-    return None if total == 0 else round(float(encerts / total), 3)
-
-
 def apunta(r, nc, ara=None):
-    """Guarda las imágenes de ahora y compara con ellas las de hace 30 y 60
-    minutos; nc es nowcast.resum(r), con el movimiento que se ha usado. Solo
-    en el NAS (si existe la carpeta del registro)."""
+    """Guarda las imágenes de ahora, con el movimiento que se ha usado (nc es
+    nowcast.resum(r)), y archiva o borra las de hace más de GUARDA_H horas.
+    Solo en el NAS (si existe la carpeta del registro)."""
     import numpy as np
     if not os.path.isdir(REGISTRE):
         return 0
@@ -104,50 +81,17 @@ def apunta(r, nc, ara=None):
         imatges.append(("meteocat", mc["hora"], mc["mm_h"]))
     if rv:
         imatges.append(("rainviewer", rv["hores"][-1], rv["mm_h"][-1]))
-    yy, xx = np.mgrid[-n:n + 1, -n:n + 1]
-    zona = np.hypot(yy, xx) * k <= AVALUA_KM
-    files = []
+    noves = 0
     for radar, hora, camp in imatges:
         # El nom, amb l'hora en UTC: la nit d'octubre, les dues imatges de les
         # 2:30 tenien el mateix nom (ADR 0128).
         ruta = os.path.join(TROSSOS, f"{radar}-{H.utc(hora):%Y%m%d%H%M}Z.npz")
-        ara_t = tros(camp, fila, col, n)
         if not os.path.exists(ruta):
-            np.savez_compressed(ruta, mm=ara_t, km_px=k, hora=H.clau(hora),
+            np.savez_compressed(ruta, mm=tros(camp, fila, col, n), km_px=k, hora=H.clau(hora),
                                 v=np.array(v if v else (np.nan, np.nan)), font=font if v else "cap")
-        vista = (ara_t >= N.PLOU_MMH * 10) & zona
-        for antelacio in ANTELACIONS:
-            for vell in glob.glob(os.path.join(TROSSOS, f"{radar}-*.npz")):
-                d = np.load(vell)
-                hora_v = H.llegeix(str(d["hora"]))
-                minuts = (hora - hora_v).total_seconds() / 60
-                if abs(minuts - antelacio) > MARGE_MIN or ja_avaluat(radar, hora_v, antelacio):
-                    continue
-                antiga = d["mm"] >= N.PLOU_MMH * 10
-                vv = d["v"]
-                if np.isnan(vv).any():
-                    prevista = antiga
-                    kmh = graus = None
-                else:
-                    prevista = desplaca(antiga, int(round(vv[0] * minuts)), int(round(vv[1] * minuts)))
-                    kmh, graus = round(math.hypot(*vv) * k * 60, 1), round(N.graus(vv))
-                prevista, quieta = prevista & zona, antiga & zona
-                if vista.sum() < PX_MIN and prevista.sum() < PX_MIN and quieta.sum() < PX_MIN:
-                    continue
-                files.append({"emes": H.clau(hora_v), "radar": radar,
-                              "antelacio_min": antelacio, "font_moviment": str(d["font"]), "kmh": kmh,
-                              "graus": graus, "csi_moviment": csi(prevista, vista), "csi_quieta": csi(quieta, vista),
-                              "px_vista": int(vista.sum()), "px_prevista": int(prevista.sum()),
-                              "px_quieta": int(quieta.sum())})
-    if files:
-        nou = not os.path.exists(FITXER)
-        with open(FITXER, "a", newline="", encoding="utf-8") as f:
-            w = csv.DictWriter(f, CAMPS)
-            if nou:
-                w.writeheader()
-            w.writerows(files)
+            noves += 1
     neteja(ara)
-    return len(files)
+    return noves
 
 
 def apunta_creixement(c):
@@ -167,25 +111,6 @@ def apunta_creixement(c):
             w.writeheader()
         w.writerow({**c, "emes": c["hora"], "creix": int(bool(c["creix"]))})
     return 1
-
-
-_avaluats = None
-
-
-def ja_avaluat(radar, hora, antelacio):
-    """Si ya hay fila para esta imagen y antelación (una pasada que se repite
-    con la misma imagen no la vuelve a contar)."""
-    global _avaluats
-    if _avaluats is None:
-        _avaluats = set()
-        if os.path.exists(FITXER):
-            with open(FITXER, encoding="utf-8") as f:
-                _avaluats = {(x["radar"], H.clau(x["emes"]), int(x["antelacio_min"])) for x in csv.DictReader(f)}
-    clau = (radar, H.clau(hora), antelacio)
-    if clau in _avaluats:
-        return True
-    _avaluats.add(clau)
-    return False
 
 
 def neteja(ara):

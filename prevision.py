@@ -332,7 +332,8 @@ def radar():
            "mapa": N.mapa(ara, fila, col, r["km_px"]), "propera": N.propera(ara, fila, col, r["km_px"]),
            "forta": N.forta(ara, fila, col, r["km_px"]),
            "creixement": N.creixement(r, fila, col, r["km_px"])}
-    # El registro del movimiento, para comprobar en un mes si acierta (moviment_registre.py).
+    # Los recortes del radar (archivo del ADR 0049) y el registro del crecimiento
+    # (moviment_registre.py; la comparación del movimiento acabó el 18-11-2026, ADR 0019).
     for apunta, arg in ((MR.apunta, (r, res["nowcast"])), (MR.apunta_creixement, (res["creixement"],))):
         try:
             apunta(*arg)

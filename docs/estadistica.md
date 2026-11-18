@@ -611,11 +611,14 @@ aunque desde la 3.211.0 la web use las franjas de Meteocat). La página solo dic
 el 31 % del terreny a 15 km o menys; fa mitja hora, el 16 %»), cuando ha
 ganado al menos 50 km²: $`A_t - A_{t-30} \ge 50`$ km². Se cuenta lo que gana
 y no cuántas veces crece, porque el doble de 10 km² son unos píxeles y el de
-216 es buena parte del entorno. Con un mes
-de datos se comprobará, con regresión logística y validación con días que el
-modelo no ha visto, si $`A_t`$, $`A_t / A_{t-30}`$ y esas distancias
-anuncian lluvia en casa en la hora siguiente; solo si la mejora es segura
-pasarán a dar una hora de llegada.
+216 es buena parte del entorno. El 18-11-2026, con el primer mes, se
+comprobó con regresión logística y avance temporal si $`A_t`$, su
+crecimiento y esas distancias anuncian lluvia en casa en la hora siguiente:
+$`A_t`$ mejora un 4,6 % a la climatología, el crecimiento no añade nada
+seguro y las probabilidades casi nunca pasan del 20 % (8 días con lluvia en
+casa; ADR 0019). No da hora de llegada; el registro sigue y se vuelve a
+evaluar desde el 21-03-2027. Solo si la mejora es segura pasarán a dar una
+hora de llegada.
 
 ### Hacia delante
 

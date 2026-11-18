@@ -225,7 +225,7 @@ Umbrales y lugares, en `config.py`. El porqué, en los ADR.
 | `pluviometre.py` | Comprueba una vez, tras limpiarlo, si el pluviómetro marca la lluvia débil y avisa por Telegram (ADR 0017) |
 | `riscos.py` | Situaciones de peligro según lo medido y lo previsto, que usan la página y los avisos (ADR 0018) |
 | `fi_pluja.py` | Comprueba a qué hora para la lluvia según el radar, antes de enseñarlo (ADR 0049) |
-| `moviment_registre.py` | Registra si el movimiento del radar acierta, comparado con dejar la lluvia quieta y con el viento en altura, y cuánta lluvia crece a 15 km o menos de casa; se decide con un mes de datos (ADR 0019) |
+| `moviment_registre.py` | Guarda los recortes del radar alrededor de casa (archivo del ADR 0049) y cuánta lluvia crece a 15 km o menos de casa, para ver si anuncia la de casa (se revisa desde el 21-03-2027); del 17-10 al 18-11-2026 comparó el movimiento del radar con dejar la lluvia quieta y con el viento en altura: es correcto (ADR 0019) |
 | `pluja_arriba.py` | Cuándo llegará la lluvia que ve el radar (la usa el aviso público de lluvia) y registro de sus aciertos (ADR 0022) |
 | `arribada.py` | Mide si la lluvia llega a la hora que dice el radar y aprende el retraso, si lo hay (ADR 0022) |
 | `riera.py` | Lluvia en la cuenca de la riera de Sant Cugat y aviso de atención o peligro de desbordamiento, con registro de episodios (ADR 0027) |

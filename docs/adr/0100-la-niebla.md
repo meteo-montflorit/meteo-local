@@ -1,6 +1,6 @@
 # 100. La niebla
 
-Fecha: 2026-10-17 · Estado: en curso (la hora en curso, aplicada; ICON, en vigilancia hasta el 17-11-2026)
+Fecha: 2026-10-17 · Estado: en curso (la hora en curso, aplicada; ICON y las preguntas, en vigilancia hasta el 28-02-2027: revisión del 18-11-2026, al final)
 
 ## Contexto
 
@@ -55,7 +55,9 @@ que muchas veces tiene niebla ella sola, no en Sabadell».
   (`registre/boira-icon.csv`). `boira.py resum` lo compara, con 1 a 6 horas
   de antelación, con la niebla de Sabadell con casa saturada y con casa
   saturada sin lluvia (lo que se tiene de la riera): aciertos, fallos y
-  falsas alarmas. Se decide con un mes de datos, a partir del 17-11-2026.
+  falsas alarmas. Se iba a decidir con un mes de datos, a partir del
+  17-11-2026; con tan poca niebla, la vigilancia sigue hasta el 28-02-2027
+  (revisión del 18-11-2026, al final).
 
 ## Riesgos
 
@@ -146,3 +148,30 @@ una vez más. Cualquier otro error falla como antes.
 **Validación.** `tests/test_confirmacio.py`; en el NAS, el mismo bucle que
 reproducía el fallo (150 lecturas seguidas del cielo, una por segundo), sin
 ningún 409.
+
+## Revisión del 18-11-2026: poca niebla para decidir; la vigilancia sigue el invierno
+
+Resumen de `boira.py resum` del 17-10 al 18-11-2026, con las confirmaciones
+cruzadas a mano con la previsión de ICON de la hora que marca `val_per`:
+
+- **Niebla en Sabadell:** el METAR dio FG en 5 de 861 horas, y en ninguna
+  de las 767 con casa saturada. Contra la niebla observada no hay nada que
+  comparar: ICON la dio en 56 de esas horas, todas falsas alarmas.
+- **Casa saturada sin lluvia no es niebla en la riera.** De 30 respuestas
+  al bot, 1 «sí» (la del 17-10), 25 «no» con casa al 98-99 % y 4 «no lo
+  sé». Por eso la segunda línea del resumen (766 horas, 190 «con niebla»,
+  detección del 25 %) no mide la niebla: cuenta como niebla todas las
+  horas saturadas.
+- **ICON frente a las respuestas:** dio niebla en 3 de las 25 veces que no
+  la había (28-10, 07-11 y 09-11) y no la dio la mañana del 17-10, la única
+  con niebla confirmada.
+- **No hay regla posible para la riera** con una sola niebla confirmada.
+
+**Decisión** (Juanjo, 18-11-2026, «sí, aplícalo», sobre la propuesta del
+agente): ICON no entra en la web, que sigue diciendo «Boira» solo con la
+regla de la hora en curso (FG en Sabadell y casa al 97 % o más). Como un
+mes de otoño con una sola niebla no permite decidir y la temporada de
+nieblas va de noviembre a febrero, el registro de ICON y las preguntas del
+bot siguen igual hasta el 28-02-2027; entonces se repite esta revisión y se
+decide si ICON entra, con qué umbral, y si hay regla para la riera. No cambia
+el código: el registro es un programa, sin IA, y no gasta nada.
