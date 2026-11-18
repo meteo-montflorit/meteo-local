@@ -1443,12 +1443,13 @@ function marcaPublicacio(curts, desDe, ara) {
 }
 
 // Les línies del resum del dia (a «El temps» i a «Consultes») amb un detall
-// al darrere (ADR 0075): els trens, a «Consultes › Trens»; totes les alertes
+// al darrere (ADR 0075): els trens i els busos, a «Consultes»; totes les alertes
 // de perill (ADR 0093), a «Perill».
 // Les alertes, a la seva fitxa (fitxaDeLinia).
 function detallLinia(text) {
   const t = text.trim();
   if (/^(Trens|Trenes) /.test(t)) return 'consultes.html#trens';
+  if (/^(Busos|Autobuses) del barri/.test(t)) return 'consultes.html#busos';
   return LINIA_PERILL.test(t) ? fitxaDeLinia(t) : null;
 }
 
@@ -1879,6 +1880,7 @@ const ICONA_LINIA = [
   [/^(Sense pluja|Sin lluvia)/, 'i-umbrella-off'],
   [/^Temperatura/, 'i-thermometer'],
   [/^(Trens|Trenes)/, 'i-train-front'],
+  [/^(Busos|Autobuses) del barri/, 'i-bus'],
   [/^(Roba|Ropa)/, 'i-shirt'],
 ];
 

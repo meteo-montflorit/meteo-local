@@ -197,6 +197,33 @@ class Resum(unittest.TestCase):
         self.assertIn("Trens de Cerdanyola: 🔴 R4 sense trens.", r)
         self.assertIn("Posible lluvia de 12 a 15 h", B.resum(dades(), "es", ARA))
 
+    def test_resum_amb_els_busos(self):
+        # Juanjo, 18-11-2026: el resum parlava dels trens i mai dels busos (ADR 0120).
+        ara_n = ARA.astimezone(B.ZONA).replace(tzinfo=None)
+        h = lambda minuts: (ara_n + dt.timedelta(minutes=minuts)).isoformat(timespec="minutes")  # noqa: E731
+        linies = [{"linia": x, "nom": "", "sentits": []} for x in ("CV1", "CV4", "CV5")]
+        d = dades()
+        d["busos"] = {"incidencies": [], "linies": linies}
+        r = B.resum(d, "ca", ARA)
+        self.assertIn("Trens de Cerdanyola: 🔴 R4 sense trens.\n🟢 Busos del barri (CV1, CV4, CV5) sense incidències.", r)
+        self.assertIn("🟢 Autobuses del barrio (CV1, CV4, CV5) sin incidencias.", B.resum(d, "es", ARA))
+        # La de més tard avui, amb l'hora; l'acabada i la de demà, no.
+        d["busos"]["incidencies"] = [
+            {"linies": ["CV4"], "titol": {"ca": "Desviament <provisional>.", "es": "Desvío provisional"}, "inici": h(120)},
+            {"linies": ["CV1"], "titol": {"ca": "Ja acabada"}, "inici": h(-300), "fi": h(-10)},
+            {"linies": ["CV5"], "titol": {"ca": "Demà"}, "inici": h(60 * 20)}]
+        hm = lambda minuts: f"{(ara_n + dt.timedelta(minutes=minuts)).hour}:{(ara_n + dt.timedelta(minutes=minuts)).minute:02d}"  # noqa: E731
+        self.assertIn(f"🟠 Busos del barri: CV4: Desviament &lt;provisional&gt;, a partir de les {hm(120)}.\n", B.resum(d, "ca", ARA))
+        self.assertIn(f"🟠 Autobuses del barrio: CV4: Desvío provisional, a partir de las {hm(120)}.", B.resum(d, "es", ARA))
+        # Sense els avisos de l'AMB no es pot dir que no n'hi hagi; sense dades, tampoc.
+        d["busos"]["incidencies"] = []
+        d["errors"] = ["busos: avisos: timeout"]
+        self.assertIn("Busos del barri: ara mateix no hi ha dades de l'AMB.", B.resum(d, "ca", ARA))
+        d["errors"], d["busos"] = [], None
+        self.assertIn("Autobuses del barrio: ahora mismo no hay datos del AMB.", B.resum(d, "es", ARA))
+        # Demà no: com els trens, és l'estat d'ara.
+        self.assertNotIn("Busos", B.resum(d, "ca", ARA, dema=True))
+
     def test_ara_amb_l_estacio_particular_i_fins_a_mitjanit(self):
         # La temperatura d'ara, de l'estació particular; la pluja, de qualsevol.
         d = dades()

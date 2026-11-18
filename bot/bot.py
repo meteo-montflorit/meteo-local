@@ -1175,6 +1175,7 @@ def resum(dades, idioma, moment, dema=False, avui=False, telegram=False):
                 paraigua = text_paraigua(tram + nit, idioma)
         linies += linies_perill_dia(dades, idioma, moment.date(), moment)
         linies.append(text_trens_resum(dades, idioma))
+        linies.append(text_busos_resum(dades, idioma, moment))
     # La ropa, al final y aparte (Juanjo, 08-10-2026: «muy desordenado»), y
     # detrás, el paraguas.
     roba = " ".join(x for x in (roba, paraigua) if x) or None
@@ -1298,23 +1299,62 @@ def hores_parada(hores, des, idioma):
     return f"{_dia_bus(d, idioma)} a las {_hora_bus(d)}" if idioma == "es" else f"{_dia_bus(d, idioma)} a les {_hora_bus(d)}"
 
 
+def quan_incidencia_bus(inc, des, idioma):
+    """«, a partir de les 9:00», «, fins al dv. 21» o res, com a la web
+    (comu.liniaIncidenciaBus)."""
+    es = idioma == "es"
+    inici = inc.get("inici") and hora_local(inc["inici"])
+    fi = inc.get("fi") and hora_local(inc["fi"])
+    if inici and inici > des:
+        return (f", a partir de las {_hora_bus(inici)}" if es else f", a partir de les {_hora_bus(inici)}") \
+            if inici.date() == des.date() else \
+            (f", a partir del {_dia_bus(inici, idioma)} a las {_hora_bus(inici)}" if es
+             else f", a partir del {_dia_bus(inici, idioma)} a les {_hora_bus(inici)}")
+    if fi:
+        return (f", hasta las {_hora_bus(fi)}" if es else f", fins a les {_hora_bus(fi)}") if fi.date() == des.date() \
+            else (f", hasta el {_dia_bus(fi, idioma)}" if es else f", fins al {_dia_bus(fi, idioma)}")
+    return ""
+
+
+def text_busos_resum(dades, idioma, moment):
+    """Al resum d'avui, sota els trens (Juanjo, 18-11-2026: «habla de los
+    trenes, pero nunca habla de los autobuses»; ADR 0120): les incidències de
+    les línies del barri que encara no s'han acabat i comencen abans de
+    mitjanit, amb el títol de l'AMB i quan, sense les hores de pas, que són a
+    /busos. Surt sempre, com la dels trens: si no, no se sabria si no passa
+    res o si no es mira. El color, el dels trens amb incidències."""
+    es = idioma == "es"
+    cap = "Autobuses del barrio" if es else "Busos del barri"
+    busos = dades.get("busos") or {}
+    # Sense els avisos de l'AMB (busos.calcula deixa la llista buida i l'error), no es
+    # pot dir que no n'hi hagi.
+    sense_avisos = any(e.startswith("busos: avisos") for e in dades.get("errors") or [])
+    if not busos.get("linies") or sense_avisos:
+        return (f"{cap}: ahora mismo no hay datos del AMB." if es
+                else f"{cap}: ara mateix no hi ha dades de l'AMB.")
+    des = moment.astimezone(ZONA).replace(tzinfo=None)
+    mitjanit = des.replace(hour=23, minute=59, second=59)
+    incs = [inc for inc in busos.get("incidencies") or []
+            if not (inc.get("fi") and hora_local(inc["fi"]) < des)
+            and not (inc.get("inici") and hora_local(inc["inici"]) > mitjanit)]
+    if not incs:
+        linies = ", ".join(l["linia"] for l in busos["linies"])
+        return (f"{CERCLE['baix']} {cap} ({linies}) sin incidencias." if es
+                else f"{CERCLE['baix']} {cap} ({linies}) sense incidències.")
+    parts = []
+    for inc in incs:
+        titol = ((inc.get("titol") or {}).get(idioma) or (inc.get("titol") or {}).get("ca") or "").strip().rstrip(".")
+        parts.append(html.escape(f"{', '.join(inc.get('linies') or [])}: {titol}{quan_incidencia_bus(inc, des, idioma)}",
+                                 quote=False))
+    return f"{CERCLE['alt']} {cap}: " + "; ".join(parts) + "."
+
+
 def linia_incidencia_bus(inc, des, idioma):
     es = idioma == "es"
     titol = (inc.get("titol") or {}).get(idioma) or (inc.get("titol") or {}).get("ca") or ""
     url = (inc.get("url") or {}).get(idioma) or (inc.get("url") or {}).get("ca")
     text = enllac(url, titol) if url else html.escape(titol, quote=False)
-    inici = inc.get("inici") and hora_local(inc["inici"])
-    fi = inc.get("fi") and hora_local(inc["fi"])
-    if inici and inici > des:
-        quan = (f", a partir de las {_hora_bus(inici)}" if es else f", a partir de les {_hora_bus(inici)}") \
-            if inici.date() == des.date() else \
-            (f", a partir del {_dia_bus(inici, idioma)} a las {_hora_bus(inici)}" if es
-             else f", a partir del {_dia_bus(inici, idioma)} a les {_hora_bus(inici)}")
-    elif fi:
-        quan = (f", hasta las {_hora_bus(fi)}" if es else f", fins a les {_hora_bus(fi)}") if fi.date() == des.date() \
-            else (f", hasta el {_dia_bus(fi, idioma)}" if es else f", fins al {_dia_bus(fi, idioma)}")
-    else:
-        quan = ""
+    quan = quan_incidencia_bus(inc, des, idioma)
     # Les parades que toca, com a la web (comu.liniaIncidenciaBus; revisor, 14-11-2026).
     parades = ""
     if inc.get("parades"):

@@ -68,6 +68,18 @@ tres días, que desaparece al abrir cada una, y no en «Si surts».
   horario en PDF y la hora de los datos (`bot.text_busos_bot`). En la web,
   «Consultes › Busos» se sigue dibujando con los datos, no con ese texto,
   para poder plegar las líneas.
+- **En el resumen del día** (desde la 3.225.3; Juanjo, 18-11-2026: «habla de
+  los trenes, pero nunca habla de los autobuses»), una línea debajo de la de
+  los trenes, solo en el de hoy, como ellos (`bot.text_busos_resum`): «🟢
+  Busos del barri (CV1, CV4, CV5) sense incidències» o, en ámbar como los
+  trenes con incidencias, cada incidencia que aún no ha acabado y empieza
+  antes de medianoche, con la línea, el título del AMB y cuándo; sin las horas
+  de paso, que están en /busos. Sale siempre, también sin incidencias: si no,
+  no se sabría si no pasa nada o si no se mira. Si no llegan los avisos del
+  AMB (`busos: avisos` en `errors`), dice que no hay datos, no que no hay
+  incidencias. En la web, la línea lleva a «Consultes › Busos»
+  (`comu.detallLinia`). Hasta entonces no estaba porque los autobuses llegaron
+  después del bot y nadie la añadió.
 - El muestreo de `calibracio/mostreig_busos.py` sigue en marcha en el NAS.
 
 ## Evidencia

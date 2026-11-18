@@ -1552,6 +1552,8 @@ class Web(unittest.TestCase):
         d = lambda t: self.avalua("2026-10-12T10:00:00+02:00", f"detallLinia({json.dumps(t)})")
         self.assertEqual(d("Trens de Cerdanyola:  R4 amb incidències."), "consultes.html#trens")
         self.assertEqual(d(" Trenes de Cerdanyola sin incidencias."), "consultes.html#trens")
+        self.assertEqual(d(" Busos del barri (CV1, CV4, CV5) sense incidències."), "consultes.html#busos")
+        self.assertEqual(d(" Autobuses del barrio: CV4: Desvío provisional, a partir de las 9:00."), "consultes.html#busos")
         self.assertEqual(d(" Avís groc de l'AEMET per pluja al Vallès fins a les 20:00."), "perill.html")
         self.assertEqual(d("AEMET: aviso amarillo por lluvia en el Vallès hasta las 20:00."), "perill.html")
         self.assertIsNone(d("Sense pluja prevista."))
