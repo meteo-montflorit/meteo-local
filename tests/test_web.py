@@ -1415,6 +1415,22 @@ class Web(unittest.TestCase):
                 f" llegitAmbClauAntiga('smp:vent:alt', 'smp:vent:alt{hora}')]")
         self.assertEqual(self.avalua(ara, expr), [True, False, False])
 
+    def test_avis_que_desapareix_una_estona_no_torna_a_ser_nou(self):
+        # Juanjo, 18-11-2026: el groc de vent de l'AEMET publicat a les 11:15 tornava a dir «Nou»
+        # a la tarda: una lectura fallida de l'AEMET el va treure de la portada i, en pintar-la,
+        # es va oblidar que ja s'havia vist.
+        ara = "2026-11-18T15:30:00+01:00"
+        aemet = "aemet:groc:vent:2026-11-19T00:00+01:00/2026-11-19T09:59:59+01:00|2026-11-18T10:15:00.000Z"
+        vell = "risc:previsio:ratxa:groc|2026-11-10T08:00:00.000Z"
+        sense_hora = "aemet:groc:pluja:x|"
+        expr = (f"desats = {{'meteo.avisos-llegits': JSON.stringify({json.dumps([aemet, vell, sense_hora])})}};"
+                "localStorage.getItem = (k) => desats[k] || null; localStorage.setItem = (k, v) => { desats[k] = v; };"
+                "HISTORIAL_PERILL = []; marcaPublicacio([], new Map(), new Date());"
+                "JSON.parse(desats['meteo.avisos-llegits'])")
+        # Es recorda el d'avui, encara que ara no surti; el de fa més d'una setmana i el que no
+        # té hora de publicació, no.
+        self.assertEqual(self.avalua(ara, expr), [aemet])
+
     def test_perill_avui_i_dema_d_un_altre_dia(self):
         # Revisor, 20-10-2026: la fitxa acabada del vent del dilluns deia «avui de 17 a 18 h» el dimarts.
         propi = {"clau": "propi", "inici": "2026-10-19T13:09+02:00", "escrit": "2026-10-19T15:00+02:00",

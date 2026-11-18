@@ -1318,6 +1318,24 @@ function curtsAvisos(perills, talls, smp, hrefDe, ara) {
 // recent. I «Nou» als que aquest dispositiu encara no havia mostrat.
 const CLAU_AVISOS_LLEGITS = 'meteo.avisos-llegits';
 let LLEGITS_ABANS = null;     // els que ja s'havien mostrat en obrir la pàgina
+// El que ja s'ha mostrat es recorda una setmana des que es va publicar, encara
+// que l'avís deixi de sortir una estona. Fins a la 3.225.0 només es recordava
+// el que hi havia a la darrera pintada: una lectura fallida de l'AEMET el
+// treia de la portada i, en tornar, el groc de vent publicat a les 11:15
+// tornava a dir «Nou» a la tarda (Juanjo, 18-11-2026: «lleva publicado desde
+// hace horas»; ADR 0094).
+const RECORDA_LLEGITS_MS = 7 * 24 * 3600000;
+
+// Els d'ara i, dels d'abans, els publicats fa menys de RECORDA_LLEGITS_MS
+// (la clau acaba en «|» i l'hora de publicació; sense hora, només mentre surt).
+function llegitsARecordar(ara_, abans, ara) {
+  const res = new Set(ara_);
+  for (const k of abans) {
+    const hora = new Date(k.slice(k.lastIndexOf('|') + 1));
+    if (k.includes('|') && !Number.isNaN(hora.getTime()) && ara - hora < RECORDA_LLEGITS_MS) res.add(k);
+  }
+  return [...res];
+}
 
 function episodiDe(href) {
   const id = (href || '').split('#')[1];
@@ -1389,7 +1407,9 @@ function marcaPublicacio(curts, desDe, ara) {
     }
   }
   if (ambHistorial) {
-    try { localStorage.setItem(CLAU_AVISOS_LLEGITS, JSON.stringify(ara_)); } catch (e) { /* sense memòria, sempre «Nou» */ }
+    try {
+      localStorage.setItem(CLAU_AVISOS_LLEGITS, JSON.stringify(llegitsARecordar(ara_, llegeixLlegits(), ara)));
+    } catch (e) { /* sense memòria, sempre «Nou» */ }
   }
 }
 

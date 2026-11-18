@@ -239,3 +239,26 @@ importa sin desplegarlo. Se planteó pasar el bloque debajo del gráfico, ya
 que los avisos meteorológicos salen en él, y se descartó: el gráfico no
 enseña los planes de Protecció Civil, los incendios, la riera, el Pla Alfa ni
 los cortes de luz. Así el gráfico cabe en la pantalla del móvil (ADR 0074).
+
+## Cambio del 18-11-2026 (3.225.1): lo visto no se olvida si el aviso falta un rato
+
+Juanjo, 18-11-2026, con la portada abierta desde hacía horas: el amarillo de
+viento de la AEMET publicado a las 11:15, que ya había salido sin «Nou», salió
+por la tarde con «Nou». Causa: cada pintada guardaba en
+`meteo.avisos-llegits` solo los avisos que mostraba en ese momento, y una
+lectura fallida de la AEMET (`casa.py` publica entonces `avisos` vacío, con el
+aviso de la fuente que falla) quitó la línea de la portada; en la pintada
+siguiente se borró de lo visto y, al recargar la página con la AEMET ya
+respondiendo, volvió como nuevo. Pasaba igual con cualquier fuente que fallara
+un rato (Meteocat, la riera, los incendios).
+
+Ahora (`llegitsARecordar`) se guarda lo de ahora más lo anterior publicado
+hace menos de una semana (la hora de publicación va al final de la clave, tras
+«|»); lo que no tiene hora de publicación se recuerda solo mientras sale. Una
+actualización real sigue saliendo como nueva, porque cambia la hora de la
+clave. Se descartó quitar el «Nou» al volver a la pestaña: no arreglaba el
+caso, que venía de la recarga. Evidencia: las claves guardadas en el Chrome de
+Juanjo y los datos publicados del 18-11 (la clave del aviso no cambió) y
+`tests/test_web.py` (`test_avis_que_desapareix_una_estona_no_torna_a_ser_nou`),
+que falla con el código anterior. Riesgo: la lista crece con los avisos de una
+semana, unas decenas de claves como mucho.
