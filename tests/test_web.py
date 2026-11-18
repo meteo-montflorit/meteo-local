@@ -1421,15 +1421,21 @@ class Web(unittest.TestCase):
         # es va oblidar que ja s'havia vist.
         ara = "2026-11-18T15:30:00+01:00"
         aemet = "aemet:groc:vent:2026-11-19T00:00+01:00/2026-11-19T09:59:59+01:00|2026-11-18T10:15:00.000Z"
+        alfa = "pla:alfa:2|"            # sense hora de publicació (Pla Alfa, talls de llum)
         vell = "risc:previsio:ratxa:groc|2026-11-10T08:00:00.000Z"
-        sense_hora = "aemet:groc:pluja:x|"
-        expr = (f"desats = {{'meteo.avisos-llegits': JSON.stringify({json.dumps([aemet, vell, sense_hora])})}};"
-                "localStorage.getItem = (k) => desats[k] || null; localStorage.setItem = (k, v) => { desats[k] = v; };"
+        desa = ("localStorage.getItem = (k) => desats[k] || null; localStorage.setItem = (k, v) => { desats[k] = v; };"
                 "HISTORIAL_PERILL = []; marcaPublicacio([], new Map(), new Date());"
-                "JSON.parse(desats['meteo.avisos-llegits'])")
-        # Es recorda el d'avui, encara que ara no surti; el de fa més d'una setmana i el que no
-        # té hora de publicació, no.
-        self.assertEqual(self.avalua(ara, expr), [aemet])
+                "[JSON.parse(desats['meteo.avisos-llegits']), JSON.parse(desats['meteo.avisos-llegits-quan'])]")
+        # El que han sortit fa menys d'una setmana es recorda encara que ara no surtin, també el
+        # que no té hora de publicació; el que va sortir per darrera vegada fa més, no.
+        quan = {aemet: "2026-11-18T13:00:00.000Z", alfa: "2026-11-16T10:00:00.000Z", vell: "2026-11-11T10:00:00.000Z"}
+        llista, desat = self.avalua(ara, f"desats = {{'meteo.avisos-llegits-quan': JSON.stringify({json.dumps(quan)}),"
+                                         f" 'meteo.avisos-llegits': JSON.stringify({json.dumps(list(quan))})}};" + desa)
+        self.assertEqual(llista, [aemet, alfa])
+        self.assertEqual(desat, {aemet: quan[aemet], alfa: quan[alfa]})
+        # El desat fins a la 3.225.1 (només la llista) compta com a vist ara.
+        llista, desat = self.avalua(ara, f"desats = {{'meteo.avisos-llegits': JSON.stringify({json.dumps([aemet])})}};" + desa)
+        self.assertEqual((llista, desat), ([aemet], {aemet: "2026-11-18T14:30:00.000Z"}))
 
     def test_perill_avui_i_dema_d_un_altre_dia(self):
         # Revisor, 20-10-2026: la fitxa acabada del vent del dilluns deia «avui de 17 a 18 h» el dimarts.

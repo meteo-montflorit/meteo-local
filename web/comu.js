@@ -1318,23 +1318,41 @@ function curtsAvisos(perills, talls, smp, hrefDe, ara) {
 // recent. I «Nou» als que aquest dispositiu encara no havia mostrat.
 const CLAU_AVISOS_LLEGITS = 'meteo.avisos-llegits';
 let LLEGITS_ABANS = null;     // els que ja s'havien mostrat en obrir la pàgina
-// El que ja s'ha mostrat es recorda una setmana des que es va publicar, encara
-// que l'avís deixi de sortir una estona. Fins a la 3.225.0 només es recordava
-// el que hi havia a la darrera pintada: una lectura fallida de l'AEMET el
-// treia de la portada i, en tornar, el groc de vent publicat a les 11:15
-// tornava a dir «Nou» a la tarda (Juanjo, 18-11-2026: «lleva publicado desde
-// hace horas»; ADR 0094).
+// El que ja s'ha mostrat es recorda una setmana des de la darrera vegada que
+// va sortir, encara que l'avís deixi de sortir una estona. Fins a la 3.225.0
+// només es recordava el que hi havia a la darrera pintada: una lectura
+// fallida de l'AEMET el treia de la portada i, en tornar, el groc de vent
+// publicat a les 11:15 tornava a dir «Nou» a la tarda (Juanjo, 18-11-2026:
+// «lleva publicado desde hace horas»; ADR 0094). A la 3.225.1 es comptava des
+// de la publicació, i el que no en té (el Pla Alfa, els talls de llum)
+// s'oblidava igual. Un avís es manté com a molt 2,2 dies després de la seva
+// darrera publicació (historial d'octubre i novembre); la setmana deixa marge
+// per als plans d'incendis de l'estiu, que poden durar setmanes.
 const RECORDA_LLEGITS_MS = 7 * 24 * 3600000;
+// Quan va sortir per darrera vegada cada clau. A part de la llista
+// (CLAU_AVISOS_LLEGITS), que es manté com era: una pestanya oberta amb el codi
+// d'abans la llegeix com a llista.
+const CLAU_AVISOS_LLEGITS_QUAN = 'meteo.avisos-llegits-quan';
 
-// Els d'ara i, dels d'abans, els publicats fa menys de RECORDA_LLEGITS_MS
-// (la clau acaba en «|» i l'hora de publicació; sense hora, només mentre surt).
-function llegitsARecordar(ara_, abans, ara) {
-  const res = new Set(ara_);
-  for (const k of abans) {
-    const hora = new Date(k.slice(k.lastIndexOf('|') + 1));
-    if (k.includes('|') && !Number.isNaN(hora.getTime()) && ara - hora < RECORDA_LLEGITS_MS) res.add(k);
+function llegeixLlegitsQuan() {
+  try {
+    const v = JSON.parse(localStorage.getItem(CLAU_AVISOS_LLEGITS_QUAN) || '{}');
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  } catch (e) { return {}; }
+}
+
+// Els d'ara, amb l'hora d'ara, i els d'abans que han sortit fa menys de
+// RECORDA_LLEGITS_MS. Els de la llista que no tenen hora (els desats fins a
+// la 3.225.1 o per una pestanya amb el codi d'abans) compten com a vistos ara.
+function llegitsARecordar(ara_, llista, quan, ara) {
+  const res = {};
+  for (const k of llista) if (!(k in quan)) res[k] = ara.toISOString();
+  for (const [k, t] of Object.entries(quan)) {
+    const vist = new Date(t);
+    if (!Number.isNaN(vist.getTime()) && ara - vist < RECORDA_LLEGITS_MS) res[k] = t;
   }
-  return [...res];
+  for (const k of ara_) res[k] = ara.toISOString();
+  return res;
 }
 
 function episodiDe(href) {
@@ -1369,8 +1387,17 @@ function textPublicacio(pub, ara = new Date()) {
   return pub.actualitzat ? T`actualitzat ${dia} ${hora}` : T`publicat ${dia} ${hora}`;
 }
 
+function llegeixLlegitsLlista() {
+  try {
+    const v = JSON.parse(localStorage.getItem(CLAU_AVISOS_LLEGITS) || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch (e) { return []; }
+}
+
+// Els que ja s'han mostrat: la llista i els que tenen hora (una pestanya amb
+// el codi d'abans pot haver reescrit la llista només amb els seus).
 function llegeixLlegits() {
-  try { return JSON.parse(localStorage.getItem(CLAU_AVISOS_LLEGITS) || '[]'); } catch (e) { return []; }
+  return [...new Set([...llegeixLlegitsLlista(), ...Object.keys(llegeixLlegitsQuan())])];
 }
 
 // Fins a la 3.216.11, la clau d'un avís de Meteocat duia les hores
@@ -1408,7 +1435,9 @@ function marcaPublicacio(curts, desDe, ara) {
   }
   if (ambHistorial) {
     try {
-      localStorage.setItem(CLAU_AVISOS_LLEGITS, JSON.stringify(llegitsARecordar(ara_, llegeixLlegits(), ara)));
+      const quan = llegitsARecordar(ara_, llegeixLlegitsLlista(), llegeixLlegitsQuan(), ara);
+      localStorage.setItem(CLAU_AVISOS_LLEGITS_QUAN, JSON.stringify(quan));
+      localStorage.setItem(CLAU_AVISOS_LLEGITS, JSON.stringify(Object.keys(quan)));
     } catch (e) { /* sense memòria, sempre «Nou» */ }
   }
 }

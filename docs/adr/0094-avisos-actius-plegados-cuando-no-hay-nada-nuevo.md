@@ -240,7 +240,7 @@ que los avisos meteorológicos salen en él, y se descartó: el gráfico no
 enseña los planes de Protecció Civil, los incendios, la riera, el Pla Alfa ni
 los cortes de luz. Así el gráfico cabe en la pantalla del móvil (ADR 0074).
 
-## Cambio del 18-11-2026 (3.225.1): lo visto no se olvida si el aviso falta un rato
+## Cambio del 18-11-2026 (3.225.1 y 3.225.2): lo visto no se olvida si el aviso falta un rato
 
 Juanjo, 18-11-2026, con la portada abierta desde hacía horas: el amarillo de
 viento de la AEMET publicado a las 11:15, que ya había salido sin «Nou», salió
@@ -252,13 +252,27 @@ siguiente se borró de lo visto y, al recargar la página con la AEMET ya
 respondiendo, volvió como nuevo. Pasaba igual con cualquier fuente que fallara
 un rato (Meteocat, la riera, los incendios).
 
-Ahora (`llegitsARecordar`) se guarda lo de ahora más lo anterior publicado
-hace menos de una semana (la hora de publicación va al final de la clave, tras
-«|»); lo que no tiene hora de publicación se recuerda solo mientras sale. Una
-actualización real sigue saliendo como nueva, porque cambia la hora de la
-clave. Se descartó quitar el «Nou» al volver a la pestaña: no arreglaba el
-caso, que venía de la recarga. Evidencia: las claves guardadas en el Chrome de
-Juanjo y los datos publicados del 18-11 (la clave del aviso no cambió) y
+Ahora cada aviso mostrado se recuerda una semana desde la última vez que salió
+(`llegitsARecordar`; la hora, en `meteo.avisos-llegits-quan`). La 3.225.1 la
+contaba desde la hora de publicación de la clave, y lo que no la tiene (el Pla
+Alfa, los cortes de luz) se seguía olvidando; la 3.225.2 lo cuenta para todos
+desde que se mostró. Una actualización real sigue saliendo como nueva, porque
+cambia la hora de publicación que lleva la clave. `meteo.avisos-llegits`
+sigue siendo la lista de claves, porque una pestaña abierta con el código
+anterior la lee como lista; lo que esa pestaña reescriba sin hora cuenta como
+visto en ese momento.
+
+Por qué una semana: en el historial de «Perill» de octubre y noviembre (32
+episodios), un aviso sigue saliendo como mucho 2,2 días después de su última
+publicación (las tormentas de la AEMET del 17-10); la semana deja margen para
+los planes de incendios de Protecció Civil del verano, que pueden durar
+semanas sin comunicado nuevo, y su coste son unas decenas de claves en el
+navegador. Hipótesis por validar: la duración de esos planes en verano, que
+el historial aún no tiene.
+
+Se descartó quitar el «Nou» al volver a la pestaña: no arreglaba el caso, que
+venía de la recarga. Evidencia: las claves guardadas en el Chrome de Juanjo y
+los datos publicados del 18-11 (la clave del aviso no cambió) y
 `tests/test_web.py` (`test_avis_que_desapareix_una_estona_no_torna_a_ser_nou`),
-que falla con el código anterior. Riesgo: la lista crece con los avisos de una
-semana, unas decenas de claves como mucho.
+que falla con el código anterior. Validado en Chromium, Firefox y WebKit, en
+escritorio y móvil, con los datos del 18-11.
