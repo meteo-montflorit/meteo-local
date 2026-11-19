@@ -125,6 +125,12 @@ def conclusions(casa, avisos):
     }
 
 
+def acabada(e, moment):
+    """Si una ficha de «Perill» ya ha acabado: con «fi», o con «fins» ya
+    pasado (las de AEMET y Meteocat, que no siempre mandan final)."""
+    return bool(e.get("fi")) or bool(e.get("fins") and H.llegeix(e["fins"]) <= moment)
+
+
 # --- Reglas fijas ---------------------------------------------------------------------
 
 FRANJA = re.compile(r"\b(" + "|".join(DIES) + r") (\d{1,2}) de (\d{1,2}) a (\d{1,2}) h")
@@ -151,8 +157,11 @@ def regles(casa, avisos, moment, textos=None):
     """Lo que ya sabemos que no puede pasar. Cada problema: {regla, on, que}."""
     problemes = []
     # 1. Ninguna ficha abierta habla de horas que ya han pasado (18-10-2026).
+    # Una ficha con «fins» ya pasado está acabada, como en «Perill»
+    # (perill.js, final): la de Meteocat del 18-11-2026 acababa a las 13 h y
+    # la regla la dio por abierta a las 13:04.
     for e in avisos.get("historial") or []:
-        if e.get("fi"):
+        if acabada(e, moment):
             continue
         for linia in (e.get("ca") or "").split("\n")[1:]:
             passades = franja_passada(linia, moment)
@@ -354,7 +363,7 @@ def context(casa, avisos, textos, moment, motiu, problemes_regles, resum=None, i
     # missatge de final (revisor, 21-10-2026: les creia obertes).
     fitxes = [{k: e.get(k) for k in ("clau", "inici", "nivell", "ca", "fi", "fins")}
               for e in avisos.get("historial") or []
-              if not e.get("fi") and not (e.get("fins") and H.llegeix(e["fins"]) <= moment)]
+              if not acabada(e, moment)]
     enviats = [{k: a.get(k) for k in ("id", "hora", "ca")} for a in (avisos.get("avisos") or [])[-6:]]
     trossos = [f"Motiu de la revisió: {motiu}.", "",
                "## Ja informats a Juanjo (no els repeteixis si no han canviat)",

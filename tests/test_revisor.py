@@ -41,6 +41,17 @@ class Regles(unittest.TestCase):
         p = RV.regles({"smp": {"avisos": []}}, avisos(), ARA)
         self.assertEqual(sorted(x["regla"] for x in p), ["franja_passada", "observat_ara"])
 
+    def test_fitxa_acabada_pel_fins(self):
+        # Revisor, 19-11-2026 13:04: la fitxa de Meteocat acabava a les 13 h
+        # («fins») i «Perill» ja la donava per acabada; la regla no.
+        moment = dt.datetime.fromisoformat("2026-11-19T13:04+01:00")
+        text = ("🟡 <b>Meteocat: avís de perill moderat per vent</b>\n"
+                "🟡 Perill moderat per «Vent»: dijous 19 de 12 a 13 h.")
+        e = {"clau": "meteocat:2026-11-18T16:45Z", "inici": "2026-11-18T17:45+01:00", "ca": text}
+        self.assertEqual([x["regla"] for x in RV.regles({}, {"historial": [e]}, moment)], ["franja_passada"])
+        e["fins"] = "2026-11-19T13:00+01:00"
+        self.assertEqual(RV.regles({}, {"historial": [e]}, moment), [])
+
     def test_plou_i_no_plou(self):
         p = RV.regles({}, {}, ARA, {"index.html": "No plou\nPluja a sobre"})
         self.assertEqual([x["regla"] for x in p], ["plou_i_no_plou"])

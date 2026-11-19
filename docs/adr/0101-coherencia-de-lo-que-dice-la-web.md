@@ -89,7 +89,8 @@ oculto por no tener motivo meteorológico (ADR 0062).
 En el NAS, tras cada publicación y aparte del reloj:
 
 - **Reglas fijas** (`regles`), sin IA, en cada pasada: ninguna ficha abierta
-  habla de horas pasadas, «Observat ara» solo con la observación vigente, la
+  (sin `fi` y sin `fins` ya pasado, como la cuenta «Perill») habla de horas
+  pasadas, «Observat ara» solo con la observación vigente, la
   hora en curso dice «Plou ara» si llueve, y las páginas no dicen «No plou» y
   «Pluja a sobre» sin aclarar que es el radar.
 - **El revisor** (Claude, `C.REVISOR_MODEL` = `claude-sonnet-5-5`, con el
@@ -697,3 +698,14 @@ oficial…»): sin eso contradecía «Aquesta nit: pluja de 20 a 6 h» de arriba
   sin decir cuál es el de reserva, que cambia con la comparación (también
   en castellano y en el README); cuál se usa lo dicen «Fiabilitat», con el
   dato del día, y «Com funciona».
+
+## Cambio del 19-11-2026 (3.225.6): una ficha acabada por su hora final
+
+La regla de las franjas pasadas daba por abierta toda ficha sin `fi`. A las
+13:04 avisó como «mitjana» de la de Meteocat de viento «dijous 19 de 12 a
+13 h», que llevaba `fins` a las 13:00 y que «Perill» ya daba por acabada:
+falsa alarma. La regla y el contexto del revisor usan ahora el mismo criterio
+que la página (`revisor.acabada`: `fi`, o `fins` ya pasado), con su prueba.
+Además, las instrucciones del revisor explican la ficha en pausa («Ja no es
+preveu»), que sigue en «Ara» con horas ya pasadas y no cuenta en la portada:
+lo dio por error dos veces el mismo día.

@@ -120,6 +120,12 @@ inclúyelas si son reales, explicando por qué.
   van en su idioma original y no se traducen: eso no es un error.
 - Una ficha de «Perill» con `fins` ya pasado sale como acabada en la página
   aunque `fi` esté vacío: no es un error.
+- Una ficha en pausa (`en_pausa`: «Ja no es preveu» en las propias, «Ja no
+  consta» en las de Meteocat) sigue en «Ara» hasta cerrarse (3 horas sin
+  volver las propias, media hora las de Meteocat), con una línea que dice
+  desde cuándo ya no se ve. Su texto es el último que se avisó y puede
+  nombrar horas ya pasadas, y la portada no la cuenta en «Avisos actius»
+  porque ya no está activa: no es un error (revisor, 19-10-2026; ADR 0101).
 - El historial («Últims 30 dies») guarda lo que se avisó con el criterio de
   aquel momento, aunque el criterio cambie después: lo enviado no se borra.
   El incendio de Collserola a 6,4 km del 28-10-2026 (18:30) se avisó antes de
