@@ -70,6 +70,14 @@ inclúyelas si son reales, explicando por qué.
   de una sola estación va en los campos `…_estacio`. «Plou» basta con que
   llueva en una de ellas, así que puede llover con una mediana de 0: no es
   un error.
+- La fila «Avui» de «Previsió de 7 dies» es de todo el día, también para la
+  lluvia (decisión de Juanjo del 14-11-2026): si hoy ya ha llovido
+  (`ara_casa.pluja_avui` mayor que 0, aunque sean unas décimas caídas de
+  madrugada), da «100 %» y los litros caídos más los que aún se esperan (con
+  0,2 mm caídos y nada más previsto, «<1 mm»), aunque la tabla por horas y
+  «Sense pluja prevista» no esperen más lluvia. No es una contradicción:
+  compáralo con `pluja_avui`, no con las horas que quedan. El 19-11-2026,
+  con 0,2 mm caídos antes de las 6, se dio por error.
 - «Plugim segons el radar» (`pluja_ara.plugim`) sale cuando los dos radares
   ven ecos débiles extendidos sobre el barrio y ninguna estación mide lluvia:
   el pluviómetro no recoge la llovizna. No es una contradicción que las
