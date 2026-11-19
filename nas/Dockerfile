@@ -35,6 +35,13 @@ ARG RUFF_VERSION=0.17.1
 RUN curl -fsSL "https://github.com/astral-sh/ruff/releases/download/${RUFF_VERSION}/ruff-x86_64-unknown-linux-gnu.tar.gz" \
       | tar xz -C /usr/local/bin --strip-components=1 ruff-x86_64-unknown-linux-gnu/ruff
 
+# Toda conexión ssh (git con GitHub, los datos a IONOS) da por muerta la que
+# no responde en un minuto (ADR 0129): un corte de la red de casa a media
+# conexión la dejaba colgada hasta que el sistema la cerraba, 2 h 11 min
+# después, y el reloj no publicaba (19-11-2026, de 02:34 a 04:53).
+RUN printf 'Host *\n  ServerAliveInterval 15\n  ServerAliveCountMax 4\n' \
+      > /etc/ssh/ssh_config.d/conexio-viva.conf
+
 COPY reloj.sh /usr/local/bin/reloj.sh
 RUN chmod +x /usr/local/bin/reloj.sh
 

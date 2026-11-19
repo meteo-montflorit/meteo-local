@@ -162,8 +162,11 @@ verificacion() {
 }
 
 
+# Con límite de tiempo, como cualquier conexión del reloj: el 19-11-2026, un
+# corte de la red de casa a las 02:39 dejó una conexión colgada y el reloj no
+# publicó hasta las 04:53 (ADR 0129).
 hay_cambios() {
-  remoto=$(git -C "$REPO" ls-remote -q origin refs/heads/main 2>/dev/null | cut -f1)
+  remoto=$(timeout 90 git -C "$REPO" ls-remote -q origin refs/heads/main 2>/dev/null | cut -f1)
   [ -n "$remoto" ] && [ "$remoto" != "$(git -C "$REPO" rev-parse HEAD)" ]
 }
 
