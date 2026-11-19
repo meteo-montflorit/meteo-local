@@ -113,6 +113,21 @@ class Index(unittest.TestCase):
         self.assertEqual(RI.horitzo(fins, ara), 90)
         self.assertIn("des de llavors fins d'aquí a una hora", RI.missatge(r, "atencio"))
 
+    def test_el_radar_de_la_frase_arriba_on_arriba_l_index(self):
+        # Revisor, 18-11-2026 22:04: «el radar en preveu uns 1 més» i l'índex,
+        # 1,9 amb 0,0 mesurats. Amb l'estació 40 minuts endarrerida, l'índex
+        # arriba a 120 minuts (horitzo) i la frase es quedava a 100.
+        from unittest.mock import patch
+        ara = dt.datetime(2026, 11, 18, 21, 0, tzinfo=UTC)
+        fins = ara - dt.timedelta(minutes=40)
+        filas = [(fins - RI.MITJA_HORA * (12 - i), 0.0) for i in range(12)]
+        nc = {"hora": (ara - dt.timedelta(minutes=10)).isoformat(timespec="minutes"),
+              "llocs": {"conca": [{"min": k, "mm_h": 1.2, "prob": 1} for k in range(0, 125, 5)]}}
+        with patch.object(RI, "files", return_value=filas):
+            r = RI.calcula(ara, nc)
+        self.assertEqual(RI.horitzo(fins, ara), 120)
+        self.assertEqual(r["radar_1h"], r["index"])
+
     def test_forat_entre_estacio_i_radar(self):
         # Imagen 15 minutos más nueva que la estación, 12 mm/h: el hueco
         # cuenta 3 mm y la media hora siguiente, 3 más.

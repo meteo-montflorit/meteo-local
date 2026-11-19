@@ -346,7 +346,11 @@ def context(casa, avisos, textos, moment, motiu, problemes_regles, resum=None, i
              for h in (casa.get("hores") or [])[:24]]
     dades = {
         "ara": moment.isoformat(timespec="minutes"),
-        "mesurat_ara": casa.get("ara_casa"),
+        # Sense la radiació ni l'UV de l'estació: el sensor és a l'ombra (ADR
+        # 0126) i la web no els mostra; amb 25 W/m² a migdia, el revisor
+        # donava per errònia la portada «Serè» d'un matí sense cap núvol
+        # (satèl·lit 0 %, CAVOK a Sabadell; 19-11-2026, dues vegades).
+        "mesurat_ara": {k: v for k, v in (casa.get("ara_casa") or {}).items() if k not in ("solar", "uv")},
         "pluja_ara": casa.get("pluja_ara"),
         "radar": casa.get("radar"),
         "modo": casa.get("modo"),

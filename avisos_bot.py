@@ -864,7 +864,9 @@ def decideix(estat, salida, ahora):
     nou_of = {"aemet": dict((of or {}).get("aemet") or {}), "plans": dict((of or {}).get("plans") or {})}
     if of is not None and "smp" in of:
         nou_of["smp"] = dict(of["smp"])
-    if salida.get("avisos") is not None:
+    # Los de la pasada anterior, si AEMET no ha respondido (casa.avisos_de_abans),
+    # son para mostrarlos: para el bot, la lectura ha fallado.
+    if salida.get("avisos") is not None and not salida.get("avisos_anteriors"):
         aemet = aemet_per_clau(a for a in salida["avisos"]
                                if a.get("zona", C.ZONA_AVISOS) == C.ZONA_AVISOS and a["nivel"] in RS.NIVELLS)
         # Avisan los que Meteocat no cubre (ADR 0093): un fenómeno o unas horas

@@ -353,7 +353,10 @@ def calcula_meteocat(ahora, nc, lector=None):
            "mm_3h": acumulat(filas, fins, h), "mm_6h": acumulat(filas, fins, 6),
            "mm_1h": acumulat(filas, fins, 1),     # per al registre de l'aprenentatge (ADR 0042)
            "incomplet": incomplet(filas, fins),
-           "radar_1h": previst(nc, fins, (ahora - fins).total_seconds() / 60 + 60) if nc else None,
+           # Fins al mateix final que l'índex (horitzo, a la mitja hora de
+           # dalt): fins a la mitja hora exacta, «el radar en preveu uns 1 més»
+           # anava amb un índex d'1,9 amb 0,0 mesurats (revisor, 18-11-2026).
+           "radar_1h": previst(nc, fins, horitzo(fins, ahora)) if nc else None,
            "capcalera": None}
     res["nivell"], res["index"], res["index_6h"], res["index_d_aqui_a_min"] = nivell_amb_radar(filas, fins, nc, ahora)
     try:

@@ -47,6 +47,10 @@ def nivell(tipus, valor):
     alto, naranja), o None. Hay que pasar el umbral, no basta con llegar."""
     if valor is None:
         return None
+    # Amb la xifra que es mostra (num): una ratxa de 72,4 km/h passava el
+    # llindar de 72 i la fitxa deia «ratxes de més de 72 km/h: AROME HD, fins
+    # a 72» (revisor, 18-11-2026). La previsió no té decimals de veritat.
+    valor = float(num(valor, tipus).replace(",", ".").replace("−", "-"))
     res = None
     for n, llindar in zip(NIVELLS, C.RISC_LLINDARS[tipus]):
         if (valor < llindar) if tipus == "fred" else (valor > llindar):

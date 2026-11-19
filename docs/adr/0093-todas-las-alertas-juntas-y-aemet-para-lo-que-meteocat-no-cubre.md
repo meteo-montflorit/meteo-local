@@ -247,3 +247,26 @@ Si las horas que no cubre no son seguidas, se muestra de la primera a la
 `tests/test_smp.py` (`test_l_aemet_surt_a_les_hores_que_meteocat_no_cobreix`,
 el caso del día 20).
 
+## Cambio del 19-11-2026 (3.226.0): sin lectura de AEMET, los de la lectura anterior
+
+El 18-11-2026 a las 21 h no se pudo leer AEMET: «Perill» mantenía la ficha
+del amarillo por viento de 0 a 7 h, pero la portada contaba un aviso menos y
+la tabla por horas y el resumen del bot lo perdían (revisor). Ahora, si AEMET
+no responde, `casa.avisos_de_abans` toma sus avisos de la pasada anterior que
+aún no han acabado, y la web los muestra en todas partes; la línea de fuentes
+sigue diciendo que no han llegado. Para el bot (`avisos_anteriors`), la
+lectura ha fallado: no avisa de nada ni abre o cierra fichas, como antes. Un
+aviso que AEMET retire durante el fallo sigue saliendo hasta la lectura
+siguiente, igual que su ficha.
+
+En «Perill», la ficha de un aviso de AEMET cuyas últimas horas cubre Meteocat
+lo dice: la línea da las horas que se muestran («de les 0 h a les 7 h») y
+debajo, «L'AEMET l'avisa fins a…; les hores de després les cobreix l'avís de
+Meteocat». El mensaje enviado decía de 0 a 10 h y la ficha acababa a las 6:59
+sin explicarlo (revisor, 19-11-2026).
+
+Validación: `tests/test_previsio_anterior.py` (`AvisosDeAbans`),
+`tests/test_bot.py`
+(`test_els_avisos_de_l_aemet_de_la_passada_anterior_no_toquen_res`); la
+ficha, con los datos publicados, en Chromium, Firefox y WebKit, escritorio,
+móvil y tableta; axe-core sin fallos en claro y oscuro.

@@ -81,6 +81,15 @@ class Context(unittest.TestCase):
         self.assertIn('"propi"', text)
         self.assertNotIn("smp:1", text)
 
+    def test_sense_la_radiacio_de_l_estacio(self):
+        # El sensor és a l'ombra (ADR 0126): el revisor no l'ha de veure
+        # (19-11-2026: «Serè» amb 25 W/m² a migdia, i el cel era serè).
+        casa = {"ara_casa": {"temperatura": 17.4, "solar": 24.8, "uv": 0.0}}
+        text = RV.context(casa, {}, {}, ARA, "prova", [])
+        self.assertIn('"temperatura": 17.4', text)
+        self.assertNotIn("24.8", text)
+        self.assertNotIn('"uv"', text)
+
 
 class Correccions(unittest.TestCase):
     def setUp(self):

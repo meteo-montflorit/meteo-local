@@ -1459,6 +1459,19 @@ class FitxesDelRevisor(unittest.TestCase):
                                                         "comenca": "2026-10-20T06:00:00+02:00",
                                                         "fin_visible": "2026-10-20T08:59:59+02:00"})
 
+    def test_els_avisos_de_l_aemet_de_la_passada_anterior_no_toquen_res(self):
+        # Sense lectura de l'AEMET, la portada mostra els de la passada
+        # anterior (casa.avisos_de_abans); per al bot, la lectura ha fallat:
+        # ni avisa ni tanca res (19-11-2026).
+        a = {"zona": "Prelitoral de Barcelona", "tipo": "vent", "nivel": "groc",
+             "inicio": "2026-11-19T00:00:00+01:00", "fin": "2026-11-19T06:59:59+01:00"}
+        estat = {"oficials": {"aemet": {}, "plans": {}}}
+        nous = AB.decideix(estat, {"avisos": [a], "avisos_anteriors": True},
+                           dt.datetime.fromisoformat("2026-11-18T21:00:00+01:00"))
+        self.assertIsNone(estat["aemet_vigents"])
+        self.assertEqual(estat["oficials"]["aemet"], {})
+        self.assertFalse([n for n in nous or [] if "aemet" in str(n.get("id", ""))])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -791,6 +791,19 @@ def llegeix_anterior(anterior):
     return _ANTERIOR[anterior] if isinstance(_ANTERIOR[anterior], dict) else {}
 
 
+def avisos_de_abans(anterior, ahora):
+    """Sin lectura de AEMET, sus avisos de la pasada anterior que aún no han
+    acabado, o None si no los hay. «Perill» ya mantenía sus fichas, pero la
+    portada, la tabla por horas y el resumen los perdían: el 18-11-2026 a las
+    21 h, el amarillo por viento de 0 a 7 h no salía en la portada y «Perill»
+    tenía uno más (revisor; ADR 0093). Las horas, tal como se guardan: las de
+    AEMET llevan su desfase en lo interno y en lo publicado."""
+    abans = llegeix_anterior(anterior).get("avisos")
+    if not isinstance(abans, list):
+        return None
+    return [a for a in abans if isinstance(a, dict) and a.get("fin") and H.llegeix(a["fin"]) > ahora]
+
+
 def recoger(anterior=None):
     salida = {"versio": C.VERSION, "generat": H.iso_local(P.AHORA),
               "errors": []}
@@ -895,6 +908,8 @@ def recoger(anterior=None):
                   and H.llegeix(a["fin"]) > P.AHORA]
     except Exception as ex:
         salida["errors"].append(f"avisos: {ex}")
+        avisos = avisos_de_abans(anterior, P.AHORA)
+        salida["avisos_anteriors"] = avisos is not None
     try:
         planes = P.planes_proteccion_civil()
     except Exception as ex:

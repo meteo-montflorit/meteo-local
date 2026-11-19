@@ -709,3 +709,19 @@ que la página (`revisor.acabada`: `fi`, o `fins` ya pasado), con su prueba.
 Además, las instrucciones del revisor explican la ficha en pausa («Ja no es
 preveu»), que sigue en «Ara» con horas ya pasadas y no cuenta en la portada:
 lo dio por error dos veces el mismo día.
+
+## Cambio del 19-11-2026 (3.226.0): los leves del 16 al 19-11
+
+De once hallazgos leves, cuatro eran fallos y se arreglan en su sitio: los
+avisos de AEMET sin lectura nueva y la ficha que no decía por qué acababa
+antes (ADR 0093), el radar de la riera (ADR 0027) y el umbral de las rachas
+(ADR 0018). El resto eran falsas alarmas, y las instrucciones del revisor lo
+explican: la máxima de «Avui» y «Demà» en los 7 días es de las 24 horas (el
+19-11 caía de madrugada, 18,5 °C a las 3 h, y el revisor solo miraba mañana y
+tarde); con `font` «veines», la lectura de ahora es de las estaciones vecinas
+y no de la de casa (el corte de red de esa noche); y la ficha en pausa. La
+radiación y el UV de la estación de casa ya no se le pasan: el sensor está a
+la sombra (ADR 0126) y la web no los usa, y con 25 W/m² a mediodía dio dos
+veces por errónea la portada «Serè» de una mañana sin una nube (satélite 0 %,
+CAVOK en Sabadell). Prueba: `tests/test_revisor.py`
+(`test_sense_la_radiacio_de_l_estacio`).

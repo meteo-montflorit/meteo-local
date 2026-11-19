@@ -160,7 +160,15 @@ function fitxa(e, ara, sub = false) {
   // dt. 20/10, 08:59» (revisor, 19-10-2026).
   const allargat = e.allargat_de && e.fins && new Date(e.fins) > new Date(e.allargat_de);
   const nota = e.franja_fins === e.fins ? T('L’AEMET l’ha allargat.') : T`L’AEMET l’ha allargat fins a ${moment(e.fins)}.`;
-  const totes = allargat ? [...resta.slice(0, 1), ...trossos(nota), ...resta.slice(1)] : resta;
+  // Si Meteocat cobreix les últimes hores, la línia diu fins on es mostra
+  // (`fins`) i l'avís sencer de l'AEMET va més enllà (`fins_aemet`): es diu.
+  // L'avís enviat deia «de les 0 h a les 10 h» i la fitxa, «de les 0 h a les
+  // 7 h» i acabat a les 06:59, sense dir per què (revisor, 19-11-2026).
+  const retallat = !allargat && e.clau.startsWith('aemet:') && e.fins && e.fins_aemet
+    && new Date(e.fins_aemet) > new Date(e.fins);
+  const notaRetall = retallat && T`L’AEMET l’avisa fins a ${moment(e.fins_aemet)}; les hores de després les cobreix l’avís de Meteocat.`;
+  const afegida = allargat ? nota : notaRetall;
+  const totes = afegida ? [...resta.slice(0, 1), ...trossos(afegida), ...resta.slice(1)] : resta;
   // Dins d'un grup, «És un avís oficial…» i «Més informació» només un cop, al peu del grup.
   const linies = sub ? totes.filter((l) => !esAvisOficial(l)) : totes;
   const compartit = textCompartit([primera, ...linies, ...(textFi ? trossos(textFi) : [])]);

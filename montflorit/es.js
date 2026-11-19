@@ -93,6 +93,7 @@ var IDIOMA = {
     "Acabat": "Terminado",
     "L’AEMET l’ha allargat fins a {0}.": "La AEMET lo ha alargado hasta el {0}.",
     "L’AEMET l’ha allargat.": "La AEMET lo ha alargado.",
+    "L’AEMET l’avisa fins a {0}; les hores de després les cobreix l’avís de Meteocat.": "La AEMET lo avisa hasta el {0}; las horas siguientes las cubre el aviso de Meteocat.",
     "Substituït per ": "Sustituido por ", "l’avís de Meteocat": "el aviso de Meteocat",
     "Actiu ara": "Activo ahora",
     "Previst": "Previsto",

@@ -194,3 +194,14 @@ Validación: `tests/test_riscos.py` (`FontTest`), `tests/test_web.py`
 Firefox, móvil (412 y 320 px) y escritorio, claro y oscuro; axe-core sin
 fallos con la tabla desplegada. A 320 px la tabla ya se desplazaba de lado
 antes del cambio (ancho mínimo de 19rem).
+
+## Cambio del 19-11-2026 (3.226.0): el umbral, con la cifra que se muestra
+
+Una racha de 72,4 km/h pasaba el umbral de 72 y la ficha decía «ratxes de
+fins a 72 km/h» y «només 1 també preveu ratxes de més de 72 km/h: AROME HD,
+fins a 72» (revisor, 18-11-2026). Los modelos no dan décimas de verdad: el
+umbral se compara ahora con la cifra tal como se escribe (`riscos.nivell`,
+con `num`: sin decimales; la temperatura, con uno). En la tabla de la web,
+igual (`casa.js`: la racha redondeada y la calor con un decimal). Un valor
+justo en el borde (72,4 km/h, 36,84 °C) ya no avisa; desde 72,5 y 36,85, sí.
+Prueba: `tests/test_riscos.py` (`test_el_llindar_amb_la_xifra_que_es_mostra`).

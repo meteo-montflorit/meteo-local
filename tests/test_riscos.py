@@ -156,6 +156,16 @@ if __name__ == "__main__":
 class FontTest(unittest.TestCase):
     # Juanjo, 19-10-2026: «hay que indicar el origen de la alerta y a ser posible la validez
     # que tiene» i «dado que viene de un modelo no debe decir que la ha calculado nuestra web».
+    def test_el_llindar_amb_la_xifra_que_es_mostra(self):
+        # Revisor, 18-11-2026: 72,4 km/h passava el llindar de 72 i la fitxa
+        # deia «de més de 72 km/h: AROME HD, fins a 72».
+        self.assertIsNone(RS.nivell("ratxa", 72.4))
+        self.assertEqual(RS.nivell("ratxa", 72.5), "groc")
+        self.assertIsNone(RS.nivell("calor", 36.84))
+        self.assertEqual(RS.nivell("calor", 36.85), "groc")
+        self.assertIsNone(RS.nivell("fred", -1.64))
+        self.assertEqual(RS.nivell("fred", -1.65), "groc")
+
     def test_ratxa_amb_els_models_que_hi_arriben(self):
         f = RS.font("ratxa", "previsio", {"meteofrance_arome_france_hd": 92.5, "meteofrance_arome_france": 36.0,
                                           "icon_eu": 11.5})

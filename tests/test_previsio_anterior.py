@@ -149,6 +149,23 @@ class SantCugatAlPreveure(unittest.TestCase):
         self.assertNotIn("pluja_1h_xv", fila)
 
 
+class AvisosDeAbans(unittest.TestCase):
+    def test_els_que_encara_no_han_acabat(self):
+        # 18-11-2026 a les 21 h: sense l'AEMET, el groc de vent de 0 a 7 h
+        # seguia a «Perill» i no sortia a la portada (revisor).
+        vent = {"zona": "Prelitoral de Barcelona", "tipo": "vent", "nivel": "groc",
+                "inicio": "2026-11-19T00:00:00+01:00", "fin": "2026-11-19T06:59:59+01:00"}
+        vell = dict(vent, tipo="pluja", fin="2026-11-18T20:59:59+01:00")
+        ruta = guarda({"avisos": [vell, vent]})
+        casa._ANTERIOR.pop(ruta, None)
+        ahora = dt.datetime.fromisoformat("2026-11-18T21:04:00+01:00")
+        self.assertEqual(casa.avisos_de_abans(ruta, ahora), [vent])
+        ruta2 = guarda({"avisos": None})
+        self.assertIsNone(casa.avisos_de_abans(ruta2, ahora))
+        os.unlink(ruta)
+        os.unlink(ruta2)
+
+
 if __name__ == "__main__":
     unittest.main()
 

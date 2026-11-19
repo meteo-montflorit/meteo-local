@@ -354,3 +354,13 @@ la reemplazan? pensaba que era así».
   (`test_avis_del_radar_que_no_es_compleix_es_tanca_abans`) y
   `tests/test_bot.py` (`test_riera_avis_nomes_del_radar`,
   `test_preavis_que_es_confirma`, `test_el_final_silencios_no_es_reparteix`).
+
+## Cambio del 19-11-2026 (3.226.0): el radar de la frase, hasta donde llega el índice
+
+El índice suma el radar hasta una hora después de ahora redondeado a la media
+hora de arriba (`riera.horitzo`): con la estación 40 minutos atrasada, 120
+minutos desde su última medida. «El radar en preveu uns X més» (`radar_1h`)
+contaba los minutos exactos, y el 18-11-2026 decía «uns 1» junto a un índice
+de 1,9 con 0,0 mm medidos (revisor). Ahora cuenta hasta el mismo final que el
+índice. No cambia cuándo se avisa. Prueba: `tests/test_riera.py`
+(`test_el_radar_de_la_frase_arriba_on_arriba_l_index`).

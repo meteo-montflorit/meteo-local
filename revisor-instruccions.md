@@ -78,6 +78,21 @@ inclúyelas si son reales, explicando por qué.
   «Sense pluja prevista» no esperen más lluvia. No es una contradicción:
   compáralo con `pluja_avui`, no con las horas que quedan. El 19-11-2026,
   con 0,2 mm caídos antes de las 6, se dio por error.
+- La máxima y la mínima de «Avui» y «Demà» en «Previsió de 7 dies» son de
+  las 24 horas del día, la madrugada incluida, y las de hoy cuentan también
+  lo ya medido. Con viento cálido de noche, la máxima puede caer de
+  madrugada: el 19-11-2026, 18,5 °C a las 3 h y 17,3 a las 13 h, y la fila
+  decía 19° mientras los tramos de mañana y tarde no pasaban de 17. Compara
+  con todas las horas del día, la noche también; si `hores` no llega a todas
+  las del día, no puedes concluir que no cuadre.
+- `mesurat_ara.font` dice de dónde sale la lectura: con «veines», la estación
+  de casa no ha dado datos y la temperatura es la de las estaciones vecinas,
+  en grados enteros y de otro sitio. Que la previsión se aparte de ella unos
+  grados no es un error de la web (el 19-11-2026, de 3 a 7 h, «15 °C»
+  vecinas frente a 18 previstos; al volver, la estación midió 17,4).
+- La radiación y el UV medidos por la estación de casa no te llegan: el
+  sensor está a la sombra (ADR 0126). El cielo «Serè» sale del satélite, de
+  Sabadell y de los modelos, y el UV de los consejos es el previsto.
 - «Plugim segons el radar» (`pluja_ara.plugim`) sale cuando los dos radares
   ven ecos débiles extendidos sobre el barrio y ninguna estación mide lluvia:
   el pluviómetro no recoge la llovizna. No es una contradicción que las

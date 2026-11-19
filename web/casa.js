@@ -201,9 +201,10 @@ function resumTrams(hores, ara, mesurada) {
     if (g.files.some((f) => mmPluja(f) >= FENOMENS.pluja_torrencial)) fenomens.push([NOM_FENOMEN.pluja_torrencial(), 'i-cloud-rain-wind']);
     else if (g.files.some((f) => mmPluja(f) >= FENOMENS.pluja_forta)) fenomens.push([NOM_FENOMEN.pluja_forta(), 'i-cloud-rain-wind']);
     if (g.files.reduce((s, f) => s + (f.neu || 0), 0) >= 0.1) fenomens.push([NOM_FENOMEN.neu(), 'i-snowflake']);
-    const ratxa = Math.max(...g.files.map((f) => f.ratxa || 0));
+    // Arrodonida, com es mostra i com la compara l'avís (riscos.nivell).
+    const ratxa = Math.round(Math.max(...g.files.map((f) => f.ratxa || 0)));
     if (ratxa > FENOMENS.ratxa) fenomens.push([T`ratxes de ${Math.round(ratxa)}\u00a0km/h`, 'i-wind']);
-    if (temps.length && Math.max(...temps) > FENOMENS.calor) fenomens.push([NOM_FENOMEN.calor(), 'i-thermometer-sun']);
+    if (temps.length && Math.round(Math.max(...temps) * 10) / 10 > FENOMENS.calor) fenomens.push([NOM_FENOMEN.calor(), 'i-thermometer-sun']);
     // La glaçada de la riera surt també mirant la part alta: s'hi passa per
     // anar i venir (ADR 0123).
     if (temps.length && Math.min(...temps) <= FENOMENS.glaçada) fenomens.push([NOM_FENOMEN.glaçada(), 'i-thermometer-snowflake']);
@@ -1467,7 +1468,10 @@ function origenTram(t) {
 // explicación de la alerta»). Sense avís actiu (més enllà de les 24 hores que
 // mira), a l'explicació general.
 function nivellRatxa(ratxa) {
-  return ratxa > RATXA_TARONJA ? 'taronja' : ratxa > FENOMENS.ratxa ? 'groc' : null;
+  // Amb la xifra que es mostra, com l'avís (riscos.nivell): 72,4 km/h surt
+  // «72» i no passa el llindar de 72 (revisor, 18-11-2026).
+  const r = Math.round(ratxa);
+  return r > RATXA_TARONJA ? 'taronja' : r > FENOMENS.ratxa ? 'groc' : null;
 }
 
 function celVent(f) {
