@@ -257,3 +257,10 @@ historial se entra con el de fuera, junto a «Opcions», y dentro solo queda la
 fila de días (‹, el día con su calendario, ›), oculta en la previsión. Juanjo:
 «no debe aparecer en esta ventana puesto que ya se elige desde fuera… es
 redundante». Para volver a la previsión se cierra la ventana.
+
+Desde la 3.225.5 (19-11-2026), en el historial los interruptores (viento,
+humedad, presión, nubes, Luna) valen solo mientras se mira: empiezan como
+los guardados, se mantienen al pasar de un día a otro y se olvidan al cerrar
+la ventana, sin cambiar las demás gráficas. Solo se guardan en la ventana que
+abre «Opcions». Juanjo: «No debe guardarse. Si debe guardarse si pulso el
+botón de opciones».

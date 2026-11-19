@@ -1315,6 +1315,11 @@ function vistaGrafica(historialInicial = null) {
   // Les que es recorden (fixes) i les d'aquesta visita, que comencen sempre igual.
   const fixes = { vent: false, zona: 'baixa', humitat: false, pressio: false, nuvols: false, uv: false, lluna: true,
     ...llegeixOpcionsGrafica() };
+  // A l'historial, els interruptors valen només mentre es mira: no es desen
+  // ni canvien les altres gràfiques (Juanjo, 19-11-2026: «No debe guardarse.
+  // Si debe guardarse si pulso el botón de opciones»). Comencen com els desats.
+  let deVisita = { ...fixes };
+  const actuals = () => (historial ? deVisita : fixes);
   const opcions = { get vent() { return fixes.vent; } };
   const dlg = element('dialog', 'vista-grafica');
   dlg.setAttribute('aria-labelledby', 'vg-titol');
@@ -1349,7 +1354,11 @@ function vistaGrafica(historialInicial = null) {
     c.type = 'checkbox';
     c.setAttribute('role', 'switch');
     c.checked = Boolean(fixes[clau]);
-    c.addEventListener('change', () => { fixes[clau] = c.checked; desa(); dibuixa(); });
+    c.addEventListener('change', () => {
+      actuals()[clau] = c.checked;
+      if (!historial) desa();
+      dibuixa();
+    });
     fila.append(typeof icon === 'string' ? icona(icon) : icon, element('span', null, text), c);
     return fila;
   };
@@ -1432,8 +1441,8 @@ function vistaGrafica(historialInicial = null) {
     files = zona.files;
     fig._amaga?.();
     fig._files = files;
-    fig._opcions = { gran: true, escala: true, historial: true, vent: fixes.vent, humitat: fixes.humitat,
-      pressio: fixes.pressio, nuvols: fixes.nuvols, lluna: fixes.lluna };
+    fig._opcions = { gran: true, escala: true, historial: true, vent: deVisita.vent, humitat: deVisita.humitat,
+      pressio: deVisita.pressio, nuvols: deVisita.nuvols, lluna: deVisita.lluna };
     mostraInterruptors(files);
     // Per als crèdits de la imatge: les 24 h, amb l'hora de l'última mesura.
     fig._nomHistorial = pos === '24h' && files.length
@@ -1455,6 +1464,7 @@ function vistaGrafica(historialInicial = null) {
     ...(zona.nomesRiera ? [element('span', null, T('D’aquest dia només hi ha la temperatura de la riera.'))] : []));
   };
   const posaHistorial = (pos) => {
+    if (pos && !historial) deVisita = { ...fixes };
     historial = pos;
     history.replaceState(null, '', pos ? adrecaHistorial(pos) : '#grafica');
     dibuixa();
@@ -1526,6 +1536,7 @@ function vistaGrafica(historialInicial = null) {
   fixesEl.append(...Object.values(interruptors));
   const mostraInterruptors = (files) => {
     for (const [clau, el] of Object.entries(interruptors)) {
+      el.querySelector('input').checked = Boolean(actuals()[clau]);
       el.hidden = clau === 'lluna' ? !faseDins(files) : !files.some((f) => f[clau] != null);
     }
     fixesEl.hidden = Object.values(interruptors).every((el) => el.hidden);
