@@ -81,6 +81,15 @@ class Context(unittest.TestCase):
         self.assertIn('"propi"', text)
         self.assertNotIn("smp:1", text)
 
+    def test_diu_si_s_ha_llegit_l_aemet(self):
+        # Revisor, 19-11-2026 14:01: amb «aemet» [] (els de la passada anterior)
+        # i l'error de lectura, donava per errònia «no han arribat els avisos».
+        moment = dt.datetime.fromisoformat("2026-11-19T15:01+01:00")
+        falla = RV.context({"avisos": [], "errors": ["avisos: timeout"]}, {}, {}, moment, "prova", [])
+        self.assertIn('"aemet_llegit": false', falla)
+        llegit = RV.context({"avisos": [], "errors": ["radar: timeout"]}, {}, {}, moment, "prova", [])
+        self.assertIn('"aemet_llegit": true', llegit)
+
     def test_sense_la_radiacio_de_l_estacio(self):
         # El sensor és a l'ombra (ADR 0126): el revisor no l'ha de veure
         # (19-11-2026: «Serè» amb 25 W/m² a migdia, i el cel era serè).

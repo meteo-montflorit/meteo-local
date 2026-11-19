@@ -112,9 +112,11 @@ inclúyelas si son reales, explicando por qué.
   coincidan con las del aviso nuevo. «L'AEMET l'ha retirat abans d'hora»
   queda para cuando AEMET ya no tiene ningún aviso de ese fenómeno en esas
   horas.
-- Si en los datos `aemet` (los avisos de AEMET) es null, es que esa pasada no se
-  ha podido leer AEMET (la página lo dice con «No s'han pogut llegir totes
-  les fonts»): las fichas de AEMET abiertas se mantienen tal cual hasta que se
+- Si en los datos `aemet_llegit` es false, esa pasada no se ha podido leer
+  AEMET y la página lo dice («no han arribat els avisos de l'AEMET: els de
+  Meteocat, sí»): no es un error. Entonces `aemet` lleva los avisos de la
+  pasada anterior que aún no han acabado, que pueden ser una lista vacía (o
+  null si no había pasada anterior): las fichas de AEMET abiertas se mantienen tal cual hasta que se
   pueda leer otra vez, porque una lectura fallida no significa que el aviso se
   haya retirado. No es un error. Un aviso retirado de verdad llega como una
   lista sin él, y entonces la ficha se cierra.
