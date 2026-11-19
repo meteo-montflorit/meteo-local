@@ -85,11 +85,37 @@ class Protobuf(unittest.TestCase):
         fa_una_hora = (ARA - dt.timedelta(hours=1)).isoformat(timespec="minutes")
         mou = [{"linia": "R8", "lat": 0, "lon": 0}]
         self.assertEqual(T.estat_linia("R8", mou, None, [avis(dema, None)], ARA)["estat"], "incidencies")
-        self.assertEqual(T.estat_linia("R8", mou, None, [avis(ahir, fa_una_hora)], ARA)["estat"], "incidencies")
+        # Un que ja ha acabat, ni compta ni es mostra (revisor, 19-11-2026).
+        acabat = T.estat_linia("R8", mou, None, [avis(ahir, fa_una_hora)], ARA)
+        self.assertEqual((acabat["estat"], acabat["avisos"]), ("circula", []))
         self.assertEqual(T.estat_linia("R8", mou, None, [avis(ahir, None)], ARA)["estat"], "bus")
         self.assertEqual(T.estat_linia("R8", mou, None, [avis(None, None)], ARA)["estat"], "bus")
         # L'avís futur es mostra igualment.
         self.assertEqual(len(T.estat_linia("R8", mou, None, [avis(dema, None)], ARA)["avisos"]), 1)
+
+    def test_la_franja_del_text_de_rodalies(self):
+        # Revisor, 19-11-2026 13:31: l'API de Rodalies encara donava el tall
+        # d'11.26 a 13.13 h i l'R8 sortia «per carretera».
+        ca = ("Entre les 11.26 h i les 13.13 h no hi ha circulació ferroviària entre Granollers Centre i "
+              "Martorell Central. Servei alternatiu per carretera entre Cerdanyola Universitat i Montcada.")
+        es = ("Entre las 11.26 h y las 13.13 h no hay circulación ferroviaria entre Granollers Centre y "
+              "Martorell Central. Servicio alternativo por carretera entre Cerdanyola Universitat y Montcada.")
+        dades = {"included": [{"lines": [{"id": "R8"}], "description": {"ca": ca, "es": es},
+                               "date": "2026-11-19", "time": "11:30:00"}]}
+        a = T.avisos_rodalies(dades)[0]
+        self.assertEqual(a["fi"], "2026-11-19T12:13Z")
+        mou = [{"linia": "R8", "lat": 0, "lon": 0}]
+        abans = dt.datetime.fromisoformat("2026-11-19T12:50+01:00")
+        despres = dt.datetime.fromisoformat("2026-11-19T13:31+01:00")
+        self.assertEqual(T.estat_linia("R8", mou, None, [a], abans)["estat"], "bus")
+        r = T.estat_linia("R8", mou, None, [a], despres)
+        self.assertEqual((r["estat"], r["avisos"]), ("circula", []))
+        # De nit, l'endemà; si parla d'un altre dia, sense final.
+        self.assertEqual(T.fi_del_text({"ca": "Entre les 23 h i les 5 h, per carretera."}, "2026-11-19T21:00Z"),
+                         "2026-11-20T04:00Z")
+        self.assertIsNone(T.fi_del_text({"ca": "Dissabte, entre les 8 h i les 14 h, per carretera."},
+                                        "2026-11-19T21:00Z"))
+        self.assertIsNone(T.fi_del_text({"ca": "Servei per carretera."}, "2026-11-19T21:00Z"))
 
     def test_posicions_velles_no_serveixen(self):
         feed = {"header": {"timestamp": str(int((ARA - dt.timedelta(minutes=11)).timestamp()))},

@@ -80,3 +80,16 @@ Versión 3.69.0.
 - 400 pruebas en verde, con nuevas para leer la API, el aviso de servicio
   normal, los generales de Rodalies que deciden y los de Renfe que no, y la
   reserva de Renfe.
+
+## Cambio del 19-11-2026 (3.226.1): la franja que dice el texto
+
+La API de Rodalies seguía dando a las 13:31 el aviso «Entre les 11.26 h i les
+13.13 h no hi ha circulació ferroviària…», con servicio por carretera, y la
+R8 salía «per carretera» en «Si surts» y en «Consultes» (revisor). Los avisos
+de Rodalies no traen final: ahora se toma del texto si dice «entre les … h i
+les … h» (o «entre las … h y las … h»), el día en que se publicó o el
+siguiente si acaba antes de empezar; si el texto nombra otro día, sin final.
+Un aviso ya acabado, de cualquier fuente, ni decide ni se muestra: antes se
+mostraba y dejaba la línea «amb incidències». Prueba: `tests/test_trens.py`
+(`test_la_franja_del_text_de_rodalies`, `test_un_avis_futur_o_acabat_no_decideix`).
+

@@ -196,6 +196,38 @@ def avisos_renfe(dades=None):
     return res
 
 
+# La franja que diu el text d'un avís de Rodalies, «entre les 11.26 h i les
+# 13.13 h»: la seva API el va seguir donant com a vigent a les 13:31, i l'R8
+# sortia «per carretera» (revisor, 19-11-2026). Només si el text no parla
+# d'un altre dia: llavors, sense final.
+FRANJA_TEXT = re.compile(r"\bentre (?:les|las) (\d{1,2})(?:[.:](\d{2}))? ?h (?:i|y) (?:les|las|la) "
+                         r"(\d{1,2})(?:[.:](\d{2}))? ?h", re.I)
+ALTRE_DIA = re.compile(r"\b(gener|febrer|març|abril|maig|juny|juliol|agost|setembre|octubre|novembre|desembre|"
+                       r"enero|febrero|marzo|mayo|junio|julio|agosto|septiembre|noviembre|diciembre|"
+                       r"dilluns|dimarts|dimecres|dijous|divendres|dissabte|diumenge|lunes|martes|miércoles|"
+                       r"jueves|viernes|sábado|domingo|demà|mañana|dies|días|\d{1,2}/\d{1,2})\b", re.I)
+
+
+def fi_del_text(textos, inici):
+    """El final (clau UTC) de la franja horària que diu el text, el dia que
+    es va publicar l'avís (o l'endemà, si acaba abans que comenci); None si
+    no en diu cap o parla d'un altre dia."""
+    if not inici:
+        return None
+    for text in (textos.get("ca"), textos.get("es")):
+        m = FRANJA_TEXT.search(text or "")
+        if not m or ALTRE_DIA.search(text):
+            continue
+        h0, m0, h1, m1 = (int(x or 0) for x in m.groups())
+        if h1 > 24 or m1 > 59:
+            return None
+        dia = H.dia_local(inici)
+        if (h1, m1) <= (h0, m0):
+            dia += dt.timedelta(days=1)
+        return H.clau(H.de_rellotge(dia, h1) + dt.timedelta(minutes=m1))
+    return None
+
+
 def avisos_rodalies(dades=None):
     """[{linies, text, inici}] dels avisos de la web de Rodalies: els vigents,
     amb la data i l'hora en què es van publicar (hora local)."""
@@ -213,7 +245,8 @@ def avisos_rodalies(dades=None):
         if n.get("date"):
             # Rodalies dona l'hora de Madrid, sense zona.
             inici = H.clau(H.llegeix(f"{n['date']}T{(n.get('time') or '00:00:00')[:5]}"))
-        res.append({"linies": linies, "text": textos, "inici": inici, "fi": None, "font": "rodalies"})
+        res.append({"linies": linies, "text": textos, "inici": inici, "fi": fi_del_text(textos, inici),
+                    "font": "rodalies"})
     return res
 
 
@@ -493,6 +526,10 @@ def carretera_passa(linia, text):
 def estat_linia(linia, mouen, vist, avisos, ara):
     """vist: última vegada que s'ha vist un tren de la línia movent-se a prop
     de l'estació (ISO), o None."""
+    # Un avís que ja ha acabat ni decideix ni es mostra: no és cap incidència
+    # (revisor, 19-11-2026: l'R8 «amb incidències» per un tall d'11.26 a
+    # 13.13 h, a les 13:31).
+    avisos = [a for a in avisos if not (a.get("fi") and H.llegeix(a["fi"]) <= H.llegeix(ara))]
     nomes = mes_nous_primer([a for a in avisos if a["linies"] == {linia}])
     propis = [a["text"] for a in nomes]
     generals = [a["text"] for a in mes_nous_primer([a for a in avisos if linia in a["linies"] and len(a["linies"]) > 1])]
