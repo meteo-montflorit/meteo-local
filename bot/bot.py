@@ -1095,12 +1095,12 @@ def linies_perill_dia(dades, idioma, dia, moment):
                   <= dt.datetime.fromisoformat(r["fins"]).date())]
     propis = linies_riscos(riscos, idioma, moment)
     if propis:
-        # Qui avisa, primer, com als avisos (Juanjo, 17-10-2026).
-        nota = " (no oficial)" if es else " (no oficial)"
+        # Qui avisa, primer, com als avisos (Juanjo, 17-10-2026), i que és
+        # l'app (21-11-2026: «Temps a Montflorit» sol es llegia com el tema).
+        qui = "Aviso de la app Temps a Montflorit (no oficial): " if es else "Avís de l'app Temps a Montflorit (no oficial): "
         for x in propis:
             icona, _, text = x.partition(" ") if x[:1] and not x[:1].isalnum() else ("", "", x)
-            text = "Temps a Montflorit: " + text[:1].lower() + text[1:]
-            text = text[:-1] + nota + "." if text.endswith(".") else text + nota
+            text = qui + text[:1].lower() + text[1:]
             res.append(amb_icona(icona, text))
     return res
 

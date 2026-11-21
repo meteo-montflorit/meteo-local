@@ -233,8 +233,11 @@ def text_perill(nous, ahora, avisat=None):
     pitjor = max(nous, key=lambda r: RS.NIVELLS.index(r["nivell"]))["nivell"]
     tipus = list(dict.fromkeys(r["tipus"] for r in nous))
     # Qui avisa, primer (Juanjo, 17-10-2026: un avís de Meteocat es va llegir com
-    # si fos de l'aplicació); el nivell ja el diu el cercle.
-    ca = [negreta("Temps a Montflorit: avís de perill per " + " i ".join(dict.fromkeys(QUE_CA[t] for t in tipus))
+    # si fos de l'aplicació); el nivell ja el diu el cercle. «L'app», perquè
+    # «Temps a Montflorit» tot sol es llegia com el tema de l'avís, no com qui
+    # el dona (Juanjo, 21-11-2026: «se lee como que es un aviso relativo al
+    # tiempo, no de la app»).
+    ca = [negreta("Avís de l'app Temps a Montflorit (no oficial): " + " i ".join(dict.fromkeys(QUE_CA[t] for t in tipus))
                   + " al barri", pitjor)]
     # Cada risc, amb d'on surt i quant s'hi pot confiar (riscos.font): abans,
     # «Calculat per aquesta aplicació» d'unes ratxes que només preveia AROME
@@ -243,7 +246,7 @@ def text_perill(nous, ahora, avisat=None):
     for r in nous:
         ca += [html.escape(r["text"], quote=False)] + linia_canvi(r, avisat, "ca") + font(r, "ca")
     ca.append("Avís no oficial.")
-    es = [negreta("Temps a Montflorit: aviso de peligro por " + " y ".join(dict.fromkeys(QUE_ES[t] for t in tipus))
+    es = [negreta("Aviso de la app Temps a Montflorit (no oficial): " + " y ".join(dict.fromkeys(QUE_ES[t] for t in tipus))
                   + " en el barrio", pitjor)]
     for r in nous:
         es += [html.escape(linia_risc_es(r, ahora), quote=False)] + linia_canvi(r, avisat, "es") + font(r, "es")
@@ -282,9 +285,9 @@ def text_perill_fi(tipus, des_de, oficials=()):
     que_ca = " i ".join(dict.fromkeys(QUE_CA[t] for t in tipus)) or "cap perill"
     que_es = " y ".join(dict.fromkeys(QUE_ES[t] for t in tipus)) or "ningún peligro"
     h = H.local(des_de).strftime("%H:%M")
-    ca = (negreta(f"Temps a Montflorit: s'acaba l'avís per {que_ca} al barri", "fi") +
+    ca = (negreta(f"S'acaba l'avís de l'app Temps a Montflorit per {que_ca} al barri", "fi") +
           f"\nNo se'n mesura ni se'n preveu des de les {h}. Si hi torna, hi haurà un avís nou.")
-    es = (negreta(f"Temps a Montflorit: termina el aviso por {que_es} en el barrio", "fi") +
+    es = (negreta(f"Termina el aviso de la app Temps a Montflorit por {que_es} en el barrio", "fi") +
           f"\nNo se mide ni se prevé desde las {h}. Si vuelve, habrá un aviso nuevo.")
     if oficials:
         ca += f"\nContinuen els avisos oficials de {i_llista([OFICIALS['ca'][o] for o in oficials], 'ca')}."

@@ -223,7 +223,7 @@ function textPerill(p) {
     if (font === 'meteocat') return T`Meteocat: perill ${GRAU_METEOCAT()[nv]} per ${que}`;
     if (font === 'pc') return T`Protecció Civil: pla ${que}`;
     if (font === 'bombers') return T`Bombers: ${que} a prop del barri`;
-    if (font === 'web') return T`Temps a Montflorit: avís ${nivell} per ${que} (no oficial)`;
+    if (font === 'web') return T`Avís ${nivell} d’aquesta app per ${que} (no oficial)`;
     return T`AEMET: avís ${nivell} per ${que}`;
   }).join('; ');
 }
@@ -233,7 +233,7 @@ function textPerill(p) {
 // també d'on surt cada un, «Perill alt (Meteocat): pluja» (la franja de la
 // gràfica; Juanjo, 17-10-2026: «añade el origen: meteocat, aemet, etc»).
 const NOM_FONT = () => ({ meteocat: 'Meteocat', aemet: 'AEMET', pc: T('Protecció Civil'), bombers: 'Bombers',
-  web: T('aquesta aplicació') });
+  web: T('aquesta app') });
 function partsPerill(p, ambQue = true, ambFont = false) {
   const parts = new Map();
   for (const [font, noms, nv = p.nivell] of perFonts(p)) {

@@ -1205,11 +1205,12 @@ function blocRiscos(riscos, ara = new Date()) {
   caixa.setAttribute('aria-label', T('Risc previst'));
   caixa.dataset.detall = fitxaPerill((h) => h.clau === 'propi');
   caixa.dataset.clau = 'risc:' + riscos.map((r) => `${r.clau}:${r.nivell}`).join(',');
-  // Qui avisa, primer (Juanjo, 17-10-2026).
-  caixa.dataset.curt = T`Temps a Montflorit: risc ${TD(pitjor)} (no oficial)` + ': '
+  // Qui avisa, primer (Juanjo, 17-10-2026), i que és l'app, no el tema de
+  // l'avís (21-11-2026: «se lee como que es un aviso relativo al tiempo»).
+  caixa.dataset.curt = T`Avís ${TD(pitjor)} d’aquesta app (no oficial)` + ': '
     + riscos.map((r) => `${NOM_RISC()[r.tipus] || r.tipus} (${numRisc(r)} ${r.unitat}), ${quanRisc(r, ara)}`).join('; ') + '.';
   const titol = element('p', 'titol-risc');
-  titol.append(icona('i-triangle-alert'), T`Temps a Montflorit: risc ${TD(pitjor)}`);
+  titol.append(icona('i-triangle-alert'), T`Avís ${TD(pitjor)} d’aquesta app (no oficial)`);
   caixa.append(titol);
   const llista = element('ul');
   for (const r of riscos) {

@@ -1097,7 +1097,7 @@ class AvisosPublics(unittest.TestCase):
              "text": "Vent fort previst: ratxes de fins a 75 km/h, avui de 15 a 16 h."}
         nous = AB.decideix({}, {"riscos": [r]}, ARA)
         self.assertIn("Viento fuerte previsto: rachas de hasta 75 km/h, hoy de 15 a 16 h.", nous[0]["es"])
-        self.assertTrue(nous[0]["es"].startswith("🟡 <b>Temps a Montflorit: aviso de peligro por viento fuerte en el barrio</b>"))
+        self.assertTrue(nous[0]["es"].startswith("🟡 <b>Aviso de la app Temps a Montflorit (no oficial): viento fuerte en el barrio</b>"))
 
     def test_pluja_amb_el_radar(self):
         # El radar en directe que ha donat l'avís: enllaç a Telegram; a la
@@ -1162,7 +1162,7 @@ class AvisosPublics(unittest.TestCase):
         AB.decideix(estat2, {**dades, "riscos": [r]}, ARA)
         self.assertEqual(AB.decideix(estat2, dades, ARA + dt.timedelta(days=2)), [])
         self.assertEqual(estat2["perill"], {})
-        self.assertTrue(fi[0]["ca"].startswith("🟢 <b>Temps a Montflorit: s'acaba l'avís per vent fort al barri</b>"))
+        self.assertTrue(fi[0]["ca"].startswith("🟢 <b>S'acaba l'avís de l'app Temps a Montflorit per vent fort al barri</b>"))
         self.assertIn(f"des de les {ARA:%H:%M}", fi[0]["ca"])
         self.assertNotIn("avisos oficials", fi[0]["ca"])
         self.assertEqual(AB.decideix(estat, dades, ARA + dt.timedelta(hours=4)), [])

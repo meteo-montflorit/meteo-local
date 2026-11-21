@@ -205,3 +205,21 @@ con `num`: sin decimales; la temperatura, con uno). En la tabla de la web,
 igual (`casa.js`: la racha redondeada y la calor con un decimal). Un valor
 justo en el borde (72,4 km/h, 36,84 °C) ya no avisa; desde 72,5 y 36,85, sí.
 Prueba: `tests/test_riscos.py` (`test_el_llindar_amb_la_xifra_que_es_mostra`).
+
+## Cambio del 21-11-2026 (3.229.0): que se vea que avisa la app
+
+«Temps a Montflorit: avís de perill per vent fort al barri» se leía como un
+aviso sobre el tiempo de Montflorit, no como un aviso que da la app (Juanjo:
+«se lee como que es un aviso relativo al tiempo, no de la app»); una primera
+propuesta, «Avís de Temps a Montflorit», tampoco lo resolvía («apenas veo
+diferencia»): el nombre describe el tiempo. Ahora el nombre va con «app»:
+en Telegram y en las notificaciones, «Avís de l'app Temps a Montflorit (no
+oficial): vent fort al barri» y «S'acaba l'avís de l'app Temps a Montflorit
+per…»; en el resumen del día, igual delante de cada riesgo. En la web, donde
+ya se está dentro, «Avís groc d'aquesta app (no oficial): …» (línea de
+«Avisos actius», título de la tarjeta y ficha de la gráfica) y «aquesta app»
+en la franja. También «avís» en lugar de «risc», como en el mensaje. «App» es
+forma normalizada por el TERMCAT junto a «aplicació mòbil» (Consell
+Supervisor, 2022). Los mensajes ya enviados conservan su texto. Validación:
+pruebas del bot y de la web, y Firefox y Chromium en móvil, en catalán y
+castellano, con el aviso de ratxa del 22-11.
