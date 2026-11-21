@@ -276,3 +276,16 @@ los datos publicados del 18-11 (la clave del aviso no cambió) y
 `tests/test_web.py` (`test_avis_que_desapareix_una_estona_no_torna_a_ser_nou`),
 que falla con el código anterior. Validado en Chromium, Firefox y WebKit, en
 escritorio y móvil, con los datos del 18-11.
+
+## Cambio del 21-11-2026 (3.227.0): las horas de los riesgos de esta web
+
+La línea corta de los riesgos que calcula la web decía qué y cuánto, pero no
+cuándo: «Temps a Montflorit: risc groc (no oficial): vent fort (81 km/h).»
+(Juanjo: «aquí me gustaria que pusiera las horas. En todos los de la app»).
+Ahora cada riesgo lleva su franja con el formato de las de Meteocat, «demà de
+9 a 10 h» (`quanRisc`); si pasa de un día a otro, como los de la AEMET
+(`textFranja`), y el medido, «ara». El título no se acortó: en escritorio
+cabe en una línea («a lo mejor no hace falta acortarlo, si ya cabe»); en el
+móvil ocupa tres líneas en catalán y cuatro en castellano, como otras.
+Validación: Chromium, Firefox y WebKit, escritorio y móvil, catalán y
+castellano, con el riesgo de ratxa del 22-11.

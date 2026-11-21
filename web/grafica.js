@@ -901,8 +901,10 @@ function dibuixaGrafica(fig) {
   // visibles?»). A la imatge (compacta), dins de la gràfica, com abans.
   fig.querySelector('.g-fixes')?.remove();
   // També l'escala de graus (l'historial i «Fiabilitat»), que es perdia en
-  // desplaçar la gràfica fins al final (ADR 0124).
-  const sostreXifres = g.querySelectorAll('.g-sostre-xifra, .g-escala-xifra, .g-nom-fix');
+  // desplaçar la gràfica fins al final (ADR 0124). I els rètols de l'esquerra
+  // del vent, la humitat, la pressió i els núvols (Juanjo, 21-11-2026: «todos
+  // los rotulos que se ven a la izquierda deben permanecer ahí»).
+  const sostreXifres = g.querySelectorAll('.g-sostre-xifra, .g-escala-xifra, .g-nom-fix, .g-vent-xifra');
   if (W > Wv + 1 && sostreXifres.length) {
     const visible = caixa.clientWidth;
     const fixes = svg('svg', { class: 'g-fixes', width: visible, height: H, viewBox: `0 0 ${visible} ${H}`, 'aria-hidden': 'true' });

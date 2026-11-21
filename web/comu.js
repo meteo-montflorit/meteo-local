@@ -1185,7 +1185,20 @@ function numRisc(r) {
   return (ambDecimal ? v.toFixed(1) : v.toFixed(0)).replace('.', ',').replace('-', '\u2212');
 }
 
-function blocRiscos(riscos) {
+// Quan és cada risc, com les franges de Meteocat: «demà de 9 a 10 h» (Juanjo,
+// 21-11-2026: «aquí me gustaria que pusiera las horas. En todos los de la
+// app»). Si passa d'un dia a l'altre, com els avisos de l'AEMET (textFranja);
+// el que es mesura, «ara».
+function quanRisc(r, ara = new Date()) {
+  if (r.origen !== 'previsio' || !r.des_de || !r.fins) return T('ara');
+  const ini = llegeixHora(r.des_de);
+  const fi = llegeixHora(r.fins);
+  if (diesEntre(ini, new Date(fi - 1)) !== 0) return textFranja(ini, fi, ara);
+  const hFi = partsHora(fi).hora || 24;
+  return `${nomDiaCurt(ini, ara)} ${T`de ${partsHora(ini).hora} a ${hFi} h`}`;
+}
+
+function blocRiscos(riscos, ara = new Date()) {
   if (!riscos || !riscos.length) return null;
   const pitjor = riscos[0].nivell;
   const caixa = element('section', `avis risc-previst ${pitjor}`);
@@ -1194,7 +1207,7 @@ function blocRiscos(riscos) {
   caixa.dataset.clau = 'risc:' + riscos.map((r) => `${r.clau}:${r.nivell}`).join(',');
   // Qui avisa, primer (Juanjo, 17-10-2026).
   caixa.dataset.curt = T`Temps a Montflorit: risc ${TD(pitjor)} (no oficial)` + ': '
-    + riscos.map((r) => `${NOM_RISC()[r.tipus] || r.tipus} (${numRisc(r)} ${r.unitat})`).join(', ') + '.';
+    + riscos.map((r) => `${NOM_RISC()[r.tipus] || r.tipus} (${numRisc(r)} ${r.unitat}), ${quanRisc(r, ara)}`).join('; ') + '.';
   const titol = element('p', 'titol-risc');
   titol.append(icona('i-triangle-alert'), T`Temps a Montflorit: risc ${TD(pitjor)}`);
   caixa.append(titol);
@@ -1233,7 +1246,7 @@ function blocAvisos(dades, { ara = new Date() } = {}) {
   const aemet = avisosAemet(dades);
   const perills = [...blocPlans(dades.plans), ...blocSmp(dades.smp),
     ...(aemet.length ? blocAvisosAemet(aemet, ara) : []),
-    ...blocRiera(HISTORIAL_PERILL, ara), ...blocEntorn(dades.entorn), blocRiscos(dades.riscos)].filter(Boolean);
+    ...blocRiera(HISTORIAL_PERILL, ara), ...blocEntorn(dades.entorn), blocRiscos(dades.riscos, ara)].filter(Boolean);
   const talls = blocLlum(dades.llum, ara);
   if (!perills.length && !talls.length) return null;
   const hrefDe = (i) => (i.dataset && i.dataset.detall) || 'perill.html';

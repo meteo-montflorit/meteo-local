@@ -434,6 +434,16 @@ dibujo. En las imágenes (compactas, sin desplazamiento) van dentro de la
 gráfica, como antes. Validación: Chromium y Firefox a 390 px, con las dos
 cifras visibles al principio y al final del desplazamiento.
 
+**Todos los rótulos de la izquierda, también fijos** (21-11-2026, 3.227.0).
+Los de las franjas del viento, la humedad, la presión y las nubes («90
+km/h», «Humitat, 100 %», «50 %», «Pressió, 1024 hPa», «Cel tapat pels
+núvols, 100 %»…) se iban con el desplazamiento (Juanjo: «todos los rotulos
+que se ven a la izquierda deben permanecer ahí al mover la barra de
+desplazamiento horizontal, tal como ya pasa con la temperatura máxima y
+minima»). Van a la misma capa fija (`.g-vent-xifra` se suma a la lista).
+Validación: Chromium, Firefox y WebKit en móvil, en catalán y castellano,
+con la gráfica desplazada a la mitad y todas las franjas encendidas.
+
 **Humedad e índice UV** (21-10-2026, 3.171.0). Dos interruptores más,
 «Humitat» y «UV», apagados por defecto y recordados con los demás: la humedad
 en una franja bajo el viento y el UV en casillas con los colores de la OMS.

@@ -194,6 +194,7 @@ var IDIOMA = {
     "de {0} a {1} h": "de {0} a {1} h",
     "AEMET: avís {0} per {1}, {2}": "AEMET: aviso {0} por {1}, {2}",
     "Temps a Montflorit: risc {0} (no oficial)": "Temps a Montflorit: riesgo {0} (no oficial)",
+    "ara": "ahora",
     "Plou: {0} mm/h": "Llueve: {0} mm/h",
     "{0} mm avui": "{0} mm hoy",
     "Vent {0} km/h{1}": "Viento {0} km/h{1}",

@@ -552,7 +552,7 @@ function avisosConduccio(dades, ara = new Date()) {
   const aemet = avisosAemet(dades);
   const items = [...blocPlans(dades.plans), ...smpPerFenomen(dades.smp),
     ...(aemet.length ? blocAvisosAemet(aemet, ara) : []), ...blocRiera(HISTORIAL_PERILL, ara),
-    ...blocEntorn(dades.entorn), blocRiscos(dades.riscos)].filter(Boolean);
+    ...blocEntorn(dades.entorn), blocRiscos(dades.riscos, ara)].filter(Boolean);
   return items.filter((i) => {
     const clau = i.dataset.clau || '';
     if (/^(alfa|tancat):/.test(clau)) return false;
