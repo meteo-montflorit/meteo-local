@@ -307,3 +307,12 @@ Validación: `tests/test_web.py`
 (`test_punt_de_perill_fora_si_la_portada_ja_els_ha_mostrat`) y Chromium,
 Firefox y WebKit en móvil con los avisos del 21-11: punto al abrir, sin punto
 al recargar y en «Si surts».
+
+3.228.1 (21-11-2026): lo mismo con el punto rojo de la pestaña «Riera» (ADR
+0107), que tampoco se iba aunque la portada ya hubiera mostrado el aviso de la
+riera (Juanjo: «con la pestaña riera pasa lo mismo?»). El ámbar de la
+previsión de crecida sigue hasta abrir «Riera», porque solo se ve allí.
+Validación: la misma prueba, ampliada, y Chromium, Firefox y WebKit en móvil
+con un aviso de la riera simulado: punto rojo al abrir, sin punto al recargar
+y en «Si surts».
+

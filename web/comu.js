@@ -2231,6 +2231,11 @@ function mostratAPortada(e, claus) {
   return false;
 }
 
+function vistosPortadaAbans() {
+  if (!VISTOS_PORTADA_ABANS) VISTOS_PORTADA_ABANS = llegeixVistosPortada();
+  return VISTOS_PORTADA_ABANS;
+}
+
 function apuntaVistosPortada(historial, claus, ara = new Date()) {
   const vistos = {};
   for (const [k, t] of Object.entries(llegeixVistosPortada())) {
@@ -2245,8 +2250,7 @@ function apuntaVistosPortada(historial, claus, ara = new Date()) {
 function senyalaPerill(historial, ara = new Date()) {
   let vist = null;
   try { vist = localStorage.getItem(CLAU_PERILL_VIST); } catch (_) {}
-  if (!VISTOS_PORTADA_ABANS) VISTOS_PORTADA_ABANS = llegeixVistosPortada();
-  const nous = perillsNous(historial, vist, ara, VISTOS_PORTADA_ABANS).length > 0;
+  const nous = perillsNous(historial, vist, ara, vistosPortadaAbans()).length > 0;
   for (const a of document.querySelectorAll('.pagines a[href$="perill.html"]')) {
     let punt = a.querySelector('.punt-perill');
     if (nous && !punt) {
@@ -2264,7 +2268,9 @@ function senyalaPerill(historial, ara = new Date()) {
 // només amb la riera); ambre si la previsió dels models diu «risc de
 // crescuda possible» i no s'ha vist: ambre i no vermell, perquè el vermell
 // és el d'una situació de perill amb dades reals (Juanjo, 19-10-2026). Fins
-// que s'obre «Riera», que apunta fins a quan s'ha vist.
+// que s'obre «Riera», que apunta fins a quan s'ha vist. El vermell, també
+// fora si «Avisos actius» de la portada ja ha mostrat l'avís, com el punt de
+// «Perill» (Juanjo, 21-11-2026); l'ambre, no: la previsió només surt a «Riera».
 const CLAU_RIERA_VIST = 'meteo.riera-vist-fins';
 
 function rieraNova(previsio, vist) {
@@ -2272,15 +2278,15 @@ function rieraNova(previsio, vist) {
     && (!vist || new Date(previsio.inici).getTime() > new Date(vist).getTime()));
 }
 
-function puntRiera(previsio, historial, vist, ara = new Date()) {
-  if (perillsNous((historial || []).filter((e) => e.tipus === 'riera'), vist, ara).length) return 'vermell';
+function puntRiera(previsio, historial, vist, ara = new Date(), vistosPortada = {}) {
+  if (perillsNous((historial || []).filter((e) => e.tipus === 'riera'), vist, ara, vistosPortada).length) return 'vermell';
   return rieraNova(previsio, vist) ? 'ambre' : null;
 }
 
 function senyalaRiera(previsio, historial) {
   let vist = null;
   try { vist = localStorage.getItem(CLAU_RIERA_VIST); } catch (_) {}
-  const color = puntRiera(previsio, historial, vist);
+  const color = puntRiera(previsio, historial, vist, new Date(), vistosPortadaAbans());
   const text = color === 'vermell' ? T('Hi ha un avís de la riera nou') : T('Previsió de risc de crescuda de la riera');
   for (const a of document.querySelectorAll('.pagines a[href$="riera.html"]')) {
     let punt = a.querySelector('.punt-riera');

@@ -1385,6 +1385,18 @@ class Web(unittest.TestCase):
                 " const act = [{ ...h[1], darrer: '2026-11-21T10:20+01:00' }];"
                 " [nous(h), nous(act)]")
         self.assertEqual(self.avalua(ara, expr), [["aemet:pluja:2026-11-22T05:00Z"], ["meteocat:2026-11-20T16:45Z"]])
+        # I el punt vermell de «Riera», igual; l'ambre de la previsió, no (només surt a «Riera»).
+        riera = [{"clau": "riera:2026-11-21T09:00Z", "tipus": "riera", "inici": "2026-11-21T10:05+01:00",
+                  "nivell": "atencio"}]
+        previsio = {"nivell": "possible", "inici": "2026-11-21T10:00+01:00"}
+        expr = ("desats = {}; localStorage.getItem = (k) => desats[k] || null;"
+                " localStorage.setItem = (k, v) => { desats[k] = v; };"
+                f" const h = {json.dumps(riera)}; const p = {json.dumps(previsio)}; const ara = new Date('{ara}');"
+                " const abans = puntRiera(null, h, null, ara, llegeixVistosPortada());"
+                " apuntaVistosPortada(h, ['riera:riera:2026-11-21T09:00Z:atencio'], ara);"
+                " [abans, puntRiera(null, h, null, ara, llegeixVistosPortada()),"
+                "  puntRiera(p, h, null, ara, llegeixVistosPortada())]")
+        self.assertEqual(self.avalua(ara, expr), ["vermell", None, "ambre"])
 
     def test_punt_de_perill_nomes_amb_un_perill_actiu(self):
         # ADR 0074: el punt vermell, només mentre la situació és activa i no s'ha vist;
