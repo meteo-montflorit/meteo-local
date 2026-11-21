@@ -289,3 +289,21 @@ cabe en una línea («a lo mejor no hace falta acortarlo, si ya cabe»); en el
 móvil ocupa tres líneas en catalán y cuatro en castellano, como otras.
 Validación: Chromium, Firefox y WebKit, escritorio y móvil, catalán y
 castellano, con el riesgo de ratxa del 22-11.
+
+## Cambio del 21-11-2026 (3.228.0): lo visto en la portada quita el punto de «Perill»
+
+El «Nou» de «Avisos actius» se iba al volver a cargar la portada, pero el punto
+rojo de la pestaña «Avisos» (`perill.html`) seguía hasta abrirla, porque cada
+uno se acordaba de lo visto por su cuenta (Juanjo: «no debería irse también
+este punto rojo si ya se han visto las alertas desde la pestaña temps?»).
+Ahora la portada apunta cada episodio del historial que muestra, con su hora
+de publicación (`meteo.perill-vist-portada`, `apuntaVistosPortada`), y el
+punto no cuenta esos episodios (`perillsNous`). Como el «Nou», vale lo
+apuntado al abrir la página: el punto se va a la vez que el «Nou», al
+recargar, y en las demás páginas enseguida. Si el aviso se actualiza, vuelve
+a ser nuevo. Un episodio que la portada no muestra (`mostratAPortada`) sigue
+encendiendo el punto. Lo apuntado se olvida a la semana, como los «Nou».
+Validación: `tests/test_web.py`
+(`test_punt_de_perill_fora_si_la_portada_ja_els_ha_mostrat`) y Chromium,
+Firefox y WebKit en móvil con los avisos del 21-11: punto al abrir, sin punto
+al recargar y en «Si surts».

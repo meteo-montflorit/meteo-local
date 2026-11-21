@@ -1447,6 +1447,7 @@ function marcaPublicacio(curts, desDe, ara) {
     }
   }
   if (ambHistorial) {
+    apuntaVistosPortada(HISTORIAL_PERILL, curts.map((c) => c.dataset.clau || ''), ara);
     try {
       const quan = llegitsARecordar(ara_, llegeixLlegitsLlista(), llegeixLlegitsQuan(), ara);
       localStorage.setItem(CLAU_AVISOS_LLEGITS_QUAN, JSON.stringify(quan));
@@ -2183,19 +2184,69 @@ const CLAU_PERILL_VIST = 'meteo.perill-vist-fins';
 // només comptava el començament: el punt vermell no sortia per una
 // actualització, i a «Perill» res deia què era nou (Juanjo, 19-10-2026: «hay
 // que marcar como nuevo lo que sea nuevo»).
-function perillsNous(historial, vist, ara = new Date()) {
+function perillsNous(historial, vist, ara = new Date(), vistosPortada = {}) {
   return (historial || []).filter((e) => {
     // En pausa (la previsió ja no el veu i espera a tancar-se): no és actiu.
     const actiu = !e.fi && !e.en_pausa && !(e.fins && new Date(e.fins) <= ara);
-    const hora = e.clau ? publicacioEpisodi(e).hora : new Date(e.darrer || e.inici);
-    return actiu && (!vist || hora.getTime() > new Date(vist).getTime());
+    const hora = horaEpisodi(e);
+    return actiu && (!vist || hora.getTime() > new Date(vist).getTime()) && !(clauEpisodi(e) in vistosPortada);
   });
+}
+
+// El que «Avisos actius» de la portada ja ha mostrat compta com a vist també
+// per al punt de «Perill»: abans s'hi quedava fins que s'obria «Perill»,
+// encara que la portada ja hagués tret el «Nou» (Juanjo, 21-11-2026: «no
+// debería irse también este punto rojo si ya se han visto las alertas desde
+// la pestaña temps?»). Cada episodi, amb la seva hora de publicació: si
+// s'actualitza, torna a ser nou. Com el «Nou», val el que s'havia mostrat en
+// obrir la pàgina (VISTOS_PORTADA_ABANS): el punt se'n va alhora que el «Nou»,
+// en tornar-la a carregar, i a les altres pàgines, de seguida.
+const CLAU_PERILL_VIST_PORTADA = 'meteo.perill-vist-portada';
+let VISTOS_PORTADA_ABANS = null;
+
+const horaEpisodi = (e) => (e.clau ? publicacioEpisodi(e).hora : new Date(e.darrer || e.inici));
+const clauEpisodi = (e) => `${e.clau || ''}|${e.inici}|${horaEpisodi(e).toISOString()}`;
+
+function llegeixVistosPortada() {
+  try {
+    const v = JSON.parse(localStorage.getItem(CLAU_PERILL_VIST_PORTADA) || '{}');
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  } catch (_) { return {}; }
+}
+
+// Si la portada mostra l'episodi de l'historial: alguna de les seves línies
+// curtes (les claus de marcaPublicacio) és del mateix avís.
+function mostratAPortada(e, claus) {
+  const c = e.clau || '';
+  const hi = (p) => claus.some((k) => k.startsWith(p));
+  if (e.tipus === 'riera') return hi('riera:');
+  if (c.startsWith('meteocat:')) return hi('smp:');
+  if (c.startsWith('aemet:')) {
+    const t = c.split(':')[1];
+    return hi(`smp:${t}:`) || claus.some((k) => k.startsWith('aemet:') && (k.split(':')[2] || '').split(',').includes(t));
+  }
+  if (c.startsWith('pla:') || c.startsWith('prealerta:')) return hi(`pla:${c.split(':')[1]}:`);
+  if (c === 'propi') return hi('risc:');
+  if (c.startsWith('incendi:')) return claus.includes(c);
+  return false;
+}
+
+function apuntaVistosPortada(historial, claus, ara = new Date()) {
+  const vistos = {};
+  for (const [k, t] of Object.entries(llegeixVistosPortada())) {
+    if (ara - new Date(t) < RECORDA_LLEGITS_MS) vistos[k] = t;
+  }
+  for (const e of perillsNous(historial, null, ara)) {
+    if (mostratAPortada(e, claus)) vistos[clauEpisodi(e)] = ara.toISOString();
+  }
+  try { localStorage.setItem(CLAU_PERILL_VIST_PORTADA, JSON.stringify(vistos)); } catch (_) {}
 }
 
 function senyalaPerill(historial, ara = new Date()) {
   let vist = null;
   try { vist = localStorage.getItem(CLAU_PERILL_VIST); } catch (_) {}
-  const nous = perillsNous(historial, vist, ara).length > 0;
+  if (!VISTOS_PORTADA_ABANS) VISTOS_PORTADA_ABANS = llegeixVistosPortada();
+  const nous = perillsNous(historial, vist, ara, VISTOS_PORTADA_ABANS).length > 0;
   for (const a of document.querySelectorAll('.pagines a[href$="perill.html"]')) {
     let punt = a.querySelector('.punt-perill');
     if (nous && !punt) {
@@ -2288,6 +2339,7 @@ addEventListener('pageshow', (e) => {
   if (!e.persisted) return;
   marcaNovetats();
   treuNousVistos();
+  VISTOS_PORTADA_ABANS = null;
   if (HISTORIAL_PERILL && !/(^|\/)perill\.html$/.test(location.pathname)) senyalaPerill(HISTORIAL_PERILL);
   if (!/(^|\/)riera\.html$/.test(location.pathname)) senyalaRiera(PREVISIO_RIERA, HISTORIAL_PERILL);
 });

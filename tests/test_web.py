@@ -1364,6 +1364,28 @@ class Web(unittest.TestCase):
         self.assertNotIn("blocAvisos(", codi)
         self.assertNotIn("avís de dalt", codi.replace("// a «l'avís de dalt»", ""))
 
+    def test_punt_de_perill_fora_si_la_portada_ja_els_ha_mostrat(self):
+        # Juanjo, 21-11-2026: el «Nou» de la portada se n'anava en tornar-la a
+        # carregar, però el punt de «Perill» seguia fins que s'obria «Perill».
+        ara = "2026-11-21T10:30:00+01:00"
+        historial = [{"clau": "propi", "tipus": "perill", "inici": "2026-11-21T10:03+01:00"},
+                     {"clau": "meteocat:2026-11-20T16:45Z", "tipus": "perill", "inici": "2026-11-20T17:45+01:00",
+                      "darrer": "2026-11-21T09:27+01:00"},
+                     {"clau": "aemet:vent:2026-11-22T05:00Z", "tipus": "perill", "inici": "2026-11-21T00:09+01:00"},
+                     {"clau": "pla:VENTCAT", "tipus": "perill", "inici": "2026-11-20T18:45+01:00"},
+                     {"clau": "aemet:pluja:2026-11-22T05:00Z", "tipus": "perill", "inici": "2026-11-21T00:09+01:00"}]
+        claus = ["pla:VENTCAT:alerta", "smp:vent:alt", "aemet:groc:vent:2026-11-22T06:00/07:00", "risc:previsio:ratxa:groc"]
+        expr = ("desats = {}; localStorage.getItem = (k) => desats[k] || null;"
+                " localStorage.setItem = (k, v) => { desats[k] = v; };"
+                f" const h = {json.dumps(historial)};"
+                f" apuntaVistosPortada(h, {json.dumps(claus)}, new Date('{ara}'));"
+                f" const vistos = llegeixVistosPortada();"
+                f" const nous = (hh) => perillsNous(hh, null, new Date('{ara}'), vistos).map((e) => e.clau);"
+                # Actualitzat després: torna a ser nou.
+                " const act = [{ ...h[1], darrer: '2026-11-21T10:20+01:00' }];"
+                " [nous(h), nous(act)]")
+        self.assertEqual(self.avalua(ara, expr), [["aemet:pluja:2026-11-22T05:00Z"], ["meteocat:2026-11-20T16:45Z"]])
+
     def test_punt_de_perill_nomes_amb_un_perill_actiu(self):
         # ADR 0074: el punt vermell, només mentre la situació és activa i no s'ha vist;
         # abans durava 24 hores i sortia amb «Ara no hi ha cap situació de perill».
