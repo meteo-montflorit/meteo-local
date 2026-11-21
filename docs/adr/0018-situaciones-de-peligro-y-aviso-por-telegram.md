@@ -229,3 +229,15 @@ antiguo, porque `avisos_bot.historial` solo la reescribía si cambiaban las
 líneas de debajo del título (`cos_avis`). Ahora compara el texto entero, también
 en castellano.
 
+3.230.0 (21-11-2026): lo mismo en los demás avisos que la app manda a la
+gente. Lluvia: «Avís de l'app Temps a Montflorit: pluja imminent» y «…: pluja
+d'aquí a uns N minuts». Riera (ADR 0027): «Avís de l'app Temps a Montflorit:
+preavís per la riera…», «…: perill de desbordament…», «Avís de l'app Temps a
+Montflorit per la riera…» y, al acabar, «S'acaba l'avís de l'app Temps a
+Montflorit: ha passat el perill…» o «…: ja no hi ha risc…». En «Avisos
+actius» de la web, la línea de la riera dice «Avís d'aquesta app…», como la
+del aviso propio. Sin «(no oficial)» en el título: la lluvia no lo llevaba, y
+la riera ya acaba con «Avís en proves, orientatiu i no oficial». Los avisos
+internos para Juanjo (fuentes que fallan, altas del bot) siguen con «Temps a
+Montflorit:».
+

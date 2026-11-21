@@ -1130,7 +1130,11 @@ function blocRiera(historial, ara = new Date()) {
   return (historial || []).filter((e) => e.tipus === 'riera' && !e.fi && !(e.fins && new Date(e.fins) <= ara))
     .map((e) => {
       const text = e[IDIOMA.codi === 'es' ? 'es' : 'ca'] || e.ca;
-      const titol = trossos(text)[0].map((t) => t.t).join('').replace(/^\S+\s/, '').trim();
+      // «Avís de l'app Temps a Montflorit…», a la web «d'aquesta app», com
+      // l'avís propi (21-11-2026).
+      const titol = trossos(text)[0].map((t) => t.t).join('').replace(/^\S+\s/, '').trim()
+        .replace(/^Avís de l['’]app Temps a Montflorit/, 'Avís d’aquesta app')
+        .replace(/^Aviso de la app Temps a Montflorit/, 'Aviso de esta app');
       const item = element('p', `avis-item ${NIVELL_RIERA[e.nivell] || 'vermell'}`);
       // El preavís, com el missatge: sense el «no t'acostis» ferm (14-11-2026).
       const que = e.nivell === 'preavis' ? T('Si comença a ploure fort, no t’hi acostis.') : T('No t’acostis a la riera.');

@@ -163,15 +163,15 @@ def text_pluja(salida, ahora):
         forca = {"ca": f" {'Serà' if segura else 'Pot ser'} {N.nom_intensitat(mm, 'ca')}.",
                  "es": f" {'Será' if segura else 'Puede ser'} {N.nom_intensitat(mm, 'es')}."}
     if falta <= 2:
-        ca = (negreta("Temps a Montflorit: pluja imminent", "pluja") + "\nEl radar ja veu pluja a sobre del barri: pot "
+        ca = (negreta("Avís de l'app Temps a Montflorit: pluja imminent", "pluja") + "\nEl radar ja veu pluja a sobre del barri: pot "
               "començar en qualsevol moment." + forca["ca"])
-        es = (negreta("Temps a Montflorit: lluvia inminente", "pluja") + "\nEl radar ya ve lluvia encima del barrio: puede "
+        es = (negreta("Aviso de la app Temps a Montflorit: lluvia inminente", "pluja") + "\nEl radar ya ve lluvia encima del barrio: puede "
               "empezar en cualquier momento." + forca["es"])
     else:
         hora = H.local(r["arriba"]).strftime("%H:%M")
-        ca = negreta(f"Temps a Montflorit: pluja d'aquí a uns {falta} minuts", "pluja") + (
+        ca = negreta(f"Avís de l'app Temps a Montflorit: pluja d'aquí a uns {falta} minuts", "pluja") + (
             f"\nSegons el radar, començarà a ploure a Montflorit cap a les {hora}.") + forca["ca"]
-        es = negreta(f"Temps a Montflorit: lluvia dentro de unos {falta} minutos", "pluja") + (
+        es = negreta(f"Aviso de la app Temps a Montflorit: lluvia dentro de unos {falta} minutos", "pluja") + (
             f"\nSegún el radar, empezará a llover en Montflorit hacia las {hora}.") + forca["es"]
     return amb_radar(ca, es, r)
 
@@ -305,22 +305,22 @@ def text_riera(riera, nivell):
         # Provisional, sense alarmar ni tranquil·litzar de més: el 29-09-2026,
         # a les 10:30, era igual que el 14-11 i a les 12:30 l'aigua va entrar
         # a les cases.
-        ca = (negreta("Temps a Montflorit: preavís per la riera de Sant Cugat", nivell) +
+        ca = (negreta("Avís de l'app Temps a Montflorit: preavís per la riera de Sant Cugat", nivell) +
               "\nEl radar veu venir pluja forta, però encara no ha plogut gaire. Si comença a ploure fort, "
               "no t'acostis a la riera. T'avisarem si es confirma.")
-        es = (negreta("Temps a Montflorit: preaviso por la riera de Sant Cugat", nivell) +
+        es = (negreta("Aviso de la app Temps a Montflorit: preaviso por la riera de Sant Cugat", nivell) +
               "\nEl radar ve venir lluvia fuerte, pero aún no ha llovido mucho. Si empieza a llover fuerte, "
               "no te acerques a la riera. Te avisaremos si se confirma.")
     elif nivell == "perill":
-        ca = (negreta("Temps a Montflorit: perill de desbordament de la riera de Sant Cugat", nivell) +
+        ca = (negreta("Avís de l'app Temps a Montflorit: perill de desbordament de la riera de Sant Cugat", nivell) +
               "\nNo t'acostis a la riera. Ha plogut tant com altres vegades que s'ha desbordat.")
-        es = (negreta("Temps a Montflorit: peligro de desbordamiento de la riera de Sant Cugat", nivell) +
+        es = (negreta("Aviso de la app Temps a Montflorit: peligro de desbordamiento de la riera de Sant Cugat", nivell) +
               "\nNo te acerques a la riera. Ha llovido tanto como otras veces en que se desbordó.")
     else:
-        ca = (negreta("Temps a Montflorit: avís per la riera de Sant Cugat", nivell) +
+        ca = (negreta("Avís de l'app Temps a Montflorit per la riera de Sant Cugat", nivell) +
               ("\nJa plou fort a Sant Cugat i en ve més." if radar else "\nJa plou fort a Sant Cugat. Si continua,")
               + (" La riera es pot desbordar: no t'hi acostis." if radar else " la riera es pot desbordar: no t'hi acostis."))
-        es = (negreta("Temps a Montflorit: aviso por la riera de Sant Cugat", nivell) +
+        es = (negreta("Aviso de la app Temps a Montflorit por la riera de Sant Cugat", nivell) +
               ("\nYa llueve fuerte en Sant Cugat y viene más." if radar else "\nYa llueve fuerte en Sant Cugat. Si sigue,")
               + (" La riera se puede desbordar: no te acerques." if radar else " la riera se puede desbordar: no te acerques."))
     return {"ca": f"{ca}\n{ORIENTATIU['ca']}", "es": f"{es}\n{ORIENTATIU['es']}"}
@@ -332,9 +332,9 @@ def text_riera_fi(riera, episodi):
     va sortir només del radar i la pluja no ha arribat. Curt i sense xifres
     (ADR 0076)."""
     perill = bool(episodi["avisos"].get("perill"))
-    ca = negreta("Temps a Montflorit: " + ("ha passat el perill de desbordament" if perill else "ja no hi ha risc de desbordament")
+    ca = negreta("S'acaba l'avís de l'app Temps a Montflorit: " + ("ha passat el perill de desbordament" if perill else "ja no hi ha risc de desbordament")
                  + " de la riera de Sant Cugat", "fi")
-    es = negreta("Temps a Montflorit: " + ("ha pasado el peligro de desbordamiento" if perill else "ya no hay riesgo de desbordamiento")
+    es = negreta("Termina el aviso de la app Temps a Montflorit: " + ("ha pasado el peligro de desbordamiento" if perill else "ya no hay riesgo de desbordamiento")
                  + " de la riera de Sant Cugat", "fi")
     if RI.nomes_radar(episodi):
         ca += "\nLa pluja forta que preveia el radar no ha arribat. Si hi torna, tornarà l'avís."

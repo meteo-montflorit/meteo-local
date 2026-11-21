@@ -1011,10 +1011,10 @@ class AvisosPublics(unittest.TestCase):
         for i, index in enumerate([38, 30, 10, 5, 5, 5, 5, 5, 5]):
             nous += AB.decideix(estat, {"riera": riera(index)}, ARA + dt.timedelta(minutes=30 * i))
         self.assertEqual([(a["nivell"], a["id"].split(":")[-1]) for a in nous], [("atencio", "atencio"), ("fi", "fi")])
-        self.assertTrue(nous[0]["ca"].startswith("🟠 <b>Temps a Montflorit: avís per la riera de Sant Cugat</b>\nJa plou fort a Sant Cugat. Si continua, "
+        self.assertTrue(nous[0]["ca"].startswith("🟠 <b>Avís de l'app Temps a Montflorit per la riera de Sant Cugat</b>\nJa plou fort a Sant Cugat. Si continua, "
                                                  "la riera es pot desbordar: no t'hi acostis."))
         self.assertNotRegex(nous[0]["ca"].split("\n")[1], r"\d", "sense xifres (Juanjo, 14-11-2026)")
-        self.assertTrue(nous[1]["ca"].startswith("🟢 <b>Temps a Montflorit: ja no hi ha risc de desbordament de la riera de Sant Cugat</b>"))
+        self.assertTrue(nous[1]["ca"].startswith("🟢 <b>S'acaba l'avís de l'app Temps a Montflorit: ja no hi ha risc de desbordament de la riera de Sant Cugat</b>"))
         self.assertIn("ya no hay riesgo de desbordamiento", nous[1]["es"])
         self.assertIn("Fa 3 hores que no plou fort. Si hi torna, tornarà l'avís.", nous[1]["ca"])   # curt, sense la nota (ADR 0076)
         self.assertEqual(nous[0]["tipus"], nous[1]["tipus"], "riera")
@@ -1030,7 +1030,7 @@ class AvisosPublics(unittest.TestCase):
         for i, index in enumerate([22, 50.4, 50.4, 31.7, 30, 28, 26, 25, 24, 23]):
             nous += AB.decideix(estat, {"riera": riera(index)}, ARA + dt.timedelta(minutes=6 * i))
         self.assertEqual([a["nivell"] for a in nous], ["preavis", "fi"])
-        self.assertEqual(nous[0]["ca"], "🟡 <b>Temps a Montflorit: preavís per la riera de Sant Cugat</b>\n"
+        self.assertEqual(nous[0]["ca"], "🟡 <b>Avís de l'app Temps a Montflorit: preavís per la riera de Sant Cugat</b>\n"
                          "El radar veu venir pluja forta, però encara no ha plogut gaire. Si comença a ploure fort, "
                          "no t'acostis a la riera. T'avisarem si es confirma.\nAvís en proves, orientatiu i no oficial.")
         self.assertIn("El radar ve venir lluvia fuerte, pero aún no ha llovido mucho.", nous[0]["es"])
@@ -1087,7 +1087,7 @@ class AvisosPublics(unittest.TestCase):
                  "capcalera": None}
         nous = AB.decideix(estat, {"riera": riera}, ARA)
         self.assertEqual(nous[0]["nivell"], "perill")
-        self.assertTrue(nous[0]["ca"].startswith("🔴 <b>Temps a Montflorit: perill de desbordament de la riera de Sant Cugat</b>"))
+        self.assertTrue(nous[0]["ca"].startswith("🔴 <b>Avís de l'app Temps a Montflorit: perill de desbordament de la riera de Sant Cugat</b>"))
         self.assertIn("Aviso en pruebas, orientativo y no oficial", nous[0]["es"])
         self.assertEqual(AB.decideix(estat, {"riera": riera}, ARA + dt.timedelta(minutes=15)), [])
 
@@ -1116,7 +1116,7 @@ class AvisosPublics(unittest.TestCase):
         with unittest.mock.patch.object(AB.PA, "falta_min", return_value=1):
             t = AB.text_pluja(salida("meteocat"), ARA)
         self.assertEqual(t["url"], "https://www.meteo.cat/observacions/radar")
-        self.assertIn("Temps a Montflorit: pluja imminent", t["ca"])
+        self.assertIn("Avís de l'app Temps a Montflorit: pluja imminent", t["ca"])
 
     def test_el_radar_en_directe_igual_a_tot_arreu(self):
         casa_js = open(os.path.join(ARREL, "web", "casa.js"), encoding="utf-8").read()
