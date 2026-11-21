@@ -131,6 +131,9 @@ SETMANES_COMPARA = 4
 # cercana, a PARELLA_MIN minutos como mucho), en las mismas horas.
 PARELLA_MIN = 35
 FONTS_OFICIALS = ("meteocat", "aemet")
+# La probabilidad de AEMET por tramos de 6 horas (trams_aemet): la lectura que
+# cuenta es la última antes de que empiece el tramo, a esta antelación como mucho.
+TRAM_ANTELACIO_H = 6
 
 
 def hores_del_dia(dia):
@@ -543,6 +546,77 @@ def comparacio(dies, emes, oficials):
     return res
 
 
+def trams_aemet(dies, emes, oficials):
+    """La probabilidad de lluvia de AEMET por tramos de 6 horas (`p6`) contra
+    la de la web publicada en el mismo momento (ADR 0110, 21-11-2026). Cada
+    tramo cuenta una vez, con la última lectura de AEMET hecha antes de que
+    empiece y a menos de TRAM_ANTELACIO_H horas. La web, con la probabilidad de
+    su hora más probable del tramo: con los datos del barrio (20-10 a
+    21-11-2026) era la que más se acercaba a lo que pasó, más que combinar las
+    horas como si fueran independientes. Llueve en el tramo si alguna hora da
+    UMBRAL_MM o más; solo tramos con las seis horas medidas.
+    {dia local del principio: [tramos, con lluvia, Brier web, Brier AEMET,
+    AEMET ≥50 %, y llovió, web ≥50 %, y llovió]}."""
+    obs = {H.utc(f["fins"]): (d["dia"], f["pluja_mm"]) for d in dies for f in d["hores"]}
+    ordenades = sorted((H.utc(k), v) for k, v in emes.items())
+    temps, valors = [t for t, _ in ordenades], [v for _, v in ordenades]
+    darrera = {}
+    for s, prev in oficials.get("aemet") or []:
+        for ini, (fi, p) in (prev.get("p6") or {}).items():
+            a = H.utc(ini)
+            if p is None or not 0 <= (a - s).total_seconds() < TRAM_ANTELACIO_H * 3600:
+                continue
+            if a not in darrera or s > darrera[a][0]:
+                darrera[a] = (s, H.utc(fi), p / 100)
+    res = {}
+    hora = dt.timedelta(hours=1)
+    for a, (s, b, p) in sorted(darrera.items()):
+        web = _emissio_propera(temps, valors, s)
+        if not web:
+            continue
+        web = {H.utc(k): v for k, v in web.items()}
+        fins = []
+        t = a + hora
+        while t <= b:
+            fins.append(t)
+            t += hora
+        mesura = [obs.get(t) for t in fins]
+        pw = [(web.get(t) or {}).get("probabilitat") for t in fins]
+        if not fins or None in pw or any(m is None or m[1] is None for m in mesura):
+            continue
+        o = any(m[1] >= C.UMBRAL_MM for m in mesura)
+        w = max(pw)
+        acc = res.setdefault(mesura[0][0], [0, 0, 0.0, 0.0, 0, 0, 0, 0])
+        acc[0] += 1
+        acc[1] += o
+        acc[2] += (w - o) ** 2
+        acc[3] += (p - o) ** 2
+        if p >= 0.5:
+            acc[4] += 1
+            acc[5] += o
+        if w >= 0.5:
+            acc[6] += 1
+            acc[7] += o
+    return res
+
+
+def resum_trams(per_dia):
+    """Los tramos de unos días: {trams, plogudes, dies_pluja, web, aemet
+    (Brier medio), seguretat (remostreig.seguretat: con un 95 % o más acierta
+    más la web, con un 5 % o menos la AEMET), aemet_plou, web_plou ([tramos
+    en que daba un 50 % o más, en cuántos llovió]), des_de}."""
+    dies = sorted(d for d in per_dia if per_dia[d][0])
+    if not dies:
+        return {"trams": 0}
+    v = [per_dia[d] for d in dies]
+    n = sum(x[0] for x in v)
+    return {"trams": n, "plogudes": sum(x[1] for x in v), "dies_pluja": sum(1 for x in v if x[1]),
+            "web": round(sum(x[2] for x in v) / n, 4), "aemet": round(sum(x[3] for x in v) / n, 4),
+            "seguretat": R.seguretat([x[2] for x in v], [x[3] for x in v], dies),
+            "aemet_plou": [sum(x[4] for x in v), sum(x[5] for x in v)],
+            "web_plou": [sum(x[6] for x in v), sum(x[7] for x in v)], "des_de": dies[0]}
+
+
 def resum_comparacio(per_dia):
     """La comparación de unos días: {temperatura: {hores, web, oficial,
     web_biaix, oficial_biaix, seguretat}, pluja: {hores, plogudes, web,
@@ -742,7 +816,7 @@ def tots(avui=None, registre=None, emes=None, avisos=None):
     return dies
 
 
-def index(dies, avui, comp=None):
+def index(dies, avui, comp=None, trams=None):
     """historial.json: los días que hay y el acierto de los últimos 30 días,
     de los 30 anteriores y de cada mes, con los mínimos para darlo. Hoy
     también, con sus horas ya pasadas (las que faltan no tienen medida): así
@@ -751,7 +825,9 @@ def index(dies, avui, comp=None):
     Desde la 3.165.0 (ADR 0110), para cada antelación: la lluvia con el error
     de Brier frente a la climatología de todo el registro (`pluja`), el acierto
     por semanas (`setmanes`), si mejora (`millora`) y, con comp
-    (comparacio()), frente a Meteocat y AEMET (`oficial`)."""
+    (comparacio()), frente a Meteocat y AEMET (`oficial`). Con trams
+    (trams_aemet()), la lluvia por tramos de 6 horas frente a AEMET en los
+    últimos 30 días (`trams_aemet`), que no depende de la antelación."""
     complets = [d for d in dies if d["dia"] <= avui.isoformat()]
     fi = avui + dt.timedelta(days=1)
     des_de = max(PRIMER_DIA, fi - dt.timedelta(days=DIES_FINESTRA))
@@ -813,6 +889,8 @@ def index(dies, avui, comp=None):
             "minims": {"temperatura_hores": MIN_HORES_TEMP, "pluja_casos": MIN_CASOS_PLUJA},
             "franges": list(FRANGES),
             "periode": {"des_de": des_de.isoformat(), "dies": (fi - des_de).days},
+            "trams_aemet": resum_trams({d: v for d, v in (trams or {}).items()
+                                        if des_de.isoformat() <= d < fi.isoformat()}),
             "encert": {str(n): per_antelacio(n) for n in ANTELACIONS}}
 
 
@@ -824,13 +902,15 @@ def fes(carpeta, ultims=None, avui=None, registre=None, avisos=None, refa=True):
     avui = avui or H.dia_local(H.ara())
     emes = emissions(registre)
     dies = tots(avui, registre, emes, avisos)
-    comp = comparacio(dies, emes, O.registre(registre or A.REGISTRE))
+    oficials = O.registre(registre or A.REGISTRE)
+    comp = comparacio(dies, emes, oficials)
+    trams = trams_aemet(dies, emes, oficials)
     os.makedirs(carpeta, exist_ok=True)
     noms = ["historial.json"]
     # Es publica: les hores, en hora de Madrid amb el desfasament (ADR 0128).
     escriu = lambda nom, dades: json.dump(H.publica(dades), open(os.path.join(carpeta, nom), "w", encoding="utf-8"),
                                           ensure_ascii=False, separators=(",", ":"))
-    i = index(dies, avui, comp)
+    i = index(dies, avui, comp, trams)
     i["aprenentatge"] = aprenentatge()
     escriu("historial.json", i)
     # La marca: el formato, si ya están todos; si no, {"format", "seguent"}, el

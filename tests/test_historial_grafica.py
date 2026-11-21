@@ -8,6 +8,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ARREL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ARREL)
@@ -345,6 +346,38 @@ class Historial(unittest.TestCase):
         r = H.resum_comparacio(comp["aemet"][2])
         self.assertEqual((r["temperatura"]["web"], r["temperatura"]["oficial"]), (3.5, 0.5))
         self.assertIsNone(r["temperatura"]["seguretat"])   # un sol dia: no hi ha seguretat
+
+    def test_trams_de_6_hores_de_l_aemet(self):
+        # ADR 0110, 21-11-2026: la probabilitat de l'AEMET per trams de 6 h,
+        # una vegada per tram, amb la darrera lectura abans que comenci; la web,
+        # amb la de les 7:03 (la més propera) i la seva hora més probable del tram.
+        k = lambda h: HR.clau(f"2026-10-16T{h:02d}:00")
+        s1 = dt.datetime(2026, 10, 16, 6, 50, tzinfo=H.P.ZONA)
+        s2 = dt.datetime(2026, 10, 16, 7, 20, tzinfo=H.P.ZONA)
+        oficials = {"aemet": [(s1, {"p6": {k(8): [k(14), 90.0]}}),
+                              (s2, {"p6": {k(8): [k(14), 40.0], k(14): [k(20), 70.0]}})]}
+        emes = H.emissions(self.dir.name)
+        t = H.trams_aemet(self.dies, emes, oficials)
+        # De 8 a 14, sec: la lectura de les 7:20 (40 %); el de 14 a 20 comença a
+        # 6 h 40 min, massa lluny.
+        d = t["2026-10-16"]
+        self.assertEqual(d[:2], [1, 0])
+        self.assertEqual((round(d[2], 4), round(d[3], 4)), (0.0025, 0.16))
+        self.assertEqual(d[4:], [0, 0, 0, 0])
+        # Amb 7 h, també el de 14 a 20, amb pluja de 19 a 20: la web hi deia un 80 %.
+        with mock.patch.object(H, "TRAM_ANTELACIO_H", 7):
+            d = H.trams_aemet(self.dies, emes, oficials)["2026-10-16"]
+        self.assertEqual(d[:2], [2, 1])
+        self.assertEqual((round(d[2], 4), round(d[3], 4)), (0.0425, 0.25))
+        self.assertEqual(d[4:], [1, 1, 1, 1])
+        r = H.resum_trams({"2026-10-16": d})
+        self.assertEqual((r["trams"], r["plogudes"], r["dies_pluja"], r["web"], r["aemet"]), (2, 1, 1, 0.0212, 0.125))
+        self.assertIsNone(r["seguretat"])            # un sol dia
+        self.assertEqual(H.resum_trams({}), {"trams": 0})
+        # Sense cap publicació a prop, res.
+        self.assertEqual(H.trams_aemet(self.dies, emes, {"aemet": [(s2 - dt.timedelta(hours=4), oficials["aemet"][1][1])]}), {})
+        i = H.index(self.dies, dt.date(2026, 10, 17), trams={"2026-10-16": d})
+        self.assertEqual(i["trams_aemet"]["trams"], 2)
 
     def test_aprenentatge_i_canvis_amb_data(self):
         # ADR 0110: el que la pàgina explica de l'aprenentatge i els canvis que la

@@ -154,19 +154,24 @@ hay dia a dia».
 
 ## Riesgos e hipótesis
 
-- **Hipótesis por comprobar con las primeras lluvias**: que los milímetros de
-  la hora que dan Meteocat («data» en UTC) y AEMET («periodo» HH) son los
-  caídos en la hora que acaba a esa hora. Si fuera la que empieza, la lluvia
-  oficial quedaría desplazada una hora y saldría peor de lo que es. Se
-  comprobará comparando la hora de la lluvia prevista con la medida en los
-  primeros episodios.
+- **Comprobado el 21-11-2026**: los milímetros de la hora que dan Meteocat
+  («data» en UTC) y AEMET («periodo» HH) son los caídos en la hora que acaba
+  a esa hora, como suponía la comparación. Con 59 horas de lluvia medidas en
+  12 días, 197 lecturas de Meteocat y 761 de AEMET, a 1-12 horas, leídos como
+  la hora que acaba aciertan igual o más horas de lluvia que como la que
+  empieza (Meteocat, 67 frente a 65; AEMET, 167 frente a 162, y una
+  correlación de los milímetros con lo medido de 0,77 frente a 0,61). La
+  temperatura de las dos cuadra con la medida sin desfase, así que las horas
+  UTC están bien leídas. La [ayuda de AEMET](https://www.aemet.es/es/eltiempo/prediccion/municipios/ayuda)
+  lo dice («durante la hora anterior»); de Meteocat no se ha encontrado
+  documentación y queda respaldado solo por los datos. No cambia el código.
 - Meteocat se lee cada 3 horas: para cada hora solo hay una antelación de
   cada tres con su previsión, así que tiene menos horas comparadas que AEMET.
   Como se compara con la de la web del mismo momento, la frecuencia no da
   ventaja a nadie.
-- La probabilidad por tramos de 6 horas de AEMET se apunta pero todavía no se
-  compara: la de la web es por horas y combinarlas exige una suposición sobre
-  la relación entre las horas de un mismo tramo. Queda pendiente.
+- La probabilidad por tramos de 6 horas de AEMET se compara desde la
+  3.232.0 (más abajo) con la hora más probable de la web en el tramo, que es
+  una elección sacada de pocos días de lluvia: se revisará si cambia con más.
 - Con pocas horas de lluvia (en octubre, unas 20 de 270), la lluvia tardará
   semanas en dar diferencias seguras; la página lo dice.
 
@@ -263,3 +268,31 @@ también en la fila de la web a esas horas, y una nota debajo: «L’error de
 pluja surt quan hagi plogut en alguna de les hores comparades». Validación:
 la página con los datos del 26-10-2026 en Chromium y Firefox, móvil, catalán
 y castellano, y axe-core sin errores en claro y oscuro.
+
+**La lluvia por tramos de 6 horas, frente a AEMET** (21-11-2026, 3.232.0).
+AEMET da también la probabilidad de lluvia por tramos de 6 horas (`p6`), que
+se apuntaba sin compararse porque la web la da por horas. Juanjo aprobó la
+propuesta («sí, hazlo»): una sección propia en «Fiabilitat», «Pluja per
+trams de 6 hores, contra l'AEMET», que no depende del selector de antelación.
+`historial.trams_aemet` cuenta cada tramo una vez, con la última lectura de
+AEMET antes de que empiece (a 6 horas como mucho, `TRAM_ANTELACIO_H`) y la
+publicación de la web del mismo momento; llueve si alguna hora del tramo da
+0,2 mm o más, y solo cuentan los tramos con las seis horas medidas. De la
+web, la probabilidad de su hora más probable del tramo. Antes de decidirlo
+se probaron dos formas de resumir sus horas con los datos del barrio (20-10 a
+21-11-2026, 1.406 parejas de lectura y tramo a menos de 12 horas, 84 con
+lluvia, pero en solo 5 días): la hora más probable dio un error de Brier de
+0,023; combinarlas como independientes, $1 - \prod (1 - p_h)$, 0,028, porque
+exagera; AEMET, 0,041, y la climatología, 0,056. AEMET exagera también:
+cuando daba un 50 % o más llovió el 57 % de las veces, y entre el 20 y el
+50 %, el 9 %. En `historial.json`, `trams_aemet` (los últimos 30 días): los
+tramos, los que tuvieron lluvia y en cuántos días, el Brier de las dos, la
+seguridad (`remostreig.seguretat` por días) y, de cada una, en cuántos tramos
+dio un 50 % o más y en cuántos llovió. La página lo enseña en cuatro cifras
+(el error de cada una y qué pasó cuando decían que llovería) y una línea con
+cuántos tramos y días hay detrás y si la diferencia puede ser casualidad.
+Con el registro real, el 21-11-2026: 121 tramos desde el 20-10, 7 con lluvia
+en 6 días; la web, 0,019, y AEMET, 0,050, con una seguridad del 99,9 %.
+Pruebas: `tests/test_historial_grafica.py` (un tramo por lectura, la última
+antes de empezar, el límite de antelación, la hora más probable de la web,
+sin publicación cercana, y el índice).

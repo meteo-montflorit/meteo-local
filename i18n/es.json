@@ -264,6 +264,8 @@
  "Pluja: error de cada dia (0 vol dir que encerta sempre)": "Lluvia: error de cada día (0 quiere decir que acierta siempre)",
  "Quant encerta la previsió d'aquesta web, comparada amb el que es mesura al barri i amb Meteocat i AEMET, i com aprèn.": "Cuánto acierta la previsión de esta web, comparada con lo que se mide en el barrio y con Meteocat y AEMET, y cómo aprende.",
  "Error segons l'antelació": "Error según la antelación",
+ "Pluja per trams de 6 hores, contra l'AEMET": "Lluvia por tramos de 6 horas, frente a la AEMET",
+ "L'AEMET dona la probabilitat de pluja per trams de 6 hores. Cada tram es compara una vegada: amb la que donava l'AEMET just abans que comencés i amb la que donava la web en aquell moment, la de la seva hora més probable del tram. Compta com a pluja si en alguna hora del tram en cau. No depèn del selector de dalt.": "La AEMET da la probabilidad de lluvia por tramos de 6 horas. Cada tramo se compara una vez: con la que daba la AEMET justo antes de que empezara y con la que daba la web en ese momento, la de su hora más probable del tramo. Cuenta como lluvia si en alguna hora del tramo cae. No depende del selector de arriba.",
  "Com aprèn": "Cómo aprende",
  "Canvis que ha fet": "Cambios que ha hecho",
  "Les xifres i com es calcula": "Las cifras y cómo se calcula",

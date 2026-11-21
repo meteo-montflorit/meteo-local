@@ -677,6 +677,27 @@ function pintaDetall(e) {
   $('detall-cos').replaceChildren(...res);
 }
 
+// La pluja per trams de 6 hores contra l'AEMET (ADR 0110, 21-11-2026): no
+// depèn de l'antelació. L'error, i el que va passar quan deien que plouria.
+function xifraTramsPlou(titol, [de, plogudes]) {
+  if (!de) return xifra(titol, '—', T('Encara no ho ha dit en cap tram.'));
+  return xifra(titol, `${Math.round((plogudes / de) * 100)}\u00a0%`, T('de les vegades, plou'),
+    T`${plogudes} de ${de} trams (quan dona un 50\u00a0% o més).`);
+}
+
+function pintaTrams() {
+  const t = INDEX.trams_aemet;
+  if (!t || !t.trams) {
+    $('trams').replaceChildren();
+    $('trams-nota').textContent = T('Encara no hi ha trams per comparar.');
+    return;
+  }
+  const peu = T('error de pluja (0 vol dir que encerta sempre)');
+  $('trams').replaceChildren(xifra(T('Aquesta web'), brier(t.web), peu), xifra('AEMET', brier(t.aemet), peu),
+    xifraTramsPlou(T('Quan la web diu que plourà'), t.web_plou), xifraTramsPlou(T('Quan l’AEMET diu que plourà'), t.aemet_plou));
+  $('trams-nota').textContent = T`${t.trams} trams des del ${nomData(t.des_de)}; ${t.plogudes} amb pluja, en ${t.dies_pluja} dies. La diferència ${textSegur(t.seguretat)}.`;
+}
+
 // --- Tot plegat ---
 
 function pintaGrafiques(e) {
@@ -705,6 +726,7 @@ function pinta() {
   const e = INDEX.encert && INDEX.encert[String(a)];
   if (!e) return;
   pintaXifres(e);
+  pintaTrams();
   pintaGrafiques(e);
   pintaDetall(e);
   pintaDia();

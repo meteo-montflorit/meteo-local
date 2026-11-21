@@ -1657,10 +1657,24 @@ minutos como mucho), en las horas que empiezan $N$ horas después de $s$
 (redondeado) y tienen medida. La temperatura oficial del tramo es la media de
 la de su principio y su final; la lluvia oficial, $q_h = 1$ si da 0,2 mm o
 más en la hora y 0 si no, con su Brier $(q_h - o_h)^2$. Se dan los errores de
-las dos en las mismas horas y la seguridad de la diferencia. Por comprobar
-con las primeras lluvias: que los milímetros de cada hora oficial son los de
-la hora que acaba a esa hora (ADR 0110). La probabilidad de AEMET por tramos
-de 6 horas se apunta, pero todavía no se compara.
+las dos en las mismas horas y la seguridad de la diferencia. Los milímetros
+de cada hora oficial son los de la hora que acaba a esa hora: lo dice la
+ayuda de AEMET y lo confirmaron los datos del 20-10 al 21-11-2026 para las
+dos (ADR 0110).
+
+**La probabilidad de AEMET por tramos de 6 horas** (`historial.trams_aemet`)
+se compara aparte, porque la de la web es por horas. Cada tramo cuenta una
+vez, con la última lectura de AEMET hecha antes de que empiece (a 6 horas
+como mucho) y la publicación de la web del mismo momento. De la web, la
+probabilidad de su hora más probable del tramo, $p_w = \max_h p_h$; llueve en
+el tramo ($o = 1$) si alguna hora da 0,2 mm o más, y solo cuentan los tramos
+con las seis horas medidas. Brier de cada una, $(p - o)^2$, y la seguridad de
+la diferencia con la regla de siempre. Cómo resumir las horas de la web se
+decidió con los datos del barrio (20-10 a 21-11-2026; 1.406 parejas de
+lectura y tramo, 84 con lluvia en 5 días): la hora más probable daba 0,023;
+combinarlas como si fueran independientes, $1 - \prod_h (1 - p_h)$, 0,028
+(exagera la lluvia: con un 50 % o más, llovió el 66 %, y por debajo
+también); AEMET, 0,041. No depende de la antelación de la página.
 
 Los últimos 30 días para el resumen y la comparación con las oficiales. Las
 previsiones de la web se apuntan desde el 5 de octubre de 2026; lo medido,

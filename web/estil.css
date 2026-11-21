@@ -1507,6 +1507,10 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
   .fb-xifres > :last-child:nth-child(3n+1) { grid-column: auto; }
   .fb-xifres > :last-child:nth-child(2n+1) { grid-column: 1 / -1; }
 }
+/* Les quatre de la pluja per trams (ADR 0110): totes en una fila; al mòbil, de dues en dues. */
+.fb-xifres.fb-xifres-4 { grid-template-columns: repeat(4, 1fr); }
+.fb-xifres.fb-xifres-4 > :last-child { grid-column: auto; }
+@media (max-width: 40rem) { .fb-xifres.fb-xifres-4 { grid-template-columns: repeat(2, 1fr); } }
 .fb-xifra { background: var(--superficie); border: 1px solid var(--vora); border-radius: .6rem; padding: .6rem .75rem; }
 .fb-xifra p { margin: 0; }
 .fb-xifra-titol { color: var(--suau); font-size: .9rem; }
