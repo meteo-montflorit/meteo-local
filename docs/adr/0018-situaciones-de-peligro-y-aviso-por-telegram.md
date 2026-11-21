@@ -223,3 +223,9 @@ forma normalizada por el TERMCAT junto a «aplicació mòbil» (Consell
 Supervisor, 2022). Los mensajes ya enviados conservan su texto. Validación:
 pruebas del bot y de la web, y Firefox y Chromium en móvil, en catalán y
 castellano, con el aviso de ratxa del 22-11.
+
+3.229.1 (21-11-2026): la ficha abierta en «Perill» seguía con el título
+antiguo, porque `avisos_bot.historial` solo la reescribía si cambiaban las
+líneas de debajo del título (`cos_avis`). Ahora compara el texto entero, también
+en castellano.
+

@@ -96,6 +96,9 @@ class Historial(unittest.TestCase):
         # Sense riscos ara (falta la previsió), es queda com estava.
         estat["perill_text"] = None
         self.assertIn("Origen: Météo-France.", AB.historial(estat, [], ARA + dt.timedelta(minutes=30))[0]["ca"])
+        # Si només canvia el títol, també (21-11-2026: «Avís de l'app…» no arribava a «Perill»).
+        estat["perill_text"] = {"ca": "🟡 títol nou\nVent fort previst.\nOrigen: Météo-France.\nAvís no oficial.", "es": "x"}
+        self.assertTrue(AB.historial(estat, [], ARA + dt.timedelta(minutes=45))[0]["ca"].startswith("🟡 títol nou"))
 
     def test_un_episodi_nou_despres_d_un_d_acabat(self):
         estat = {}

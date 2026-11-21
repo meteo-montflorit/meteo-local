@@ -1262,7 +1262,10 @@ def historial(estat, nous, ahora, anterior=None):
     # d'unes ratxes que només preveia un model).
     propi = next((x for x in reversed(h) if x["clau"] == "propi" and not x.get("fi")), None)
     ara_propi = estat.get("perill_text")
-    if propi and ara_propi and cos_avis(propi["ca"]) != cos_avis(ara_propi["ca"]):
+    # Amb el títol: si canvia la manera de dir-lo, la fitxa oberta també
+    # (21-11-2026: després de passar a «Avís de l'app…», «Perill» seguia dient
+    # «Temps a Montflorit: avís de perill…» perquè només es miraven les línies).
+    if propi and ara_propi and (propi["ca"], propi["es"]) != (ara_propi["ca"], ara_propi["es"]):
         propi.update(ca=ara_propi["ca"], es=ara_propi["es"], escrit=H.clau(ahora))
     # Si la previsió ja no veu cap risc, la fitxa no es tanca fins passades
     # RISC_FI_H hores (que el vaivé dels models no repeteixi missatges), però
