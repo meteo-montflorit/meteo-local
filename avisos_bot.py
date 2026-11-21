@@ -788,6 +788,11 @@ def decideix(estat, salida, ahora):
         estat["perill_avisat"] = {**(estat.get("perill_avisat") or {}),
                                   **{r["clau"]: {"valor": r["valor"], "hora": hora} for r in riscos_ara}}
     estat["perill_text"] = text_perill(riscos_ara, ahora, estat.get("perill_avisat"))[0] if riscos_ara else None
+    # Quan comença el que es preveu, si ho fa més tard: la fitxa diu «Previst»
+    # i no «Actiu ara» fins aleshores (revisor, 21-11-2026: un vent de demà
+    # sortia «Actiu ara»). Amb un risc que és d'ara (mesurat), ja ha començat.
+    desdes = [r.get("des_de") for r in riscos_ara]
+    estat["perill_comenca"] = min(desdes, key=H.utc) if desdes and all(desdes) else None
     # Amb dades i cap risc: la fitxa oberta espera RISC_FI_H hores a tancar-se,
     # però ja no és activa (historial, «en_pausa»).
     estat["perill_buit"] = not riscos_ara and not sense
@@ -795,7 +800,7 @@ def decideix(estat, salida, ahora):
         estat["perill_tipus"] = list(dict.fromkeys((estat.get("perill_tipus") or []) + [r["tipus"] for r in nous_perill]))
         text, pitjor = text_perill(nous_perill, ahora)
         afegeix("perill", hora + ":" + ",".join(r["clau"] for r in nous_perill), text, pitjor,
-                episodi="propi", enllac=ENLLAC_PROPI)
+                episodi="propi", enllac=ENLLAC_PROPI, comenca=estat["perill_comenca"])
     elif acabats and not actius:
         # Quan ja no en queda cap, es diu (abans, només a Juanjo).
         tipus = estat.pop("perill_tipus", None) or [c.split(":", 1)[1] for c, _ in acabats]
@@ -907,7 +912,7 @@ def decideix(estat, salida, ahora):
     # Los avisos de peligro de Meteocat para la comarca (ADR 0092). La primera
     # vez, solo se apuntan; un estado de antes de la 3.87.0 ({clave: grado},
     # sin «fenomens») se toma como vacío: lo vigente se avisa una vez.
-    if salida.get("smp") is not None:
+    if salida.get("smp") is not None and not salida.get("smp_anteriors"):
         # Només el que queda: Meteocat manté a l'avís vigent les franges ja
         # passades (18-10-2026), i l'episodi s'acaba quan no en queda cap.
         avisos_smp = SMP.pendents(salida["smp"].get("avisos") or [], ahora)
@@ -938,7 +943,7 @@ def decideix(estat, salida, ahora):
         nou_of["smp"] = e_smp
     elif of is not None and "smp" in of:
         nou_of["smp"] = of["smp"]
-    if salida.get("plans") is not None:
+    if salida.get("plans") is not None and not salida.get("plans_anteriors"):
         actius = ("alerta", "emergència")
         plans = {p["pla"]: p for p in salida["plans"] if p.get("fase") in actius}
         # Los ocultos por no tener motivo meteorológico (ADR 0062) siguen
@@ -1272,6 +1277,11 @@ def historial(estat, nous, ahora, anterior=None):
     # mentrestant diu «Ja no es preveu» i no compta com a activa: «Perill» la
     # donava per activa i la portada ja no la llistava (revisor, 19-10-2026).
     if propi and ara_propi:
+        if estat.get("perill_comenca"):
+            propi["comenca"] = estat["perill_comenca"]
+        else:
+            propi.pop("comenca", None)
+    if propi and ara_propi:
         propi.pop("en_pausa", None)
     elif propi and estat.get("perill_buit"):
         propi.setdefault("en_pausa", H.clau(ahora))
@@ -1416,7 +1426,7 @@ def prealertes(estat, salida, hist, ahora):
     meteorológico (ADR 0062) siguen en curso, pero solo se apuntan si llegaron
     a mostrarse. Sin datos de Protección Civil, no se toca nada."""
     plans = salida.get("plans")
-    if plans is None:
+    if plans is None or salida.get("plans_anteriors"):
         return hist
     ara = H.clau(ahora)
     visibles = {p["pla"]: p for p in plans if p.get("fase") == "prealerta"}
@@ -1553,7 +1563,7 @@ def actualitza(casa_json, sortida, ahora=None, anterior=None, avisa=True):
     # siguiente (ADR 0092): mientras tanto avisan los de AEMET.
     if "smp" in salida:
         error, reserva = None, False
-        if salida["smp"] is None:
+        if salida["smp"] is None or salida.get("smp_anteriors"):
             error = next((e[5:] for e in salida.get("errors") or [] if e.startswith("smp: ")), "sense dades")
         elif salida["smp"].get("falla_pagina"):
             error, reserva = salida["smp"]["falla_pagina"], True

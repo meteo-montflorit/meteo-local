@@ -198,10 +198,18 @@ def font(tipus, origen, ratxes=None):
 TRAM_PAUSA_H = 2
 
 
-def pitjor_tram(hores, tipus, valor_de):
+def pitjor_tram(hores, tipus, valor_de, finestra=None):
     """De las horas que pasan el umbral amarillo, el peor valor y el tramo
-    de horas seguidas que lo contiene."""
+    de horas seguidas que lo contiene. Con «finestra», solo cuentan los tramos
+    que empiezan en sus primeras horas, pero cada uno se mide entero, también
+    lo que pasa de la ventana: con «hores[:24]» un viento que empezaba a la
+    hora 23 y seguía a la 24 se cortaba («demà de 9 a 10 h» con la racha de
+    79 km/h de 10 a 11 h también por encima del umbral; revisor, 21-11-2026)."""
     dins = [(f, valor_de(f)) for f in hores if nivell(tipus, valor_de(f))]
+    if finestra is not None:
+        dins_finestra = {id(f) for f in hores[:finestra]}
+        if not any(id(f) in dins_finestra for f, _ in dins):
+            return None
     if not dins:
         return None
     cmp = min if tipus == "fred" else max
@@ -219,20 +227,27 @@ def pitjor_tram(hores, tipus, valor_de):
             trams.append(tram)
             tram = [act]
     trams.append(tram)
+    if finestra is not None:
+        trams = [t for t in trams if any(id(f) in dins_finestra for f, _ in t)]
+        valor = cmp(v for t in trams for _, v in t)
     tram = next(t for t in trams if any(v == valor for _, v in t))
     ini = H.llegeix(tram[0][0]["hora"])
     fin = H.llegeix(tram[-1][0]["fins"])
     return valor, ini, fin
 
 
-def de_la_previsio(hores, ahora):
+def de_la_previsio(hores, ahora, finestra=None):
+    """Los riesgos de la previsión. «finestra»: cuántas de las primeras horas
+    se miran (las de la tabla pueden ser más: HORES_RISC); el viento y las
+    temperaturas, con el tramo entero aunque pase de la ventana."""
     res = []
     if not hores:
         return res
+    ventana = hores[:finestra]
     for tipus, valor_de in (("ratxa", lambda f: f.get("ratxa")),
                             ("calor", lambda f: f.get("temperatura")),
                             ("fred", lambda f: f.get("temperatura"))):
-        t = pitjor_tram(hores, tipus, valor_de)
+        t = pitjor_tram(hores, tipus, valor_de, finestra)
         if t:
             ratxes = None
             if tipus == "ratxa":
@@ -255,8 +270,8 @@ def de_la_previsio(hores, ahora):
     pot = lambda f: f.get("probabilitat") is None or f["probabilitat"] >= C.PROB_ATENCION  # noqa: E731
     for tipus, n in (("pluja_3h", 3), ("pluja_24h", 24)):
         millor = None
-        for i in range(max(0, len(hores) - n + 1)):
-            tram = hores[i:i + n]
+        for i in range(max(0, len(ventana) - n + 1)):
+            tram = ventana[i:i + n]
             mm = sum(f.get("pluja_mm") or 0 for f in tram if pot(f))
             if millor is None or mm > millor[0]:
                 millor = (mm, tram)
@@ -270,7 +285,7 @@ def de_la_previsio(hores, ahora):
                 r["text"] = r["text"][:-1] + f" (probabilitat fins al {r['prob']} %)."
             res.append(r)
     # Arrodonida com es diu: per sota d'1 mm de neu, no n'hi ha.
-    neu = round(sum(f.get("neu") or 0 for f in hores), 1)
+    neu = round(sum(f.get("neu") or 0 for f in ventana), 1)
     r = risc("neu_24h", "previsio", neu)
     if r:
         res.append(r)
@@ -304,8 +319,8 @@ HORES_RISC = 24     # la tabla puede llegar a 38 para dar mañana entero (ADR 00
 
 def detecta(salida, ahora):
     """Riesgos de ahora y de las próximas 24 horas, el peor nivel primero."""
-    hores = (salida.get("hores") or [])[:HORES_RISC]
-    res = de_l_estacio(salida.get("ara_casa")) + de_la_previsio(hores, ahora)
+    hores = salida.get("hores") or []
+    res = de_l_estacio(salida.get("ara_casa")) + de_la_previsio(hores, ahora, HORES_RISC)
     return sorted(res, key=lambda r: -NIVELLS.index(r["nivell"]))
 
 

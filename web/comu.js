@@ -1579,9 +1579,14 @@ function diaBus(d) {
   return `${d.toLocaleDateString(IDIOMA.codi, { weekday: 'long', timeZone: ZONA_HORA })} ${partsHora(d).dia}`;
 }
 
+// Les mateixes a «Si surts» i a «Consultes»: les que no han acabat, també les
+// que comencen més tard (la fitxa diu «a partir de les…»). «Si surts» les
+// filtrava a més per «han començat», i amb dues incidències de la CV1, una
+// d'activa i una per a després, en llistava una o cap, i «Consultes» dues
+// (revisor, 20 i 21-11-2026).
 function incidenciesBusos(busos, quan, linia) {
   return (busos.incidencies || []).filter((inc) => (!linia || inc.linies.includes(linia))
-    && (!inc.fi || new Date(inc.fi) >= quan) && (linia || !inc.inici || new Date(inc.inici) <= quan));
+    && (!inc.fi || new Date(inc.fi) >= quan));
 }
 
 // «CV1: Desviament provisional… (enllaç a l'avís de l'AMB), fins al divendres 23.»

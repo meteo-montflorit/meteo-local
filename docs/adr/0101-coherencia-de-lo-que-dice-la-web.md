@@ -725,3 +725,25 @@ la sombra (ADR 0126) y la web no los usa, y con 25 W/m² a mediodía dio dos
 veces por errónea la portada «Serè» de una mañana sin una nube (satélite 0 %,
 CAVOK en Sabadell). Prueba: `tests/test_revisor.py`
 (`test_sense_la_radiacio_de_l_estacio`).
+
+**21-11-2026 (3.231.0), siete hallazgos del revisor.** Reales: (1) sin
+lectura de Meteocat o de Protecció Civil, la portada, la tabla por horas y
+«Consultes» perdían sus avisos mientras «Perill» mantenía las fichas
+(«Avisos actius (1)» frente a tres fichas; el viento de Meteocat salía como de
+AEMET): como con AEMET (3.226.0), `casa.smp_de_abans` y la lectura anterior de
+los planes los mantienen mientras no hayan acabado, con `smp_anteriors` y
+`plans_anteriors` para que el bot los trate como lectura fallida (ni avisa ni
+cierra, y Juanjo sigue recibiendo el aviso de que Meteocat no se lee); el
+revisor recibe `meteocat_llegit` y `proteccio_civil_llegit`. (2) Los busos de
+«Si surts» filtraban además por «ya ha empezado» y listaban una o ninguna de
+las incidencias que «Consultes» daba (una activa y otra «a partir de las
+19:30»): ahora el mismo filtro, las que no han acabado. (3) El aviso propio de
+viento cortaba el tramo a la ventana de 24 h (`riscos.HORES_RISC`): «demà de 9
+a 10 h» con 79 km/h también de 10 a 11 h; los tramos de viento y temperatura
+se miden enteros si empiezan dentro de la ventana
+(`riscos.pitjor_tram(finestra)`). (4) La ficha propia de un riesgo de mañana
+decía «Actiu ara»: ahora lleva `comenca` (`perill_comenca`, el comienzo de la
+previsión) y dice «Previst · Comença…». Falsa alarma: el «no han arribat els
+avisos de l'AEMET» con `aemet` a `[]` ya estaba explicado (`aemet_llegit`,
+3.226.2; el hallazgo es de antes de ese cambio). Pruebas:
+`tests/test_previsio_anterior.py`, `test_riscos.py` y `test_bot.py`.

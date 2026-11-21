@@ -1399,6 +1399,21 @@ class FitxesDelRevisor(unittest.TestCase):
         AB.decideix(estat, {**dades, "riscos": [dict(r, valor=77.4)]}, ARA_R + dt.timedelta(hours=1, minutes=30))
         self.assertNotIn("Ha ", estat["perill_text"]["ca"].split("\n")[2] if len(estat["perill_text"]["ca"].split("\n")) > 2 else "")
 
+    def test_la_fitxa_propia_d_un_risc_de_dema_diu_quan_comenca(self):
+        # Revisor, 21-11-2026: un vent de demà sortia «Actiu ara» a «Perill».
+        des = AB.H.clau(ARA_R + dt.timedelta(hours=20))
+        r = {"clau": "previsio:ratxa", "tipus": "ratxa", "origen": "previsio", "nivell": "groc", "valor": 77,
+             "des_de": des, "fins": AB.H.clau(ARA_R + dt.timedelta(hours=21)),
+             "text": "Vent fort previst: ratxes de fins a 77 km/h, demà de 9 a 10 h."}
+        dades = {"hores": [{}], "ara_casa": {"temperatura": 18}}
+        estat = {}
+        nous = AB.decideix(estat, {**dades, "riscos": [r]}, ARA_R)
+        self.assertEqual(nous[0]["comenca"], des)
+        self.assertEqual(estat["perill_comenca"], des)
+        # Un risc mesurat ara (sense «des_de») ja ha començat.
+        AB.decideix(estat, {**dades, "riscos": [r, {**r, "clau": "ara:fred", "des_de": None}]}, ARA_R + dt.timedelta(hours=1))
+        self.assertIsNone(estat["perill_comenca"])
+
     def test_l_aemet_substituit_per_un_que_comenca_mes_tard(self):
         # Revisor, 19-10-2026 19:28: el de tempestes de 16 h a 8:59 (allargat) canviat a les 19:27
         # per un de 19 h a 8:59 es tancava amb «L'AEMET l'ha retirat abans d'hora».
@@ -1471,6 +1486,19 @@ class FitxesDelRevisor(unittest.TestCase):
         self.assertIsNone(estat["aemet_vigents"])
         self.assertEqual(estat["oficials"]["aemet"], {})
         self.assertFalse([n for n in nous or [] if "aemet" in str(n.get("id", ""))])
+
+    def test_smp_i_plans_de_la_passada_anterior_no_toquen_res(self):
+        # Igual amb Meteocat i Protecció Civil (21-11-2026).
+        ahora = dt.datetime.fromisoformat("2026-11-21T02:40:00+01:00")
+        smp = {"hora": "x", "linies": [], "fenomens": [], "avisos": [
+            {"meteor": "Vent", "tipus": "previsio", "llindar": "x", "perill": 3, "emissio": "2026-11-21T08:17Z",
+             "dies": {"2026-11-22": [[7, 13]]}}]}
+        pla = {"pla": "VENTCAT", "nom": "de vent", "fase": "alerta", "des_de": "20/11/2026 18:35"}
+        estat = {"oficials": {"aemet": {}, "plans": {}}}
+        nous = AB.decideix(estat, {"smp": smp, "smp_anteriors": True, "plans": [pla], "plans_anteriors": True}, ahora)
+        self.assertNotIn("smp", estat["oficials"])
+        self.assertEqual(estat["oficials"]["plans"], {})
+        self.assertFalse([n for n in nous or [] if n.get("tipus") == "perill"])
 
 
 if __name__ == "__main__":

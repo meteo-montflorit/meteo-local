@@ -165,6 +165,29 @@ class AvisosDeAbans(unittest.TestCase):
         os.unlink(ruta)
         os.unlink(ruta2)
 
+    def test_smp_i_plans_de_la_passada_anterior(self):
+        # Sense lectura de Meteocat, la portada manté els avisos que no han
+        # acabat (21-11-2026: «Avisos actius (1)» davant de tres fitxes de «Perill»).
+        av = {"meteor": "Vent", "tipus": "previsio", "llindar": "Ratxa màxima > 72 km/h (20 m/s)", "perill": 3,
+              "emissio": "2026-11-21T08:17+01:00", "dies": {"2026-11-22": [[7, 13]]}}
+        vell = {"meteor": "Vent", "tipus": "previsio", "llindar": "x", "perill": 1, "emissio": "2026-11-20T08:17+01:00",
+                "dies": {"2026-11-20": [[7, 13]]}}
+        ruta = guarda({"smp": {"hora": "2026-11-21T02:30+01:00", "avisos": [av, vell], "linies": [],
+                               "fenomens": [], "fenomens_catalunya": ["vent"], "falla_pagina": "x"}})
+        casa._ANTERIOR.pop(ruta, None)
+        ahora = dt.datetime.fromisoformat("2026-11-21T02:40:00+01:00")
+        r = casa.smp_de_abans(ruta, ahora)
+        self.assertEqual([a["dies"] for a in r["avisos"]], [{"2026-11-22": [(7, 13)]}])
+        self.assertEqual([f["nivell"] for f in r["fenomens"]], ["alt"])
+        self.assertTrue(r["linies"])
+        self.assertNotIn("falla_pagina", r)
+        # Passat el seu final, ja no hi és.
+        self.assertIsNone(casa.smp_de_abans(ruta, dt.datetime.fromisoformat("2026-11-22T14:00:00+01:00")))
+        ruta2 = guarda({"smp": None})
+        self.assertIsNone(casa.smp_de_abans(ruta2, ahora))
+        os.unlink(ruta)
+        os.unlink(ruta2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -804,6 +804,26 @@ def avisos_de_abans(anterior, ahora):
     return [a for a in abans if isinstance(a, dict) and a.get("fin") and H.llegeix(a["fin"]) > ahora]
 
 
+def smp_de_abans(anterior, ahora):
+    """Sin lectura de Meteocat, sus avisos de la pasada anterior que aún no han
+    acabado (con los textos y el resumen por fenómeno recalculados), o None si
+    no los hay. Como con AEMET (avisos_de_abans): «Perill» mantenía sus fichas
+    y la portada, la tabla por horas y «Consultes» los perdían (revisor,
+    21-11-2026: «Avisos actius (1)» frente a tres fichas; el viento de
+    Meteocat salía como de AEMET). Una lectura fallida no es un aviso
+    retirado."""
+    abans = H.interna(llegeix_anterior(anterior).get("smp"))
+    if not isinstance(abans, dict) or not isinstance(abans.get("avisos"), list):
+        return None
+    avisos = SMP.pendents(abans["avisos"], ahora)
+    if not avisos:
+        return None
+    return {"hora": abans.get("hora"), "avisos": avisos,
+            "linies": SMP.textos(avisos, H.local(ahora).strftime("%H:%M")),
+            "fenomens": SMP.per_fenomen(avisos, ahora),
+            "fenomens_catalunya": abans.get("fenomens_catalunya") or []}
+
+
 def recoger(anterior=None):
     salida = {"versio": C.VERSION, "generat": H.iso_local(P.AHORA),
               "errors": []}
@@ -914,6 +934,12 @@ def recoger(anterior=None):
         planes = P.planes_proteccion_civil()
     except Exception as ex:
         salida["errors"].append(f"plans: {ex}")
+        # Sin lectura, los de la pasada anterior (como los de AEMET y Meteocat):
+        # el plan de «Perill» seguía activo y la portada no lo contaba.
+        antics = H.interna(llegeix_anterior(anterior).get("plans"))
+        if isinstance(antics, list):
+            planes = [p for p in antics if isinstance(p, dict)]
+            salida["plans_anteriors"] = True
     # Si Meteocat tiene aviso de peligro para la comarca: junto a los planes,
     # que no dicen qué zona abarcan (ADR 0067), y, desde el 11-10-2026, en
     # cada pasada, para avisar como los de AEMET (ADR 0071). Si falla, no se
@@ -923,6 +949,9 @@ def recoger(anterior=None):
         salida["smp"] = SMP.llegeix(P.get, P.AHORA)
     except Exception as ex:
         salida["errors"].append(f"smp: {ex}")
+        if (abans_smp := smp_de_abans(anterior, P.AHORA)) is not None:
+            salida["smp"] = abans_smp
+            salida["smp_anteriors"] = True
     # Per fenomen, mana Meteocat; l'AEMET, per al que no cobreix (ADR 0093).
     SMP.marca_coberts(avisos, salida["smp"])
     global SMP_ACTUAL

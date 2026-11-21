@@ -44,6 +44,18 @@ class Deteccio(unittest.TestCase):
         self.assertEqual(salida(hores({3: {"ratxa": 72}}))["riscos"], [])     # cal passar-lo
         self.assertIn("avui de 15 a 18 h", r[0]["text"])
 
+    def test_el_tram_de_vent_no_es_talla_a_la_finestra(self):
+        # 21-11-2026: «ratxes de fins a 81 km/h, demà de 9 a 10 h» amb 79 km/h
+        # de 10 a 11 h també per sobre del llindar: les 24 hores de la finestra
+        # tallaven el tram (finestra de 24 h i el tram acabava a la 25a).
+        h = hores({22: {"ratxa": 81}, 23: {"ratxa": 90}, 24: {"ratxa": 79}, 25: {"ratxa": 20}}, n=30)
+        r = RS.detecta({"hores": h, "ara_casa": {"pluja_30min": 0, "pluja_3h": 0, "temperatura": 18}}, AHORA)
+        self.assertEqual((r[0]["tipus"], r[0]["valor"]), ("ratxa", 90))
+        self.assertEqual(r[0]["fins"], RS.H.clau(dt.datetime(2026, 10, 7, 13).astimezone()))   # fi de la 25a hora
+        # Un tram que comença després de la finestra no és d'aquest avís.
+        h = hores({26: {"ratxa": 120}}, n=30)
+        self.assertEqual(RS.detecta({"hores": h, "ara_casa": {"temperatura": 18}}, AHORA), [])
+
     def test_pluja_prevista_amb_la_probabilitat(self):
         # Inventari del 18-10-2026: «Pluja intensa prevista: 65 mm» amb
         # «Sense pluja prevista» al resum. Les hores per sota del 20 % no hi

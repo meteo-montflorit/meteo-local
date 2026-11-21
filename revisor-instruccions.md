@@ -120,6 +120,20 @@ inclúyelas si son reales, explicando por qué.
   pueda leer otra vez, porque una lectura fallida no significa que el aviso se
   haya retirado. No es un error. Un aviso retirado de verdad llega como una
   lista sin él, y entonces la ficha se cierra.
+- Lo mismo con Meteocat y Protecció Civil: si `meteocat_llegit` o
+  `proteccio_civil_llegit` es false, esa pasada no se han podido leer y sus
+  datos llevan los de la pasada anterior que no han acabado (desde la 3.231.0):
+  la portada, la tabla por horas y «Perill» deben coincidir, y que un aviso no
+  conste como retirado no es un error. Si en cambio es true y la portada y
+  «Perill» no cuadran en el número de avisos, sí lo es.
+- Los avisos de los busos son los mismos en «Si surts» y «Consultes»: los que
+  no han acabado, también los que empiezan más tarde («…a partir de les
+  19:30»). Si difieren, es un error (corregido en la 3.231.0). Uno que ya ha
+  acabado no sale en ninguno: no es un error.
+- El aviso propio mira las próximas 24 horas, pero cada tramo de viento o de
+  temperatura se mide entero (hasta donde deja de pasar el umbral), aunque
+  acabe después de esa ventana. Su ficha en «Perill» dice «Previst · Comença…»
+  mientras el riesgo no ha empezado (como las de Meteocat y AEMET).
 - La ficha de un aviso de Meteocat enseña siempre su contenido vigente: las
   franjas de la última emisión **recortadas a las horas que quedan**, desde
   la hora en curso (ADR 0092, 3.135.0). A las 10:16, unos datos con

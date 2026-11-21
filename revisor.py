@@ -362,7 +362,11 @@ def context(casa, avisos, textos, moment, motiu, problemes_regles, resum=None, i
         # revisor creia que només null volia dir lectura fallida i donava per
         # errònia la frase «no han arribat els avisos de l'AEMET» (19-11-2026).
         "aemet_llegit": not any(str(e).startswith("avisos:") for e in casa.get("errors") or []),
+        # Igual amb Meteocat i Protecció Civil (3.231.0): sense lectura, els de
+        # la passada anterior que no han acabat.
+        "meteocat_llegit": not any(str(e).startswith("smp:") for e in casa.get("errors") or []),
         "proteccio_civil": casa.get("plans"),
+        "proteccio_civil_llegit": not any(str(e).startswith("plans:") for e in casa.get("errors") or []),
         "riera": casa.get("perill_riera"),
         "entorn": casa.get("entorn"),
         "riscos_propis": casa.get("riscos"),
