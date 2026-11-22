@@ -73,6 +73,17 @@ function quan(e, fi) {
   return T`De ${moment(e.inici)} a ${moment(fi)}`;
 }
 
+// Què diu la capçalera d'una fitxa que no ha acabat. La pausa passa davant
+// de «Previst»: un vent avisat a les 2:15 per a les 9 h, que la previsió ja
+// no veia des de les 3:57, seguia dient «Previst · Comença avui a les 9 h»
+// amb les ratxes de 77 km/h, i la taula de la portada en donava 67 (revisor,
+// 22-11-2026; ADR 0101).
+function estatObert(e, ara) {
+  if (e.en_pausa) return 'pausa';
+  if (e.comenca && new Date(e.comenca) > ara) return 'previst';
+  return 'actiu';
+}
+
 function nodesText(linies) {
   return linies.filter((l) => l.length).map((l) => {
     const p = element('p');
@@ -185,16 +196,16 @@ function fitxa(e, ara, sub = false) {
     // No s'ha apagat: ha sortit de la zona que vigila la web (ADR 0071).
     estat.append(element('span', 'episodi-substituit', T('Fora de la zona')), ' · ');
   } else if (fi) estat.append(element('span', 'episodi-acabat', `🟢 ${T('Acabat')}`), ' · ');
-  else if (e.comenca && new Date(e.comenca) > ara) {
-    // Encara no ha començat (l'avís de demà): «Previst», no «Actiu ara»
-    // (revisor, 18-10-2026; ADR 0101).
-    estat.append(element('span', 'episodi-previst', T('Previst')), ' · ');
-  } else if (e.en_pausa) {
+  else if (estatObert(e, ara) === 'pausa') {
     // La previsió ja no veu el risc, o Meteocat ja no mostra el seu avís; es
     // tanca si no torna (avisos_bot, revisor 19 i 20-10-2026).
     estat.append(element('span', 'episodi-previst', meteocat ? T('Ja no consta') : T('Ja no es preveu')), ' · ');
+  } else if (estatObert(e, ara) === 'previst') {
+    // Encara no ha començat (l'avís de demà): «Previst», no «Actiu ara»
+    // (revisor, 18-10-2026; ADR 0101).
+    estat.append(element('span', 'episodi-previst', T('Previst')), ' · ');
   } else estat.append(element('span', 'episodi-actiu', T('Actiu ara')), ' · ');
-  estat.append(!fi && e.comenca && new Date(e.comenca) > ara ? T`Comença ${moment(e.comenca)}` : quan(e, fi));
+  estat.append(!fi && estatObert(e, ara) === 'previst' ? T`Comença ${moment(e.comenca)}` : quan(e, fi));
   // L'última actualització, com a «Avisos actius» (Juanjo, 17-10-2026).
   const pub = !fi && publicacioEpisodi(e);
   if (pub && pub.actualitzat) estat.append(` · ${textPublicacio(pub)}`);

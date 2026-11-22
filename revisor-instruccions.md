@@ -157,6 +157,11 @@ inclúyelas si son reales, explicando por qué.
   desde cuándo ya no se ve. Su texto es el último que se avisó y puede
   nombrar horas ya pasadas, y la portada no la cuenta en «Avisos actius»
   porque ya no está activa: no es un error (revisor, 19-10-2026; ADR 0101).
+  Sus cifras son las del aviso que se envió y pueden no coincidir con la
+  tabla por horas, que ya lleva la previsión nueva (por eso está en pausa):
+  tampoco es un error. Sí lo es que una ficha con `en_pausa` diga «Previst»
+  o «Actiu ara» en la cabecera: la pausa manda aunque el riesgo aún no
+  hubiera empezado (corregido en la 3.232.1; revisor, 22-11-2026).
 - El historial («Últims 30 dies») guarda lo que se avisó con el criterio de
   aquel momento, aunque el criterio cambie después: lo enviado no se borra.
   El incendio de Collserola a 6,4 km del 28-10-2026 (18:30) se avisó antes de

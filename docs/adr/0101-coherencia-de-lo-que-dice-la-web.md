@@ -747,3 +747,16 @@ previsión) y dice «Previst · Comença…». Falsa alarma: el «no han arribat
 avisos de l'AEMET» con `aemet` a `[]` ya estaba explicado (`aemet_llegit`,
 3.226.2; el hallazgo es de antes de ese cambio). Pruebas:
 `tests/test_previsio_anterior.py`, `test_riscos.py` y `test_bot.py`.
+
+**22-11-2026 (3.232.1), un hallazgo del revisor.** Real, y consecuencia del
+punto (4) de la víspera: el aviso propio de viento salió a las 2:15 para las
+9 h (rachas de 77 km/h, AROME); desde las 3:57 la previsión ya no pasaba el
+umbral (67 km/h en la fila de 9 a 10 h de la portada) y la ficha estaba en
+pausa (`en_pausa`), pero `web/perill.js` miraba antes si el riesgo aún no
+había empezado y la cabecera seguía diciendo «Previst · Comença avui a les
+9 h», con la línea «La previsió ja no ho veu…» debajo. Ahora la pausa pasa
+delante (`estatObert`): «Ja no es preveu», también en las fichas de Meteocat
+retiradas antes de empezar. Las cifras de la ficha en pausa siguen siendo las
+del aviso enviado (ADR 0101, 19-10-2026): que no coincidan con la tabla por
+horas se explica al revisor en sus instrucciones. Prueba: `tests/test_web.py`
+(`test_perill_la_pausa_passa_davant_de_previst`).

@@ -1495,6 +1495,18 @@ class Web(unittest.TestCase):
         self.assertEqual(text(franja, "2026-10-20T21:01:00+02:00"), "Diumenge 18, de les 0 h a les 4 h.")
         self.assertEqual(text(franja, "2026-10-20T21:01:00+02:00", "es"), "Domingo 18, de las 0 h a las 4 h.")
 
+    def test_perill_la_pausa_passa_davant_de_previst(self):
+        # Revisor, 22-11-2026: el vent avisat a les 2:15 per a les 9 h (77 km/h), que la previsió ja no
+        # veia des de les 3:57 (67 km/h a la taula), seguia dient «Previst · Comença avui a les 9 h».
+        propi = {"clau": "propi", "inici": "2026-11-22T02:15+01:00", "comenca": "2026-11-22T09:00+01:00"}
+        pausa = dict(propi, en_pausa="2026-11-22T03:57+01:00")
+        def estat(e, ara):
+            return self.avalua(ara, f"estatObert({json.dumps(e)}, new Date('{ara}'))", pagina="perill.js")
+        self.assertEqual(estat(propi, "2026-11-22T05:50:00+01:00"), "previst")
+        self.assertEqual(estat(pausa, "2026-11-22T05:50:00+01:00"), "pausa")
+        self.assertEqual(estat(propi, "2026-11-22T09:10:00+01:00"), "actiu")
+        self.assertEqual(estat(pausa, "2026-11-22T09:10:00+01:00"), "pausa")
+
     def test_grafica_sempre_totes_les_hores(self):
         # Juanjo, 20-10-2026: «quiero que hagas siempre tot pero con barra de desplazamiento
         # horizontal… hora a hora». Sense el selector «24 h · Demà · Tot»; cada hora, COL_HORA px.
