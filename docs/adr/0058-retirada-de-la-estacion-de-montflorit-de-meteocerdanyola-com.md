@@ -123,3 +123,15 @@ del registro de Meteocat y de los 5 minutos de casa
 (`tests/test_pluviometre.py`), del bot, los riesgos, los radares y la riera
 sin `ara`, y de la web pública sin la palabra meteocerdanyola
 (`tests/test_montflorit.py`).
+
+## Actualización del 22-11-2026: un enlace en la portada (3.233.0)
+
+Juanjo pidió enlazar la web desde la portada: «una cosa es que su dueño no me
+deje usar sus datos y otra que yo haga como si no existiese, creo que esta web
+puede ser útil para otros». Al final de la portada, debajo de «D'on surt», una
+línea dice «Per conèixer el temps a la resta de Cerdanyola, consulta
+MeteoCerdanyola.com» (en castellano, «Para conocer el tiempo en el resto de
+Cerdanyola…»), con el enlace a su portada. Lo demás de esta decisión no
+cambia: no se lee nada de esa web, no es fuente de ningún dato y no se compara
+con ella.
+
