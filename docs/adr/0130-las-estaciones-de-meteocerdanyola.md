@@ -44,9 +44,15 @@ Meteocat de Sant Cugat y Sabadell y el METAR del aeropuerto de Sabadell.
   viento sale de Sant Cugat, como antes. **La racha es la de Sant Cugat**
   (`ratxa_estacio`), porque Centre no la publica. Su temperatura, su humedad
   y su presión no se leen (`temperatura`: False): son las de la ciudad.
-- Lo que se compara y aprende con el viento sigue con Sant Cugat
-  (`C.VENT_ESTACIO`: el historial, la racha observada para aprender): su
-  serie es la larga y la oficial.
+- **El historial de la gráfica, como «Ara»** (desde la 3.235.0, formato 12;
+  Juanjo, al ver que seguía saliendo Sant Cugat: «hazlo»): el viento medio de
+  cada hora es el de Cerdanyola Centre si tiene las dos medias horas y, si
+  no, el de Sant Cugat; `vent_de` dice de cuál es y la gráfica lo nombra. Las
+  rachas, de Sant Cugat. Las medias horas de Centre del 01-10 al 21-11-2026
+  se rellenaron en `vent-mitges-hores.csv` con los datos del estudio (2.418;
+  copia previa en `estat/vent-mitges-hores.csv.bak-20261122`).
+- La racha observada con que se aprende sigue siendo la de Sant Cugat
+  (`C.VENT_ESTACIO`), como la de «Ara».
 - Las dos se citan en «D'on surt», «Com funciona» y «Fonts», con el permiso
   de su responsable. Las otras dos estaciones de la web (Ateneu y Can Coll)
   no se han estudiado.

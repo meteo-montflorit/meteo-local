@@ -21,8 +21,10 @@ con lo que se predijo 1h antes de cada hora y con el error, lo mismo con
 - Desde la 3.194.0 (formato 6; ADR 0124), lo demás que se mide, para el
   historial de la gráfica: la humedad y la presión de la estación de casa
   (la media del principio y del final de la hora, como la temperatura); el
-  viento y las rachas de Sant Cugat (C.VENT_ESTACIO, el que enseña «Ara»: la
-  media de las dos medias horas y la racha mayor, vent-mitges-hores.csv), y el
+  viento y las rachas de Sant Cugat (C.VENT_ESTACIO: la media de las dos
+  medias horas y la racha mayor, vent-mitges-hores.csv; desde la 3.235.0, la
+  media es la de Cerdanyola Centre si la tiene, como en «Ara», y `vent_de`
+  dice de qué estación es, ADR 0130), y el
   cielo tapado observado en el aeropuerto de Sabadell (nuvols-sabadell.csv,
   desde el 13-10-2026). Solo van las que se saben.
 - Desde la 3.195.0 (formato 9; ADR 0125), lo que decía la web de la parte
@@ -114,11 +116,12 @@ MIN_CASOS_PLUJA = 20                     # para dar el acierto de la lluvia (en 
 # nubes y las alertas de cada hora; 3.194.1: la parte alta; 3.195.0: su
 # previsión y su acierto; 3.198.0: las horas en que solo una vecina vio
 # lluvia; 3.213.0: los mm de la hora, la mediana de casa y las vecinas
-# fiables, ADR 0070), y lo apunta en el registro. Por tandas: IONOS
+# fiables, ADR 0070; 3.235.0: el viento medio de Cerdanyola Centre y de qué
+# estación es, ADR 0130), y lo apunta en el registro. Por tandas: IONOS
 # acepta como mucho 12 archivos por envío (reserva/rep-dades.sh, ADR 0057), y
 # todos de golpe se rechazaron (18-10-2026, 22 archivos). Con los 2 días de
 # siempre, el índice, los datos y las 4 imágenes, caben 3 más por pasada.
-FORMAT = 11
+FORMAT = 12
 REFER_PER_PASSADA = 3
 # Si mejora con el tiempo (ADR 0110; Juanjo, 20-10-2026: «dado que la pagina
 # aprende, estaria bien una comparación semana a semana»): por semanas de
@@ -258,13 +261,27 @@ def mitjana_tram(casa, hora, fins, camp, decimals=0):
     return int(v) if decimals == 0 else v
 
 
+def nom_estacio_vent(codi):
+    """El nombre corto de una estación del viento, como en «Ara»."""
+    if codi in C.VEINES:
+        return C.VEINES[codi].get("estacio", codi)
+    return C.ESTACIONES.get(codi, codi).split(" (")[0]
+
+
 def vent_tram(vent, fins):
-    """(viento medio, racha) de la estación del viento en la hora que acaba en
-    fins: la media de las dos medias horas y la racha mayor; None si falta
-    alguna."""
+    """(viento medio, racha, estación del viento medio) en la hora que acaba
+    en fins, como en «Ara» (ADR 0130): la media de las dos medias horas de
+    Cerdanyola Centre (C.VENT_ARA) o, si le falta alguna, de Sant Cugat
+    (C.VENT_ESTACIO); la racha, la mayor de Sant Cugat. None si falta."""
     t = H.utc(fins)
-    mitges = [A._num((vent.get(P.clau_hora(t - dt.timedelta(minutes=m))) or {}).get(C.VENT_ESTACIO)) for m in (0, 30)]
-    return (round(sum(mitges) / 2) if None not in mitges else None), A.ratxa_observada(vent, fins)
+    files = [vent.get(P.clau_hora(t - dt.timedelta(minutes=m))) or {} for m in (0, 30)]
+    mitja, estacio = None, None
+    for codi in (C.VENT_ARA, C.VENT_ESTACIO):
+        mitges = [A._num(f.get(codi)) for f in files] if codi else [None]
+        if None not in mitges:
+            mitja, estacio = round(sum(mitges) / 2), nom_estacio_vent(codi)
+            break
+    return mitja, A.ratxa_observada(vent, fins), estacio
 
 
 def _moment(iso):
@@ -339,12 +356,13 @@ def un_dia(dia, casa, meteocat, veines, previstes, sol=(), vent=None, nuvols=Non
         dubte = A.dubtosa(veines, fins) if mm is None else None
         if dubte is not None:
             f["pluja_dubte"] = round(dubte, 1)
-        v, r = vent_tram(vent or {}, fins)
+        v, r, vent_de = vent_tram(vent or {}, fins)
         n = A._num((nuvols or {}).get(fins, {}).get("nuvols"))
         for camp, valor in (("temperatura_alta", temperatura_alta_tram(veines, hora, fins)),
                             ("humitat", mitjana_tram(casa, hora, fins, "humitat")),
                             ("pressio", mitjana_tram(casa, hora, fins, "pressio", 1)),
-                            ("vent", v), ("ratxa", None if r is None else round(r)),
+                            ("vent", v), ("vent_de", vent_de if v is not None else None),
+                            ("ratxa", None if r is None else round(r)),
                             ("nuvols", None if n is None else round(n))):
             if valor is not None:
                 f[camp] = valor

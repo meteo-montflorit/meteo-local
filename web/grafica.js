@@ -974,8 +974,13 @@ function dibuixaGrafica(fig) {
       linies.push(f.pluja_mm == null ? plujaNul : T`Pluja: ${mm(f.pluja_mm)}\u00a0mm`
         + previst(p.probabilitat, T` (prevista: ${Math.round((p.probabilitat ?? 0) * 100)}\u00a0%${mmPrevist})`));
       // La resta del que es mesura (ADR 0124), amb on, si no és al barri.
+      // El vent mitjà, de l'estació que diu `vent_de` (ADR 0130); les ratxes,
+      // sempre de Sant Cugat.
       if (f.vent != null) {
-        linies.push(T`Vent a Sant Cugat: ${f.vent}\u00a0km/h` + (f.ratxa != null ? T`, ratxes de ${f.ratxa}\u00a0km/h` : ''));
+        const de = f.vent_de || 'Sant Cugat';
+        const ratxes = f.ratxa == null ? '' : de === 'Sant Cugat' ? T`, ratxes de ${f.ratxa}\u00a0km/h`
+          : T`, ratxes a Sant Cugat de ${f.ratxa}\u00a0km/h`;
+        linies.push(T`Vent a ${de}: ${f.vent}\u00a0km/h` + ratxes);
       }
       if (f.humitat != null) linies.push(T`Humitat: ${f.humitat}\u00a0%`);
       if (f.pressio != null) linies.push(T`Pressió: ${Math.round(f.pressio)}\u00a0hPa`);

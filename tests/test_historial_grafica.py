@@ -89,6 +89,22 @@ class Historial(unittest.TestCase):
         self.assertNotIn("ratxa", g)
         self.assertNotIn("nuvols", g)
 
+    def test_vent_de_cerdanyola_centre(self):
+        # ADR 0130 (format 12): el vent mitjà, el de Cerdanyola Centre si té les
+        # dues mitges hores, com a «Ara»; si no, el de Sant Cugat. Les ratxes,
+        # sempre de Sant Cugat; `vent_de` diu de quina estació és la mitjana.
+        reg = self.dir.name
+        dia = "2026-10-16"
+        with open(os.path.join(reg, "vent-mitges-hores.csv"), "w", encoding="utf-8") as f:
+            f.write("fins,XV,XV_ratxa,MC_CENTRE,MC_CENTRE_ratxa\n")
+            f.write(f"{dia}T09:30,6.0,15.0,10.0,\n{dia}T10:00,9.0,21.0,13.0,\n"
+                    f"{dia}T10:30,5.0,12.0,,\n{dia}T11:00,7.0,14.0,11.0,\n")
+        d = next(x for x in H.tots(dt.date(2026, 10, 17), reg) if x["dia"] == dia)
+        f = d["hores"][9]                                  # de 9 a 10: Centre
+        self.assertEqual((f["vent"], f["vent_de"], f["ratxa"]), (12, "Cerdanyola Centre", 21))
+        g = d["hores"][10]                                 # de 10 a 11: a Centre li falta una mitja hora
+        self.assertEqual((g["vent"], g["vent_de"], g["ratxa"]), (6, "Sant Cugat", 14))
+
     def test_les_hores_en_que_potser_va_plovisquejar(self):
         # 3.198.0: casa a zero i una sola veïna que compta amb pluja: no se sap,
         # però l'hora porta els mm de la veïna; si totes són a zero, seca.
