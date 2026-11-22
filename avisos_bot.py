@@ -265,7 +265,7 @@ def oficials_actius(salida, ahora):
     if SMP.pendents(((salida.get("smp") or {}).get("avisos")) or [], ahora):
         res.append("meteocat")
     if any(a.get("zona", C.ZONA_AVISOS) == C.ZONA_AVISOS and a.get("nivel") in RS.NIVELLS and not a.get("cobert")
-           and H.llegeix(a["fin"]) > ahora for a in salida.get("avisos") or []):
+           and H.llegeix(SMP.visible(a)["fin"]) > ahora for a in salida.get("avisos") or []):
         res.append("aemet")
     if any(p.get("fase") in ("alerta", "emergència") for p in salida.get("plans") or []):
         res.append("pc")

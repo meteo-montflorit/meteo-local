@@ -587,8 +587,12 @@ def motivos_modo_aviso(avisos_, planes, obs, radar_, smp=None):
     if any(SMP.clau_hora(AHORA) in SMP.hores_avis(m)
            for m in (smp or {}).get("avisos") or []):
         res.append("avís del Meteocat")
-    if any(a["zona"] == C.ZONA_AVISOS
-           and dt.datetime.fromisoformat(a["inicio"]) <= AHORA < dt.datetime.fromisoformat(a["fin"])
+    # Con las horas que se muestran (SMP.visible), no con las brutas: si
+    # Meteocat cubre las horas de ahora, el aviso de AEMET no sale en la
+    # portada ni en «Perill» y el motivo no puede citarlo (revisor, 22-11-2026).
+    # La frecuencia no pierde nada: esas horas ya llevan «avís del Meteocat».
+    if any(a["zona"] == C.ZONA_AVISOS and not a.get("cobert")
+           and dt.datetime.fromisoformat(SMP.visible(a)["inicio"]) <= AHORA < dt.datetime.fromisoformat(SMP.visible(a)["fin"])
            for a in avisos_ or []):
         res.append("avís de l'AEMET")
     if any(p["fase"] in ("alerta", "emergència") for p in planes or []):

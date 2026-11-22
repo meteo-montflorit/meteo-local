@@ -760,3 +760,12 @@ retiradas antes de empezar. Las cifras de la ficha en pausa siguen siendo las
 del aviso enviado (ADR 0101, 19-10-2026): que no coincidan con la tabla por
 horas se explica al revisor en sus instrucciones. Prueba: `tests/test_web.py`
 (`test_perill_la_pausa_passa_davant_de_previst`).
+
+**22-11-2026 (3.235.1), un hallazgo del revisor.** Real: la portada decía
+«Ara cada 6 minuts perquè hi ha un avís de l'AEMET» cuando el aviso de AEMET
+ya no se mostraba (Meteocat cubría las horas de ahora: `fin` 17:59 bruto,
+`fin_visible` 06:59). `prevision.motivos_modo_aviso` y
+`avisos_bot.oficials_actius` miraban el `fin` bruto; ahora usan `SMP.visible`
+y descartan los `cobert`, como la web y el bot. La frecuencia no pierde nada:
+las horas cubiertas ya dan el motivo «avís del Meteocat». Prueba:
+`tests/test_horario.py` (`test_aviso_de_aemet_con_horas_cubiertas_no_es_el_motivo`).

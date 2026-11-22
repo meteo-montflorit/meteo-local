@@ -70,6 +70,22 @@ class ModoAviso(unittest.TestCase):
         self.assertEqual(P.motivos_modo_aviso([], [], [], None, despues), [])
         self.assertEqual(P.motivos_modo_aviso([], [], [], None, None), [])
 
+    def test_aviso_de_aemet_con_horas_cubiertas_no_es_el_motivo(self):
+        # Revisor, 22-11-2026: el «fin» bruto decía que el de AEMET seguía en
+        # vigor cuando «fin_visible» (Meteocat cubre esas horas) ya había pasado.
+        h = dt.timedelta(hours=1)
+        base = {"zona": C.ZONA_AVISOS, "inicio": (P.AHORA - h).isoformat(), "fin": (P.AHORA + 2 * h).isoformat()}
+        self.assertEqual(P.motivos_modo_aviso([base], [], [], None), ["avís de l'AEMET"])
+        pasado = {**base, "fin_visible": (P.AHORA - h / 2).isoformat()}
+        self.assertEqual(P.motivos_modo_aviso([pasado], [], [], None), [])
+        self.assertEqual(P.motivos_modo_aviso([{**base, "cobert": "meteocat"}], [], [], None), [])
+        # Lo mismo en «oficials_actius» (avisos_bot): sin AEMET si ya no se muestra.
+        import avisos_bot as AB
+        ahora = P.AHORA
+        sal = {"avisos": [{**pasado, "nivel": "groc"}]}
+        self.assertNotIn("aemet", AB.oficials_actius(sal, ahora))
+        self.assertIn("aemet", AB.oficials_actius({"avisos": [{**base, "nivel": "groc"}]}, ahora))
+
 
 if __name__ == "__main__":
     unittest.main()
