@@ -50,6 +50,10 @@ Al cambiar algo:
   Un tipo de alerta nuevo se añade a `bot.TIPUS_PERILL` y a
   `tests/test_perills.py`, que falla si algún sitio se lo deja. Por fenómeno
   manda Meteocat; AEMET, para lo que Meteocat no cubre (`smp.marca_coberts`).
+  El texto de un aviso propio de la app sale en Telegram, en la notificación,
+  en la línea de la portada y en la ficha de «Perill», que guarda el mensaje
+  enviado: al cambiarlo, comprobar todos (ADR 0018, cambio del 21-11-2026).
+  Los avisos ya cerrados conservan el texto con que se mandaron.
 - **Todo lo que dice la web tiene que cuadrar** (ADR 0101): la lluvia de
   ahora sale solo de `pluja_ara` (`casa.estat_pluja`), y lo que se muestra en
   dos sitios usa el mismo umbral y la misma palabra. Si añades una frase que

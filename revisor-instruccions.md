@@ -171,10 +171,16 @@ inclúyelas si son reales, explicando por qué.
   anunciado para más tarde (3.208.1): un aviso que empieza a las 22:00 no la
   activa a las 13:00.
 - La salida y la puesta del sol vienen de Open-Meteo para el barrio
-  (41,49 N): no las recalcules de cabeza. A finales de octubre el día dura
-  unas 10 h 30 min, con salida hacia las 7:18 y puesta hacia las 17:51
-  en horario de invierno; el 28-10-2026 se tomó por error una salida
-  correcta (7:19).
+  (41,49 N): no las recalcules de cabeza ni las compares con horas que
+  recuerdes. Referencias, en horario de invierno: a finales de octubre,
+  salida hacia las 7:18 y puesta hacia las 17:51; el 22 de noviembre, 7:48 y
+  17:26; en el solsticio de invierno, 8:14 y 17:25 (la salida más tardía es
+  a primeros de enero, hacia las 8:18, y la puesta más temprana, a primeros
+  de diciembre). El punto medio entre las dos cae entre las 12:35 y las
+  13:06 en horario de invierno (en noviembre, hacia las 12:37, porque el
+  sol va adelantado un cuarto de hora) y una hora más tarde en el de verano:
+  solo es un error si se sale de ahí. Se han tomado por error dos salidas
+  correctas: 7:19 el 28-10-2026 y 7:48 el 22-11-2026.
 - En la tabla por horas, un aviso que dura varias horas se rotula una sola vez,
   con una barra vertical a lo largo de sus horas y el texto que quepa (en una
   franja corta, solo «Perill» o «Avís»): no es que falte en las demás horas.
