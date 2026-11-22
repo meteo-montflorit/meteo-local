@@ -223,6 +223,16 @@ class Rasgos(unittest.TestCase):
         # Casa sola amb pluja i cap veïna llegida: la de casa, com abans.
         self.assertEqual(A.pluja_observada(mm("1.2"), (), {}), 1.2)
 
+    def test_bolcades_soltes_de_meteocerdanyola(self):
+        # ADR 0130: 0,2 mm sols a la de Montflorit (rosada) no fan plujosa
+        # l'hora ni impedeixen que sigui seca; 0,4 mm, amb una altra, sí.
+        z = {"pluja_mm": "0.0"}
+        seca = {k: z for k in A.C.VEINES}
+        self.assertEqual(A.pluja_observada(z, [z, z], {**seca, "MC_MONTFLORIT": {"pluja_mm": "0.2"}}), 0.0)
+        dues = {**seca, "MC_MONTFLORIT": {"pluja_mm": "0.4"}, "ICERDA6": {"pluja_mm": "0.4"}}
+        self.assertIsNotNone(A.pluja_observada(z, [z, z], dues))
+        self.assertGreater(A.pluja_observada(z, [z, z], dues), 0)
+
     def test_montflorit_primer(self):
         # ADR 0070: les veïnes de Montflorit manen sobre Sabadell i Sant Cugat.
         z, p = {"pluja_mm": "0.0"}, {"pluja_mm": "0.6"}
@@ -232,7 +242,11 @@ class Rasgos(unittest.TestCase):
         # Casa a zero però plou en dues veïnes que compten: plou (el pluviòmetre no ho va veure),
         # amb la mediana de casa i les tres veïnes (0, 0, 0,6 i 1,0).
         dues = {**seca, "ICERDA18": p, "ICERDA28": {"pluja_mm": "1.0"}}
-        self.assertAlmostEqual(A.pluja_observada(z, [z, z], dues), 0.3)
+        sense_mc = {k: x for k, x in dues.items() if k != "MC_MONTFLORIT"}
+        self.assertAlmostEqual(A.pluja_observada(z, [z, z], sense_mc), 0.3)
+        # Amb la de Montflorit de MeteoCerdanyola a zero, la mediana és zero:
+        # l'hora continua sent plujosa, amb el llindar.
+        self.assertAlmostEqual(A.pluja_observada(z, [z, z], dues), A.C.UMBRAL_MM)
         # Una sola veïna amb pluja: no se sap.
         self.assertIsNone(A.pluja_observada(z, [z, z], {**seca, "ICERDA28": p}))
         # I llavors, els seus mm: potser va plovisquejar (l'historial ho diu).

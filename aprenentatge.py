@@ -418,14 +418,16 @@ def pluja_observada(casa, meteocat=(), veines=None, llindar=None):
     c = _num((casa or {}).get("pluja_mm"))
     v = {k: _num((x or {}).get("pluja_mm")) for k, x in (veines or {}).items()}
     plou = [x for k, x in v.items() if C.VEINES.get(k, {}).get("plou") and x is not None]
-    mullen = [x for x in plou if x >= llindar]
+    # Una estación con marcas sueltas de rocío (plou_min_mm, ADR 0130) solo
+    # moja desde ese mínimo; por debajo, cuenta como seca.
+    mullen = [x for k, x in v.items() if C.VEINES.get(k, {}).get("plou") and x is not None and x >= _llindar(k, llindar)]
     if (c is not None and c >= llindar) or len(mullen) >= C.VEINES_PLUJA_MIN:
         return max(round(_mediana([c, *plou]), 2), llindar)
     if mullen:
         return None
-    sec = [x for k, x in v.items() if C.VEINES.get(k, {}).get("sec") and x is not None]
+    sec = [(k, x) for k, x in v.items() if C.VEINES.get(k, {}).get("sec") and x is not None]
     if sec:
-        return 0.0 if all(x < llindar for x in sec) else None
+        return 0.0 if all(x < _llindar(k, llindar) for k, x in sec) else None
     if c is None:
         return None
     prop = [_num((m or {}).get("pluja_mm")) for m in meteocat]
@@ -462,6 +464,12 @@ def plou_ara_barri(casa, veines, plugim=False):
     v = {x["estacio"]: {"pluja_mm": x.get("pluja_15min")} for x in veines or [] if x.get("pluja_15min") is not None}
     mm = pluja_observada(c, (), v, llindar=0.1)
     return None if mm is None else mm > 0
+
+
+def _llindar(estacio, llindar):
+    """Desde cuántos mm moja una vecina: el general o, si tiene marcas
+    sueltas, su plou_min_mm (ADR 0130)."""
+    return max(llindar, C.VEINES.get(estacio, {}).get("plou_min_mm") or 0)
 
 
 def pluja_veines(veines):

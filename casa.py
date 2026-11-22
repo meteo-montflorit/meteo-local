@@ -48,6 +48,7 @@ import riscos as RS
 import smp as SMP
 import vent_veines as VV
 import llum as LL
+import meteocerdanyola as MCE
 import lluna as LU
 import setmana as SM
 import sol_estacio as SE
@@ -377,8 +378,9 @@ def consens(ara_casa, casa, veines=None):
 
 def ara_sense_casa(veines, taula, ahora):
     """Si falla la estación de casa (ADR 0087): «Ara» con las vecinas leídas
-    en la última media hora. La temperatura, la de ICERDA6, la otra estación
-    junto a la riera, para que siga siendo la de la riera; sin ella, la de la
+    en la última media hora. La temperatura, la de las otras estaciones
+    junto a la riera (ICERDA6 y la de Montflorit de MeteoCerdanyola, ADR
+    0130), para que siga siendo la de la riera; sin ellas, la de la
     parte alta menos su diferencia habitual a esa hora (part_alta). La lluvia
     y la humedad, por consenso de las vecinas (consens). Sin presión: la de
     las vecinas no está calibrada. Sin vecinas, None, como hasta ahora."""
@@ -865,6 +867,15 @@ def recoger(anterior=None):
         if dies <= C.WU_AVIS_CADUCITAT_DIES:
             print(f"La clau de lectura de Weather Underground caduca d'aquí a {dies} dies "
                   f"({C.WU_CLAU_CADUCA}): cal regenerar-la (RESTAURAR.md).", file=sys.stderr)
+    # Las de MeteoCerdanyola (ADR 0130), que no necesitan clave: la de
+    # Montflorit, una vecina más; la de Cerdanyola Centre, para el viento.
+    try:
+        mc, fallos = MCE.veines_ara(P.AHORA)
+        veines += mc
+        for fallo in fallos:
+            print("No he podido leer la estación de MeteoCerdanyola", fallo, file=sys.stderr)
+    except Exception as ex:
+        print("No he podido leer las estaciones de MeteoCerdanyola:", ex, file=sys.stderr)
     salida["veines"] = [{k: v for k, v in x.items() if k != "files"} for x in veines]
     # El sol directo sobre el termómetro de casa (ADR 0081): se corrige con las
     # vecinas y la diferencia habitual, también en las horas para comparar
@@ -907,12 +918,28 @@ def recoger(anterior=None):
     # Si llueve ahora, en casa o en una vecina que cuenta: lo que miran el
     # bot, los avisos y la web (plou_ara de la primera hora de la tabla).
     salida["plou_ara"] = llueve_ahora_en(casa, veines)
-    # El viento de ahora, de la estación de Meteocat más cercana (ADR 0037).
+    # El viento de ahora: el de Cerdanyola Centre, al minuto (ADR 0130); si no
+    # tiene lecturas recientes, el de la estación de Meteocat más cercana, por
+    # medias horas (ADR 0037).
     try:
-        salida["vent"] = P.vent_meteocat(C.VENT_ESTACIO)
+        salida["vent"] = MCE.vent_ara(veines, P.AHORA)
     except Exception as ex:
         salida["vent"] = None
-        salida["errors"].append(f"vent: {ex}")
+        print("No he podido calcular el viento de Cerdanyola Centre:", ex, file=sys.stderr)
+    if salida["vent"]:
+        # La racha, de Sant Cugat: la de Cerdanyola Centre no se publica.
+        try:
+            sc = P.vent_meteocat(C.VENT_ESTACIO)
+        except Exception:
+            sc = None
+        if sc and sc.get("ratxa") is not None:
+            salida["vent"].update({"ratxa": sc["ratxa"], "ratxa_estacio": sc["estacio"], "ratxa_fins": sc["fins"]})
+    else:
+        try:
+            salida["vent"] = P.vent_meteocat(C.VENT_ESTACIO)
+        except Exception as ex:
+            salida["vent"] = None
+            salida["errors"].append(f"vent: {ex}")
     # El mismo viento estimado con las vecinas (ADR 0064): se calcula siempre
     # para compararlo y solo sustituye al de Sant Cugat si Juanjo lo decide.
     try:
@@ -1185,7 +1212,8 @@ def recoger(anterior=None):
         for v in veines:
             try:
                 files = v["files"]
-                if R.falta_ahir_veina(v["estacio"], P.AHORA):
+                # Las de MeteoCerdanyola ya traen las últimas 24 horas.
+                if v["estacio"] in WU.estacions() and R.falta_ahir_veina(v["estacio"], P.AHORA):
                     files = WU.hores_ahir(v["estacio"], P.AHORA) + files
                 R.apunta_veina(v["estacio"], R.hores_veina(files))
                 vent_mitges[v["estacio"]] = VV.mitges_hores_veina(files)

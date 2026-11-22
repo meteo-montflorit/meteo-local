@@ -124,7 +124,8 @@ mira cada minuto si hay código nuevo, publica. Solo publica el NAS.
 En cada pasada, la estación particular se sube también a la red de
 estaciones personales de Weather Underground (`wunderground.py`, ADR 0059),
 y con la clave de lectura de esa red se leen cuatro estaciones vecinas del
-barrio (ADR 0060).
+barrio (ADR 0060). Además se leen dos estaciones de MeteoCerdanyola, con el
+permiso de su responsable (`meteocerdanyola.py`, ADR 0130).
 A las 16:00 el NAS rellena las horas que falten de la estación particular y la
 previsión aprende de sus aciertos (`aprenentatge.py`). En `main` no hay commits
 automáticos.
@@ -137,12 +138,15 @@ Fuentes de la previsión:
    minutos, que también hacen que «plou ara» cuente si alguna marca, y la
    más fiable confirma las horas secas (ADR 0060); y las de Meteocat en
    Sabadell y Sant Cugat, que también confirman las horas secas para
-   aprender (ADR 0058). El viento de ahora es
-   el de Sant Cugat, por medias horas: el anemómetro de la particular no
-   funciona bien (ADR 0037). Además se estima con las vecinas que lo siguen
-   bien, llevadas a 10 m con un factor que se aprende cada día; la página no
-   lo muestra, porque con viento acertó menos que el dato de Sant Cugat
-   (ADR 0064). Las nubes,
+   aprender (ADR 0058). La de Montflorit de MeteoCerdanyola, al minuto, es
+   una vecina más para la lluvia (desde 0,4 mm, por el rocío) y la
+   temperatura (ADR 0130). El viento medio de ahora es el de la de
+   Cerdanyola Centre de MeteoCerdanyola, al minuto, a 900 m y en una azotea
+   abierta; la racha, que esa no publica, la de Sant Cugat, por medias horas,
+   que da también la media si Centre no responde (ADR 0130 y 0037): el
+   anemómetro de la particular no funciona bien. Además se estima con las
+   vecinas que lo siguen bien, llevadas a 10 m con un factor que se aprende
+   cada día; la página no lo muestra (ADR 0064). Las nubes,
    del METAR del aeropuerto de Sabadell, cada media hora, para las nubes bajas
    de la hora en curso (las altas, que el METAR no da, salen de los modelos) y
    para elegir qué mezcla de modelos acierta más (ADR 0088).
@@ -222,6 +226,7 @@ Umbrales y lugares, en `config.py`. El porqué, en los ADR.
 | `nowcast.py` | La lluvia del radar llevada hacia delante hasta 2 horas (ADR 0019 y 0023) |
 | `ecowitt.py` | La estación particular con la API oficial de Ecowitt; las claves, fuera del repositorio (ADR 0017) |
 | `wunderground.py` | La estación particular, subida a Weather Underground, y las vecinas de esa red, leídas con su API; las claves, fuera del repositorio (ADR 0059 y 0060) |
+| `meteocerdanyola.py` | Las estaciones de Montflorit y Cerdanyola Centre de MeteoCerdanyola, al minuto, con la forma de las vecinas, y el viento medio de «Ara» (ADR 0130) |
 | `pluviometre.py` | Comprueba una vez, tras limpiarlo, si el pluviómetro marca la lluvia débil y avisa por Telegram (ADR 0017) |
 | `riscos.py` | Situaciones de peligro según lo medido y lo previsto, que usan la página y los avisos (ADR 0018) |
 | `fi_pluja.py` | Comprueba a qué hora para la lluvia según el radar, antes de enseñarlo (ADR 0049) |
@@ -287,7 +292,9 @@ de [Meteocat](https://www.meteo.cat/observacions/xema) y del
 [portal de datos abiertos de la Generalitat](https://analisi.transparenciacatalunya.cat/d/nzvn-apee),
 estación particular con la [API de Ecowitt](https://doc.ecowitt.net/web/#/apiv3en?page_id=1),
 estaciones vecinas de [Weather Underground](https://www.wunderground.com/) (The
-Weather Company; uso personal y no comercial),
+Weather Company; uso personal y no comercial), estaciones de Montflorit y
+Cerdanyola Centre de [MeteoCerdanyola](https://meteocerdanyola.com/), con el
+permiso de su responsable,
 nubes observadas en el aeropuerto de Sabadell (METAR) del
 [Aviation Weather Center](https://aviationweather.gov/data/api/) de la NOAA,
 radar y advección de [Meteocat](https://www.meteo.cat/observacions/radar) y

@@ -2,7 +2,7 @@
 """Datos fijos de «Temps a Montflorit»: lugares, horario, fuentes y umbrales.
 Se cambian aquí, no en los programas."""
 
-VERSION = "3.233.0"
+VERSION = "3.234.0"
 
 # Coordenadas con tres decimales (unos 100 m), no las exactas: para el tiempo
 # da igual una calle u otra, y el repositorio es público.
@@ -23,8 +23,9 @@ PLUVIOMETRE_CASA_FIABLE_FINS = "2026-08-31"
 ALTITUD_CASA_M = 70
 
 # El viento de ahora: el anemómetro de la estación de casa no funciona bien,
-# así que se muestra el de la estación de Meteocat más cercana, por medias
-# horas (ADR 0037).
+# así que se muestra el de Cerdanyola Centre (VENT_ARA, ADR 0130) y, si no
+# responde, el de la estación de Meteocat más cercana, por medias horas (ADR
+# 0037). Es también la referencia con que se aprende y se compara el viento.
 VENT_ESTACIO = "XV"
 # El viento estimado con las estaciones vecinas (vent_veines.py, ADR 0064)
 # se calcula y se aprende cada día, pero la página sigue con el de Sant Cugat
@@ -48,12 +49,30 @@ ESTACIONES = {
 # también confirman).
 # «alta»: en la parte alta del barrio, más cálida que la de la riera, donde
 # están la estación de casa e ICERDA6 (Juanjo, 13-10-2026; ADR 0087).
+#
+# Y dos estaciones de MeteoCerdanyola («font»: «meteocerdanyola»; ADR 0130,
+# con el permiso de su responsable, 22-11-2026), leídas al minuto
+# (meteocerdanyola.py): la de Montflorit, junto a la riera, para la lluvia y
+# la temperatura; su pluviómetro marca a veces 0,2 mm sueltos de rocío, así
+# que solo cuenta como «plou» con `plou_min_mm` en 15 minutos. La de
+# Cerdanyola Centre, en una azotea a unos 900 m, solo para el viento
+# (VENT_ARA): su temperatura es la de la ciudad («temperatura»: False).
 VEINES = {
     "ICERDA6": {"nom": "a 1 km a l'est, vora la riera", "plou": True, "sec": True, "alta": False},
     "ICERDA18": {"nom": "al Puig de la Guàrdia", "plou": True, "sec": True, "alta": True},
     "ICERDA28": {"nom": "a 300 m al nord-oest", "plou": True, "sec": True, "alta": True},
     "ICERDA48": {"nom": "a 600 m al nord-est", "plou": False, "sec": False, "alta": True},
+    "MC_MONTFLORIT": {"nom": "Montflorit (MeteoCerdanyola), vora la riera", "plou": True, "sec": True,
+                      "alta": False, "font": "meteocerdanyola", "slug": "cerdanyola_montflorit",
+                      "plou_min_mm": 0.4},
+    "MC_CENTRE": {"nom": "Cerdanyola Centre (MeteoCerdanyola)", "plou": False, "sec": False, "alta": False,
+                  "font": "meteocerdanyola", "slug": "cerdanyola_centre", "temperatura": False,
+                  "estacio": "Cerdanyola Centre"},
 }
+# El viento de «Ara» (ADR 0130): la media de Cerdanyola Centre, al minuto, si
+# tiene lecturas recientes, con la racha de Sant Cugat (Centre no la publica);
+# si no, todo de Sant Cugat (VENT_ESTACIO).
+VENT_ARA = "MC_CENTRE"
 # Lluvia en Montflorit para aprender (aprenentatge.pluja_observada, ADR 0070):
 # si casa no la marca, llueve si la marcan al menos estas vecinas de las que
 # cuentan («plou»).

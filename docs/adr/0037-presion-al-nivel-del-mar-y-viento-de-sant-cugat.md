@@ -2,6 +2,8 @@
 
 Fecha: 2026-10-07 · Estado: aceptado
 
+**22-11-2026 (ADR 0130).** El viento medio de «Ara» es el de la estación de Cerdanyola Centre de MeteoCerdanyola; Sant Cugat da la racha y, si Centre no responde, también la media.
+
 
 **10-10-2026 (ADR 0064).** Se calcula también el viento estimado con las estaciones vecinas, en prueba; la página sigue con el de Sant Cugat hasta que Juanjo decida.
 

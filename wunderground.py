@@ -218,7 +218,10 @@ def veina_ara(estacio, filas, ahora=None):
          "pluja_30min": E.pluja_entre(filas, hora - dt.timedelta(minutes=30), hora),
          "pluja_1h": E.pluja_entre(filas, hora - dt.timedelta(hours=1), hora),
          "pluja_3h": E.pluja_entre(filas, hora - dt.timedelta(hours=3), hora)}
-    v["plou"] = v["pluja_15min"] > 0
+    # Una estación con marcas sueltas (el rocío de la de Montflorit de
+    # MeteoCerdanyola, ADR 0130) solo cuenta con plou_min_mm en 15 minutos.
+    minim = C.VEINES.get(estacio, {}).get("plou_min_mm")
+    v["plou"] = round(v["pluja_15min"], 1) >= minim if minim else v["pluja_15min"] > 0
     v["compta"] = bool(C.VEINES.get(estacio, {}).get("plou"))
     v["files"] = filas
     return v
@@ -230,13 +233,19 @@ def veines_ara(ahora=None, lector=None):
     estación: las lecturas de hoy."""
     ahora = ahora or H.ara()
     res, errors = [], []
-    for estacio in C.VEINES:
+    for estacio in estacions():
         try:
             res.append(veina_ara(estacio, files(_consulta("observations/all/1day", {"stationId": estacio},
                                                            lector)), ahora))
         except Exception as ex:
             errors.append(f"{estacio}: {ex}")
     return res, errors
+
+
+def estacions():
+    """Las vecinas de config.VEINES que son de Weather Underground (las de
+    MeteoCerdanyola se leen con meteocerdanyola.py)."""
+    return [e for e, v in C.VEINES.items() if v.get("font", "wu") == "wu"]
 
 
 def hores_ahir(estacio, ahora, lector=None):
@@ -251,7 +260,9 @@ def observacio(v):
     solo si marca lluvia y cuenta para «plou ara»."""
     if not v or not v.get("plou") or not v.get("compta"):
         return None
-    return {"estacion": v["estacio"], "font": "Weather Underground", "mm_hoy": v.get("pluja_avui"),
+    font = "MeteoCerdanyola" if C.VEINES.get(v["estacio"], {}).get("font") == "meteocerdanyola" \
+        else "Weather Underground"
+    return {"estacion": v["estacio"], "font": font, "mm_hoy": v.get("pluja_avui"),
             "mm_ultima_media_hora": E.pluja_entre(v["files"], H.llegeix(v["hora"]) - dt.timedelta(minutes=30),
                                                   H.llegeix(v["hora"])) if v.get("files") else v["pluja_15min"],
             "intensitat": v.get("intensitat"), "hasta": v["hora"]}

@@ -182,10 +182,19 @@ class Vigilancia(unittest.TestCase):
         self.assertEqual(m, ["Temps a Montflorit: Weather Underground torna a respondre."])
 
     def test_la_part_alta_i_una_veina(self):
-        self.pas(0, True, ["ICERDA6", "ICERDA18"])
-        self.assertIn("part alta", self.pas(60, True, ["ICERDA6", "ICERDA18"])[0])
-        m = self.pas(24 * 60, True, ["ICERDA6", "ICERDA18"])
+        llegides = ["ICERDA6", "ICERDA18", "MC_MONTFLORIT", "MC_CENTRE"]
+        self.pas(0, True, llegides)
+        self.assertIn("part alta", self.pas(60, True, llegides)[0])
+        m = self.pas(24 * 60, True, llegides)
         self.assertEqual(sorted(x.split()[5] for x in m), ["ICERDA28", "ICERDA48"])
+
+    def test_meteocerdanyola_no_val_per_weather_underground(self):
+        # ADR 0130: si només responen les de MeteoCerdanyola, Weather
+        # Underground no respon.
+        self.pas(0, True, ["MC_MONTFLORIT", "MC_CENTRE"])
+        m = self.pas(60, True, ["MC_MONTFLORIT", "MC_CENTRE"])
+        self.assertEqual(len(m), 1)
+        self.assertIn("Weather Underground", m[0])
 
     def test_sense_claus_no_es_vigila(self):
         # La reserva de IONOS no té les claus d'Ecowitt ni de Weather Underground.

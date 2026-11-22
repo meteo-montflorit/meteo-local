@@ -1,6 +1,8 @@
 # 58. Retirada de la estación de Montflorit de meteocerdanyola.com
 
-Fecha: 2026-10-09 · Estado: aceptado
+Fecha: 2026-10-09 · Estado: sustituido por el ADR 0130
+
+**22-11-2026 (ADR 0130).** Con el permiso de su responsable, la estación de Montflorit vuelve como vecina para la lluvia y la temperatura, y la de Cerdanyola Centre da el viento medio de «Ara». Lo que sigue explica la retirada de octubre.
 
 ## Contexto
 

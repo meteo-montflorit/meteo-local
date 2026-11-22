@@ -165,9 +165,13 @@ Antes de tocar las fuentes (pasado aquí desde la memoria de Claude el
   mucho): si se agota, la web se queda sin vecinas hasta el día siguiente. La
   clave caduca el 10-04-2027 (`config.WU_CLAU_CADUCA`, `casa.py` avisa antes)
   y se regenera desde la versión antigua de la página de claves.
-- **meteocerdanyola.com no es una fuente** (ADR 0058): ni se usa, ni se
-  compara, ni se propone contactar con su responsable. Desde el 22-11-2026 la
-  portada la enlaza para el tiempo del resto de Cerdanyola, y nada más.
+- **MeteoCerdanyola, con permiso de su responsable** (ADR 0130, desde el
+  22-11-2026; antes, ADR 0058): su estación de Montflorit es una vecina más
+  para la lluvia (desde 0,4 mm, por el rocío) y la temperatura, y la de
+  Cerdanyola Centre da el viento medio de «Ara»; la racha sigue siendo de
+  Sant Cugat, porque Centre no la publica. Una petición por estación y
+  pasada (`meteocerdanyola.py`). Si su responsable pide quitarlas, se quitan
+  sus entradas de `config.VEINES` y `C.VENT_ARA`.
 - **La app de Android** (ADR 0082): en Play Console, crear la app, preparar
   la versión de producción y enviarla a revisión lo pulsa Juanjo. Los avisos
   en iPhone no se pueden probar aquí (ADR 0048).

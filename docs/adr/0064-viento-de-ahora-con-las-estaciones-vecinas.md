@@ -2,6 +2,8 @@
 
 Fecha: 2026-10-10 · Estado: aceptado; la página no lo muestra (decidido el 12-11-2026, tras un episodio de viento)
 
+**22-11-2026 (ADR 0130).** El viento de «Ara» pasa a ser el de la estación de Cerdanyola Centre de MeteoCerdanyola, a 900 m y en una azotea abierta. Esta estimación se sigue calculando con las vecinas, ahora también con las dos de MeteoCerdanyola en el registro.
+
 ## Contexto
 
 El viento de «Ara a Montflorit» es el de la estación de Meteocat de Sant

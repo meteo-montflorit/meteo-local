@@ -59,7 +59,7 @@
 | [0055](0055-avisos-oficiales-al-canal-y-prevision-de-la-noche.md) | Avisos oficiales nuevos al canal, y la previsión de la noche aparte | aceptado |
 | [0056](0056-pagina-com-funciona-y-metodologia-completa.md) | Página «Com funciona» y metodología completa | aceptado |
 | [0057](0057-correcciones-de-la-auditoria-del-9-de-octubre.md) | Correcciones de la auditoría del 9 de octubre de 2026 | aceptado |
-| [0058](0058-retirada-de-la-estacion-de-montflorit-de-meteocerdanyola-com.md) | Retirada de la estación de Montflorit de meteocerdanyola.com | aceptado |
+| [0058](0058-retirada-de-la-estacion-de-montflorit-de-meteocerdanyola-com.md) | Retirada de la estación de Montflorit de meteocerdanyola.com | sustituido por el 0130 |
 | [0059](0059-estacion-de-casa-en-weather-underground.md) | La estación de casa en Weather Underground, para leer las de los vecinos | aceptado |
 | [0060](0060-estaciones-vecinas-de-weather-underground.md) | Las estaciones vecinas de Weather Underground: «plou ara» y horas secas | aceptado |
 | [0061](0061-grados-mas-o-menos-que-ayer.md) | Grados más o menos que ayer | aceptado |
@@ -131,5 +131,6 @@
 | [0127](0127-la-luna.md) | La Luna: la fase en «Ara» y en la gráfica, y sus datos en «Sol i lluna» | aceptado |
 | [0128](0128-la-hora-en-utc-por-dentro.md) | La hora, en UTC por dentro y en hora de Madrid solo en la frontera | aceptado |
 | [0129](0129-conexiones-ssh-que-se-dan-por-muertas-en-un-minuto.md) | Las conexiones ssh del NAS se dan por muertas en un minuto | aceptado |
+| [0130](0130-las-estaciones-de-meteocerdanyola.md) | Las estaciones de MeteoCerdanyola: Montflorit para la lluvia y Cerdanyola Centre para el viento | aceptado |
 
 Plantilla: [0000-plantilla.md](0000-plantilla.md). Para crear uno: `nuevo-adr "Título"`.

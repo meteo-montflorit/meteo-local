@@ -28,6 +28,7 @@ import os
 import config as C
 import hora as H
 import part_alta as PA
+import wunderground as WU
 
 DIR = os.environ.get("REGISTRE_DIR", "/estat/registre")
 ESTAT = os.path.join(os.path.dirname(DIR), "estacions-falla.json")
@@ -70,7 +71,10 @@ def vigila(casa_ok, veines_ok, ahora, envia=None, ruta=None):
         falles["casa"] = not casa_ok
     if veines_ok is not None:
         veines_ok = set(veines_ok)
-        falles.update({"xarxa": not veines_ok, "alta": len(veines_ok & set(PA.ALTES)) < PA.ALTES_MIN})
+        # «xarxa» es Weather Underground: las de MeteoCerdanyola (ADR 0130) no
+        # dicen si responde.
+        falles.update({"xarxa": not (veines_ok & set(WU.estacions())),
+                       "alta": len(veines_ok & set(PA.ALTES)) < PA.ALTES_MIN})
         falles.update({e: e not in veines_ok for e in C.VEINES})
     estat, missatges = _llegeix(ruta), []
     # Lo que ya no se vigila se olvida, sin avisar de que vuelve.
