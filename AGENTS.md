@@ -78,7 +78,11 @@ Al cambiar algo:
   Pasa también axe-core si cambia el HTML,
   el CSS o el JavaScript que crea o modifica elementos de la página; no hace
   falta si el cambio es solo de cálculo, de datos, del bot o de textos dentro
-  de elementos que ya existen.
+  de elementos que ya existen. Sobre los fondos en degradado de la
+  tarjeta de «Ara» (15 cielos, `.heroi.cel-*`), axe-core no decide el
+  contraste («incomplete»): un color nuevo ahí se mide aparte contra los
+  colores de cada cielo, claros y oscuros, y los colores se derivan del texto
+  del cielo (`--t`), no fijos (3.237.1: unos fijos no se leían al alba).
 - Los datos públicos (`montflorit.json`) se publican en IONOS
   (`bilateria.org/app/meteo-local/`) y la web, cada media hora como mucho
   (ADR 0020). Este repositorio no publica ninguna web: las direcciones
