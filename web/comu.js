@@ -177,9 +177,10 @@ function element(etiqueta, classe, text) {
 // Un missatge breu al centre de la pantalla, que s'esvaeix sol: què és el
 // que s'acaba de prémer, també al mòbil, on no hi ha ratolí per veure'n el
 // «title» (Juanjo, 23-11-2026, pels botons de la zona: «en movil es casi
-// imposible saber qué es esto»). No tapa res: no es pot prémer.
+// imposible saber qué es esto»). No tapa res: no es pot prémer. Dura segons
+// el que s'ha de llegir: uns 40 ms per lletra, entre 2,8 i 8 segons.
 let MISSATGE = null;
-function missatgeFlotant(titol, text, ms = 2800) {
+function missatgeFlotant(titol, text, ms = Math.min(8000, Math.max(2800, 1500 + 40 * (titol.length + text.length)))) {
   if (!document.body) return;
   if (MISSATGE) {
     clearTimeout(MISSATGE.temps);

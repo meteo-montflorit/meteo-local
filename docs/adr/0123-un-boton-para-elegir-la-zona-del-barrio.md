@@ -31,8 +31,12 @@ Versión 3.191.0.
   junto al título, solo la elegida, del tamaño de los demás botones, y tocarla
   pasa a la otra (medido: a 360 px quedaban 72 px y hacen falta unos 80).
   Desde la 3.238.0, al pulsarlo, un mensaje en el centro de la pantalla dice
-  qué zona queda elegida, con su nombre y su descripción, y se desvanece solo
-  a los 3 segundos, sin tapar nada que se pueda pulsar
+  qué zona queda elegida y qué cambia al elegirla (desde la 3.238.1: «Esta
+  página pasa a dar las temperaturas de…: la de ahora, la de cada hora y la
+  de los próximos 7 días»; Juanjo: «que quede claro qué efectos tiene pulsar
+  ese boton»; el mismo texto en el `title`), y se desvanece solo cuando ha
+  dado tiempo a leerlo (unos 40 ms por letra, de 2,8 a 8 segundos; este, 8),
+  sin tapar nada que se pueda pulsar
   (`comu.missatgeFlotant`): en el móvil no hay ratón y la pulsación larga no
   la conoce nadie (Juanjo, 23-11-2026: «en movil es casi imposible saber qué
   es esto»). Pulsar la que ya está elegida también lo enseña. Probado en

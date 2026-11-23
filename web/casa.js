@@ -731,16 +731,21 @@ function botoZona() {
   grup.setAttribute('role', 'group');
   grup.setAttribute('aria-label', T('Zona del barri'));
   const opcions = [
-    ['baixa', 'i-waves', T('Riera'), T('Temperatures de vora la riera, la zona més baixa i més freda del barri.')],
-    ['alta', 'i-mountain', T('Part alta'), T('Temperatures de la part alta del barri, que sol ser més càlida.')],
-  ].map(([zona, id, nom, descripcio]) => {
+    // Què fa prémer-lo, no només què és cada zona (Juanjo, 23-11-2026: «que
+    // quede claro qué efectos tiene pulsar ese boton»): el mateix text al
+    // missatge del centre i en passar-hi el ratolí.
+    ['baixa', 'i-waves', T('Riera'), T('Temperatures de la riera'),
+      T('Aquesta pàgina passa a donar les temperatures de vora la riera, la zona més baixa i més freda del barri: la d’ara, la de cada hora i la dels pròxims 7 dies.')],
+    ['alta', 'i-mountain', T('Part alta'), T('Temperatures de la part alta'),
+      T('Aquesta pàgina passa a donar les temperatures de la part alta del barri, que sol ser més càlida: la d’ara, la de cada hora i la dels pròxims 7 dies.')],
+  ].map(([zona, id, nom, titol, descripcio]) => {
     const b = element('button', 'boto-icona');
     b.type = 'button';
     b.dataset.zona = zona;
-    b.title = descripcio;
+    b.title = `${titol}. ${descripcio}`;
     b.setAttribute('aria-label', nom);
     b.append(icona(id));
-    b.dataset.nom = nom;
+    b.dataset.titol = titol;
     b.dataset.descripcio = descripcio;
     return b;
   });
@@ -748,7 +753,7 @@ function botoZona() {
   // (missatgeFlotant; Juanjo, 23-11-2026).
   const explica = () => {
     const b = opcions.find((x) => x.dataset.zona === zonaTriada());
-    if (b) missatgeFlotant(b.dataset.nom, b.dataset.descripcio);
+    if (b) missatgeFlotant(b.dataset.titol, b.dataset.descripcio);
   };
   const marca = () => opcions.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.zona === zonaTriada())));
   for (const b of opcions) {
