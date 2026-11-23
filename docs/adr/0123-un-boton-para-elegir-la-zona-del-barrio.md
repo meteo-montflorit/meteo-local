@@ -36,7 +36,8 @@ Versión 3.191.0.
   de los próximos 7 días»; Juanjo: «que quede claro qué efectos tiene pulsar
   ese boton»; el mismo texto en el `title`), y se desvanece solo cuando ha
   dado tiempo a leerlo (unos 40 ms por letra, de 2,8 a 8 segundos; este, 8),
-  sin tapar nada que se pueda pulsar
+  o antes, al pulsarlo (3.238.2; Juanjo: «al hacer clic encima o pulsar con
+  el dedo el mensaje debe desaparecer»)
   (`comu.missatgeFlotant`): en el móvil no hay ratón y la pulsación larga no
   la conoce nadie (Juanjo, 23-11-2026: «en movil es casi imposible saber qué
   es esto»). Pulsar la que ya está elegida también lo enseña. Probado en
