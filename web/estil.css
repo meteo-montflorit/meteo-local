@@ -1680,8 +1680,10 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .ara-temp-col { display: flex; flex-direction: column; align-items: flex-start; gap: .15rem; flex: none; }
 .heroi .ara-temp-col .veredicte { white-space: nowrap; }
 .heroi .ara-temp .alta { background: none; color: var(--heroi-suau); padding: 0; font-size: 1rem; line-height: 1.3; white-space: nowrap; }
-/* La màxima i la mínima del dia, abans de la comparació (23-11-2026): del
-   color de sempre, més clar, perquè es llegeixi sobre el fons fosc. */
+/* La màxima i la mínima del dia, abans de la comparació (23-11-2026): el
+   vermell i el blau de sempre, barrejats amb el color del text de cada cel
+   (--t): clars sobre els fons foscos i foscos sobre els clars (l'alba, els
+   núvols de dia), que amb colors fixos no es llegien. */
 /* Els dos trossos, sencers; si el segon baixa de línia, el punt que el separa
    queda a l'esquerra, fora de la vista. La columna s'estreny i el dibuix del
    cel no. */
@@ -1692,8 +1694,8 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .heroi .ara-dia .tros { white-space: nowrap; padding-left: 1em; }
 .heroi .ara-dia .amb-punt { position: relative; }
 .heroi .ara-dia .amb-punt::before { content: "·"; position: absolute; left: .35em; }
-.heroi .ara-dia .temp-max { color: #fca5a5; }
-.heroi .ara-dia .temp-min { color: #93c5fd; }
+.heroi .ara-dia .temp-max { color: color-mix(in srgb, #b91c1c 30%, var(--t, #fff)); }
+.heroi .ara-dia .temp-min { color: color-mix(in srgb, #1d4ed8 30%, var(--t, #fff)); }
 .heroi .titular { margin: 0 0 .8rem; }
 .heroi .titular-cel { margin: 0; font-size: 1.3rem; line-height: 1.3; font-weight: 700; }
 .heroi .titular .resum-linia { margin: .35rem 0 0; color: var(--heroi-suau); display: flex; gap: .4rem; align-items: flex-start; }

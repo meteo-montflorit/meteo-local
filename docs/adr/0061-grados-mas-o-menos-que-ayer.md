@@ -46,7 +46,13 @@ comparar.
   la previsión del resto, así que a primera hora la mínima es la de la
   madrugada ya medida. Desde las 18 h, las de mañana, como la comparación.
   Sin la estación (la reserva), la máxima y la mínima solas, de la previsión.
-  En rojo y azul claros sobre el fondo oscuro. Los dos trozos («Avui: màx.…,
+  En rojo y azul mezclados con el color del texto de cada cielo (30 %
+  del color y 70 % del texto, `estil.css`): la 3.237.0 los ponía claros y
+  fijos, y con los cielos claros (el alba, las nubes de día) no se leían
+  (2,2:1 contra el tramo más claro del alba). Con la mezcla, en los 15
+  cielos, el contraste es como el del texto de la línea (3,5 a 8,0:1 contra
+  el color más claro de cada fondo; axe-core no lo decide sobre degradados,
+  así que se midió aparte); a cambio, el color es un tinte suave (3.237.1). Los dos trozos («Avui: màx.…,
   mín.…» y la comparación) van enteros: si no caben al lado del dibujo del
   cielo, la comparación baja a otra línea, sin el punto delante, y el dibujo
   no se encoge (en la primera prueba se encogía hasta desaparecer a 360 px).
