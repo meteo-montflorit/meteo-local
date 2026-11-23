@@ -1680,6 +1680,20 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .ara-temp-col { display: flex; flex-direction: column; align-items: flex-start; gap: .15rem; flex: none; }
 .heroi .ara-temp-col .veredicte { white-space: nowrap; }
 .heroi .ara-temp .alta { background: none; color: var(--heroi-suau); padding: 0; font-size: 1rem; line-height: 1.3; white-space: nowrap; }
+/* La màxima i la mínima del dia, abans de la comparació (23-11-2026): del
+   color de sempre, més clar, perquè es llegeixi sobre el fons fosc. */
+/* Els dos trossos, sencers; si el segon baixa de línia, el punt que el separa
+   queda a l'esquerra, fora de la vista. La columna s'estreny i el dibuix del
+   cel no. */
+.heroi .ara-temp-col { flex: 0 1 auto; min-width: 0; }
+.heroi .heroi-cel-bloc { flex-shrink: 0; }
+.heroi .ara-dia { margin: 0; color: var(--heroi-suau); font-size: 1rem; line-height: 1.3; overflow: hidden; }
+.heroi .ara-dia-trossos { display: flex; flex-wrap: wrap; margin-left: -1em; }
+.heroi .ara-dia .tros { white-space: nowrap; padding-left: 1em; }
+.heroi .ara-dia .amb-punt { position: relative; }
+.heroi .ara-dia .amb-punt::before { content: "·"; position: absolute; left: .35em; }
+.heroi .ara-dia .temp-max { color: #fca5a5; }
+.heroi .ara-dia .temp-min { color: #93c5fd; }
 .heroi .titular { margin: 0 0 .8rem; }
 .heroi .titular-cel { margin: 0; font-size: 1.3rem; line-height: 1.3; font-weight: 700; }
 .heroi .titular .resum-linia { margin: .35rem 0 0; color: var(--heroi-suau); display: flex; gap: .4rem; align-items: flex-start; }
@@ -1703,7 +1717,7 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
   .heroi .titular-cel { font-size: 1.05rem; line-height: 1.28; }
   .heroi .titular .resum-linia { margin-top: .2rem; font-size: .92rem; }
   .heroi .veredicte { font-size: 2.7rem; }
-  .heroi .ara-temp .alta { font-size: .9rem; line-height: 1.25; }
+  .heroi .ara-temp .alta, .heroi .ara-dia { font-size: .9rem; line-height: 1.25; }
   .heroi-cel-bloc { width: 6rem; margin: -1.35rem -.2rem -.65rem auto; }
   /* Com les pastilles. */
   /* Fins a 2,5 rem més ample que el dibuix, cap a l'esquerra; la fase llarga

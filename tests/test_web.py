@@ -519,6 +519,35 @@ class Web(unittest.TestCase):
         r = self.avalua("2026-10-10T09:30:00+02:00", "etiquetaAlta('Avui', false, 'La màxima…').dataset.explica")
         self.assertEqual(r, "La màxima…")
 
+    def test_ara_diu_la_maxima_i_la_minima_del_dia(self):
+        # Juanjo, 23-11-2026: «en la tarjeta del tiempo que sale al principio, se
+        # podría poner la max y minima de ese dia?». Les mateixes xifres que el dia
+        # a la previsió de 7 dies: el mesurat, la lectura d'ara i la previsió.
+        def fila(dia, h, t):
+            return {"hora": f"2026-10-{dia}T{h:02d}:00", "fins": f"2026-10-{dia}T{h + 1:02d}:00", "temperatura": t}
+        hores = [fila(10, h, 14.0 + h % 7) for h in range(9, 24)] + [fila(11, h, 11.0 + h % 5) for h in range(0, 22)]
+        mes = {f"2026-10-09T{h:02d}:00": 15.0 for h in range(0, 24)} | {f"2026-10-10T{h:02d}:00": 16.0 - (h == 6) * 9 for h in range(0, 10)}
+        casa = {"hora": "2026-10-10T09:25+02:00", "temperatura": 21.4}
+        dom = ("const nou = (t) => ({ tag: t, fills: [], className: '', setAttribute() {}, addEventListener() {},"
+               " classList: Object.assign([], { add() {}, remove() {} }), dataset: {}, style: { setProperty() {} },"
+               " append(...c) { this.fills.push(...c); },"
+               " get textContent() { return this.fills.map((f) => (typeof f === 'string' ? f : f.textContent)).join(''); },"
+               " set textContent(v) { this.fills = [v]; } });"
+               "document.createElement = nou;"
+               "const cerca = (e, c) => (e && typeof e === 'object' ? (String(e.className).split(' ').includes(c) ? e"
+               " : e.fills.map((f) => cerca(f, c)).find(Boolean)) : null);")
+        def linia(ara, m=mes):
+            return self.avalua(ara, dom + f"const l = liniaDia({json.dumps(casa)}, {json.dumps(hores)}, {json.dumps(m)}, new Date());"
+                                    " l && [l.textContent, cerca(l, 'temp-max').textContent, cerca(l, 'temp-min').textContent]")
+        # La mínima, la de la matinada mesurada (7°); la màxima, la lectura d'ara (21,4).
+        self.assertEqual(linia("2026-10-10T09:30:00+02:00"), ["Avui: màx.\u00a021°, mín.\u00a07°5° més que ahir", "màx.\u00a021°", "mín.\u00a07°"])
+        dia = self.avalua("2026-10-10T09:30:00+02:00", f"diaDeLaPagina({json.dumps(hores)}, {json.dumps(mes)}, '2026-10-10', new Date(), 21.4)")
+        self.assertEqual((round(dia["max"]), round(dia["min"])), (21, 7))
+        # Des de les 18 h, les de demà, com la comparació.
+        self.assertEqual(linia("2026-10-10T19:30:00+02:00")[0], "Demà: màx.\u00a015°, mín.\u00a011°5° menys que avui")
+        # Sense l'estació (la reserva), la màxima i la mínima de la previsió, sense comparació.
+        self.assertEqual(linia("2026-10-10T09:30:00+02:00", None)[0], "Avui: màx.\u00a021°, mín.\u00a014°")
+
     def test_la_setmana_avui_i_dema_de_la_pagina_i_la_resta_d_ecmwf(self):
         # ADR 0122: avui i demà, de la previsió de la pàgina (com la gràfica i els trams); la resta, de setmana.py.
         def fila(dia, h, t, p=0.0, mm=0.0):

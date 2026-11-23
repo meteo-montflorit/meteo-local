@@ -145,6 +145,9 @@ function comparaDia(hores, mesurada, ara = new Date()) {
     : (ahir ? T('va mesurar ahir l’estació de vora la riera') : T('ha mesurat l’estació de vora la riera')));
   return {
     text: dema ? T`Demà, ${text}` : T`Avui, ${text}`,
+    // Sense el dia, per a la línia d'«Ara», que ja el posa davant de la
+    // màxima i la mínima (liniaDia).
+    relatiu: text,
     // Què compara, en prémer-la, com la part alta.
     explica: dema
       ? T`La màxima de demà, comparada amb la d’avui a les mateixes hores: el que ${mesurat()} i la previsió per a la resta. Amb menys de 2 graus de diferència, «semblant».`
@@ -765,6 +768,40 @@ function tempAra(casa) {
   return casa.dif_alta == null ? null : Math.round(casa.temperatura + casa.dif_alta);
 }
 
+// La línia de sota la temperatura d'«Ara»: la màxima i la mínima del dia i, si
+// n'hi ha, la comparació amb l'anterior (Juanjo, 23-11-2026: «en la tarjeta
+// del tiempo que sale al principio, se podría poner la max y minima de ese
+// dia?»). Les mateixes xifres que la columna del dia a la previsió de 7 dies
+// (diaDeLaPagina: el que ja s'ha mesurat, la lectura d'ara i la previsió de la
+// resta), i del mateix dia que la comparació: des de HORA_DEMA, les de demà.
+function liniaDia(casa, hores, mesurada, ara = new Date()) {
+  const dema = horaLocal(ara) >= HORA_DEMA;
+  const iso = sumaDies(ara, dema ? 1 : 0);
+  const lectura = !dema && casa && casa.hora && casa.hora.slice(0, 10) === iso ? tempAra(casa) : null;
+  const d = diaDeLaPagina(hores, mesurada, iso, ara, lectura);
+  const compara = comparaDia(hores, mesurada, ara);
+  if (!d && !compara) return null;
+  // Dos trossos sencers: si no caben en una línia, la comparació passa a la
+  // següent, sense el punt del davant (estil.css), i el dibuix del cel no
+  // s'encongeix.
+  const linia = element('p', 'ara-dia');
+  const trossos = element('span', 'ara-dia-trossos');
+  const extrems = element('span', 'tros');
+  extrems.append(`${dema ? T('Demà') : T('Avui')}:`);
+  if (d) {
+    extrems.append(' ', element('span', 'temp-max', `${T('màx')}.\u00a0${Math.round(d.max)}°`), ', ',
+      element('span', 'temp-min', `${T('mín')}.\u00a0${Math.round(d.min)}°`));
+  }
+  trossos.append(extrems);
+  if (compara) {
+    const tros = element('span', d ? 'tros amb-punt' : 'tros');
+    tros.append(etiquetaAlta(compara.relatiu, false, compara.explica));
+    trossos.append(tros);
+  }
+  linia.append(trossos);
+  return linia;
+}
+
 function blocAra(casa, radarDades, vent, veines, hores, mesurada, sol, lluna) {
   const sec = element('section', 'decisio targeta ara heroi');
   sec.setAttribute('aria-label', T`El temps avui a ${LLOC}`);
@@ -788,10 +825,10 @@ function blocAra(casa, radarDades, vent, veines, hores, mesurada, sol, lluna) {
   temp.append(termometre, `${zonaTriada() === 'alta' && dalt != null ? dalt : Math.round(casa.temperatura)} °C`);
   const columna = element('div', 'ara-temp-col');
   columna.append(temp);
-  // Si el dia és com l'anterior, a sota (comparaDia), també al costat del
-  // dibuix, perquè la targeta no creixi.
-  const compara = hores && comparaDia(hores, mesurada);
-  if (compara) columna.append(etiquetaAlta(compara.text, false, compara.explica));
+  // La màxima i la mínima del dia i si és com l'anterior, a sota (liniaDia),
+  // també al costat del dibuix, perquè la targeta no creixi.
+  const dia = hores && liniaDia(casa, hores, mesurada);
+  if (dia) columna.append(dia);
   fila.append(columna);
   sec.append(fila);
   // Plou si ha plogut en els últims 15 minuts a la xarxa del barri: l'estació

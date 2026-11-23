@@ -37,7 +37,23 @@ comparar.
   quedan, contra las mismas horas de ayer. Desde las 18 h (`HORA_DEMA`),
   cuando el resumen pasa a mañana, mañana contra hoy: «Demà, 3° menys que
   avui». Al pulsarla, una burbuja dice qué compara, como la de la parte alta
-  (`casa.comparaDia`). Con la línea nueva, la tarjeta se reduce en el móvil
+  (`casa.comparaDia`). Desde la 3.237.0 (Juanjo, 23-11-2026: «en la
+  tarjeta del tiempo que sale al principio, se podría poner la max y minima
+  de ese dia?»), la línea empieza por la máxima y la mínima del mismo día:
+  «Avui: màx. 16°, mín. 6° · 2° menys que ahir» (`casa.liniaDia`). Son las
+  cifras de la columna de ese día en la previsión de 7 días
+  (`diaDeLaPagina`, ADR 0122): lo medido desde las 0 h, la lectura de ahora y
+  la previsión del resto, así que a primera hora la mínima es la de la
+  madrugada ya medida. Desde las 18 h, las de mañana, como la comparación.
+  Sin la estación (la reserva), la máxima y la mínima solas, de la previsión.
+  En rojo y azul claros sobre el fondo oscuro. Los dos trozos («Avui: màx.…,
+  mín.…» y la comparación) van enteros: si no caben al lado del dibujo del
+  cielo, la comparación baja a otra línea, sin el punto delante, y el dibujo
+  no se encoge (en la primera prueba se encogía hasta desaparecer a 360 px).
+  En el móvil, de 320 a 412 px, son dos líneas y la tarjeta crece 18 px; en
+  un móvil de 393 × 755 la gráfica sigue cabiendo entera (acaba en el px 629
+  y la barra de pestañas empieza en el 690; medido el 23-11-2026 con los
+  datos de las 7:00). En tableta y escritorio, una línea. Con la línea nueva, la tarjeta se reduce en el móvil
   (letra de la frase, temperatura, dibujo y pastillas): en un móvil de 393 ×
   755 px pasa de 353 a 252 px de alto y la gráfica cabe entera sin desplazar
   (medido el 23-10-2026 con los datos de las 8:00). Para eso, las pastillas
