@@ -173,3 +173,16 @@ Sant Ramon - Ptge. Codonyers, Mare de Déu del Pilar - Pl. Sant Ramon». Los
 nombres van como los publica el AMB. Las paradas que no son de esas líneas
 no se dicen. Pruebas: `tests/test_busos.py`, `tests/test_bot.py` y
 `tests/test_web.py`.
+
+## Cambio del 23-11-2026 (3.238.3): el resumen de hoy dice también los avisos de otro día
+
+La línea de los autobuses del resumen de hoy solo contaba los avisos que
+empiezan antes de medianoche. El 23-11-2026 por la tarde decía «Busos del barri
+(CV1, CV4, CV5) sense incidències» mientras «Si surts» daba un desvío de la CV1
+a partir del día siguiente a las 9:00, y el revisor lo señaló como
+contradicción. Desde la 3.238.3, si hoy no hay ninguno pero sí los hay más
+adelante, la línea sigue en verde y dice «sense incidències avui» seguido de
+esos avisos, con su día y hora como en «Si surts» («…; CV1: Desviament
+provisional…, a partir del dimarts 24 a les 9:00»). Si hay alguno hoy, la
+línea queda como antes, en ámbar y solo con los de hoy. Prueba:
+`tests/test_bot.py` (`test_resum_amb_els_busos`).

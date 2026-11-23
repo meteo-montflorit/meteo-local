@@ -215,6 +215,14 @@ class Resum(unittest.TestCase):
         hm = lambda minuts: f"{(ara_n + dt.timedelta(minutes=minuts)).hour}:{(ara_n + dt.timedelta(minutes=minuts)).minute:02d}"  # noqa: E731
         self.assertIn(f"🟠 Busos del barri: CV4: Desviament &lt;provisional&gt;, a partir de les {hm(120)}.\n", B.resum(d, "ca", ARA))
         self.assertIn(f"🟠 Autobuses del barrio: CV4: Desvío provisional, a partir de las {hm(120)}.", B.resum(d, "es", ARA))
+        # Només la de demà: avui no n'hi ha, però no es pot dir «sense incidències» a seques
+        # quan «Si surts» la dona (revisor, 23-11-2026).
+        d["busos"]["incidencies"] = d["busos"]["incidencies"][1:]
+        r = B.resum(d, "ca", ARA)
+        self.assertIn("🟢 Busos del barri (CV1, CV4, CV5) sense incidències avui; CV5: Demà, a partir del ", r)
+        self.assertNotIn("Ja acabada", r)
+        self.assertIn("🟢 Autobuses del barrio (CV1, CV4, CV5) sin incidencias hoy; CV5: Demà, a partir del ",
+                      B.resum(d, "es", ARA))
         # Sense els avisos de l'AMB no es pot dir que no n'hi hagi; sense dades, tampoc.
         d["busos"]["incidencies"] = []
         d["errors"] = ["busos: avisos: timeout"]

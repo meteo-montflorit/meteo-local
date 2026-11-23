@@ -1334,19 +1334,28 @@ def text_busos_resum(dades, idioma, moment):
                 else f"{cap}: ara mateix no hi ha dades de l'AMB.")
     des = moment.astimezone(ZONA).replace(tzinfo=None)
     mitjanit = des.replace(hour=23, minute=59, second=59)
-    incs = [inc for inc in busos.get("incidencies") or []
-            if not (inc.get("fi") and hora_local(inc["fi"]) < des)
-            and not (inc.get("inici") and hora_local(inc["inici"]) > mitjanit)]
+    vigents = [inc for inc in busos.get("incidencies") or []
+               if not (inc.get("fi") and hora_local(inc["fi"]) < des)]
+    incs = [inc for inc in vigents if not (inc.get("inici") and hora_local(inc["inici"]) > mitjanit)]
+
+    def parts(llista):
+        return "; ".join(html.escape(
+            f"{', '.join(inc.get('linies') or [])}: "
+            f"{((inc.get('titol') or {}).get(idioma) or (inc.get('titol') or {}).get('ca') or '').strip().rstrip('.')}"
+            f"{quan_incidencia_bus(inc, des, idioma)}", quote=False) for inc in llista)
+
     if not incs:
         linies = ", ".join(l["linia"] for l in busos["linies"])
+        # Les que comencen després d'avui també surten, amb el dia: «Si surts» i
+        # «Consultes › Busos» les donen, i un «sense incidències» a seques ho
+        # contradeia (revisor, 23-11-2026: un desviament de la CV1 l'endemà a les 9:00).
+        futures = [inc for inc in vigents if inc not in incs]
+        if futures:
+            return (f"{CERCLE['baix']} {cap} ({linies}) sin incidencias hoy; {parts(futures)}." if es
+                    else f"{CERCLE['baix']} {cap} ({linies}) sense incidències avui; {parts(futures)}.")
         return (f"{CERCLE['baix']} {cap} ({linies}) sin incidencias." if es
                 else f"{CERCLE['baix']} {cap} ({linies}) sense incidències.")
-    parts = []
-    for inc in incs:
-        titol = ((inc.get("titol") or {}).get(idioma) or (inc.get("titol") or {}).get("ca") or "").strip().rstrip(".")
-        parts.append(html.escape(f"{', '.join(inc.get('linies') or [])}: {titol}{quan_incidencia_bus(inc, des, idioma)}",
-                                 quote=False))
-    return f"{CERCLE['alt']} {cap}: " + "; ".join(parts) + "."
+    return f"{CERCLE['alt']} {cap}: {parts(incs)}."
 
 
 def linia_incidencia_bus(inc, des, idioma):

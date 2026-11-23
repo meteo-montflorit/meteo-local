@@ -130,6 +130,10 @@ inclúyelas si son reales, explicando por qué.
   no han acabado, también los que empiezan más tarde («…a partir de les
   19:30»). Si difieren, es un error (corregido en la 3.231.0). Uno que ya ha
   acabado no sale en ninguno: no es un error.
+  La línea de los autobuses del resumen de hoy («Consultes» y bot) da en
+  ámbar solo los de hoy; si hoy no hay ninguno, dice «sense incidències avui»
+  y añade los de días siguientes (desde la 3.238.3). Que el resumen no
+  mencione uno de otro día cuando sí hay alguno hoy no es un error.
 - El aviso propio mira las próximas 24 horas, pero cada tramo de viento o de
   temperatura se mide entero (hasta donde deja de pasar el umbral), aunque
   acabe después de esa ventana. Su ficha en «Perill» dice «Previst · Comença…»
