@@ -276,6 +276,13 @@ h1 { margin: 0; font-size: 1.6rem; line-height: 1.2; }
   border: 1px solid var(--compte);
 }
 
+/* Les fonts que fallen, plegades i discretes (comu.js, pintaAvisDades;
+   23-11-2026); dins el quadre groc si a més l'actualització no s'ha fet. */
+.avis-fonts { margin: .5rem 0 0; font-size: .9rem; color: var(--suau); }
+.plec-fonts > summary { cursor: pointer; width: fit-content; }
+.plec-fonts > p { margin: .35rem 0 0; color: var(--text); }
+.avis > p { margin: 0; }
+.avis .plec-fonts { margin-top: .4rem; font-size: .9rem; }
 .carregant { color: var(--suau); }
 
 .com {

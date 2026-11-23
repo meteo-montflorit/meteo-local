@@ -741,6 +741,9 @@ var IDIOMA = {
     "no es pot calcular quan pararà de ploure": "no se puede calcular cuándo dejará de llover",
     "la resta de la previsió és al dia": "el resto de la previsión está al día",
     "no han arribat els avisos de l’AEMET": "no han llegado los avisos de la AEMET",
+    // L'avís de les fonts, plegat (23-11-2026).
+    "Una font de dades no està disponible": "Una fuente de datos no está disponible",
+    "{0} fonts de dades no estan disponibles": "{0} fuentes de datos no están disponibles",
     "no arriben els avisos de l’AEMET": "no llegan los avisos de la AEMET",
     "els de Meteocat, sí": "los de Meteocat, sí",
     "no han arribat els plans de Protecció Civil": "no han llegado los planes de Protección Civil",

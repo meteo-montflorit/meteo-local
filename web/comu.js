@@ -536,11 +536,35 @@ function pintaHorari(dades, fonts = FONTS_TEMPS) {
   $('horari').replaceChildren(linia, sentit);
   // Calculades fora de casa perquè el servidor habitual no publica (ADR 0032).
   if (dades.reserva) linia.append(' ', element('span', 'reserva', T('Dades del servidor de reserva.')));
-  const avisos = [];
-  if (fallida) avisos.push(T`L’actualització de les ${horaCurta(fallida)} no s’ha fet: les dades són de les ${horaCurta(generat)}.`);
-  avisos.push(...avisosFonts(dades, fonts));
-  $('avis-dades').textContent = avisos.join(' ');
-  $('avis-dades').hidden = !avisos.length;
+  pintaAvisDades(fallida && T`L’actualització de les ${horaCurta(fallida)} no s’ha fet: les dades són de les ${horaCurta(generat)}.`,
+    avisosFonts(dades, fonts));
+}
+
+// L'avís de dades: l'actualització que no s'ha fet, a la vista, perquè tota
+// la pàgina és vella; les fonts que fallen, plegades en una línia discreta
+// que diu quantes n'hi ha i, en obrir-la, què falla i què deixa de sortir
+// (Juanjo, 23-11-2026: el quadre groc «es demasiado evidente y probablemente
+// no interese demasiado»). Obert o tancat com l'ha deixat la persona mentre
+// el text no canviï.
+let PLEC_FONTS = null;   // {empremta, obert}
+function pintaAvisDades(fallida, fonts) {
+  const caixa = $('avis-dades');
+  const fills = [];
+  if (fallida) fills.push(element('p', null, fallida));
+  if (fonts.length) {
+    const empremta = fonts.join('\n');
+    const plec = element('details', 'plec-fonts');
+    plec.append(element('summary', null, fonts.length === 1 ? T('Una font de dades no està disponible')
+      : T`${fonts.length} fonts de dades no estan disponibles`), ...fonts.map((t) => element('p', null, t)));
+    plec.open = Boolean(PLEC_FONTS && PLEC_FONTS.empremta === empremta && PLEC_FONTS.obert);
+    plec.addEventListener('toggle', () => { PLEC_FONTS = { empremta, obert: plec.open }; });
+    fills.push(plec);
+  }
+  caixa.replaceChildren(...fills);
+  // El quadre groc, només si l'actualització no s'ha fet.
+  caixa.classList.toggle('avis', Boolean(fallida));
+  caixa.classList.toggle('avis-fonts', !fallida);
+  caixa.hidden = !fills.length;
 }
 
 // La pàgina oberta es posa al dia sola: torna a llegir les dades després de

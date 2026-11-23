@@ -119,3 +119,24 @@ estuvo dos días «sense dades» (ADR 0079). Desde la 3.204.0:
 Una fuente nueva que se añada a la lista de una página lleva también su texto
 en `TEXT_FONT_FALLA` y en `fonts_falla.QUE`. Validación:
 `tests/test_fonts_falla.py` y `test_cada_pagina_avisa_de_les_seves_fonts`.
+
+## Cambio del 23-11-2026 (3.236.0): las fuentes caídas, plegadas
+
+El recuadro amarillo con el texto entero de cada fuente caída salía bajo la
+hora de actualización y llamaba más la atención de lo que interesa a la
+mayoría (Juanjo: «este aviso es demasiado evidente y probablemente no
+interese demasiado»). Desde la 3.236.0 (`pintaAvisDades` en `web/comu.js`):
+
+- **Las fuentes caídas, en una línea discreta y plegada**: «Una font de dades
+  no està disponible» (o «N fonts de dades no estan disponibles»), en gris y
+  sin recuadro. Al pulsarla sale el mismo texto de antes. Si se abre, sigue
+  abierta cuando la página se pone al día sola, mientras el texto no cambie.
+- **La actualización que no se ha hecho sigue en el recuadro amarillo**,
+  porque entonces toda la página es vieja; si además falla una fuente, su
+  línea plegada va dentro del recuadro.
+
+`#avis-dades` pasa de `<p>` a `<div>` en las cuatro páginas que lo pintan
+(portada, «Si surts», «Riera» y «Consultes»). Validación: las pruebas de
+`avisosFonts` no cambian; `probar-web` en Chromium, Firefox y WebKit, en
+escritorio, móvil y tableta, claro y oscuro, con la línea plegada y abierta;
+axe-core sin incidencias.
