@@ -740,17 +740,29 @@ function botoZona() {
     b.title = descripcio;
     b.setAttribute('aria-label', nom);
     b.append(icona(id));
+    b.dataset.nom = nom;
+    b.dataset.descripcio = descripcio;
     return b;
   });
+  // En prémer-lo, què és la zona que queda triada, al centre de la pantalla
+  // (missatgeFlotant; Juanjo, 23-11-2026).
+  const explica = () => {
+    const b = opcions.find((x) => x.dataset.zona === zonaTriada());
+    if (b) missatgeFlotant(b.dataset.nom, b.dataset.descripcio);
+  };
   const marca = () => opcions.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.zona === zonaTriada())));
   for (const b of opcions) {
     b.addEventListener('click', () => {
       const altra = opcions.find((x) => x !== b);
       const zona = getComputedStyle(altra).display === 'none' ? altra.dataset.zona : b.dataset.zona;
-      if (zona === zonaTriada()) return;
+      if (zona === zonaTriada()) {
+        explica();
+        return;
+      }
       triaZona(zona);
       marca();
       if (DADES_AVISOS && !dadesVelles(DADES_AVISOS)) pinta(DADES_AVISOS);
+      explica();
     });
   }
   marca();

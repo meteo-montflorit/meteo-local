@@ -177,6 +177,15 @@ h1 { margin: 0; font-size: 1.6rem; line-height: 1.2; }
 /* El botó doble de la zona del barri (casa.botoZona, ADR 0123): la riera i
    la part alta, units, amb la triada com la pestanya activa. Al mòbil estret
    només la triada, de la mida dels altres: tocar-la passa a l'altra. */
+/* El missatge del centre de la pantalla (comu.missatgeFlotant): apareix i
+   s'esvaeix sol, sense tapar res. */
+.missatge-flotant { position: fixed; left: 50%; top: 50%; z-index: 1000; transform: translate(-50%, -50%) scale(.96);
+  display: flex; flex-direction: column; gap: .2rem; width: max-content; max-width: min(22rem, calc(100vw - 2rem));
+  padding: .8rem 1.1rem; border-radius: .9rem; background: var(--text); color: var(--fons); text-align: center;
+  line-height: 1.35; box-shadow: 0 8px 28px rgb(0 0 0 / .28); opacity: 0; pointer-events: none;
+  transition: opacity .25s, transform .25s; }
+.missatge-flotant.visible { opacity: 1; transform: translate(-50%, -50%); }
+@media (prefers-reduced-motion: reduce) { .missatge-flotant { transform: translate(-50%, -50%); transition: opacity .25s; } }
 .boto-zona { display: flex; flex: none; }
 .boto-zona .boto-icona { width: 2.25rem; }
 .boto-zona .boto-icona:first-child { border-radius: .5rem 0 0 .5rem; }

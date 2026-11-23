@@ -30,6 +30,14 @@ Versión 3.191.0.
   botones). En pantallas de menos de 23,4 rem (unos 375 px), donde no cabe
   junto al título, solo la elegida, del tamaño de los demás botones, y tocarla
   pasa a la otra (medido: a 360 px quedaban 72 px y hacen falta unos 80).
+  Desde la 3.238.0, al pulsarlo, un mensaje en el centro de la pantalla dice
+  qué zona queda elegida, con su nombre y su descripción, y se desvanece solo
+  a los 3 segundos, sin tapar nada que se pueda pulsar
+  (`comu.missatgeFlotant`): en el móvil no hay ratón y la pulsación larga no
+  la conoce nadie (Juanjo, 23-11-2026: «en movil es casi imposible saber qué
+  es esto»). Pulsar la que ya está elegida también lo enseña. Probado en
+  Chromium, Firefox y WebKit, en móvil de 412 y de 360 px y en escritorio,
+  con tema claro y oscuro.
 - **Por defecto, la riera**: la de la estación. La elección se recuerda en el
   dispositivo (`meteo.zona`); la primera vez, la que cada uno tenía en
   «Opcions» de la gráfica, para que nadie tenga que volver a elegirla.
