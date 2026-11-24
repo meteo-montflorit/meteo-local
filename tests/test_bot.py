@@ -1462,6 +1462,36 @@ class FitxesDelRevisor(unittest.TestCase):
         import hora as HR
         self.assertEqual(HR.utc(estat["oficials"]["smp"]["pausa"]), HR.utc("2026-10-20T05:15+02:00"))
 
+    def test_meteocat_amb_un_estat_vell_no_continua_l_episodi_d_abans(self):
+        # Revisor, 24-11-2026: la reserva d'IONOS, aturada el 19-11 a mig avís de vent, el 24-11 va
+        # dir «actualització, avisa també de perill per pluja» amb la clau de l'episodi del 19 i va
+        # obrir una segona fitxa del mateix avís que ja havia avisat el NAS.
+        pluja = {"meteor": "Intensitat de pluja en 30 minuts", "tipus": "previsio", "llindar": None, "perill": 1,
+                 "emissio": "2026-11-24T10:00Z", "dies": {"2026-11-24": [(19, 24)]}}
+        ara = dt.datetime.fromisoformat("2026-11-24T12:25:00+01:00")
+        vell = {"episodi": "meteocat:2026-11-19T02:10Z",
+                "fenomens": {"vent": {"rang": 1, "hores": ["2026-11-19T03:00Z"], "vist": "2026-11-19T04:00Z"}}}
+        # Sense cap fitxa oberta de l'altra màquina: un episodi nou, i el vell es tanca sense missatge.
+        estat = {"oficials": {"smp": json.loads(json.dumps(vell))}}
+        nous = AB.decideix(estat, {"smp": {"avisos": [pluja]}}, ara)
+        self.assertEqual([a.get("silenci", False) for a in nous], [True, False])
+        self.assertEqual(nous[0]["episodi"], vell["episodi"])
+        self.assertIn("avís de perill moderat per pluja", nous[1]["ca"])
+        self.assertNotIn("actualització", nous[1]["ca"])
+        self.assertEqual(estat["oficials"]["smp"]["episodi"], "meteocat:2026-11-24T11:25Z")
+        # Amb la fitxa oberta de l'altra màquina a l'historial publicat: es pren aquella, sense avisar.
+        oberta = {"clau": "meteocat:2026-11-23T17:15Z", "tipus": "perill", "inici": "2026-11-23T17:15Z",
+                  "nivell": "mig", "ca": "x", "es": "x"}
+        estat = {"oficials": {"smp": json.loads(json.dumps(vell))}}
+        self.assertEqual(AB.decideix(estat, {"smp": {"avisos": [pluja]}}, ara, [oberta]), [])
+        self.assertEqual(estat["oficials"]["smp"]["episodi"], oberta["clau"])
+        self.assertEqual(AB.decideix(estat, {"smp": {"avisos": [pluja]}}, ara + dt.timedelta(minutes=15), [oberta]), [])
+        # Un estat viu no es toca encara que l'historial publicat en tingui una altra d'oberta.
+        estat = {"oficials": {"smp": {"episodi": "meteocat:2026-11-24T11:00Z", "fenomens": {
+            "pluja": {"rang": 1, "hores": ["2026-11-24T18:00Z"], "vist": "2026-11-24T11:15Z"}}}}}
+        AB.decideix(estat, {"smp": {"avisos": [pluja]}}, ara, [oberta])
+        self.assertEqual(estat["oficials"]["smp"]["episodi"], "meteocat:2026-11-24T11:00Z")
+
     def test_dos_avisos_de_l_aemet_amb_la_mateixa_clau(self):
         # Revisor, 19-10-2026 19:58: pluja de 40 mm/1 h (19-23:59, la cobreix Meteocat) i de 80 mm/12 h
         # (19-8:59, visible de 6 a 9) amb la mateixa clau: guanyava el darrer i la fitxa es tancava

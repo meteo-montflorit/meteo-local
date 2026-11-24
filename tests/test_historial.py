@@ -65,6 +65,19 @@ class Historial(unittest.TestCase):
         estat["oficials"]["smp"].pop("pausa")
         self.assertNotIn("en_pausa", AB.historial(estat, [], ARA + dt.timedelta(minutes=45))[0])
 
+    def test_una_sola_fitxa_oberta_de_meteocat(self):
+        # Revisor, 24-11-2026: dues fitxes obertes del mateix avís de Meteocat, una de la reserva
+        # d'IONOS amb la clau d'un episodi vell, amb hores diferents. Es tanca la que no és d'ara.
+        ep, altra = "meteocat:2026-11-23T17:15Z", "meteocat:2026-11-19T02:10Z"
+        fitxa = lambda k, inici: {"clau": k, "tipus": "perill", "inici": inici, "nivell": "mig",
+                                  "ca": "🟡 Meteocat\nPluja.", "es": "x"}
+        estat = {"historial": [fitxa(ep, "2026-11-23T17:15Z"), fitxa(altra, "2026-11-24T11:25Z")],
+                 "oficials": {"smp": {"episodi": ep, "fenomens": {}}}}
+        h = {e["clau"]: e for e in AB.historial(estat, [], ARA)}
+        self.assertNotIn("fi", h[ep])
+        self.assertEqual((h[altra]["fi_ca"], h[altra]["fi_es"]), (AB.DUPLICAT["ca"], AB.DUPLICAT["es"]))
+        self.assertEqual(h[altra]["substituit_per"], {"clau": ep, "inici": "2026-11-23T17:15Z"})
+
     def test_l_aemet_avanca_l_inici_si_meteocat_ja_no_el_cobreix(self):
         # Revisor, 20-10-2026: «Previst · Comença a les 6 h» a les 5:40, amb Meteocat ja retirat.
         k = "aemet:pluja:2026-10-20T00:00:00+02:00"

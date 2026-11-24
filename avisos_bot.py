@@ -648,11 +648,21 @@ def decideix_smp(abans, avisos, ahora):
     entre dos emisiones no avise dos veces."""
     hora = H.clau(ahora)
     e = {"episodi": (abans or {}).get("episodi"), "fenomens": dict((abans or {}).get("fenomens") or {})}
-    nou_episodi = not e["fenomens"]
     canvis = []
     per_f = {}
     for a in avisos:
         per_f.setdefault(fenomen(a), []).append(a)
+    # Un estat vell, que fa més de SMP_FI_MIN minuts que no veu res del que
+    # porta, és un episodi acabat, encara que ningú no l'hagi tancat: la
+    # reserva d'IONOS, aturada el 19-11 a mig avís de vent, el 24-11 va prendre
+    # la pluja d'aquell dia per «actualització, avisa també» de l'episodi del
+    # 19 i va obrir una segona fitxa (revisor, 24-11-2026).
+    caducat = bool(e["fenomens"]) and all(
+        f not in per_f and ahora - H.llegeix(v["vist"]) >= dt.timedelta(minutes=C.SMP_FI_MIN)
+        for f, v in e["fenomens"].items())
+    if caducat and per_f:
+        e["fenomens"] = {}
+    nou_episodi = not e["fenomens"]
     for f, llista in per_f.items():
         rang_ara = max(RANG_SMP[SMP.nivell(a["perill"])] for a in llista)
         hores = set().union(*(hores_smp(a) for a in llista))
@@ -670,11 +680,32 @@ def decideix_smp(abans, avisos, ahora):
     for f, v in list(e["fenomens"].items()):
         if f not in per_f and ahora - H.llegeix(v["vist"]) >= dt.timedelta(minutes=C.SMP_FI_MIN):
             del e["fenomens"][f]
-    acabat = bool(abans and abans.get("fenomens")) and not e["fenomens"]
+    acabat = bool(abans and abans.get("fenomens")) and (not e["fenomens"] or (caducat and bool(per_f)))
     if nou_episodi and canvis:
         e["episodi"] = f"meteocat:{hora}"
     canvis.sort(key=lambda c: PRIORITAT.index(c[0]))
     return e, canvis, acabat
+
+
+def adopta_smp(abans, avisos, publicat, ahora):
+    """L'estat de Meteocat de l'altra màquina, si el d'aquesta és vell. El NAS i
+    la reserva d'IONOS porten estats separats: la que torna a calcular després
+    de dies parada no sap res de l'episodi que l'altra ha obert mentrestant, i
+    n'obria un altre per al mateix avís (revisor, 24-11-2026). Si l'historial
+    publicat té una fitxa de Meteocat oberta que no és la d'aquest estat, i
+    aquest no ha vist res en SMP_FI_MIN minuts, es pren aquella fitxa com a
+    episodi, amb el que Meteocat diu ara com a ja avisat: l'altra ho va avisar."""
+    if not avisos:
+        return abans
+    fenomens = (abans or {}).get("fenomens") or {}
+    if any(ahora - H.llegeix(v["vist"]) < dt.timedelta(minutes=C.SMP_FI_MIN) for v in fenomens.values()):
+        return abans
+    oberta = next((x for x in reversed(publicat or []) if x["clau"].startswith("meteocat:") and not x.get("fi")
+                   and x["clau"] != (abans or {}).get("episodi")), None)
+    if oberta is None:
+        return abans
+    e, _, _ = decideix_smp(None, avisos, ahora)
+    return {"episodi": oberta["clau"], "fenomens": e["fenomens"]}
 
 
 def text_pla(p, acabat=False):
@@ -732,9 +763,11 @@ def aemet_per_clau(avisos):
     return res
 
 
-def decideix(estat, salida, ahora):
+def decideix(estat, salida, ahora, publicat=None):
     """Pone al día el estado y devuelve los avisos nuevos:
-    [{id, tipus, nivell, ca, es, hora}]."""
+    [{id, tipus, nivell, ca, es, hora}]. publicat: el historial del último
+    avisos.json publicado (anterior_publicat), por si lo calculó la otra
+    máquina (adopta_smp)."""
     nous = []
     hora = H.clau(ahora)
 
@@ -918,6 +951,8 @@ def decideix(estat, salida, ahora):
         avisos_smp = SMP.pendents(salida["smp"].get("avisos") or [], ahora)
         abans = (of or {}).get("smp")
         abans = abans if isinstance(abans, dict) and "fenomens" in abans else None
+        if of is not None and "smp" in of:
+            abans = adopta_smp(abans, avisos_smp, publicat, ahora)
         e_smp, canvis, acabat = decideix_smp(abans, avisos_smp, ahora)
         # Si Meteocat ja no en mostra cap, la fitxa espera SMP_FI_MIN minuts a
         # tancar-se (el relleu entre emissions), però ja no és activa: «Perill»
@@ -928,6 +963,11 @@ def decideix(estat, salida, ahora):
             e_smp["pausa"] = darrer
         if of is not None and "smp" in of:
             if canvis:
+                if acabat:
+                    # L'episodi d'abans era vell (decideix_smp): es tanca a
+                    # l'historial, sense missatge, i en comença un de nou.
+                    afegeix("perill", f"meteocat:{hora}:fi", text_meteocat_fi(), "fi", episodi=abans["episodi"],
+                            silenci=True)
                 canvi, f = canvis[0]
                 rang_max = max(a["perill"] for a in avisos_smp)
                 afegeix("perill", f"meteocat:{hora}:{canvi}:{f}", text_meteocat(canvi, f, avisos_smp),
@@ -1040,6 +1080,8 @@ FORA_ZONA = {"ca": "Segons Bombers continua actiu, però és fora de la zona que
                    "(el parque de Collserola hasta 5 km del barrio y cualquier sitio hasta 2 km)."}
 SUBSTITUIT = {"ca": "Meteocat en té avís per al Vallès Occidental: ara es mostra el seu.",
               "es": "Meteocat tiene aviso para el Vallès Occidental: ahora se muestra el suyo."}
+DUPLICAT = {"ca": "Era el mateix avís de Meteocat que una altra fitxa, la que continua.",
+            "es": "Era el mismo aviso de Meteocat que otra ficha, la que sigue."}
 INCLOS = {"ca": "L'AEMET l'ha inclòs en un altre avís seu, que continua actiu.",
           "es": "La AEMET lo ha incluido en otro aviso suyo, que sigue activo."}
 RETIRAT = {"ca": "L'AEMET l'ha retirat abans d'hora.",
@@ -1256,6 +1298,15 @@ def historial(estat, nous, ahora, anterior=None):
         mc.update(ca=ara_smp["ca"], es=ara_smp["es"], escrit=H.clau(ahora))
     if mc and ara_smp and not mc.get("fi") and ara_smp.get("comenca"):
         mc["comenca"] = ara_smp["comenca"]
+    # Un sol avís de Meteocat per a la comarca, una sola fitxa oberta: si n'hi
+    # ha una altra (la d'un estat vell de l'altra màquina, adopta_smp), es
+    # tanca dient que continua en la de l'episodi d'ara (revisor, 24-11-2026:
+    # dues fitxes del mateix avís, amb hores diferents).
+    if mc and not mc.get("fi"):
+        for e in h:
+            if e is not mc and e["clau"].startswith("meteocat:") and not e.get("fi"):
+                e.update(fi=H.clau(ahora), fi_ca=DUPLICAT["ca"], fi_es=DUPLICAT["es"],
+                         substituit_per={"clau": mc["clau"], "inici": mc["inici"]})
     if mc and not mc.get("fi") and smp_estat.get("pausa"):
         mc.setdefault("en_pausa", smp_estat["pausa"])
     elif mc:
@@ -1578,13 +1629,14 @@ def actualitza(casa_json, sortida, ahora=None, anterior=None, avisa=True):
             estat = H.interna(json.load(f))
     except (OSError, ValueError):
         estat = {}
-    nous = decideix(estat, salida, ahora)
+    publicat = anterior_publicat(anterior)
+    nous = decideix(estat, salida, ahora, publicat)
     # Los avisos de las últimas CONSERVA_H horas: el bot reparte los que no ha
     # mandado aún.
     limit = ahora - dt.timedelta(hours=CONSERVA_H)
     llista = [a for a in estat.get("llista", []) if H.llegeix(a["hora"]) > limit] + [a for a in nous if not a.get("silenci")]
     estat["llista"] = llista
-    hist = comunicats(historial(estat, nous, ahora, anterior_publicat(anterior)), salida.get("plans"))
+    hist = comunicats(historial(estat, nous, ahora, publicat), salida.get("plans"))
     hist = prealertes(estat, salida, hist, ahora)
     # Lo acabado hace tiempo, al archivo de su año (ADR 0124): no se pierde y
     # avisos.json, que descarga cada página, no crece.

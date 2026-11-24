@@ -166,3 +166,32 @@ Los mensajes ya enviados no se tocan: son lo que se envió. Validación:
 ficha el domingo solo con el lunes y en amarillo, ningún mensaje, y el final
 al acabar el lunes); la lectura real de Meteocat del 18-10 a las 6:40, que
 deja solo el amarillo del lunes; la ficha vista en Chromium y Firefox.
+
+## Un estado viejo no continúa el episodio de antes (24-11-2026, 3.239.4)
+
+El NAS y la reserva de IONOS llevan cada uno su estado de Meteocat
+(`oficials.smp` en `bot-avisos.json`). La reserva se paró el 19-11 a media
+avisada de viento, con su episodio sin cerrar; el 24-11, al cubrir unos
+minutos al NAS, tomó la lluvia de ese día por «actualització, avisa també de
+perill moderat per pluja» del episodio del 19 y abrió con esa clave una
+segunda ficha del mismo aviso que el NAS ya tenía abierta desde el 23. El NAS
+la recogió del historial publicado (`fusiona`) y «Perill» mostró dos fichas
+de un solo aviso, que al recortarse las horas acabaron diciendo horas
+distintas (revisor, 24-11-2026).
+
+- **Un estado viejo es un episodio acabado** (`decideix_smp`): si ninguno de
+  sus fenómenos se ha visto en `SMP_FI_MIN` minutos y Meteocat trae avisos,
+  empieza un episodio nuevo («avís de perill…», no «actualització») y el
+  viejo se cierra en el historial sin mensaje.
+- **Se adopta el episodio de la otra máquina** (`adopta_smp`): si además el
+  historial publicado tiene una ficha de Meteocat abierta que no es la de
+  este estado, se toma esa ficha como episodio y lo que Meteocat dice ahora
+  como ya avisado: la otra máquina lo avisó. No se manda nada.
+- **Una sola ficha abierta de Meteocat** (`historial`): si aun así hay otra,
+  se cierra con «Era el mateix avís de Meteocat que una altra fitxa» y el
+  enlace a la del episodio actual. Esto cierra también la duplicada del 24-11.
+
+Validación: `tests/test_bot.py` (estado del 19-11 con la lluvia del 24-11, con
+y sin ficha abierta publicada, y un estado vivo que no se toca) y
+`tests/test_historial.py` (dos fichas abiertas); el estado real del NAS del
+24-11 pasado por `historial` deja abierta solo la del 23-11.
