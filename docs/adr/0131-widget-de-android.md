@@ -1,6 +1,6 @@
 # 131. Widget de Android con la tarjeta de «Ara»
 
-Fecha: 2026-11-24 · Estado: aceptado (la parte de los datos, publicada; la app 1.1.0, pendiente de probar en un móvil y de enviarla a Google Play)
+Fecha: 2026-11-24 · Estado: aceptado (la parte de los datos, publicada; la app 1.1.0, en la prueba interna de Google Play desde el 24-11-2026 a las 9:58, pendiente de probarla en el móvil de Juanjo y de enviarla a producción)
 
 ## Contexto
 
