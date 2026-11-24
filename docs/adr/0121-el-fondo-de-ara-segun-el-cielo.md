@@ -148,3 +148,28 @@ y gris claro con texto oscuro. Juanjo eligió la tercera («Ok, c»).
 - Se distingue de «nuboso» (gris perla azulado con nubes blancas) por ser gris
   plano y sin nubes dibujadas.
 
+
+## Cambio del 24-11-2026 (3.239.3): la tarjeta ancha aprovecha el espacio
+
+Juanjo, tras rehacer el widget de Android de 4×2 (ADR 0131): «sobre todo en la
+web la tarjeta se ve muy vacía», con una captura del ordenador. Allí la
+tarjeta mide unos 930 px de ancho y el dibujo del cielo seguía con su ancho
+fijo de 9,5 rem, con el sol y la Luna debajo: todo el centro quedaba vacío.
+Aprobó la propuesta del agente («sí, hazlo»).
+
+- Cuando la tarjeta mide 44 rem de ancho o más (ordenador y tableta, con una
+  consulta de contenedor sobre la tarjeta), el dibujo crece con ella (de 9,5 a
+  12 rem, el 24 % de su ancho) y la hora del sol y la fase de la Luna pasan a
+  su izquierda, alineadas a la derecha y a la altura de la temperatura, donde
+  estaba el hueco. El margen transparente del dibujo se compensa con márgenes
+  negativos proporcionales a su tamaño, así que la tarjeta no crece: en el
+  ordenador queda incluso 12 px más baja.
+- Por debajo de 44 rem (el móvil), como antes: el sol y la Luna, debajo del
+  dibujo.
+- Los colores no cambian (el texto suave del cielo, `--heroi-suau`).
+
+Validación: con los datos publicados, Chromium, Firefox y WebKit, a 1280, 820,
+390 y 340 px, en catalán y castellano, con los cielos cubierto al alba,
+despejado, alba despejada, noche y tormenta, y con el dibujo del sol (el más
+grande, que no se sale de la tarjeta). Sin errores ni desbordamiento; axe-core
+sin incidencias en claro y oscuro, en el ordenador y el móvil.

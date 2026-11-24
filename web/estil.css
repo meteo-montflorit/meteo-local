@@ -1685,6 +1685,22 @@ button[title], a[title], label[title], [role="button"][title] { -webkit-touch-ca
 .heroi-lluna a { color: inherit; text-decoration: none; }
 .heroi-lluna a:hover, .heroi-lluna a:focus-visible { text-decoration: underline; }
 @media (max-width: 40rem) { .heroi-cel-bloc { width: 7.4rem; margin: -1.6rem -.3rem -.8rem auto; } }
+/* A la targeta ampla (ordinador i tauleta), el dibuix creix amb la targeta i
+   l'hora del sol i la Lluna van al seu costat, a l'altura de la temperatura,
+   on hi havia el buit (Juanjo, 24-11-2026: «sobre todo en la web la tarjeta se
+   ve muy vacía»; ADR 0121). La targeta no s'allarga: el dibuix porta molt de
+   marge transparent, que es menja amb els marges negatius, proporcionals a la
+   seva mida. A la targeta estreta (el mòbil), com abans. */
+.targeta.ara.heroi { container-type: inline-size; }
+@container (min-width: 44rem) {
+  .heroi-cel-bloc { --cel: clamp(9.5rem, 24cqi, 12rem); flex-direction: row-reverse; align-items: center; gap: .6rem;
+    width: auto; max-width: none; margin: calc(var(--cel) * -.22) -.6rem calc(var(--cel) * -.2) auto; }
+  .heroi-cel { width: var(--cel); }
+  .heroi-cel-bloc.amb-sota .heroi-cel { transform: none; }
+  .heroi-sota, .heroi-sota:has(.heroi-sol:not([hidden]) + .heroi-lluna) { align-self: center; min-width: 0; max-width: 15rem;
+    margin: 0; padding: 0; font-size: 1rem; line-height: 1.4; text-align: right; }
+  .heroi-sol, .heroi-lluna { white-space: normal; text-wrap: balance; }
+}
 /* La part alta, a sota de la temperatura, com a text, sense color (Juanjo,
    22-10-2026); en prémer-la, què vol dir, com a tot arreu. */
 .ara-temp-col { display: flex; flex-direction: column; align-items: flex-start; gap: .15rem; flex: none; }
