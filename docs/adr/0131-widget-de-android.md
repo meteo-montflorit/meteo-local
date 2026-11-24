@@ -1,6 +1,6 @@
 # 131. Widget de Android con la tarjeta de «Ara»
 
-Fecha: 2026-11-24 · Estado: aceptado (la parte de los datos, publicada; la app 1.1.0, probada por Juanjo en su móvil desde la prueba interna; la 1.1.1, con la gota de la lluvia, enviada a revisión de Google para producción el 24-11-2026 a las 10:50)
+Fecha: 2026-11-24 · Estado: aceptado (la parte de los datos, publicada; la app 1.1.0, probada por Juanjo en su móvil desde la prueba interna; la 1.1.1, con la gota de la lluvia, enviada a revisión de Google para producción el 24-11-2026 a las 10:50; la 1.1.2, con el 4×2 rehecho, compilada y probada en el emulador, pendiente de subir a Play)
 
 ## Contexto
 
@@ -102,6 +102,46 @@ lluvia, nada. En la mediana, entre la temperatura y el dibujo; en la pequeña,
 debajo de la máxima y la mínima, y en la de una fila, como tercera línea si
 mide 70 dp de alto o más. La gota es «droplet» de Lucide, en el azul de la
 mínima de cada cielo. La app pasa a la 1.1.1.
+
+## Cambio del 24-11-2026 (tarde): el 4×2 aprovecha el espacio
+
+Juanjo, con el 4×2 en su móvil (la 1.1.0): «hay mucho espacio vacío en la
+tarjeta. La nube es diminuta y cabría perfectamente lo de la lluvia y la
+luna si el espacio estuviese mejor aprovechado; solo sale completo y le
+añado una fila más». App 1.1.2 (código 4).
+
+- **La nube era diminuta por el dibujo**: los de Meteocons llevan mucho margen
+  transparente (la nube ocupa el 66 % del ancho y el 40 % del alto de su
+  cuadro), así que en la caja de 56 dp quedaba de unos 37×22 dp.
+  `recursos.py` los recorta ahora a lo dibujado, con 4 px de margen, y todas
+  las formas los muestran más grandes con las mismas cajas.
+- **El 4×2 (la mediana alta y la baja) reparte el espacio con la medida de
+  verdad** (`GinyProvider.disposa`): la gota y la Luna van una sobre otra al
+  lado de la temperatura, alineadas contra el dibujo, si caben de ancho y de
+  alto; si no, bajan a una línea propia debajo de la máxima y la mínima, si
+  hay alto para ella, y si tampoco, se quedan fuera (primero la Luna: la
+  lluvia importa más). El dibujo ocupa el alto que queda en la fila de la
+  temperatura y, en Android 12 o posterior, el ancho que dejan la gota y la
+  Luna (de 56 a 100 dp en la alta; de 48 a 72 en la baja). La frase manda:
+  entera hasta tres líneas en la alta (dos en la baja), y nunca menos de dos,
+  como antes; la comparación con ayer que no cabe tras la máxima y la mínima
+  va debajo solo si sobra sitio. La Luna sale cuando sale en la web (cerca de
+  una fase principal); el sol sigue solo en la grande.
+- Al cambiar el tamaño de letra del sistema, el widget conserva las medidas
+  anteriores hasta su siguiente actualización (media hora como mucho): Android
+  no avisa al widget de ese cambio.
+
+Validación: en el emulador (Android 15), con pantalla de 1080×1920 y de
+1080×2400, densidades de 420, 480, 500 y 540 ppp y letra al 100, 115 y 130 %:
+el 4×2 alto y el bajo con la gota y la Luna al lado, la Luna que pasa a su
+línea al estrechar el widget a 3×2, la Luna que se queda fuera en el 4×2
+bajo con letra al 130 %, el 2×2 con la nube más grande y la grande forzada
+en una compilación de prueba. Dos fallos encontrados así y corregidos: la
+estimación de alturas, demasiado prudente, cortaba la frase en una línea y
+quitaba la Luna donde cabía, y el texto de la Luna se cortaba («15:…») sin
+un margen de seguridad en el ancho. Sin probar: el móvil de Juanjo y Android
+11 o anterior. Caso límite que queda como antes: el 4×2 bajo con letra al
+130 % recorta un poco la parte de arriba de la temperatura.
 
 ## Alternativas descartadas
 

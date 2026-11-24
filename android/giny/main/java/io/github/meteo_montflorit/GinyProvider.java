@@ -13,12 +13,14 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
@@ -61,6 +63,10 @@ public class GinyProvider extends AppWidgetProvider {
     static final float FILA_AMB_GOTA = 70;
     // A partir d'aquesta alçada (dp), el giny petit porta també la frase.
     static final float PETIT_AMB_FRASE = 260;
+    // L'amplada (dp) del dibuix del cel al 4×2: el núvol, que és ample, s'hi fa gran; la mínima, si
+    // al costat hi ha la pluja i la Lluna.
+    static final float CEL_MIN = 56;
+    static final float CEL_MAX = 100;
     // El color de la pastilla del compte enrere de la pluja (web/estil.css, .comenca-pluja).
     static final int AIGUA_FONS = 0xFFDBEAFE;
     static final int AIGUA_TEXT = 0xFF1E40AF;
@@ -288,14 +294,15 @@ public class GinyProvider extends AppWidgetProvider {
             v.setTextViewText(R.id.giny_compara, mateixa);
             v.setTextColor(R.id.giny_compara, suau);
             v.setViewVisibility(R.id.giny_compara, mateixa.isEmpty() ? View.GONE : View.VISIBLE);
+            if (forma == Forma.ALT || forma == Forma.MITJA) sota = disposa(context, v, forma, t, sota, ampleDp, altDp, suau, min);
             v.setTextViewText(R.id.giny_compara2, sota);
             v.setTextColor(R.id.giny_compara2, suau);
             v.setViewVisibility(R.id.giny_compara2, sota.isEmpty() ? View.GONE : View.VISIBLE);
-            if (forma == Forma.ALT) v.setInt(R.id.giny_frase, "setMaxLines", sota.isEmpty() ? 3 : 2);
         }
 
         // La gota: la pluja en curt («19 h · 22 %», «Plou»), on no hi ha la línia sencera (al gran sí).
-        if (forma != Forma.GRAN) {
+        // Al 4×2 (l'alt i el mitjà), la col·loca disposa, amb la Lluna.
+        if (forma == Forma.FILA || forma == Forma.PETIT) {
             String gota = t.isNull("gota") ? "" : t.optString("gota");
             boolean ambGota = !gota.isEmpty() && (forma != Forma.FILA || altDp >= FILA_AMB_GOTA);
             v.setViewVisibility(R.id.giny_pluja, ambGota ? View.VISIBLE : View.GONE);
@@ -342,6 +349,122 @@ public class GinyProvider extends AppWidgetProvider {
         v.setContentDescription(R.id.giny_arrel, descripcio);
         v.setOnClickPendingIntent(R.id.giny_arrel, obreApp(context));
         return v;
+    }
+
+    /**
+     * El 4×2 (l'alt i, més petit, el mitjà), amb la mida de debò (24-11-2026, Juanjo: «hay mucho espacio vacío en la tarjeta.
+     * La nube es diminuta y cabría perfectamente lo de la lluvia y la luna»). La gota i la Lluna van al
+     * costat de la temperatura, tocant el dibuix, si hi caben d'ample (els mòbils amples); si no, a
+     * una línia a sota. El dibuix fa l'alçada que queda. Per l'alçada, mana la frase sencera (fins a
+     * tres línies); després, la línia de sota i, si encara hi ha lloc, la comparació amb ahir que no
+     * cap darrere la màxima i la mínima. Torna la comparació que hi va a sota ("" si no hi cap).
+     */
+    static String disposa(Context context, RemoteViews v, Forma forma, JSONObject t, String compara, float ampleDp,
+                          float altDp, int suau, int blau) {
+        boolean alt = forma == Forma.ALT;
+        float tempSp = alt ? 44 : 34, fraseSp = alt ? 16 : 14;
+        float celMin = alt ? CEL_MIN : 48, celMax = alt ? CEL_MAX : 72, celXml = alt ? 88 : 64;
+        float contingut = ampleDp - 30;
+        String gota = t.isNull("gota") ? "" : t.optString("gota");
+        JSONObject lluna = t.optJSONObject("lluna");
+        String llunaText = lluna == null ? "" : lluna.optString("text");
+        float tempW = ampla(context, t.optString("temperatura", "–"), tempSp, "sans-serif", false);
+        // Cada element, amb el dibuix (13 dp i el marge) i un marge de seguretat.
+        float gotaW = gota.isEmpty() ? 0 : 23 + ampla(context, gota, 13, "sans-serif-medium", false);
+        float llunaW = llunaText.isEmpty() ? 0 : 23 + ampla(context, llunaText, 13, "sans-serif", false);
+        // L'espai del costat, amb el dibuix a l'amplada mínima (abans d'Android 12, la fixa de l'XML).
+        boolean variable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
+        float lliure = contingut - tempW - 16 - (variable ? celMin : celXml);
+        boolean gotaCostat = !gota.isEmpty() && gotaW <= lliure;
+        boolean llunaCostat = !llunaText.isEmpty() && (gota.isEmpty() || gotaCostat) && llunaW <= lliure;
+        boolean gotaSota = !gota.isEmpty() && !gotaCostat;
+        boolean llunaSota = !llunaText.isEmpty() && !llunaCostat
+            && (gotaSota ? gotaW + 14 + llunaW : llunaW) <= contingut;
+
+        // L'alçada: el títol, la frase, la fila de la temperatura i la màxima i la mínima. La frase,
+        // sencera si hi cap i mai en menys de dues línies (com abans); el que no hi cap, fora.
+        float linia = alcada(context, 13, "sans-serif", true);
+        float liniaFrase = alcada(context, fraseSp, "sans-serif", true) * 1.05f;
+        float tempH = alcadaXifres(context, tempSp);
+        float fixa = altDp - (alt ? 24 : 20) - alcada(context, 12, "sans-serif-medium", true) - 2 - linia;
+        int linies = Math.min(alt ? 3 : 2, liniesFrase(context, t.optString("frase"), fraseSp, contingut));
+        while (linies > 2 && fixa - linies * liniaFrase < tempH) linies--;
+        // L'alçada de la fila de la temperatura, on van el dibuix i el que hi ha al costat.
+        float fila = fixa - linies * liniaFrase;
+        // Al costat, la gota i la Lluna una sobre l'altra: si no hi caben d'alt, la Lluna baixa.
+        // (Dues línies juntes, sense el marge de dalt i de baix de cada una.)
+        if (gotaCostat && llunaCostat && fila < 2 * alcada(context, 13, "sans-serif", false) + 3) {
+            llunaCostat = false;
+            llunaSota = llunaW <= contingut;
+        }
+        if ((gotaSota || llunaSota) && fila - linia - 2 < tempH) {
+            gotaSota = false;
+            llunaSota = false;
+        }
+        if (gotaSota || llunaSota) fila -= linia + 2;
+        if (!compara.isEmpty() && fila - linia < tempH) compara = "";
+        v.setInt(R.id.giny_frase, "setMaxLines", linies);
+
+        posaGota(v, gota, gotaCostat, R.id.giny_pluja, R.id.giny_pluja_text, R.id.giny_gota, suau, blau);
+        posaGota(v, gota, gotaSota, R.id.giny_pluja2, R.id.giny_pluja_text2, R.id.giny_gota2, suau, blau);
+        posaLluna(v, lluna, llunaCostat, R.id.giny_lluna, R.id.giny_lluna_text, R.id.giny_lluna_dibuix, suau);
+        posaLluna(v, lluna, llunaSota, R.id.giny_lluna2, R.id.giny_lluna_text2, R.id.giny_lluna_dibuix2, suau);
+        v.setViewVisibility(R.id.giny_sota, gotaSota || llunaSota ? View.VISIBLE : View.GONE);
+
+        // El dibuix, tan ample com deixa el costat (Android 12 o posterior; abans, la capsa de l'XML).
+        if (variable) {
+            float costat = Math.max(gotaCostat ? gotaW : 0, llunaCostat ? llunaW : 0);
+            float cel = Math.max(celMin, Math.min(celMax, contingut - tempW - 16 - costat));
+            v.setViewLayoutWidth(R.id.giny_cel, cel, TypedValue.COMPLEX_UNIT_DIP);
+        }
+        return compara;
+    }
+
+    static void posaGota(RemoteViews v, String gota, boolean hi, int bloc, int text, int dibuix, int suau, int blau) {
+        v.setViewVisibility(bloc, hi ? View.VISIBLE : View.GONE);
+        if (!hi) return;
+        v.setTextViewText(text, gota);
+        v.setTextColor(text, suau);
+        // El blau de la mínima de cada cel, que es llegeix sobre el fons.
+        v.setInt(dibuix, "setColorFilter", blau);
+    }
+
+    static void posaLluna(RemoteViews v, JSONObject lluna, boolean hi, int bloc, int text, int dibuix, int suau) {
+        v.setViewVisibility(bloc, hi ? View.VISIBLE : View.GONE);
+        if (!hi) return;
+        v.setTextViewText(text, lluna.optString("text"));
+        v.setTextColor(text, suau);
+        v.setImageViewBitmap(dibuix, GinyLluna.dibuix(lluna.optDouble("angle", 180), 48));
+    }
+
+    static TextPaint pintura(Context context, float sp, String lletra, boolean negreta) {
+        TextPaint p = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+        p.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, context.getResources().getDisplayMetrics()));
+        p.setTypeface(Typeface.create(lletra, negreta ? Typeface.BOLD : Typeface.NORMAL));
+        return p;
+    }
+
+    /** L'amplada d'un text en dp. */
+    static float ampla(Context context, String text, float sp, String lletra, boolean negreta) {
+        return pintura(context, sp, lletra, negreta).measureText(text) / context.getResources().getDisplayMetrics().density;
+    }
+
+    /** L'alçada d'una línia de text en dp, amb el marge de la lletra (el de TextView per defecte) o sense. */
+    static float alcada(Context context, float sp, String lletra, boolean ambMarge) {
+        Paint.FontMetrics m = pintura(context, sp, lletra, false).getFontMetrics();
+        return (ambMarge ? m.bottom - m.top : m.descent - m.ascent) / context.getResources().getDisplayMetrics().density;
+    }
+
+    /** L'alçada de la temperatura en dp: les xifres no baixen de la línia, i el que queda a sota no cal. */
+    static float alcadaXifres(Context context, float sp) {
+        return -pintura(context, sp, "sans-serif", false).getFontMetrics().ascent / context.getResources().getDisplayMetrics().density;
+    }
+
+    /** Quantes línies fa la frase (en negreta) en una amplada en dp. */
+    static int liniesFrase(Context context, String frase, float sp, float ampleDp) {
+        int px = Math.max(1, (int) (ampleDp * context.getResources().getDisplayMetrics().density));
+        return StaticLayout.Builder.obtain(frase, 0, frase.length(), pintura(context, sp, "sans-serif", true), px)
+            .setLineSpacing(0, 1.05f).build().getLineCount();
     }
 
     /** La línia de sota la frase, amb el compte enrere tornat a calcular i, si és de pluja, en una pastilla blava. */

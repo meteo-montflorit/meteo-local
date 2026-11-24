@@ -5,7 +5,7 @@ perquè el giny es vegi com la targeta d'«Ara» i no se'n separi:
 
 - el fons de cada cel (`.heroi.cel-*` de web/estil.css, amb els dibuixos de
   web/img/cel), fotografiat amb Chromium, en WebP;
-- el dibuix gran del cel (Meteocons, web/img/meteocons), en WebP;
+- el dibuix gran del cel (Meteocons, web/img/meteocons), retallat al dibuix, en WebP;
 - els colors del text de cada cel (--t, --s, la màxima i la mínima i si
   porten vora blanca), llegits del CSS amb el navegador, a GinyEstil.java.
 
@@ -35,6 +35,7 @@ CELS = ["sere", "poc", "nuvol", "cobert", "boira", "pluja", "tempesta", "nit", "
 # Proporció d'un giny de 4×2 i 4×3 a mig camí; el giny el retalla pel mig.
 AMPLE, ALT = 960, 560
 DIBUIX_PX = 288
+DIBUIX_MARGE = 4
 QUALITAT = 82
 
 
@@ -107,11 +108,17 @@ final class GinyEstil {{
 
 
 def dibuixos():
+    """Retallats al dibuix, amb un marge petit: els de Meteocons porten molt de buit al voltant
+    (el núvol en ocupa el 40 % de l'alçada) i al giny, en una capsa petita, es veien diminuts."""
     for svg in sorted((WEB / "img" / "meteocons").glob("*.svg")):
         png = subprocess.run(["rsvg-convert", "-w", str(DIBUIX_PX), "-h", str(DIBUIX_PX), str(svg)],
                              check=True, capture_output=True).stdout
+        im = Image.open(io.BytesIO(png)).convert("RGBA")
+        x0, y0, x1, y1 = im.getchannel("A").getbbox()
+        m = DIBUIX_MARGE
+        im = im.crop((max(0, x0 - m), max(0, y0 - m), min(im.width, x1 + m), min(im.height, y1 + m)))
         nom = "giny_cel_" + svg.stem.replace("-", "_") + ".webp"
-        Image.open(io.BytesIO(png)).save(RES / nom, "WEBP", quality=90, method=6)
+        im.save(RES / nom, "WEBP", quality=90, method=6)
 
 
 if __name__ == "__main__":

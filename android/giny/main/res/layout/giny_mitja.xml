@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
-<!-- El giny mitjà baix (ADR 0131): el títol, la frase en dues línies, la temperatura, el dibuix i el dia. -->
+<!-- El giny mitjà baix, el 4×2 dels mòbils amb les files baixes (ADR 0131): com l'alt (giny_alt.xml),
+     més petit, amb la frase en dues línies. GinyProvider decideix on va cada cosa amb la mida de debò. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/giny_arrel"
     android:layout_width="match_parent"
@@ -38,44 +39,76 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:gravity="bottom"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
             <TextView
                 android:id="@+id/giny_temp"
                 style="@style/GinyTemp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:includeFontPadding="false"
+                android:textSize="34sp" />
+            <!-- La pluja i la Lluna, al costat de la temperatura, alineades a la dreta, tocant el dibuix. -->
+            <LinearLayout
+                android:id="@+id/giny_costat"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:includeFontPadding="false"
-                android:textSize="34sp" />
-            <LinearLayout
-                android:id="@+id/giny_pluja"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
+                android:layout_marginStart="8dp"
                 android:layout_marginEnd="8dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:visibility="gone">
-                <ImageView
-                    android:id="@+id/giny_gota"
-                    android:layout_width="13dp"
-                    android:layout_height="13dp"
-                    android:layout_marginEnd="3dp"
-                    android:src="@drawable/giny_gota"
-                    android:importantForAccessibility="no" />
-                <TextView
-                    android:id="@+id/giny_pluja_text"
-                    style="@style/GinySuau"
+                android:gravity="end"
+                android:orientation="vertical">
+                <LinearLayout
+                    android:id="@+id/giny_pluja"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:maxLines="1" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+                    <ImageView
+                        android:id="@+id/giny_gota"
+                        android:layout_width="13dp"
+                        android:layout_height="13dp"
+                        android:layout_marginEnd="4dp"
+                        android:src="@drawable/giny_gota"
+                        android:importantForAccessibility="no" />
+                    <TextView
+                        android:id="@+id/giny_pluja_text"
+                        style="@style/GinySuau"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:maxLines="1" />
+                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/giny_lluna"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+                    <ImageView
+                        android:id="@+id/giny_lluna_dibuix"
+                        android:layout_width="13dp"
+                        android:layout_height="13dp"
+                        android:layout_marginEnd="4dp"
+                        android:importantForAccessibility="no" />
+                    <TextView
+                        android:id="@+id/giny_lluna_text"
+                        style="@style/GinySuau"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:maxLines="1" />
+                </LinearLayout>
             </LinearLayout>
+            <!-- Tan alt com la fila: el dibuix creix amb l'espai que queda (fins a l'amplada de la capsa). -->
             <ImageView
                 android:id="@+id/giny_cel"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="64dp"
+                android:layout_height="match_parent"
+                android:scaleType="fitCenter"
                 android:importantForAccessibility="no" />
         </LinearLayout>
         <LinearLayout
@@ -120,5 +153,58 @@
             android:layout_height="wrap_content"
             android:maxLines="1"
             android:visibility="gone" />
+        <!-- La pluja i la Lluna que no caben al costat de la temperatura (mòbils estrets). -->
+        <LinearLayout
+            android:id="@+id/giny_sota"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+            <LinearLayout
+                android:id="@+id/giny_pluja2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="14dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+                <ImageView
+                    android:id="@+id/giny_gota2"
+                    android:layout_width="13dp"
+                    android:layout_height="13dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/giny_gota"
+                    android:importantForAccessibility="no" />
+                <TextView
+                    android:id="@+id/giny_pluja_text2"
+                    style="@style/GinySuau"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:maxLines="1" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/giny_lluna2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+                <ImageView
+                    android:id="@+id/giny_lluna_dibuix2"
+                    android:layout_width="13dp"
+                    android:layout_height="13dp"
+                    android:layout_marginEnd="4dp"
+                    android:importantForAccessibility="no" />
+                <TextView
+                    android:id="@+id/giny_lluna_text2"
+                    style="@style/GinySuau"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>
