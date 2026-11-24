@@ -21,8 +21,8 @@
     "path": "./upload.jks",
     "alias": "upload"
   },
-  "appVersionName": "1.1.0",
-  "appVersionCode": 2,
+  "appVersionName": "1.1.1",
+  "appVersionCode": 3,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://meteo-montflorit.github.io/manifest.webmanifest",
@@ -44,5 +44,5 @@
   "fileHandlers": [],
   "launchHandlerClientMode": "",
   "displayOverride": [],
-  "appVersion": "1.1.0"
+  "appVersion": "1.1.1"
 }
