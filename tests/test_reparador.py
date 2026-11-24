@@ -216,7 +216,7 @@ class Reparador(unittest.TestCase):
         with open(os.path.join(arrel, ".github", "workflows", "previsio.yml"), encoding="utf-8") as f:
             accio = f.read()
         self.assertIn("ruff check", accio)
-        self.assertIn("eslint web montflorit eslint.config.mjs", accio)
+        self.assertIn("eslint web montflorit giny.js eslint.config.mjs", accio)
         self.assertIn("unittest discover -s tests -b", accio)
 
 

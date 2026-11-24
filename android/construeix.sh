@@ -12,5 +12,10 @@ CLAU="${CLAU_ANDROID:-$HOME/.config/meteo-montflorit/android}"
 ln -sf "$CLAU/upload.jks" upload.jks
 set -a; . "$CLAU/clau.env"; set +a
 BUBBLEWRAP="${BUBBLEWRAP:-$(command -v bubblewrap || echo "$HOME/.npm-global/bin/bubblewrap")}"
+# El giny (ADR 0131): el seu codi i els seus recursos són a giny/main, perquè
+# «bubblewrap update» esborra app/src; aquí es copien a l'app i es posa el
+# receptor al manifest.
+cp -R giny/main/. app/src/main/
+python3 giny/manifest.py
 "$BUBBLEWRAP" build --skipPwaValidation
 ls -l app-release-bundle.aab app-release-signed.apk

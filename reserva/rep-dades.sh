@@ -12,7 +12,8 @@
 # (grafica-avui-ca.png…, ADR 0098), que tienen que ser PNG de verdad, y el
 # historial de la gráfica (historial.json e historial-AAAA-MM-DD.json, ADR
 # 0099), JSON como los otros, y desde la 3.194.0 los archivos por año del
-# historial de «Perill» (avisos-AAAA.json, ADR 0124). Si
+# historial de «Perill» (avisos-AAAA.json, ADR 0124), y desde la 3.239.0 el
+# giny de Android (giny.json, ADR 0131). Si
 # algo no cuadra, se rechaza el envío entero y no se toca nada: hasta la
 # auditoría del 07-10-2026 la orden extraía el tar tal cual, y un enlace
 # simbólico llamado *.json habría acabado en la carpeta pública (ADR 0038).
@@ -36,7 +37,7 @@ tar -tzvf "$t/in.tgz" | awk -v max="$MAX" -v maxpng="$MAX_PNG" '
   { tipus = substr($1, 1, 1); nom = $NF; mida = $3 + 0; total += mida; n++
     png = nom ~ /^grafica-(avui|dema)-(ca|es)\.png$/
     hist = nom ~ /^historial(-20[0-9][0-9]-[01][0-9]-[0-3][0-9])?\.json$/ || nom ~ /^avisos-20[0-9][0-9]\.json$/ }
-  tipus != "-" || (nom != "montflorit.json" && nom != "avisos.json" && !png && !hist) { print "rep-dades: rebutjat: " $0 > "/dev/stderr"; mal = 1 }
+  tipus != "-" || (nom != "montflorit.json" && nom != "avisos.json" && nom != "giny.json" && !png && !hist) { print "rep-dades: rebutjat: " $0 > "/dev/stderr"; mal = 1 }
   mida > (png ? maxpng : max) { print "rep-dades: rebutjat: " nom " fa " mida " bytes descomprimit" > "/dev/stderr"; mal = 1 }
   vist[nom]++ { print "rep-dades: rebutjat: " nom " repetit" > "/dev/stderr"; mal = 1 }
   END { if (total > max || n > 12) { print "rep-dades: rebutjat: " n " entrades, " total " bytes" > "/dev/stderr"; mal = 1 }; exit mal }' || exit 1

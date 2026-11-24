@@ -32,6 +32,8 @@
 
     
 
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:name="Application"
         android:allowBackup="true"
@@ -196,5 +198,17 @@
         
 
         
+    
+        <!-- El giny de la pantalla d'inici (ADR 0131): el posa android/giny/manifest.py. -->
+        <receiver android:name="GinyProvider"
+            android:label="@string/giny_nom"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/giny_info" />
+        </receiver>
     </application>
 </manifest>

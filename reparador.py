@@ -71,7 +71,7 @@ AUTOR = ["-c", "user.name=meteo-local (NAS)", "-c", "user.email=meteo-local@user
 COMPROVACIONS = [
     ("proves", ["python3", "-m", "unittest", "discover", "-s", "tests", "-b"]),
     ("ruff", ["ruff", "check", "."]),
-    ("eslint", ["npx", "--no-install", "eslint", "web", "montflorit", "eslint.config.mjs"]),
+    ("eslint", ["npx", "--no-install", "eslint", "web", "montflorit", "giny.js", "eslint.config.mjs"]),
 ]
 
 

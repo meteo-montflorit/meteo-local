@@ -53,6 +53,14 @@ if [ -n "$ESTAT_DIR" ]; then
 fi
 # Los datos de la web pública: los de casa sin lo privado.
 python3 montflorit.py dades "$dades/casa.json" "$publica/montflorit.json" "$dades/avisos.json"
+# El giny de la pantalla de inicio de Android (ADR 0131): lo que dice la
+# tarjeta de «Ara», con el mismo código de la web, en un JSON pequeño que la
+# app lee cada media hora. Hace falta Node; si falla, el giny se queda con el
+# anterior y dice de cuándo son los datos.
+if command -v node >/dev/null; then
+  node giny.js "$publica/montflorit.json" "$publica/giny.json" 2>"$dades/giny.err" \
+    || { rm -f "$publica/giny.json"; echo "$(date '+%F %T')  ha fallat el giny: $(tr '\n' ' ' < "$dades/giny.err" | cut -c1-300)" >&2; }
+fi
 # La gráfica del resumen del día como imagen, para el bot, el canal y los
 # avisos de la web y la app (ADR 0098): solo en el NAS, que tiene Chromium.
 # Si falla, los resúmenes salen solo con texto, como antes.
@@ -110,7 +118,8 @@ if [ -f "$CLAU_IONOS" ] && [ -n "${IONOS:-}" ]; then
   # Lo que responde la conexión (ssh o el receptor) se guarda para el
   # registro: falla cada día a las 06:03 y a las 06:09 y sin el mensaje no
   # se sabe si rechaza SSH o el receptor (10-10-2026).
-  if tar -czf - -C "$publica" montflorit.json $([ -f "$dades/avisos.json" ] && echo "-C $dades avisos.json") \
+  if tar -czf - -C "$publica" montflorit.json $([ -f "$publica/giny.json" ] && echo giny.json) \
+      $([ -f "$dades/avisos.json" ] && echo "-C $dades avisos.json") \
       $([ -n "$grafiques" ] && echo "-C $dades/grafiques $grafiques") \
       $([ -n "$historial" ] && echo "-C $dades/historial $historial") \
       | ssh -i "$CLAU_IONOS" -o BatchMode=yes -o ConnectTimeout=20 "$IONOS" 2>"$dades/ionos.err"; then

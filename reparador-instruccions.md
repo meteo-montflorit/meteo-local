@@ -22,7 +22,7 @@ fallado al repetirlas en el NAS.
 3. Comprueba que pasa todo, con las mismas órdenes que GitHub:
    - `python3 -m unittest discover -s tests -b`
    - `ruff check .`
-   - `npx eslint web montflorit eslint.config.mjs`
+   - `npx eslint web montflorit giny.js eslint.config.mjs`
 4. Si cambias un texto visible, tradúcelo (`i18n/es.json` o
    `montflorit/es.js`): las pruebas fallan si falta.
 

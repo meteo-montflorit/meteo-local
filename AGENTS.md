@@ -66,7 +66,7 @@ Al cambiar algo:
   y el ADR.
 - Pasa las pruebas (`python3 -m unittest discover -s tests -b`; con `-b`, lo
   que escriben las que pasan no se ve), la revisión del código (`ruff check .`
-  y `npx eslint web montflorit eslint.config.mjs`, con ESLint instalado en la
+  y `npx eslint web montflorit giny.js eslint.config.mjs`, con ESLint instalado en la
   carpeta: `npm install --no-save --no-package-lock eslint@9.39.1
   globals@16.5.0`; GitHub las pasa también y
   el NAS no publica si fallan, ADR 0112; pasada media hora, el reparador del
@@ -137,7 +137,12 @@ Al cambiar algo:
   clave de subida está en `~/.config/meteo-montflorit/android/` y, cifrada, en
   `claus/claus-android.tar.gz.gpg` de `meteo-local-registre`; nunca en este
   repositorio. Si cambia la clave, cambia también su huella en
-  `montflorit/.well-known/assetlinks.json`.
+  `montflorit/.well-known/assetlinks.json`. El widget de la pantalla de
+  inicio (ADR 0131) sí es código propio: está en `android/giny/main/`, porque
+  `bubblewrap update` borra `app/src` entero, y `construeix.sh` lo copia a la
+  app. Sus textos salen de `giny.js` (la tarjeta de «Ara» con el código de la
+  web, en `giny.json`); si cambia el aspecto de la tarjeta (`.heroi.cel-*` o
+  los dibujos), `python3 android/giny/recursos.py` rehace sus fondos y colores.
 - Los automatismos de este proyecto figuran en el inventario del NAS
   (`vigilancia-nas/config/automatismos.json`, ficha «Automatismos» de
   bilateria.org/nas). Si se añade, cambia o retira uno, se actualiza allí.

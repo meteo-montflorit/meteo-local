@@ -15,3 +15,8 @@ local.properties
 
 # Còpies per pujar a Play Console (es generen de fitxa/).
 fitxa/pujar/
+
+# El giny (ADR 0131): construeix.sh copia giny/main a app/src/main, que
+# «bubblewrap update» esborra. L'original és a giny/main.
+app/src/main/**/giny_*
+app/src/main/**/Giny*.java

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Des d'Android 12, el radi dels ginys del sistema, com els altres. -->
+<resources>
+    <dimen name="giny_radi">@android:dimen/system_app_widget_background_radius</dimen>
+</resources>

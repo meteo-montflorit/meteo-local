@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Els dibuixos del giny es busquen pel nom (GinyProvider.recurs): que no es treguin mai. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/giny_*" />

@@ -31,7 +31,7 @@ jobs:
       - name: Revisión del JavaScript (ESLint)
         run: |
           npm install --no-save --no-package-lock eslint@9.39.1 globals@16.5.0
-          npx eslint web montflorit eslint.config.mjs
+          npx eslint web montflorit giny.js eslint.config.mjs
       - name: Pruebas, con la cobertura
         run: coverage run -m unittest discover -s tests -b
       # La cobertura se mide y se enseña, pero no para la publicación.

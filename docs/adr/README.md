@@ -134,3 +134,4 @@
 | [0130](0130-las-estaciones-de-meteocerdanyola.md) | Las estaciones de MeteoCerdanyola: Montflorit para la lluvia y Cerdanyola Centre para el viento | aceptado |
 
 Plantilla: [0000-plantilla.md](0000-plantilla.md). Para crear uno: `nuevo-adr "Título"`.
+| [0131](0131-widget-de-android.md) | Widget de Android con la tarjeta de «Ara» | aceptado |

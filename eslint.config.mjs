@@ -44,6 +44,11 @@ export default [
     },
   },
   {
+    // El giny d'Android (ADR 0131): un programa de Node, no de la web.
+    files: ['giny.js'],
+    languageOptions: { ecmaVersion: 'latest', sourceType: 'commonjs', globals: { ...globals.node } },
+  },
+  {
     files: ['web/sw.js'],
     languageOptions: { globals: { ...globals.serviceworker } },
   },

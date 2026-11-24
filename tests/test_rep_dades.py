@@ -39,6 +39,12 @@ class RepDades(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(json.load(open(os.path.join(self.dir, "montflorit.json"))), {"a": 1})
 
+    def test_accepta_el_giny(self):
+        # El giny d'Android (ADR 0131).
+        r = self.rep(paquet([("montflorit.json", b"{}"), ("giny.json", b'{"ca": null}')]))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.load(open(os.path.join(self.dir, "giny.json"))), {"ca": None})
+
     def test_rebutja_el_que_es_fa_gran_en_descomprimir(self):
         # Auditoría del 09-10-2026: un tar.gz de 5 KB traía un JSON de 5 MB y
         # el límite de 2 MB solo miraba el comprimido.

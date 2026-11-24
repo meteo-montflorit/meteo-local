@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- El giny en castellà, per defecte; en català, values-ca (ADR 0131). -->
+<resources>
+    <string name="giny_idioma" translatable="false">es</string>
+    <string name="giny_nom">Tiempo en Montflorit</string>
+    <string name="giny_descripcio">El tiempo de ahora y del día en Montflorit (Cerdanyola)</string>
+    <string name="giny_titol">Tiempo en Montflorit (Cerdanyola)</string>
+    <string name="giny_carregant">Cargando el tiempo…</string>
+    <string name="giny_sense_dades">Sin datos: toca para abrir la app</string>
+    <string name="giny_vell">datos de hace %1$d h</string>
+    <string name="giny_mostra_frase">Esta mañana, fresco y soleado; esta tarde, agradable.</string>
+    <string name="giny_mostra_dia">máx. 18°, mín. 9°</string>
+</resources>
