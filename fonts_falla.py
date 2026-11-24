@@ -58,7 +58,7 @@ QUE = {
     "vent": ("el vent de Meteocat a Sant Cugat", "No surt el vent mesurat."),
     "radar": ("el radar", "No es pot dir si s'acosta pluja."),
     "final de la pluja": ("el càlcul del final de la pluja", "No es diu quan pararà."),
-    "avisos": ("els avisos de l'AEMET (Meteoalarm)", "Només surten els de Meteocat."),
+    "avisos": ("els avisos de l'AEMET (Meteoalarm)", "Es mantenen els que ja es coneixien; els de Meteocat arriben igual."),
     "plans": ("els plans de Protecció Civil", "Si n'hi hagués un d'activat, no sortiria."),
     "entorn: incendis": ("els incendis dels Bombers", "Si n'hi hagués un a prop, no sortiria."),
     "entorn: pla_alfa": ("el Pla Alfa de Protecció Civil", "No surt el risc d'incendi forestal."),

@@ -727,15 +727,15 @@ class Web(unittest.TestCase):
         aemet = ["avisos: HTTP Error 500: Internal Server Error"]
         self.assertEqual(text({"errors": aemet, "horari": horari, "generat": "2026-10-09T12:01+02:00",
                                "fonts_falla": {"avisos": "2026-10-09T12:01+02:00"}}),
-                         ["En aquesta actualització no han arribat els avisos de l’AEMET: els de Meteocat, sí. "
+                         ["En aquesta actualització no han arribat els avisos de l’AEMET: es mantenen els que ja coneixíem, i els de Meteocat sí que han arribat. "
                           "Es torna a provar a la propera actualització, a les 12:18."])
         self.assertEqual(text({"errors": aemet, "horari": horari, "generat": "2026-10-09T12:01+02:00",
                                "fonts_falla": {"avisos": "2026-10-09T09:01+02:00"}}),
-                         ["Des de les 09:01 no arriben els avisos de l’AEMET: els de Meteocat, sí. "
+                         ["Des de les 09:01 no arriben els avisos de l’AEMET: es mantenen els que ja coneixíem, i els de Meteocat sí que han arribat. "
                           "Es torna a provar a cada actualització."])
         self.assertEqual(text({"errors": aemet, "generat": "2026-10-09T12:01+02:00",
                                "fonts_falla": {"avisos": "2026-10-08T18:00+02:00"}}),
-                         ["Des d’ahir a les 18:00 no arriben els avisos de l’AEMET: els de Meteocat, sí. "
+                         ["Des d’ahir a les 18:00 no arriben els avisos de l’AEMET: es mantenen els que ja coneixíem, i els de Meteocat sí que han arribat. "
                           "Es torna a provar a cada actualització."])
         self.assertEqual(text({"errors": ["estació: x", "estació de casa: y", "entorn: incendis: 500"]}),
                          ["En aquesta actualització l’estació del barri no ha respost: el temps d’ara surt de les estacions veïnes.",

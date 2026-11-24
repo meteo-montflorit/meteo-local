@@ -533,7 +533,7 @@ const TEXT_FONT_FALLA = () => {
     'final de la pluja': () => ({ ara: T('no s’ha pogut calcular quan pararà de ploure'),
       des: T('no es pot calcular quan pararà de ploure'), efecte: T('la resta de la previsió és al dia') }),
     avisos: () => ({ ara: T('no han arribat els avisos de l’AEMET'), des: T('no arriben els avisos de l’AEMET'),
-      efecte: T('els de Meteocat, sí') }),
+      efecte: T('es mantenen els que ja coneixíem, i els de Meteocat sí que han arribat') }),
     plans: () => ({ ara: T('no han arribat els plans de Protecció Civil'), des: T('no arriben els plans de Protecció Civil'),
       efecte: T('si n’hi hagués un d’activat, no sortiria') }),
     'entorn: incendis': () => ({ ara: T('no han arribat els incendis dels Bombers'),

@@ -747,7 +747,7 @@ var IDIOMA = {
     "Una font de dades no està disponible": "Una fuente de datos no está disponible",
     "{0} fonts de dades no estan disponibles": "{0} fuentes de datos no están disponibles",
     "no arriben els avisos de l’AEMET": "no llegan los avisos de la AEMET",
-    "els de Meteocat, sí": "los de Meteocat, sí",
+    "es mantenen els que ja coneixíem, i els de Meteocat sí que han arribat": "se mantienen los que ya conocíamos, y los de Meteocat sí han llegado",
     "no han arribat els plans de Protecció Civil": "no han llegado los planes de Protección Civil",
     "no arriben els plans de Protecció Civil": "no llegan los planes de Protección Civil",
     "si n’hi hagués un d’activat, no sortiria": "si hubiera uno activado, no saldría",

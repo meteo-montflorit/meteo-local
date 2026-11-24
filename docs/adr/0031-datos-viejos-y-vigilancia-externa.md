@@ -98,12 +98,14 @@ estuvo dos días «sense dades» (ADR 0079). Desde la 3.204.0:
 - **La web dice qué no llega, qué deja de salir y desde cuándo**
   (`avisosFonts` y `TEXT_FONT_FALLA` en `web/comu.js`). Si es de esta
   actualización: «En aquesta actualització no han arribat els avisos de
-  l’AEMET: els de Meteocat, sí. Es torna a provar a la propera actualització,
+  l’AEMET: es mantenen els que ja coneixíem, i els de Meteocat sí que han arribat. Es torna a provar a la propera actualització,
   a les 12:18.». Si dura más de FONT_FALLA_ACTUALITZACIO_MIN (20) minutos:
-  «Des de les 12:00 no arriben els avisos de l’AEMET: els de Meteocat, sí. Es
+  «Des de les 12:00 no arriben els avisos de l’AEMET: es mantenen els que ja coneixíem, i els de Meteocat sí que han arribat. Es
   torna a provar a cada actualització.» (o «Des d’ahir a les 18:00…»). Una
   fuente sin texto propio: «una de les fonts no ha respost: la resta de la
-  informació és al dia». La riera mantiene su texto (21-10-2026).
+  informació és al dia». La riera mantiene su texto (21-10-2026). Desde la 3.239.2 (24-11-2026), el de la AEMET dice que se mantienen
+  los avisos ya conocidos (`casa.avisos_de_abans`): decía solo «els de
+  Meteocat, sí» y debajo salía uno de la AEMET, que parecía una contradicción.
 - **El NAS apunta desde cuándo falla cada fuente** (`fonts_falla.py`, en
   `/estat/fonts-falla.json`) y lo publica (`fonts_falla` en los datos). En la
   reserva de IONOS, sin estado, desde ahora.
