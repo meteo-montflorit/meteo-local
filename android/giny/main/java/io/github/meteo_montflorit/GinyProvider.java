@@ -57,6 +57,8 @@ public class GinyProvider extends AppWidgetProvider {
     // Amb dades de VELLES_H hores o més, el giny diu de quan són i la
     // temperatura es posa en gris (es veu que no és la d'ara).
     static final long VELLES_H = 2;
+    // A partir d'aquesta alçada (dp), el giny d'una fila porta també la gota de la pluja.
+    static final float FILA_AMB_GOTA = 70;
     // A partir d'aquesta alçada (dp), el giny petit porta també la frase.
     static final float PETIT_AMB_FRASE = 260;
     // El color de la pastilla del compte enrere de la pluja (web/estil.css, .comenca-pluja).
@@ -290,6 +292,19 @@ public class GinyProvider extends AppWidgetProvider {
             v.setTextColor(R.id.giny_compara2, suau);
             v.setViewVisibility(R.id.giny_compara2, sota.isEmpty() ? View.GONE : View.VISIBLE);
             if (forma == Forma.ALT) v.setInt(R.id.giny_frase, "setMaxLines", sota.isEmpty() ? 3 : 2);
+        }
+
+        // La gota: la pluja en curt («19 h · 22 %», «Plou»), on no hi ha la línia sencera (al gran sí).
+        if (forma != Forma.GRAN) {
+            String gota = t.isNull("gota") ? "" : t.optString("gota");
+            boolean ambGota = !gota.isEmpty() && (forma != Forma.FILA || altDp >= FILA_AMB_GOTA);
+            v.setViewVisibility(R.id.giny_pluja, ambGota ? View.VISIBLE : View.GONE);
+            if (ambGota) {
+                v.setTextViewText(R.id.giny_pluja_text, gota);
+                v.setTextColor(R.id.giny_pluja_text, suau);
+                // El blau de la mínima de cada cel, que es llegeix sobre el fons.
+                v.setInt(R.id.giny_gota, "setColorFilter", min);
+            }
         }
 
         // El petit alt (2×3 o més) té lloc per a la frase.

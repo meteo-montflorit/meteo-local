@@ -20,7 +20,7 @@ estándar de widgets para webs instaladas solo funciona en Windows.
 
 ## Decisión
 
-Versión 3.239.0 de la web; versión 1.1.0 (código 2) de la app.
+Versión 3.239.0 de la web; versión 1.1.0 (código 2) de la app; con la gota de la lluvia, 3.239.1 y 1.1.1 (código 3).
 
 - **Los textos, del mismo código de la web.** `giny.js` carga `comu.js`,
   `grafica.js` y `casa.js` (y `montflorit/es.js` para el castellano) en Node
@@ -88,6 +88,20 @@ Versión 3.239.0 de la web; versión 1.1.0 (código 2) de la app.
   `android/giny/manifest.py` pone el receptor y el permiso de internet en el
   manifiesto antes de compilar. Las copias no van al repositorio
   (`android/.gitignore`).
+
+## Cambio del 24-11-2026: la gota de la lluvia en los widgets pequeños
+
+Juanjo, ya con el widget de 4×2 en su móvil, preguntó «lo de la lluvia no
+sale?»: la línea de la lluvia solo cabía en el de 4×3. Aprobó la propuesta de
+una gota con la lluvia en corto, al estilo de los widgets de tiempo («sí,
+hazlo»). Desde la 3.239.1, `giny.js` da también `gota`, con el mismo criterio
+que la línea de debajo de la frase (`titularAra`): si llueve, «Plou»
+(«Llueve»); si el radar la ve llegar, la hora o la franja del radar; si no, la
+primera hora de lluvia prevista y su probabilidad («19 h · 22 %»). Sin
+lluvia, nada. En la mediana, entre la temperatura y el dibujo; en la pequeña,
+debajo de la máxima y la mínima, y en la de una fila, como tercera línea si
+mide 70 dp de alto o más. La gota es «droplet» de Lucide, en el azul de la
+mínima de cada cielo. La app pasa a la 1.1.1.
 
 ## Alternativas descartadas
 

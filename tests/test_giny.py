@@ -53,6 +53,27 @@ class Giny(unittest.TestCase):
         self.assertEqual(linia[1], {"compte": "2026-11-24T19:00+01:00", "hores": True})
         self.assertEqual(linia[2], ", cap a les 19 h (22 %).")
 
+    def test_la_gota_diu_la_pluja_en_curt(self):
+        # La primera hora de pluja prevista i la probabilitat, com la línia de sota la frase.
+        self.assertEqual(self.g["ca"]["gota"], "19\u00a0h · 22\u00a0%")
+        self.assertEqual(self.g["es"]["gota"], "19\u00a0h · 22\u00a0%")
+
+    def test_si_plou_la_gota_ho_diu(self):
+        with open(DADES, encoding="utf-8") as f:
+            d = json.load(f)
+        d["ara_casa"]["plou"] = True
+        g = giny(dades=d)
+        self.assertEqual(g["ca"]["gota"], "Plou")
+        self.assertEqual(g["es"]["gota"], "Llueve")
+
+    def test_sense_pluja_no_hi_ha_gota(self):
+        with open(DADES, encoding="utf-8") as f:
+            d = json.load(f)
+        for h in d["hores"]:
+            h["probabilitat"] = 0
+            h["pluja_mm"] = 0
+        self.assertIsNone(giny(dades=d)["ca"]["gota"])
+
     def test_en_castella(self):
         es = self.g["es"]
         self.assertEqual(es["titol"], "Tiempo en Montflorit (Cerdanyola)")

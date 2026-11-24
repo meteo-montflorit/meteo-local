@@ -48,6 +48,30 @@
                 android:layout_weight="1"
                 android:includeFontPadding="false"
                 android:textSize="34sp" />
+            <LinearLayout
+                android:id="@+id/giny_pluja"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+                <ImageView
+                    android:id="@+id/giny_gota"
+                    android:layout_width="13dp"
+                    android:layout_height="13dp"
+                    android:layout_marginEnd="3dp"
+                    android:src="@drawable/giny_gota"
+                    android:importantForAccessibility="no" />
+                <TextView
+                    android:id="@+id/giny_pluja_text"
+                    style="@style/GinySuau"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:maxLines="1" />
+            </LinearLayout>
             <ImageView
                 android:id="@+id/giny_cel"
                 android:layout_width="44dp"

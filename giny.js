@@ -156,7 +156,23 @@ function targeta(dades, idioma) {
     const fase = faseAProp(d.lluna);
     const plou = !!(d.ara_casa && d.ara_casa.plou) || (d.veines || []).some((v) => v.plou && v.compta);
     const cel = d.hores && celPortada(d.hores, plou, radar);
-    return { sec, fase, cel, nomFase: fase ? NOM_FASE_LLUNA()[fase.fase] : null, quanFase: fase ? quanFase(fase.hora) : null };
+    // La pluja en curt, per a la gota dels ginys petits (ADR 0131), amb el mateix
+    // criteri que la línia de sota la frase (titularAra): si el radar en diu
+    // alguna cosa, el radar; si no, la primera hora de pluja de la previsió.
+    const estat = radar && radar.pluja && radar.pluja.estat;
+    let gota = null;
+    if (plou || estat === 'plou' || estat === 'radar_sobre') gota = T('Plou');
+    else if (['arriba', 'possible'].includes(estat) && radar) {
+      const quan = radar.arriba || radar.possible;
+      if (quan) gota = franjaRadar(quan) || horaCurta(quan);
+    } else {
+      const f = primeraPluja(d.hores);
+      if (f) {
+        const pct = f.probabilitat == null ? '' : ' · ' + Math.round(f.probabilitat * 100) + '\\u00a0%';
+        gota = horaLocal(f.hora) + '\\u00a0h' + pct;
+      }
+    }
+    return { sec, fase, cel, gota, nomFase: fase ? NOM_FASE_LLUNA()[fase.fase] : null, quanFase: fase ? quanFase(fase.hora) : null };
   })()`, ctx);
   if (!r.sec) return null;
   // Els textos del compte enrere (textCompte), amb {0} i {1} on van les xifres,
@@ -193,6 +209,7 @@ function targeta(dades, idioma) {
     lluna: r.fase ? { text: `${r.nomFase}: ${r.quanFase}`, angle: { nova: 0, quart_creixent: 90, plena: 180, quart_minvant: 270 }[r.fase.fase] } : null,
     pastilles: (primer('dades-ara') ? primer('dades-ara').children : []).map(text).filter(Boolean),
     cel: r.cel ? { fons: r.cel.fons, dibuix: r.cel.dibuix, moment: r.cel.moment } : null,
+    gota: r.gota,
     textos: r.textos,
   };
 }
