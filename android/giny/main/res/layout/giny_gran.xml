@@ -78,7 +78,8 @@
                     style="@style/GinySuau"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium" />
+                    android:fontFamily="sans-serif-medium"
+                    android:maxLines="1" />
                 <TextView
                     android:id="@+id/giny_extrems_vora"
                     style="@style/GinySuau"
@@ -93,7 +94,15 @@
                     android:id="@+id/giny_compara"
                     style="@style/GinySuau"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    android:maxLines="1" />
+                <TextView
+                    android:id="@+id/giny_compara2"
+                    style="@style/GinySuau"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:visibility="gone" />
             </LinearLayout>
             <LinearLayout
                 android:layout_width="wrap_content"

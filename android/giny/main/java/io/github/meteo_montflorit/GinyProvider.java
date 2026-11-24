@@ -6,19 +6,24 @@
 // la pluja, que depèn de l'hora en què es mira.
 package io.github.meteo_montflorit;
 
+import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextPaint;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.util.SizeF;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -31,6 +36,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
@@ -44,19 +50,27 @@ public class GinyProvider extends AppWidgetProvider {
         "https://meteo-montflorit.github.io/giny.json",
     };
     static final String PREFS = "giny";
+    static final String ACCIO_REFRESCA = "io.github.meteo_montflorit.GINY_REFRESCA";
+    // Si no es pot descarregar (sense connexió), es torna a provar al cap de REINTENT_MIN minuts,
+    // sense esperar la mitja hora d'Android.
+    static final long REINTENT_MIN = 10;
     // Amb dades de VELLES_H hores o més, el giny diu de quan són i la
     // temperatura es posa en gris (es veu que no és la d'ara).
     static final long VELLES_H = 2;
+    // A partir d'aquesta alçada (dp), el giny petit porta també la frase.
+    static final float PETIT_AMB_FRASE = 260;
     // El color de la pastilla del compte enrere de la pluja (web/estil.css, .comenca-pluja).
     static final int AIGUA_FONS = 0xFFDBEAFE;
     static final int AIGUA_TEXT = 0xFF1E40AF;
 
-    // Les quatre formes i la mida (dp) a partir de la qual es fan servir.
+    // Les formes i la mida (dp) a partir de la qual es fan servir. Mesures d'un Pixel
+    // (24-11-2026): el 4×1 fa uns 290×90 dp; el 2×2, 140×185; el 4×2, 290×185, i el 4×3, 290×280.
     enum Forma {
         FILA(R.layout.giny_fila, 110, 40),
-        PETIT(R.layout.giny_petit, 110, 100),
-        MITJA(R.layout.giny_mitja, 220, 100),
-        GRAN(R.layout.giny_gran, 220, 175);
+        PETIT(R.layout.giny_petit, 110, 125),
+        MITJA(R.layout.giny_mitja, 220, 125),
+        ALT(R.layout.giny_alt, 220, 170),
+        GRAN(R.layout.giny_gran, 220, 250);
 
         final int layout;
         final float ample;
@@ -68,11 +82,15 @@ public class GinyProvider extends AppWidgetProvider {
             this.alt = alt;
         }
 
+        boolean ambFrase() {
+            return this == MITJA || this == ALT || this == GRAN;
+        }
+
         /** La que hi cap en una mida (per a Android 11 o anterior, que no tria sol). */
         static Forma per(float ample, float alt) {
             if (alt < PETIT.alt) return FILA;
             if (ample < MITJA.ample) return PETIT;
-            return alt >= GRAN.alt ? GRAN : MITJA;
+            return alt >= GRAN.alt ? GRAN : alt >= ALT.alt ? ALT : MITJA;
         }
     }
 
@@ -93,12 +111,15 @@ public class GinyProvider extends AppWidgetProvider {
         super.onReceive(context, intent);
         // En canviar l'idioma del mòbil, el giny canvia d'idioma.
         if (Intent.ACTION_LOCALE_CHANGED.equals(intent.getAction())) pintaTots(context);
+        // Tocar-lo sense dades, o el reintent després d'una descàrrega fallida.
+        if (ACCIO_REFRESCA.equals(intent.getAction())) descarrega(context, goAsync());
     }
 
     // --- Les dades.
 
     static void descarrega(Context context, PendingResult resultat) {
         new Thread(() -> {
+            boolean fet = false;
             try {
                 for (String font : FONTS) {
                     String text = baixa(font);
@@ -110,13 +131,27 @@ public class GinyProvider extends AppWidgetProvider {
                     }
                     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                         .putString("dades", text).apply();
+                    fet = true;
                     break;
                 }
                 pintaTots(context);
+                if (!fet) reintenta(context);
             } finally {
                 if (resultat != null) resultat.finish();
             }
         }).start();
+    }
+
+    static PendingIntent refresca(Context context) {
+        Intent i = new Intent(context, GinyProvider.class).setAction(ACCIO_REFRESCA);
+        return PendingIntent.getBroadcast(context, 1, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    /** Un altre intent d'aquí a REINTENT_MIN minuts (una alarma inexacta, que no demana cap permís). */
+    static void reintenta(Context context) {
+        AlarmManager alarmes = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmes == null) return;
+        alarmes.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + REINTENT_MIN * 60_000, refresca(context));
     }
 
     static String baixa(String adreca) {
@@ -165,26 +200,37 @@ public class GinyProvider extends AppWidgetProvider {
 
     static RemoteViews vistes(Context context, AppWidgetManager manager, int id) {
         JSONObject d = dades(context);
+        Bundle o = manager.getAppWidgetOptions(id);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12 o posterior tria la forma que hi cap, també en girar el mòbil.
+            // Android 12 o posterior: una forma per a cada mida que pot tenir el giny (en vertical i
+            // en horitzontal), que tria el sistema. Amb la mida de debò, el giny pot mesurar si una
+            // línia hi cap.
+            ArrayList<SizeF> mides = o.getParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES);
             Map<SizeF, RemoteViews> formes = new HashMap<>();
-            for (Forma f : Forma.values()) formes.put(new SizeF(f.ample, f.alt), vista(context, f, d));
+            if (mides != null) {
+                for (SizeF m : mides) formes.put(m, vista(context, Forma.per(m.getWidth(), m.getHeight()), d, m.getWidth(), m.getHeight()));
+            }
+            // I les de cada forma, per si el giny canvia de mida abans que arribin les noves.
+            for (Forma f : Forma.values()) {
+                SizeF m = new SizeF(f.ample, f.alt);
+                if (!formes.containsKey(m)) formes.put(m, vista(context, f, d, f.ample, f.alt));
+            }
             return new RemoteViews(formes);
         }
-        Bundle o = manager.getAppWidgetOptions(id);
         // En vertical, l'amplada mínima i l'alçada màxima.
         float ample = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
         float alt = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 110);
-        return vista(context, Forma.per(ample, alt), d);
+        return vista(context, Forma.per(ample, alt), d, ample, alt);
     }
 
-    static RemoteViews vista(Context context, Forma forma, JSONObject d) {
+    static RemoteViews vista(Context context, Forma forma, JSONObject d, float ampleDp, float altDp) {
         String idioma = context.getString(R.string.giny_idioma);
         JSONObject t = d == null ? null : d.optJSONObject(idioma);
         if (t == null || t.optJSONObject("cel") == null) {
             RemoteViews v = new RemoteViews(context.getPackageName(), R.layout.giny_carregant);
             if (d != null) v.setTextViewText(R.id.giny_avis, context.getString(R.string.giny_sense_dades));
-            v.setOnClickPendingIntent(R.id.giny_arrel, obreApp(context));
+            // Sense dades, tocar-lo les torna a demanar; si les dades no tenen la targeta, obre l'app.
+            v.setOnClickPendingIntent(R.id.giny_arrel, d == null ? refresca(context) : obreApp(context));
             return v;
         }
         RemoteViews v = new RemoteViews(context.getPackageName(), forma.layout);
@@ -200,8 +246,8 @@ public class GinyProvider extends AppWidgetProvider {
         // El títol: el lloc i, si les dades són velles, de quan són.
         long hores = horesDesDe(d.optString("generat"));
         boolean velles = hores >= VELLES_H;
-        String titol = forma == Forma.GRAN || forma == Forma.MITJA ? t.optString("titol") : "Montflorit";
-        if (velles) titol += " · " + context.getString(R.string.giny_vell, hores);
+        String titol = forma.ambFrase() ? t.optString("titol") : "Montflorit";
+        if (velles) titol += " · " + context.getString(forma.ambFrase() ? R.string.giny_vell : R.string.giny_vell_curt, hores);
         v.setTextViewText(R.id.giny_titol, titol);
         v.setTextColor(R.id.giny_titol, suau);
 
@@ -221,15 +267,36 @@ public class GinyProvider extends AppWidgetProvider {
         v.setViewVisibility(R.id.giny_extrems, vora ? View.GONE : View.VISIBLE);
         v.setViewVisibility(R.id.giny_extrems_vora, vora ? View.VISIBLE : View.GONE);
 
-        if (forma == Forma.MITJA || forma == Forma.GRAN) {
+        if (forma.ambFrase()) {
             v.setTextViewText(R.id.giny_frase, t.optString("frase"));
             v.setTextColor(R.id.giny_frase, text);
-            v.setTextViewText(R.id.giny_quan, dia == null ? "" : dia.optString("quan"));
+            String quan = dia == null ? "" : dia.optString("quan");
+            v.setTextViewText(R.id.giny_quan, quan);
             v.setTextColor(R.id.giny_quan, suau);
             String compara = dia == null || dia.isNull("compara") ? "" : dia.optString("compara");
-            v.setTextViewText(R.id.giny_compara, compara);
+            // Al gran, la comparació va a sota; al mitjà, darrere la màxima i la mínima, com a la web
+            // («Avui: màx. 15°, mín. 5° · semblant a ahir»), si hi cap; si no, a la línia de sota
+            // (a l'alt) o no hi va (al baix, que no té lloc).
+            String mateixa = "", sota = "";
+            if (!compara.isEmpty()) {
+                if (forma == Forma.GRAN) mateixa = compara;
+                else if (hiCap(context, quan + " " + extrems + " · " + compara, ampleDp - 30)) mateixa = " · " + compara;
+                else if (forma == Forma.ALT) sota = compara;
+            }
+            v.setTextViewText(R.id.giny_compara, mateixa);
             v.setTextColor(R.id.giny_compara, suau);
-            v.setViewVisibility(R.id.giny_compara, compara.isEmpty() ? View.GONE : View.VISIBLE);
+            v.setViewVisibility(R.id.giny_compara, mateixa.isEmpty() ? View.GONE : View.VISIBLE);
+            v.setTextViewText(R.id.giny_compara2, sota);
+            v.setTextColor(R.id.giny_compara2, suau);
+            v.setViewVisibility(R.id.giny_compara2, sota.isEmpty() ? View.GONE : View.VISIBLE);
+            if (forma == Forma.ALT) v.setInt(R.id.giny_frase, "setMaxLines", sota.isEmpty() ? 3 : 2);
+        }
+
+        // El petit alt (2×3 o més) té lloc per a la frase.
+        if (forma == Forma.PETIT && altDp >= PETIT_AMB_FRASE) {
+            v.setTextViewText(R.id.giny_frase, t.optString("frase"));
+            v.setTextColor(R.id.giny_frase, text);
+            v.setViewVisibility(R.id.giny_frase, View.VISIBLE);
         }
 
         if (forma == Forma.GRAN) {
@@ -256,7 +323,7 @@ public class GinyProvider extends AppWidgetProvider {
         }
 
         String descripcio = t.optString("titol") + ". " + t.optString("temperatura") + ".";
-        if (forma == Forma.MITJA || forma == Forma.GRAN) descripcio += " " + t.optString("frase");
+        if (forma.ambFrase()) descripcio += " " + t.optString("frase");
         v.setContentDescription(R.id.giny_arrel, descripcio);
         v.setOnClickPendingIntent(R.id.giny_arrel, obreApp(context));
         return v;
@@ -321,6 +388,15 @@ public class GinyProvider extends AppWidgetProvider {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /** Si un text de 13 sp (GinySuau) cap en una amplada en dp, amb la lletra mitjana, la més ampla. */
+    static boolean hiCap(Context context, String text, float ampleDp) {
+        float densitat = context.getResources().getDisplayMetrics().density;
+        TextPaint p = new TextPaint();
+        p.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13, context.getResources().getDisplayMetrics()));
+        p.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        return p.measureText(text) <= ampleDp * densitat;
     }
 
     static void afegeix(SpannableStringBuilder s, String text, int color) {

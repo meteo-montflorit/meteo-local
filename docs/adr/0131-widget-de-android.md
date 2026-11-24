@@ -42,14 +42,31 @@ Versión 3.239.0 de la web; versión 1.1.0 (código 2) de la app.
   tiene Node: si el NAS cae, el widget dice de cuándo son los datos.
 - **El widget** (`android/giny/`): `GinyProvider` descarga `giny.json` cada
   media hora (el mínimo de Android, `updatePeriodMillis`), lo guarda y lo
-  pinta. Cuatro formas según el tamaño, que Android 12 o posterior elige solo
-  al cambiar el tamaño o girar el móvil, y que en Android 11 o anterior elige
-  el widget: una fila (4×1: dibujo, temperatura, lugar, máxima y mínima),
-  pequeña (2×2: «Montflorit», dibujo, temperatura, máxima y mínima), mediana
-  (4×2, por defecto: título, frase, temperatura, máxima y mínima y la
-  comparación) y grande (4×3 o más: la tarjeta entera, con la lluvia
-  prevista en la pastilla azul de la web, el sol y la Luna). Al tocarlo se
-  abre la app.
+  pinta. Si no puede descargarlo, vuelve a probar a los 10 minutos (una
+  alarma inexacta, sin permisos) y, mientras no tiene datos, tocarlo lo
+  vuelve a pedir. Cinco formas según el tamaño, con las medidas de un Pixel
+  (24-11-2026: el 4×1 mide unos 290×90 dp; el 2×2, 140×185; el 4×2,
+  290×185, y el 4×3, 290×280):
+  - **una fila** (menos de 125 dp de alto): dibujo, temperatura, lugar,
+    máxima y mínima;
+  - **pequeña** (menos de 220 dp de ancho): «Montflorit», dibujo,
+    temperatura, máxima y mínima, y la frase si mide 260 dp de alto o más;
+  - **mediana baja** (de 125 a 170 dp de alto): título, frase en dos líneas,
+    temperatura, dibujo y «Avui: màx. 15°, mín. 5° · semblant a ahir»;
+  - **mediana alta** (de 170 a 250 dp, el 4×2 de la mayoría de móviles y la
+    que sale al ponerlo): lo mismo con la frase en tres líneas, como la
+    tarjeta de la web;
+  - **grande** (250 dp o más, el 4×3): la tarjeta entera, con la lluvia
+    prevista en la pastilla azul de la web, el sol y la Luna.
+
+  Android 12 o posterior recibe una forma para cada tamaño que puede tener el
+  widget (en vertical y en horizontal) y elige él; con el tamaño de verdad, el
+  widget mide si la comparación con ayer cabe en la misma línea y, si no, la
+  pasa a la de abajo (en la mediana alta) o la deja (en la baja). En Android
+  11 o anterior, el widget elige la forma con el tamaño que le da el
+  lanzador. Al tocarlo se abre la app. En el selector de widgets, una muestra
+  con un día de ejemplo (Android 12 o posterior) o una captura del widget de
+  verdad en el idioma del móvil (antes).
 - **El aspecto, el de la tarjeta.** Los fondos de los 15 cielos se fotografían
   de `web/estil.css` con Chromium y los dibujos son los mismos de Meteocons,
   en WebP (108 KB en total); los colores del texto de cada cielo (los dos
@@ -60,7 +77,8 @@ Versión 3.239.0 de la web; versión 1.1.0 (código 2) de la app.
   Esquinas redondeadas con el radio del sistema en Android 12 o posterior;
   letra del sistema.
 - **Sin la hora del dato**: con datos de 2 horas o más, el título añade «dades
-  de fa 3 h» («datos de hace 3 h») y la temperatura sale en gris.
+  de fa 3 h» («datos de hace 3 h»; en la fila y la pequeña, «fa 3 h») y la
+  temperatura sale en gris.
 - **El idioma, el del móvil**: catalán si el móvil está en catalán; si no,
   castellano. El widget no puede leer el idioma elegido dentro de la app.
 - **Fuera de `app/src`.** `bubblewrap update` borra `app/src` entero y lo
@@ -100,4 +118,17 @@ Versión 3.239.0 de la web; versión 1.1.0 (código 2) de la app.
   app. `tests/test_rep_dades.py`: IONOS acepta `giny.json`.
 - Con los datos de las 9:00 del 24-11-2026, `giny.js` da lo mismo que la
   tarjeta de la web que Juanjo capturó esa mañana.
-- La app 1.1.0 compila (`android/construeix.sh`, APK de 1,2 MB).
+- La app 1.1.0 compila (`android/construeix.sh`, APK de 1,2 MB, AAB de
+  1,3 MB; pide además el permiso de internet).
+- En el emulador de Android 15 con la pantalla de un Pixel 7 (1080×2400, 420
+  ppp), con los datos publicados: la mediana alta, la grande, la pequeña y la
+  de una fila, en castellano y en catalán (el idioma de la app cambiado con
+  `cmd locale set-app-locales`), y con los fondos de noche, alba y lluvia, el
+  aviso de datos viejos y la frase en la pequeña forzados en compilaciones de
+  prueba que no se guardaron. Al tocarlo se abre la app. El lector de
+  pantalla lee «Temps a Montflorit (Cerdanyola). 8 °C. Aquest matí…».
+- Dos fallos encontrados así y corregidos: Android no deja usar `Space` en un
+  widget («Class not allowed to be inflated»), y el 4×2 del Pixel es más alto
+  de lo previsto y salía la forma grande cortada.
+- Sin probar: Android 11 o anterior (no hay imagen del emulador) y el móvil de
+  Juanjo.
