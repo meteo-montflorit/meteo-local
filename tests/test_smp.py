@@ -484,6 +484,20 @@ class Smp(unittest.TestCase):
         self.assertEqual(e["allargat_de"], v["fin"])
         self.assertEqual(e["ca"].split("\n")[1], "Dijous 12, de les 0 h a les 18 h.")
 
+    def test_la_fitxa_de_l_aemet_posa_al_dia_la_cita_si_l_aemet_en_canvia_el_text(self):
+        # 25-11-2026: «Viento del noroeste» passà a «del oeste» amb la mateixa clau (revisor).
+        k = "aemet:vent:2026-11-25T11:00Z"
+        ca = "<b>AEMET: avís groc per vent al Vallès</b>\nDimecres 25, de les 12 h a les 6 h.\n«Rachas máximas: 70 km/h. Viento del noroeste.»\nÉs un avís oficial."
+        es = ca.replace("avís groc per vent", "aviso amarillo por viento")
+        fitxa = {"clau": k, "tipus": "perill", "inici": "2026-11-25T00:03+01:00", "nivell": "groc", "ca": ca, "es": es,
+                 "fins": "2026-11-26T05:59:59+01:00", "comenca": "2026-11-25T12:00+01:00"}
+        v = {"fin": fitxa["fins"], "fin_visible": fitxa["fins"], "cobert": False, "comenca": fitxa["comenca"],
+             "descripcio": "Rachas máximas: 70 km/h. Viento del oeste."}
+        e = AB.historial({"historial": [dict(fitxa)], "aemet_vigents": {k: v}}, [], AHORA)[0]
+        self.assertIn("«Rachas máximas: 70 km/h. Viento del oeste.»", e["ca"])
+        self.assertIn("«Rachas máximas: 70 km/h. Viento del oeste.»", e["es"])
+        self.assertNotIn("noroeste", e["ca"] + e["es"])
+
     def test_la_fitxa_de_l_aemet_no_diu_retirat_si_l_aemet_n_ha_canviat_les_hores(self):
         # 11-11-2026, 11:45: el groc de vent del 12-11 de 0 a 15 h (la fitxa, de 0 a 7 h: Meteocat avisava
         # de 7 a 19 h) va passar a ser de 7 a 15 h, tot cobert per Meteocat. La fitxa es va tancar amb

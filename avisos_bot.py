@@ -938,7 +938,8 @@ def decideix(estat, salida, ahora, publicat=None):
         # portada i l'avís enviat, de 0 a 7 h (revisor, 11-11-2026).
         estat["aemet_vigents"] = {f"aemet:{k}": {"fin": a["fin"], "cobert": bool(a.get("cobert")),
                                                  "comenca": SMP.visible(a)["inicio"],
-                                                 "fin_visible": SMP.visible(a)["fin"]}
+                                                 "fin_visible": SMP.visible(a)["fin"],
+                                                 "descripcio": a.get("descripcio")}
                                   for k, a in aemet.items()}
     else:
         estat["aemet_vigents"] = None
@@ -1187,6 +1188,24 @@ def refa_franja(e, fins_text=None):
         e["franja_fins"] = e["fins"]
 
 
+def refa_descripcio(e, descripcio):
+    """La cita de AEMET de la ficha («Rachas máximas: 70 km/h. Viento del
+    noroeste.») al día cuando AEMET cambia solo el texto del aviso y no su clave
+    (revisor, 25-11-2026: «noroeste» pasó a «oeste»). Se sustituye la línea entre
+    «…»; si la ficha no la tiene o no hay texto nuevo, no se toca."""
+    if not descripcio:
+        return
+    nova = f"«{html.escape(descripcio, quote=False)}»"
+    for idioma in ("ca", "es"):
+        linies = e[idioma].split("\n")
+        for i, l in enumerate(linies):
+            if l.startswith("«") and l.endswith("»"):
+                if l != nova:
+                    linies[i] = nova
+                    e[idioma] = "\n".join(linies)
+                break
+
+
 def tanca_aemet(h, vigents, ahora):
     """Las fichas de AEMET al día con lo que publica AEMET ahora (Juanjo,
     17-10-2026: «Perill» enseñaba como activos dos avisos que AEMET ya había
@@ -1216,6 +1235,8 @@ def tanca_aemet(h, vigents, ahora):
             fins_text = e.get("franja_fins") or e.get("allargat_de") or e.get("fins")
             posa_fins(e, v.get("fin_visible") or v["fin"], v["fin"])
             refa_franja(e, fins_text)
+            if not tancada:
+                refa_descripcio(e, v.get("descripcio"))
             if v.get("comenca") and e.get("comenca") and \
                     H.llegeix(v["comenca"]) < H.llegeix(e["comenca"]):
                 e["comenca"] = v["comenca"]

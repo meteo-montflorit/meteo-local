@@ -1510,7 +1510,7 @@ class FitxesDelRevisor(unittest.TestCase):
             self.assertEqual(estat["aemet_coberts"], [])
             self.assertEqual(estat["aemet_vigents"][k], {"fin": "2026-10-20T08:59:59+02:00", "cobert": False,
                                                         "comenca": "2026-10-20T06:00:00+02:00",
-                                                        "fin_visible": "2026-10-20T08:59:59+02:00"})
+                                                        "fin_visible": "2026-10-20T08:59:59+02:00", "descripcio": "80 mm"})
 
     def test_els_avisos_de_l_aemet_de_la_passada_anterior_no_toquen_res(self):
         # Sense lectura de l'AEMET, la portada mostra els de la passada
