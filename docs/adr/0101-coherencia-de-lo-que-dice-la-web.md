@@ -784,7 +784,7 @@ tenía un 8 %. Explicado al revisor en sus instrucciones. Pruebas:
 `tests/test_web.py` (`test_la_franja_del_radar_nomes_si_diu_alguna_cosa`) y
 `tests/test_bot.py` (`PlujaPrevista`).
 
-**25-11-2026 (3.240.1), hallazgo leve del revisor, real.** La ficha abierta de
+**25-11-2026 (3.240.2), hallazgo leve del revisor, real.** La ficha abierta de
 «Perill» de AEMET citaba «Viento del noroeste» cuando AEMET, con la misma
 clave y las mismas horas, había pasado a «Viento del oeste»: `tanca_aemet`
 actualizaba el final y la franja, pero no la cita. `aemet_vigents` guarda ahora
