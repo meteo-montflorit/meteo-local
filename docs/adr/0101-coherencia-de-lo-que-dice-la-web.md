@@ -792,3 +792,16 @@ actualizaba el final y la franja, pero no la cita. `aemet_vigents` guarda ahora
 abiertas (las cerradas y el aviso ya enviado conservan lo que decían). Prueba:
 `tests/test_smp.py`
 (`test_la_fitxa_de_l_aemet_posa_al_dia_la_cita_si_l_aemet_en_canvia_el_text`).
+
+**25-11-2026 (3.240.3), hallazgo leve del revisor, real.** A las 18:16, la
+fila de 20 a 21 de la tabla por horas decía «Pluja feble» con un 97 % y «–»
+en los milímetros. El 97 % era del radar (†), que a esa hora solo llegaba a
+los primeros 15 minutos de la fila (su horizonte es de dos horas): su
+probabilidad cuenta aunque cubra parte de la hora, pero sus milímetros solo
+desde media hora (ADR 0019), y los modelos daban 0,0. La regla del radar se
+mantiene; lo que cambia es cómo se escribe la cifra: en una hora que la
+página da de lluvia (50 % o más) con menos de 0,1 mm, la tabla y el detalle
+de la gráfica dicen «<0,1» en lugar de «–» o «0» (`plujaSenseXifra`, en
+`web/grafica.js`). Las horas de «Possible pluja» siguen con «–». Prueba:
+`tests/test_web.py`
+(`test_hora_de_pluja_sense_mil_limetres_diu_menys_d_una_decima`).

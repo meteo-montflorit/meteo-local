@@ -175,6 +175,15 @@ class Web(unittest.TestCase):
         self.assertEqual(self.avalua("2026-10-06T13:00:00+02:00",
                                      "plujaHora({plou_ara: true, probabilitat: 1, pluja_mm: 0})"), "pluja")
 
+    def test_hora_de_pluja_sense_mil_limetres_diu_menys_d_una_decima(self):
+        # Revisor, 25-11-2026: «Pluja feble» amb un 97 % del radar (que només
+        # cobria 15 minuts de l'hora) i «–» a la columna de mil·límetres.
+        expr = ("[{probabilitat: 0.97, pluja_mm: 0}, {probabilitat: 0.4, pluja_mm: 0}, {probabilitat: 0.97, pluja_mm: 0.3},"
+                " {probabilitat: null, pluja_mm: 0}].map(plujaSenseXifra)")
+        self.assertEqual(self.avalua("2026-11-25T18:16:00+01:00", expr), [True, False, False, False])
+        codi = open(os.path.join(WEB, "casa.js"), encoding="utf-8").read()
+        self.assertIn("plujaSenseXifra(f) ? MENYS_DUNA_DECIMA : '\\u2013'", codi)
+
     def roba(self, mitja, anada, tornada, pluja=False):
         tram = [{"hora": f"2026-10-07T{h:02d}:00", "temperatura": t, "vent": v}
                 for h, t, v in (anada, tornada)]

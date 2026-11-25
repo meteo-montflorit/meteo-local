@@ -1621,7 +1621,7 @@ function taulaTram(t, obert, solHora) {
     celCel.append(linia);
     tr.append(celCel);
     tr.append(element('td', 'num', f.temperatura == null ? '' : `${Math.round(tempZona(f))}`));
-    tr.append(element('td', 'num', f.pluja_mm >= 0.1 ? coma(f.pluja_mm) : '\u2013'));
+    tr.append(element('td', 'num', f.pluja_mm >= 0.1 ? coma(f.pluja_mm) : plujaSenseXifra(f) ? MENYS_DUNA_DECIMA : '\u2013'));
     const prob = element('td', 'num prob');
     if (f.probabilitat != null) {
       const pct = Math.round(f.probabilitat * 100);

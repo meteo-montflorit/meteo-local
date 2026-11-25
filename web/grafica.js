@@ -20,6 +20,13 @@ function plujaHora(f) {
   if (f.plou_ara || (p == null ? f.pluja_mm >= 0.2 : p >= PROB_PLUJA)) return 'pluja';
   return p != null && p >= PROB_POSSIBLE ? 'possible' : null;
 }
+// En una hora que la pàgina dona de pluja (el 50 % o més) i en què la
+// previsió en suma menys de 0,1 mm, la xifra diu «<0,1» i no «–» ni «0»: la
+// fila deia «Pluja feble» sense cap mil·límetre (revisor, 25-11-2026: el radar
+// hi posava un 97 %, però només en veia 15 minuts, massa pocs per comptar-ne
+// els mil·límetres; ADR 0019 i 0101).
+const MENYS_DUNA_DECIMA = '<0,1';
+const plujaSenseXifra = (f) => (f.pluja_mm || 0) < 0.05 && plujaHora(f) === 'pluja';
 function plujaGrafica(f) {
   const p = f.probabilitat;
   return plujaHora(f) || (p != null && p >= PROB_POCA ? 'poca' : null);
@@ -995,7 +1002,8 @@ function dibuixaGrafica(fig) {
     linies.push(T`Temperatura: ${Math.round(tempZona(f))}\u00a0°C`);
     // Els mm com a la xifra de la barra: sense decimals a partir de 10.
     const v = f.pluja_mm || 0;
-    const mm = v >= 10 ? String(Math.round(v)) : v < 0.05 ? '0' : coma(Math.round(v * 10) / 10);
+    const mm = v >= 10 ? String(Math.round(v)) : plujaSenseXifra(f) ? MENYS_DUNA_DECIMA
+      : v < 0.05 ? '0' : coma(Math.round(v * 10) / 10);
     linies.push(f.probabilitat == null ? T`Pluja: ${mm}\u00a0mm`
       : T`Pluja: ${mm}\u00a0mm · ${Math.round(f.probabilitat * 100)}\u00a0%`);
     if ((f.neu || 0) >= 0.1) linies.push(T`Neu: ${coma(f.neu)}\u00a0cm`);

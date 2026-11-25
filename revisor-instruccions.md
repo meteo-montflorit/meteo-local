@@ -226,6 +226,12 @@ inclúyelas si son reales, explicando por qué.
   «La més propera» digan «feble» no es una contradicción (falsa alarma del
   14-11-2026). Sí lo sería que el aviso y la portada dieran intensidades
   distintas para la misma medida.
+- En la tabla por horas, la probabilidad del radar (†) cuenta aunque el radar
+  solo llegue a una parte de la hora (su horizonte es de dos horas), pero sus
+  milímetros solo si cubre media hora o más (ADR 0019). Por eso una hora puede
+  decir «Pluja feble» con un 97 % y casi ningún milímetro: desde la 3.240.3,
+  la cifra sale como «<0,1» (en la tabla y en el detalle de la gráfica), no
+  como «–». No es una contradicción; sí lo sería «Pluja…» con «–» o «0 mm».
 - En «Busos», el AMB puede publicar varios avisos a la vez para la misma
   línea, por desvíos distintos: el 14-11-2026 la CV1 tenía «…sense afectació
   a parades…» (un desvío) y «…afectant parades…» (otro, que anulaba tres
