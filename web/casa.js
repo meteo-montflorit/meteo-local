@@ -951,6 +951,14 @@ function actualitzaComptes() {
 }
 if (typeof setInterval === 'function') setInterval(actualitzaComptes, 30e3);
 
+// L'hora en curs, si la previsió hi dona pluja (del 20 %, com a la taula).
+// primeraPluja només mira les que comencen: la línia de sota la frase deia
+// «Els models no hi veuen pluja» amb un 60 % a la fila de l'hora en curs
+// (revisor, 24-11-2026).
+function plujaEnCurs(hores, ara = new Date()) {
+  return (hores || []).find((x) => new Date(x.hora) <= ara && new Date(x.fins) > ara && plujaHora(x)) || null;
+}
+
 // La primera hora que comença en les 24 que venen amb pluja segons la
 // previsió (del 20 %, «possible pluja», com a la taula).
 function primeraPluja(hores, ara = new Date()) {
@@ -964,18 +972,24 @@ function textPct(f) {
 }
 
 // La primera hora de les 24 que venen amb pluja segons la previsió, amb
-// l'hora i la probabilitat.
+// l'hora i la probabilitat; si en dona l'hora en curs, aquesta, com el
+// requadre del radar («per a aquesta hora»).
 function liniaPlujaPrevista(hores, ara = new Date()) {
-  const f = primeraPluja(hores, ara);
+  const ja = plujaEnCurs(hores, ara);
+  const f = ja || primeraPluja(hores, ara);
   if (!f) return null;
   const pct = f.probabilitat == null ? null : Math.round(f.probabilitat * 100);
   const segura = plujaHora(f) === 'pluja';
   const p = element('p', `resum-linia pluja-prevista${segura ? ' segura' : ''}`);
   const text = element('span');
-  const etiqueta = element('span', 'comenca-pluja');
-  etiqueta.append(compte(f.hora, true));
-  text.append(segura ? T('Pluja prevista ') : T('Possible pluja '), etiqueta,
-    T`, cap a les ${horaLocal(f.hora)}\u00a0h` + (pct == null ? '' : ` (${pct}\u00a0%)`) + '.');
+  if (ja) {
+    text.append((segura ? T('Pluja prevista en aquesta hora') : T('Possible pluja en aquesta hora')) + textPct(f) + '.');
+  } else {
+    const etiqueta = element('span', 'comenca-pluja');
+    etiqueta.append(compte(f.hora, true));
+    text.append(segura ? T('Pluja prevista ') : T('Possible pluja '), etiqueta,
+      T`, cap a les ${horaLocal(f.hora)}\u00a0h` + (pct == null ? '' : ` (${pct}\u00a0%)`) + '.');
+  }
   p.append(icona('i-cloud-rain'), text);
   return p;
 }
@@ -1134,7 +1148,7 @@ function blocRadar(r, plou, hores) {
         : T`${textPct(x)}: seria pluja que es formi a prop, que el radar encara no veu.`);
     // Primer, la de l'hora en curs: si ja en dona, «a partir de les 17 h» deia
     // l'hora següent amb la de les 16 a la taula (revisor, 19-10-2026).
-    const g = (hores || []).find((x) => new Date(x.hora) <= ara && new Date(x.fins) > ara && plujaHora(x));
+    const g = plujaEnCurs(hores, ara);
     if (g) cos.append(element('p', 'radar-propera', T('La previsió per hores sí que dona pluja per a aquesta hora') + resta(g)));
     else if (f && new Date(f.hora) < new Date(ara.getTime() + 2 * 3600e3)) {
       cos.append(element('p', 'radar-propera',

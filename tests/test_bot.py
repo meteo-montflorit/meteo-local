@@ -1663,6 +1663,12 @@ class PlujaPrevista(unittest.TestCase):
         for f in sec["hores"]:
             f["probabilitat"] = 0.05
         self.assertIsNone(B.text_pluja_prevista(sec, "ca", ARA))
+        # L'hora en curs, si en dona (revisor, 24-11-2026).
+        ara_u = ARA.astimezone(dt.timezone.utc).replace(minute=0, second=0, microsecond=0)
+        en_curs = {"hores": [{"hora": ara_u.isoformat(), "fins": (ara_u + dt.timedelta(hours=1)).isoformat(),
+                              "probabilitat": 0.6, "pluja_mm": 6.8}]}
+        self.assertEqual(B.text_pluja_prevista(en_curs, "ca", ARA), "Pluja prevista en aquesta hora (60 %).")
+        self.assertEqual(B.text_pluja_prevista(en_curs, "es", ARA), "Lluvia prevista en esta hora (60 %).")
 
 
 class FraseCel(unittest.TestCase):

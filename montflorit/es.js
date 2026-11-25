@@ -470,6 +470,8 @@ var IDIOMA = {
     "d’aquí a {0}\u00a0h": "dentro de {0}\u00a0h",
     "Pluja prevista ": "Lluvia prevista ",
     "Possible pluja ": "Posible lluvia ",
+    "Pluja prevista en aquesta hora": "Lluvia prevista en esta hora",
+    "Possible pluja en aquesta hora": "Posible lluvia en esta hora",
     "moviment de la pluja": "movimiento de la lluvia",
     "Mapa d’elaboració pròpia": "Mapa de elaboración propia",
     "Radar: {0}, {1}": "Radar: {0}, {1}",

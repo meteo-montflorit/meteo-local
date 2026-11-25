@@ -166,7 +166,8 @@ function targeta(dades, idioma) {
       const quan = radar.arriba || radar.possible;
       if (quan) gota = franjaRadar(quan) || horaCurta(quan);
     } else {
-      const f = primeraPluja(d.hores);
+      // L'hora en curs, si en dona, com la línia de la portada (revisor, 24-11-2026).
+      const f = plujaEnCurs(d.hores) || primeraPluja(d.hores);
       if (f) {
         const pct = f.probabilitat == null ? '' : ' · ' + Math.round(f.probabilitat * 100) + '\\u00a0%';
         gota = horaLocal(f.hora) + '\\u00a0h' + pct;

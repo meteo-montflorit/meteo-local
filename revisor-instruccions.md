@@ -78,6 +78,13 @@ inclúyelas si son reales, explicando por qué.
   «Sense pluja prevista» no esperen más lluvia. No es una contradicción:
   compáralo con `pluja_avui`, no con las horas que quedan. El 19-11-2026,
   con 0,2 mm caídos antes de las 6, se dio por error.
+- Los litros de «Avui» y «Demà» en «Previsió de 7 dies» suman solo las horas
+  con lluvia posible o segura (20 % o más), las que la gráfica marca con
+  lluvia. La tabla por horas da los milímetros de todas las horas, también
+  las de poca probabilidad, así que la suma de la tabla puede ser mayor y no
+  es una contradicción: suma solo las horas con `probabilitat` de 0,2 o más.
+  El 25-11-2026 se dio por error «1 mm» frente a 1,7: la hora de 0,3 mm tenía
+  un 8 %, y las que contaban sumaban 1,4.
 - La máxima y la mínima de «Avui» y «Demà» en «Previsió de 7 dies» son de
   las 24 horas del día, la madrugada incluida, y las de hoy cuentan también
   lo ya medido. Con viento cálido de noche, la máxima puede caer de

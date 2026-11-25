@@ -1741,6 +1741,20 @@ espera.then(() => console.log(JSON.stringify([mostrades, enviats])));
         self.assertEqual(self.avalua(ara, f"primeraPluja({json.dumps(hores)}, new Date()).hora"), "2026-10-10T12:00")
         self.assertEqual(self.avalua(ara, f"textPct(primeraPluja({json.dumps(hores)}, new Date()))"), " (49\u00a0%)")
         self.assertIsNone(self.avalua(ara, f"primeraPluja({json.dumps(sec[:2])}, new Date())"))
+        # La línia de sota la frase diu la de l'hora en curs si en dona
+        # (revisor, 24-11-2026: «Els models no hi veuen pluja» amb un 60 % ara).
+        self.assertEqual(self.avalua(ara, f"plujaEnCurs({json.dumps(hores)}, new Date()).hora"), "2026-10-10T10:00")
+        self.assertIsNone(self.avalua(ara, f"plujaEnCurs({json.dumps(sec)}, new Date())"))
+        dom = ("const nou = (t) => ({ tag: t, fills: [], className: '', setAttribute() {}, addEventListener() {},"
+               " classList: Object.assign([], { add() {}, remove() {} }), dataset: {}, style: { setProperty() {} },"
+               " append(...c) { this.fills.push(...c); },"
+               " get textContent() { return this.fills.map((f) => (typeof f === 'string' ? f : f.textContent)).join(''); },"
+               " set textContent(v) { this.fills = [v]; } });"
+               "document.createElement = nou; document.createElementNS = (ns, t) => nou(t);")
+        self.assertEqual(self.avalua(ara, dom + f"liniaPlujaPrevista({json.dumps(hores)}, new Date()).textContent"),
+                         "Possible pluja en aquesta hora (30\u00a0%).")
+        # Sense pluja a l'hora en curs, la primera que comença, com abans.
+        self.assertIn("cap a les 12", self.avalua(ara, dom + f"liniaPlujaPrevista({json.dumps(hores[1:])}, new Date()).textContent"))
 
     def test_icones_del_cel_amb_els_seus_colors(self):
         # ADR 0063: cada icona del temps que posa la pàgina de casa té les

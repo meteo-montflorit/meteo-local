@@ -546,13 +546,19 @@ def text_pluja_prevista(dades, idioma, moment):
     ara_u = moment.astimezone(dt.timezone.utc)
     for f in dades.get("hores") or []:
         ini_u = _instant(f["hora"])
+        p = f.get("probabilitat")
+        pct = f" ({math.floor(p * 100 + 0.5)} %)" if p is not None else ""
+        segura = p is None or p >= 0.5
+        # L'hora en curs, si en dona, com la portada (revisor, 24-11-2026:
+        # «Els models no hi veuen pluja» amb un 60 % a l'hora en curs).
+        if f.get("fins") and ini_u <= ara_u < _instant(f["fins"]) and pluja_hora(f):
+            if idioma == "es":
+                return f"{'Lluvia prevista' if segura else 'Posible lluvia'} en esta hora{pct}."
+            return f"{'Pluja prevista' if segura else 'Possible pluja'} en aquesta hora{pct}."
         if not (ara_u < ini_u <= ara_u + dt.timedelta(hours=24)) or not pluja_hora(f):
             continue
         ini = hora_local(f["hora"])
         h = round((ini_u - ara_u).total_seconds() / 3600)
-        p = f.get("probabilitat")
-        pct = f" ({math.floor(p * 100 + 0.5)} %)" if p is not None else ""
-        segura = p is None or p >= 0.5
         if idioma == "es":
             quan = "dentro de menos de una hora" if h < 1 else "dentro de una hora" if h == 1 else f"dentro de unas {h} horas"
             return f"{'Lluvia prevista' if segura else 'Posible lluvia'} {quan}, hacia las {ini.hour} h{pct}."

@@ -769,3 +769,17 @@ ya no se mostraba (Meteocat cubría las horas de ahora: `fin` 17:59 bruto,
 y descartan los `cobert`, como la web y el bot. La frecuencia no pierde nada:
 las horas cubiertas ya dan el motivo «avís del Meteocat». Prueba:
 `tests/test_horario.py` (`test_aviso_de_aemet_con_horas_cubiertas_no_es_el_motivo`).
+
+**25-11-2026 (3.239.5), dos hallazgos leves del revisor.** (1) Real: el
+24-11 a las 21:52, la línea bajo la frase de la portada decía «Els models no
+hi veuen pluja, però hi ha avís» con un 60 % y 6,8 mm en la fila de la hora en
+curso, que el recuadro del radar sí daba («per a aquesta hora»).
+`primeraPluja` solo mira las horas que empiezan; ahora `plujaEnCurs` mira
+antes la hora en curso en la portada («Possible pluja en aquesta hora
+(60 %)»), en el recuadro del radar, en la gota del widget de Android y en /ara
+del bot (`text_pluja_prevista`). (2) Falsa alarma: «1 mm» en la fila «Avui»
+de la previsión de 7 días, frente a 1,7 mm sumando la tabla por horas; los
+litros del día solo suman las horas del 20 % o más (1,4 mm), y la de 0,3 mm
+tenía un 8 %. Explicado al revisor en sus instrucciones. Pruebas:
+`tests/test_web.py` (`test_la_franja_del_radar_nomes_si_diu_alguna_cosa`) y
+`tests/test_bot.py` (`PlujaPrevista`).
