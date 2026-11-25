@@ -2,7 +2,7 @@
 """Datos fijos de «Temps a Montflorit»: lugares, horario, fuentes y umbrales.
 Se cambian aquí, no en los programas."""
 
-VERSION = "3.239.5"
+VERSION = "3.240.0"
 
 # Coordenadas con tres decimales (unos 100 m), no las exactas: para el tiempo
 # da igual una calle u otra, y el repositorio es público.
@@ -73,6 +73,11 @@ VEINES = {
 # tiene lecturas recientes, con la racha de Sant Cugat (Centre no la publica);
 # si no, todo de Sant Cugat (VENT_ESTACIO).
 VENT_ARA = "MC_CENTRE"
+# El ajuste de las noches de la parte alta (part_alta.correccio_nit, ADR 0087)
+# solo con la riera prevista a estos grados o menos: se validó en las noches
+# de helada y, en el primer mes (25-10 a 24-11-2026, sin heladas), las demás
+# noches empeoraba la mediana sola (0,56 °C de error frente a 0,48).
+PART_ALTA_AJUST_NIT_FINS = 3.0
 # Lluvia en Montflorit para aprender (aprenentatge.pluja_observada, ADR 0070):
 # si casa no la marca, llueve si la marcan al menos estas vecinas de las que
 # cuentan («plou»).

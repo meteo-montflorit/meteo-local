@@ -1730,7 +1730,7 @@ function taula(hores, mesurada, riscos, sol) {
   if (visibles.some((f) => f.segons_radar)) terme('\u2020', T('Hi compta la pluja que el radar veu acostar-se.'));
   // La part alta, quan és la triada (ADR 0087 i 0123): d'on surt.
   if (zonaTriada() === 'alta') {
-    terme(T('Part alta'), T('Les temperatures de la part alta són les de vora la riera més el que sol fer-hi de més, que canvia segons l’hora del dia i l’època de l’any: surt del que han mesurat les estacions del barri a cada hora els últims 30 dies i, de nit, també dels núvols i el vent previstos, perquè amb el cel serè i sense vent l’aire fred s’acumula vora la riera.'));
+    terme(T('Part alta'), T('Les temperatures de la part alta són les de vora la riera més el que sol fer-hi de més, que canvia segons l’hora del dia i l’època de l’any: surt del que han mesurat les estacions del barri a cada hora els últims 30 dies i, a les nits fredes (3 °C o menys vora la riera), també dels núvols i el vent previstos, perquè amb el cel serè i sense vent l’aire fred s’acumula vora la riera.'));
   }
   if (visibles.some((f) => avisHora(f))) terme(T('Barra de color'), T('Hores amb avís, del color del nivell.'));
   terme(T('Vent'), T('La mitjana de l’hora en km/h i, entre parèntesis, la ratxa més forta de l’hora, la del model que en preveu més.'));

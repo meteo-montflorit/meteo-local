@@ -1,6 +1,6 @@
 # 126. El cielo tapado según el satélite, en observación
 
-Fecha: 2026-10-24 · Estado: aceptado
+Fecha: 2026-10-24 · Estado: retirado (25-11-2026, ver el final)
 
 ## Contexto
 
@@ -111,3 +111,32 @@ mes y preguntar a Juanjo cuando discrepen; Juanjo: «sí, prepáralo así».
 Si la respuesta llega más de 30 minutos después de la pregunta, el mensaje
 pide para qué hora vale, la de la pregunta o la de la respuesta, y la elección
 va a la columna `val_per` (detalle en el ADR 0100).
+
+## Cambio del 25-11-2026 (3.240.0): se retira; la web sigue como estaba
+
+Del 24-10 al 24-11-2026 Juanjo respondió 33 preguntas; 23 con una respuesta
+clara de tapado o no («Despejado», «Cubierto» o «Solo nubes altas y finas»;
+el resto, «Algunas nubes» o «No lo sé»): 16 «Cubierto», 5 «Despejado» y 2
+«Solo nubes altas y finas». Contra ellas, lo que habría dicho cada fuente:
+
+| Fuente | Aciertos (de 23) |
+|---|---|
+| El cielo de la web (`nuvols.cel_ara`: las bajas de Sabadell y, encima, las altas de los modelos) | 17 (16 de 16 «Cubierto», 0 de 5 «Despejado», 1 de 2 altas) |
+| Solo el satélite | 16 (13 de 16, 3 de 5, 0 de 2) |
+| El satélite y Sabadell, el mayor de los dos | 16 |
+| Sabadell solo, sin los modelos | 7 |
+
+El fallo de la web es dar tapado con el cielo despejado, y el satélite no lo
+resuelve: cuando él veía despejado y Sabadell tapado, acertó 3 de 6. Que
+el satélite viera las nubes altas que el METAR no ve tampoco se cumplió (0 de
+2). La muestra es pequeña y sesgada (solo se preguntaba cuando las dos
+fuentes discrepaban), pero no da ningún motivo para cambiar.
+
+El agente recomendó dejar la web como estaba y retirar la observación;
+Juanjo (25-11-2026): «si, aplica 2 y 3». Se quitan `nuvols_satellit.py`, su
+prueba, las tres llamadas de `publica.sh`, su lectura de respuestas en el
+reloj del NAS (`nas/reloj.sh`) y su ficha del inventario de automatismos.
+Los registros (`registre/nuvols-satellit.csv` y
+`registre/cel-confirmacions.csv`) se quedan en el NAS para consultarlos; el
+código está en el historial de git (3.239.5).
+

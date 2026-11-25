@@ -127,7 +127,7 @@
 | [0123](0123-un-boton-para-elegir-la-zona-del-barrio.md) | Un botón para elegir la zona del barrio: riera o parte alta | aceptado |
 | [0124](0124-historial-de-lo-medido-en-la-grafica.md) | Historial de lo medido en la gráfica | aceptado |
 | [0125](0125-el-acierto-de-la-parte-alta.md) | El acierto de la parte alta | aceptado |
-| [0126](0126-el-cielo-tapado-segun-el-satelite-en-observacion.md) | El cielo tapado según el satélite, en observación | aceptado |
+| [0126](0126-el-cielo-tapado-segun-el-satelite-en-observacion.md) | El cielo tapado según el satélite, en observación | retirado (25-11-2026) |
 | [0127](0127-la-luna.md) | La Luna: la fase en «Ara» y en la gráfica, y sus datos en «Sol i lluna» | aceptado |
 | [0128](0128-la-hora-en-utc-por-dentro.md) | La hora, en UTC por dentro y en hora de Madrid solo en la frontera | aceptado |
 | [0129](0129-conexiones-ssh-que-se-dan-por-muertas-en-un-minuto.md) | Las conexiones ssh del NAS se dan por muertas en un minuto | aceptado |

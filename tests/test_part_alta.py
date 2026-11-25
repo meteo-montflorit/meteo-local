@@ -9,6 +9,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import casa  # noqa: E402
+import config as C  # noqa: E402
 import estacions as ES  # noqa: E402
 import part_alta as PA  # noqa: E402
 
@@ -34,10 +35,23 @@ class AjustNit(unittest.TestCase):
 
     def test_seré_i_en_calma_suma_i_amb_núvols_i_vent_no(self):
         sere = PA.correccio_nit({"nuvols": 5, "vent": 2, "temperatura": 1}, self.ajust)
-        tapat = PA.correccio_nit({"nuvols": 100, "vent": 20, "temperatura": 8}, self.ajust)
+        tapat = PA.correccio_nit({"nuvols": 100, "vent": 20, "temperatura": 3}, self.ajust)
         self.assertAlmostEqual(sere, 0.68, places=2)
-        self.assertAlmostEqual(tapat, -0.28, places=2)
+        self.assertAlmostEqual(tapat, -0.18, places=2)
         self.assertEqual(PA.correccio_nit({"nuvols": None, "vent": 2, "temperatura": 1}, self.ajust), 0.0)
+
+    def test_nomes_a_les_nits_fredes(self):
+        """Des del 25-11-2026, només amb la riera prevista a 3 °C o menys:
+        les altres nits l'ajust empitjorava la mediana sola (ADR 0087)."""
+        self.assertEqual(C.PART_ALTA_AJUST_NIT_FINS, 3.0)
+        self.assertNotEqual(PA.correccio_nit({"nuvols": 5, "vent": 2, "temperatura": 3}, self.ajust), 0.0)
+        self.assertEqual(PA.correccio_nit({"nuvols": 5, "vent": 2, "temperatura": 3.1}, self.ajust), 0.0)
+        self.assertEqual(PA.correccio_nit({"nuvols": 100, "vent": 20, "temperatura": 8}, self.ajust), 0.0)
+        taula = {h: 1.0 for h in range(24)}
+        temperada = {"hora": "2026-12-01T02:00", "fins": "2026-12-01T03:00", "nuvols": 5, "vent": 2, "temperatura": 9}
+        PA.a_les_hores([temperada], taula, self.ajust)
+        # Sense ajust, però amb la base apuntada per a la vigilància.
+        self.assertEqual((temperada["dif_alta"], temperada["dif_alta_base"]), (1.0, 1.0))
 
     def test_nomes_a_les_hores_de_nit(self):
         taula = {h: 1.0 for h in range(24)}
@@ -49,8 +63,8 @@ class AjustNit(unittest.TestCase):
         self.assertEqual(dia["dif_alta"], 1.0)
         self.assertNotIn("dif_alta_base", dia)
         # Sense «-0.0» quan la correcció ho deixa a zero (19-10-2026).
-        tapat = {"hora": "2026-12-01T02:00", "fins": "2026-12-01T03:00", "nuvols": 100, "vent": 10, "temperatura": 13}
-        PA.a_les_hores([tapat], {h: 0.30 for h in range(24)}, self.ajust)
+        tapat = {"hora": "2026-12-01T02:00", "fins": "2026-12-01T03:00", "nuvols": 100, "vent": 10, "temperatura": 3}
+        PA.a_les_hores([tapat], {h: 0.10 for h in range(24)}, self.ajust)
         self.assertEqual(str(tapat["dif_alta"]), "0.0")
         # Sense ajust, com abans.
         f = {**nit}
@@ -73,6 +87,7 @@ class AjustNit(unittest.TestCase):
         # Mesura: +2,0. Sense l'ajust, 1,0 d'error; amb l'ajust, 0,3.
         self.assertIn("Hores de nit apuntades: 1", r)
         self.assertIn("Hores amb la riera a 0 °C o menys (1): error 1.00 °C sense l'ajust, 0.30 °C amb l'ajust", r)
+        self.assertIn("Hores amb la riera prevista a 3 °C o menys (on s'aplica l'ajust) (1): error 1.00", r)
 
 
 class PartAlta(unittest.TestCase):

@@ -239,3 +239,46 @@ riera y la web daba 1-1,5. Juanjo: «sí, adóptalo y vigílalo este invierno».
 Validación: `tests/test_part_alta.py` (`AjustNit`: coeficientes, noche
 despejada y en calma +0,68 y nubosa con viento −0,28, solo en las horas de
 noche, registro y resumen).
+
+## Cambio del 25-11-2026 (3.240.0): el ajuste de las noches, solo con 3 °C o menos
+
+Al mes de tenerlo (25-10 a 24-11-2026, 31 días, sin ninguna helada), el
+registro de la vigilancia y las vecinas daban:
+
+- **La parte alta frente a la riera**: el error medio de la previsión de la
+  parte alta era de 0,85 °C a 1 hora (0,94 a 3 h, 1,01 a 6 h, 1,11 a 12 h),
+  y el de la riera, de 0,69 (0,84, 0,90 y 1,02). En octubre era de 0,87
+  frente a 0,61: la distancia se ha reducido. Por la noche la parte alta
+  quedaba de media 0,54 °C por debajo de lo previsto; de día, casi sin sesgo.
+  Las vecinas de arriba dan grados enteros, y eso solo ya suma un error de un
+  cuarto de grado de media.
+- **El ajuste de las noches empeoraba**: en 506 horas de noche, el error de
+  la diferencia entre arriba y la riera era de 0,48 °C sin el ajuste y de
+  0,56 con él, que se acercaba más en el 29 % de las horas. Empeoraba con
+  todo tipo de cielo y también en las noches de 8 °C o menos (de 0,39 a
+  0,48). Pero se había validado en las noches de helada (arriba), y no ha
+  habido ninguna.
+
+El agente recomendó no darle a la parte alta un aprendizaje propio (con esa
+distancia y unas estaciones de grados enteros no se ganaría nada que se
+pudiera medir) y aplicar el ajuste solo en las noches frías; Juanjo
+(25-11-2026): «si, aplica 2 y 3».
+
+- **`part_alta.correccio_nit`** da 0 si la temperatura prevista de la fila
+  (la de la riera) pasa de `config.PART_ALTA_AJUST_NIT_FINS` (3 °C). Esas
+  noches la diferencia es la mediana de 30 días sola. El umbral de 3 °C es
+  un margen sobre las noches de helada en que se validó, no una cifra
+  medida: no hay datos de este invierno cerca de 0 °C.
+- **La vigilancia sigue igual** hasta el 01-03-2027: `dif_base` y
+  `dif_ajust` se apuntan en todas las horas de noche (en las templadas, ahora
+  iguales), y `part_alta.py nit-resum` da además las horas con la riera
+  prevista a 3 °C o menos, que son las que cuentan para decidir.
+- **Textos**: «D'on surt», «Com funciona» y el glosario dicen que el ajuste
+  es de las noches frías, con 3 °C o menos vora la riera; «Com funciona»,
+  que las demás noches no se aplica porque el primer mes se equivocaba más.
+
+Validación: `tests/test_part_alta.py` (`AjustNit`: con 3 °C se aplica y con
+3,1 no; una noche templada queda con la mediana sola y con la base apuntada;
+el resumen de las noches frías). El análisis, con el registro del NAS del
+25-11-2026.
+

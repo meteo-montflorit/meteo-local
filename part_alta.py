@@ -117,9 +117,11 @@ def correccio_nit(f, ajust):
     despejado y en calma, la inversión deja la riera unos 2 °C por debajo de
     la parte alta y la mediana, que mezcla todo tipo de noches, da 1-1,5; con
     nubes o viento el aire se mezcla y casi no cambia. Las nubes, el viento y
-    la temperatura, los de la propia fila; sin alguno, 0."""
+    la temperatura, los de la propia fila; sin alguno, 0. Solo en las noches
+    frías, con la riera a C.PART_ALTA_AJUST_NIT_FINS o menos (Juanjo,
+    25-11-2026, al ver que las demás noches empeoraba): en las otras, 0."""
     n, v, t = f.get("nuvols"), f.get("vent"), f.get("temperatura")
-    if not ajust or n is None or v is None or t is None:
+    if not ajust or n is None or v is None or t is None or t > C.PART_ALTA_AJUST_NIT_FINS:
         return 0.0
     c, calma = 1 - n / 100, max(0.0, 1 - v / 15)
     return sum(b * x for b, x in zip(ajust["coef"], (1, c, calma, c * calma, min(t, 15))))
@@ -209,7 +211,7 @@ def resum_nit(ruta=None, casa_hores=None, veines_hores=None):
             files = [{**f_, "hora": H.clau(f_["hora"]), "fins": H.clau(f_["fins"])} for f_ in csv.DictReader(f)]
     except OSError:
         return "Encara no hi ha registre de les nits."
-    grups = {"totes": [], "gelada": []}
+    grups = {"totes": [], "freda": [], "gelada": []}
     for r in files:
         reals = [mesura(r[k]) for k in ("hora", "fins")]
         if None in reals:
@@ -217,12 +219,18 @@ def resum_nit(ruta=None, casa_hores=None, veines_hores=None):
         real = sum(reals) / 2
         e = (abs(float(r["dif_base"]) - real), abs(float(r["dif_ajust"]) - real))
         grups["totes"].append(e)
+        # Les nits on s'aplica l'ajust des del 25-11-2026 (abans, a totes).
+        if r.get("temperatura") not in (None, "") and float(r["temperatura"]) <= C.PART_ALTA_AJUST_NIT_FINS:
+            grups["freda"].append(e)
         if min(casa_hores[r["hora"]], casa_hores[r["fins"]]) <= 0:
             grups["gelada"].append(e)
     if not grups["totes"]:
         return f"{len(files)} hores de nit apuntades, encara sense mesura per comparar."
     linies = [f"Hores de nit apuntades: {len(files)} (des de {H.dia_local(files[0]['hora'])})."]
-    for nom, text in (("totes", "Totes les hores de nit"), ("gelada", "Hores amb la riera a 0 °C o menys")):
+    llindar = f"{C.PART_ALTA_AJUST_NIT_FINS:g}".replace(".", ",")
+    for nom, text in (("totes", "Totes les hores de nit"),
+                      ("freda", f"Hores amb la riera prevista a {llindar} °C o menys (on s'aplica l'ajust)"),
+                      ("gelada", "Hores amb la riera a 0 °C o menys")):
         es = grups[nom]
         if es:
             base = sum(a for a, _ in es) / len(es)
