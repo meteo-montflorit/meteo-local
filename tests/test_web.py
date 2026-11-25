@@ -1347,6 +1347,32 @@ class Web(unittest.TestCase):
                 "new Promise((r) => setTimeout(() => r([pintats, peticions.length]), 50))")
         self.assertEqual(self.avalua("2026-10-08T09:00:00+02:00", expr, arnes=ARNES_ASYNC), [2, 4])
 
+    def test_mentre_rellegeix_no_diu_que_no_s_ha_fet(self):
+        # Juanjo, 25-11-2026: en tornar a la pàgina adormida, «L'actualització de les 13:29 no s'ha
+        # fet: les dades són de les 13:09», amb les de les 13:27 ja publicades.
+        dades = {"generat": "2026-11-25T13:09+01:00",
+                 "horari": {"trams": [["00:00", "23:54"]], "cada_min": 6, "desfase_min": 3}}
+        ara = "2026-11-25T13:33:00+01:00"
+        crida = f"(f => f && horaCurta(f))(fallidaVisible({json.dumps(dades)}))"
+        self.assertEqual(self.avalua(ara, f"LECTURES_EN_CURS = 0; {crida}"), "13:29")
+        self.assertIsNone(self.avalua(ara, f"LECTURES_EN_CURS = 1; {crida}"))
+        # Amb una lectura que no contesta, la pàgina la compta com a en curs.
+        expr = (self.fetch_fals(['penja']) + "LECTURES_EN_CURS = 0; carrega('casa.json', () => {}, () => {});"
+                "new Promise((r) => setTimeout(() => r(LECTURES_EN_CURS), 20))")
+        self.assertEqual(self.avalua(ara, expr, arnes=ARNES_ASYNC), 1)
+
+    def test_si_falla_la_lectura_es_torna_a_provar_aviat(self):
+        # Juanjo, 25-11-2026: recarregar arreglava abans que el reintent d'un minut.
+        # Lectura bona, quatre fallides (IONOS i la còpia, cada una) i una que no contesta:
+        # 10 s, 10 s, 10 s i després 60 s.
+        dades = {"generat": "2026-10-08T08:45+02:00", "horari": {"trams": [["00:00", "23:50"]], "cada_min": 15}}
+        expr = (self.fetch_fals([dades] + [None] * 8 + ['penja']) + "esperes = []; const st = setTimeout;"
+                "setTimeout = (f, ms) => { if (ms > 6000) esperes.push(Math.round(ms / 1000)); return st(f, ms); };"
+                "carrega('casa.json', () => {}, () => {});"
+                "new Promise((r) => st(() => r(esperes), 100))")
+        esperes = self.avalua("2026-10-08T09:00:00+02:00", expr, arnes=ARNES_ASYNC)
+        self.assertEqual(esperes[1:], [10, 10, 10, 60])
+
     def test_si_surts_trens_d_ara_i_pla_de_proteccio_civil(self):
         trens = [{"linia": "R4", "estat": "circula"}, {"linia": "S2", "estat": "circula"}]
         ara = "2026-10-08T09:00:00+02:00"

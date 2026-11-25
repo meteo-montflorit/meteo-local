@@ -556,7 +556,8 @@ function pintaHorari(dades, fonts = FONTS_TEMPS) {
   // el marge que deixa perquè s'hagin publicat (Juanjo, 22-10-2026: amb l'hora
   // prevista, «la gente se queda mirando la hora y ve que no pasa»); mai una
   // que ja ha passat (properaVisible).
-  const { propera, fallida } = properaVisible(dades, ara);
+  const { propera } = properaVisible(dades, ara);
+  const fallida = fallidaVisible(dades, ara);
   // L'hora d'actualització, destacada, al capdamunt de la pàgina (Juanjo, 09-10-2026:
   // «visible nada más abrir»).
   const dia = mateixDia(generat, ara) ? '' : T` del ${textData(generat)}`;
@@ -608,6 +609,13 @@ function pintaAvisDades(fallida, fonts) {
 // dades encara no són noves, cada minut fins a REINTENTS vegades.
 const ESPERA_PUBLICACIO_MIN = 2;
 const REINTENTS = 10;
+// Si la lectura falla (el mòbil acabat de despertar, sense xarxa encara), es
+// torna a provar al cap de REINTENT_RAPID_S segons les primeres
+// REINTENTS_RAPIDS vegades i després cada minut; i, si el navegador diu que
+// torna a haver-hi xarxa, en aquell moment. Abans era al cap d'un minut, i
+// recarregar la pàgina ho arreglava abans (Juanjo, 25-11-2026).
+const REINTENT_RAPID_S = 10;
+const REINTENTS_RAPIDS = 3;
 
 // La propera actualització que han de portar les dades: la primera de
 // l'horari després de la seva hora, encara que ja hagi passat i s'estigui
@@ -641,6 +649,17 @@ function properaVisible(dades, ara = new Date()) {
   const fallida = pendents.filter((t) => t < limit).pop() || null;
   const propera = pendents.find((t) => t >= limit) || null;
   return { propera, fallida };
+}
+
+// L'actualització que no s'ha fet, si s'ha de dir. Mentre la pàgina rellegeix
+// les dades, no: en tornar a tenir davant la pàgina adormida, «Consultes» es
+// repintava amb les velles en arribar els avisos, abans que les dades noves,
+// i deia «L'actualització de les 13:29 no s'ha fet: les dades són de les
+// 13:09» amb les de les 13:27 ja publicades (Juanjo, 25-11-2026). Si la
+// lectura falla o porta dades velles, sí.
+let LECTURES_EN_CURS = 0;
+function fallidaVisible(dades, ara = new Date()) {
+  return LECTURES_EN_CURS ? null : properaVisible(dades, ara).fallida;
 }
 
 // Propera actualització segons l'horari: avui o, si ja no n'hi ha cap, la
@@ -720,15 +739,19 @@ function llegeixDades(nom) {
 function carrega(url, pinta, error) {
   let dades = null;
   let reintents = 0;
+  let fallades = 0;
   let temporitzador = null;
   let previst = 0;
+
+  const esperaFallada = () => (fallades <= REINTENTS_RAPIDS ? REINTENT_RAPID_S * 1000 : 60000);
 
   function programa() {
     clearTimeout(temporitzador);
     // Primer, la que han de portar les dades encara que ja hagi passat (com a
     // molt d'aquí a un minut); acabats els reintents, la de l'horari.
     const pendent = !reintents && properaPendent(dades);
-    previst = reintents && reintents <= REINTENTS ? Date.now() + 60000
+    previst = fallades ? Date.now() + esperaFallada()
+      : reintents && reintents <= REINTENTS ? Date.now() + 60000
       : pendent ? Math.max(pendent.getTime() + ESPERA_PUBLICACIO_MIN * 60000, Date.now() + 60000)
         : properaActualitzacio(dades.horari).getTime() + ESPERA_PUBLICACIO_MIN * 60000;
     temporitzador = setTimeout(llegeix, previst - Date.now());
@@ -736,8 +759,11 @@ function carrega(url, pinta, error) {
 
   function llegeix() {
     clearTimeout(temporitzador);
+    LECTURES_EN_CURS += 1;
     llegeixDades(url)
+      .finally(() => { LECTURES_EN_CURS -= 1; })
       .then((noves) => {
+        fallades = 0;
         // Les mateixes dades d'abans: la publicació encara no ha arribat.
         reintents = dades && noves.generat === dades.generat ? reintents + 1 : 0;
         dades = noves;
@@ -746,19 +772,19 @@ function carrega(url, pinta, error) {
         programa();
       })
       .catch(() => {
+        fallades += 1;
         if (!dades) {
           // Sense cap dada encara (cobertura fluixa, per exemple): s'avisa i
-          // es torna a provar al cap d'un minut, sense que calgui recarregar.
+          // es torna a provar, sense que calgui recarregar.
           error();
-          previst = Date.now() + 60000;
-          temporitzador = setTimeout(llegeix, 60000);
+          previst = Date.now() + esperaFallada();
+          temporitzador = setTimeout(llegeix, previst - Date.now());
           return;
         }
         // Les d'abans es tornen a pintar: si ja tenen massa hores, la pàgina
         // ho diu i amaga la previsió (dadesVelles) encara que no arribi res
         // de nou (auditoria del 07-10-2026).
         pinta(dades);
-        reintents += 1;
         programa();
       });
   }
@@ -770,6 +796,10 @@ function carrega(url, pinta, error) {
     if (document.hidden) return;
     if (!dades || Date.now() >= previst) llegeix();
     else pinta(dades);
+  });
+  // Torna la xarxa: si l'última lectura havia fallat, ara mateix.
+  addEventListener('online', () => {
+    if (!document.hidden && (!dades || fallades)) llegeix();
   });
   enArribarUnAvis(llegeix);
   llegeix();

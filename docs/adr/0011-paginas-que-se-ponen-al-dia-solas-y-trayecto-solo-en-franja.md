@@ -80,3 +80,26 @@ trayecto no lo enseña; lo enseña la de casa, a un clic.
 `tests/test_web.py` (próxima lectura, también tras la última del día y con
 datos de una actualización que aún no ha llegado) y
 `probar-web` en Chromium, Firefox y WebKit, dentro y fuera de franja.
+
+## Al despertar la página (25-11-2026, 3.240.1)
+
+Con la página dormida desde las 13:10 (móvil bloqueado o pestaña al fondo, que
+paran los temporizadores), al volver a ella a las 13:33 decía «L'actualització
+de les 13:29 no s'ha fet: les dades són de les 13:09», con las de las 13:27 ya
+publicadas; al recargar, desaparecía (Juanjo). Dos causas:
+
+- **Se pintaba con lo viejo antes de releer.** Al volver, la página pide a la
+  vez los avisos y los datos; en «Consultes», al llegar los avisos se repinta
+  la línea de la hora con los datos de antes. Ahora, mientras hay una lectura
+  de datos en curso (`LECTURES_EN_CURS`), no se dice que una actualización no
+  se ha hecho (`fallidaVisible`); si la lectura falla o trae datos viejos, sí.
+- **Tras un fallo de red se esperaba un minuto.** Con el móvil recién
+  despertado la primera lectura puede fallar. Ahora se reintenta a los
+  10 s las tres primeras veces y después cada minuto, y en cuanto el navegador
+  avisa de que vuelve la red (evento `online`).
+
+Validación: `tests/test_web.py` (el caso de las 13:33, el contador con una
+lectura que no contesta y las esperas 10, 10, 10 y 60 s tras fallos
+seguidos); las páginas generadas abiertas en Chromium sin errores. El caso
+real (bloquear el móvil y volver, también sin red) no se ha reproducido aquí:
+en el NAS no hay móvil ni navegador con pantalla.
