@@ -14,8 +14,10 @@ consúltala a mano: no la des por vacía.
 Al cambiar algo:
 
 - La web está en catalán y castellano y va dirigida a cualquier vecino.
-- **El repositorio es público**: nada de direcciones exactas ni nombres. Las
-  coordenadas van redondeadas.
+- **El repositorio es público**: nada de direcciones exactas ni nombres, ni
+  la calle de la estación de casa (la web dice quién la hace, y la calle
+  situaría su casa): se dice «junto a la riera». Las coordenadas van
+  redondeadas.
 - **Si cambias una clave del NAS o de IONOS** (claves SSH, `ecowitt.env`,
   `ionos.env`, `claude.env`, el token de un bot o el usuario de IONOS),
   vuelve a cifrar el archivo correspondiente (`claus/claus-nas.tar.gz.gpg` o

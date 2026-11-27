@@ -4,7 +4,7 @@ Fecha: 2026-10-13 · Estado: aceptado
 
 ## Contexto
 
-La estación de casa está en el carrer Canaletes, junto a la riera, en la
+La estación de casa está junto a la riera, en la
 zona más fría del barrio; ICERDA6 también está junto a la riera. ICERDA18,
 ICERDA28 e ICERDA48 están en la parte alta. Juanjo, 13-10-2026: en su calle
 los coches tienen hielo casi todos los días en invierno y casi cada año se
@@ -152,7 +152,7 @@ Versión 3.78.0.
 
 ## Alternativas descartadas
 
-- **Un conmutador «carrer Canaletes»** o dos temperaturas: más trabajo para
+- **Un conmutador con la calle de la estación** o dos temperaturas: más trabajo para
   quien lee por una diferencia que muchas veces no llega a un grado.
 - **La temperatura principal, la del barrio** (la de casa más la diferencia
   habitual): sería una estimación en vez de una medida, y la diferencia va y

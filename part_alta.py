@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """La parte alta del barrio, más cálida que la riera (ADR 0087).
 
-La estación de casa está junto a la riera (carrer Canaletes), en la zona más
+La estación de casa está junto a la riera, en la zona más
 fría del barrio, como ICERDA6; ICERDA18, ICERDA28 e ICERDA48 están en la
 parte alta (config.VEINES, «alta»). Juanjo, 13-10-2026: las temperaturas son
 las de la riera, y para el resto hay que sumar «1, 2... grados, dependiendo
