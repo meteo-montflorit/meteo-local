@@ -773,6 +773,8 @@ var IDIOMA = {
     "avui a les {0}": "hoy a las {0}",
     "ahir a les {0}": "ayer a las {0}",
     "Surt {0}{1} i es pon {2}{3}.": "Sale {0}{1} y se pone {2}{3}.",
+    "Va sortir {0}{1} i es pon {2}{3}.": "Salió {0}{1} y se pone {2}{3}.",
+    "Va sortir {0}{1} i es va pondre {2}{3}.": "Salió {0}{1} y se puso {2}{3}.",
     "A les {0} puja fins a {1}° sobre l’horitzó.": "A las {0} sube hasta {1}° sobre el horizonte.",
     "Probabilitat que plogui en algun moment del dia: {0}": "Probabilidad de que llueva en algún momento del día: {0}",
     "menys d’1\u00a0mm": "menos de 1\u00a0mm",

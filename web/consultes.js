@@ -558,7 +558,13 @@ function blocLluna(lluna, ara = new Date(), costat = 340, ampla = false) {
   let quan = '';
   if (r && r.sortida && r.posta) {
     // L'arc de la gràfica, en paraules, com el del sol.
-    quan = T`Surt ${quanArc(r.sortida, ara)}${per(r.sortida_az)} i es pon ${quanArc(r.posta, ara)}${per(r.posta_az)}.`;
+    // Si ja ha sortit o s'ha post un altre dia, en passat: «Va sortir ahir a
+    // les 19:02», no «Surt ahir» (27-11-2026).
+    const passat = (iso) => diesEntre(ara, llegeixHora(iso)) < 0;
+    const s1 = quanArc(r.sortida, ara), az1 = per(r.sortida_az), p1 = quanArc(r.posta, ara), az2 = per(r.posta_az);
+    quan = passat(r.posta) ? T`Va sortir ${s1}${az1} i es va pondre ${p1}${az2}.`
+      : passat(r.sortida) ? T`Va sortir ${s1}${az1} i es pon ${p1}${az2}.`
+      : T`Surt ${s1}${az1} i es pon ${p1}${az2}.`;
     if (r.culminacio && r.culminacio.alt > 0) quan += ' ' + T`A les ${h(r.culminacio.hora)} puja fins a ${Math.round(r.culminacio.alt)}° sobre l’horitzó.`;
   } else {
     // La sortida i la posta, per ordre; un dia al mes no surt o no es pon.
