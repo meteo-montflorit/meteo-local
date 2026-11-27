@@ -242,3 +242,17 @@ línea o acaba en ella; si el aviso no nombra un tramo que se pueda situar
 Con el aviso del 18-10-2026 la R4 sale «Amb incidències». Si Rodalies cambia
 las paradas de una línea, hay que actualizar la lista; un nombre que no esté
 en ella deja el aviso como estaba antes de este cambio.
+
+## Cambio del 27-11-2026 (3.240.4): «Circulació amb l'oferta habitual»
+
+El revisor vio a las 20:50 (hora de Madrid) la R8 «Amb incidències», y el
+resumen de «Transport públic» «R8 amb incidències», con un tren visto y un
+único aviso de Rodalies: «Circulació amb l'oferta habitual.» / «Circulación
+con la oferta habitual.». Es otra forma de decir que el servicio es normal,
+que no estaba entre las reconocidas.
+
+Decisión: **«Circulació amb l'oferta habitual» es un aviso de servicio y de
+servicio normal**, como «Circulació normalitzada» (13-10-2026): con trenes
+vistos, la línea sale «Sense incidències»; sin trenes en la última hora, «Amb
+incidències» con la contradicción dicha. La explicación de «Com es decideix»
+lo recoge. Validado con una prueba del caso real (`test_circulacio_oferta_habitual`).

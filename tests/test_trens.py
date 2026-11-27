@@ -187,6 +187,17 @@ class Estat(unittest.TestCase):
         self.assertEqual(r["estat"], "incidencies")
         self.assertTrue(r["no_vist"])
 
+    def test_circulacio_oferta_habitual(self):
+        # Revisor, 27-11-2026: l'R8 sortia «Amb incidències» amb l'únic avís de
+        # Rodalies «Circulació amb l'oferta habitual.».
+        ara = H.llegeix("2026-11-27T19:50Z")
+        normal = self.avis(["R8"], "Circulació amb l'oferta habitual.", "Circulación con la oferta habitual.", "2026-11-27T19:00Z")
+        normal["font"] = "rodalies"
+        mou = [tren("R8", *C.TRENS_ESTACIONS["R8"])]
+        self.assertEqual(T.estat_linia("R8", mou, None, [normal], ara)["estat"], "circula")
+        r = T.estat_linia("R8", [], None, [normal], ara)
+        self.assertEqual((r["estat"], r.get("no_vist")), ("incidencies", True))
+
     def test_circulacio_restablerta(self):
         # Revisor, 08-11-2026: a les 05:50 (hora de Madrid) l'R4 sortia «Sense
         # trens» amb l'avís de Rodalies del dia abans «Circulació restablerta…».

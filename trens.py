@@ -426,12 +426,15 @@ def es_mouen(trens, abans, ara):
 # restablerta» / «Circulación restablecida» (revisor, 08-11-2026: la R4 sortia
 # «Sense trens» a les 05:50 amb l'avís «Circulació restablerta entre Sabadell
 # Sud i Cerdanyola del Vallès. Els trens circulen amb demores…»).
-SERVEI = re.compile(r"carretera|circulaci[oó]n? (ferrovi|normali|restabl)|(servei|servicio) (ferrovi|restabl)", re.I)
+SERVEI = re.compile(r"carretera|circulaci[oó]n? (ferrovi|normali|restabl|(amb|con) (l['’]|la )oferta habitual)|(servei|servicio) (ferrovi|restabl)", re.I)
 # Un avís que només diu que el servei és normal a tota la línia (Rodalies el
 # publica quan es recupera): no és una incidència (ADR 0078). També
-# «Circulació normalitzada» (13-10-2026, R8).
+# «Circulació normalitzada» (13-10-2026, R8) i «Circulació amb l'oferta
+# habitual» (revisor, 27-11-2026: la R8 sortia «amb incidències» amb aquest
+# únic avís).
 NORMAL = re.compile(r"^\s*((servei|circulaci[oó]n?|servicio) ferrovi\w* (a|en) (tot|todo) (el|su) (seu )?(recorregut|recorrido)"
-                    r"|circulaci[oó]n? normali(tz|z)ada)\.?\s*$", re.I)
+                    r"|circulaci[oó]n? normali(tz|z)ada"
+                    r"|circulaci[oó]n? (amb|con) (l['’]|la )oferta habitual)\.?\s*$", re.I)
 # Un avís que diu que la incidència ja s'ha resolt i que els trens recuperen
 # els horaris: els trens encara van tard, però no hi ha cap incidència oberta.
 # Si és l'únic, la línia surt «amb retard» (revisor, 19-10-2026: la R4 sortia
