@@ -425,10 +425,14 @@ def alternes(html, nom):
 # del sistema, si és el català o el castellà (el primer dels dos que hi
 # surti); si no n'hi ha cap, cada pàgina en el seu, i l'inici, en català
 # (Juanjo, 20-10-2026: «el idioma por defecto será el del sistema, luego el
-# usuario lo podrá cambiar por el que quiera»).
+# usuario lo podrá cambiar por el que quiera»). Abans de canviar de pàgina
+# s'apunta si s'obre des de l'app (dinsApp, comu.js): la pàgina nova ja no té
+# el referrer android-app:// (28-11-2026: en castellà, la web no sabia que era
+# dins de l'app).
 IDIOMA_RECORDAT = """
   <script>
     try {
+      if (document.referrer.startsWith('android-app://')) sessionStorage.setItem('meteo.app', '1');
       const triat = localStorage.getItem('meteo.idioma') || (navigator.languages || [navigator.language])
         .map((l) => String(l || '').slice(0, 2).toLowerCase()).find((l) => l === 'ca' || l === 'es');
       const altre = triat && triat !== document.documentElement.lang

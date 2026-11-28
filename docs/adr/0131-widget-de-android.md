@@ -187,6 +187,13 @@ código 5; web 3.242.0):
   salir, se acepte o no el cuadro.
 - **La ficha de Google Play** (descripción y captura del primer cambio) se
   envió a revisión el 28-11-2026.
+- **En castellano la web no sabía que estaba en la app** (3.242.1): la
+  portada pasa a `/es/` según el idioma del móvil antes de que `comu.js`
+  apunte el referrer `android-app://`, y la página nueva ya no lo tiene. Lo
+  apunta ahora el guion del idioma (`IDIOMA_RECORDAT` de `montflorit.py`)
+  antes de cambiar de página. Afectaba también al enlace a Google Play del
+  pie, que salía dentro de la app, y al nombre propio de la app. Se vio
+  probando la app 1.1.3 en un emulador en castellano.
 
 ## Alternativas descartadas
 

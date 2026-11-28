@@ -247,6 +247,19 @@ class Web(unittest.TestCase):
             self.assertIn(M.IDIOMA_RECORDAT, html, nom)
             self.assertLess(html.index('hreflang="es"'), html.index(M.IDIOMA_RECORDAT), nom)
         self.assertIn("localStorage.setItem(CLAU_IDIOMA, a.hreflang)", self.llegeix("comu.js"))
+        # Abans de canviar d'idioma s'apunta si s'obre des de l'app (28-11-2026):
+        # la pàgina nova ja no té el referrer android-app://.
+        guio = M.IDIOMA_RECORDAT.split("<script>")[1].split("</script>")[0]
+        prova = ("const desat = {}; let anada = null;"
+                 "globalThis.sessionStorage = { setItem: (k, v) => { desat[k] = v; } };"
+                 "globalThis.localStorage = { getItem: () => null };"
+                 "Object.defineProperty(globalThis, 'navigator', { value: { languages: ['es-ES'] } });"
+                 "globalThis.location = { search: '?giny=1', hash: '', replace: (u) => { anada = u; } };"
+                 "globalThis.document = { referrer: 'android-app://io.github.meteo_montflorit/', documentElement: { lang: 'ca' },"
+                 " querySelector: () => ({ href: 'https://meteo-montflorit.github.io/es/' }) };"
+                 + guio + "console.log(JSON.stringify([desat, anada]));")
+        r = subprocess.run(["node", "-e", prova], capture_output=True, text=True, check=True)
+        self.assertEqual(json.loads(r.stdout), [{"meteo.app": "1"}, "/es/?giny=1"])
         # Sota el títol, què hi ha a la web.
         self.assertIn(f'<p class="ruta">{M.DESCRIPCIO}</p>', self.llegeix("index.html"))
         # No queda catalán en lo que se lee.
