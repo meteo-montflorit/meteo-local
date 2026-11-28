@@ -20,3 +20,4 @@ fitxa/pujar/
 # «bubblewrap update» esborra. L'original és a giny/main.
 app/src/main/**/giny_*
 app/src/main/**/Giny*.java
+app/src/main/**/PosaGiny.java
