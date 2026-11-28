@@ -2811,6 +2811,24 @@ function dinsApp() {
   }
 }
 
+// L'app (1.1.3 o més) s'obre amb «?giny=1» si el mòbil deixa posar el giny
+// de la pantalla d'inici d'un toc (ADR 0131): es recorda la resta de la sessió,
+// com dinsApp, i es treu de l'adreça perquè no es comparteixi.
+function appPosaGiny() {
+  try {
+    const url = new URL(location.href);
+    if (url.searchParams.get('giny') === '1') {
+      sessionStorage.setItem('meteo.giny-boto', '1');
+      url.searchParams.delete('giny');
+      history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+    }
+    return sessionStorage.getItem('meteo.giny-boto') === '1';
+  } catch (_) {
+    return false;
+  }
+}
+appPosaGiny();
+
 // El nom del que es mira: l'app («Montflorit al dia», ADR 0082) o la web
 // («Temps a Montflorit»; la de casa, «Temps a casa»). Són noms propis: no es
 // tradueixen (Juanjo, 17-10-2026: «hay dos nombres»).

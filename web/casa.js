@@ -1918,11 +1918,14 @@ function targetaOfertaAvisos() {
 }
 
 // El giny de la pantalla d'inici (ADR 0131), que qui fa servir l'app no sap que
-// existeix (Juanjo, 28-11-2026): dins de l'app, una targeta sota «Ara» que diu
-// com posar-lo, fins que es toca «Entesos». Només a l'app de Play: a l'iPhone o
-// amb la web instal·lada no hi ha giny. Mentre surt, l'oferta d'avisos espera
-// a una altra visita, perquè no se'n posin dues sota «Ara».
+// existeix (Juanjo, 28-11-2026): dins de l'app, una targeta sota «Ara». Si
+// l'app el pot posar d'un toc (appPosaGiny), amb el botó «Afegeix-lo», que obre
+// el quadre d'Android (PosaGiny); si no, diu com posar-lo a mà. Surt fins que es
+// toca un botó. Només a l'app de Play: a l'iPhone o amb la web instal·lada no
+// hi ha giny. Mentre surt, l'oferta d'avisos espera a una altra visita, perquè
+// no se'n posin dues sota «Ara».
 const CLAU_OFERTA_GINY = 'meteo.oferta-giny';
+const POSA_GINY = 'intent://posa-giny#Intent;scheme=montflorit;package=io.github.meteo_montflorit;end';
 let OFERTA_GINY = null;
 
 function calOfertaGiny() {
@@ -1930,21 +1933,34 @@ function calOfertaGiny() {
   try { return localStorage.getItem(CLAU_OFERTA_GINY) !== 'vist'; } catch (_) { return false; }
 }
 
-function targetaOfertaGiny() {
+function targetaOfertaGiny(dUnToc = appPosaGiny()) {
   const sec = element('section', 'targeta oferta-avisos oferta-giny');
   sec.setAttribute('aria-label', T('El temps a la pantalla d’inici'));
-  const entesos = element('button', 'boto secundari', T('Entesos'));
-  entesos.type = 'button';
-  const botons = element('p', 'oferta-botons');
-  botons.append(entesos);
-  sec.append(element('p', 'oferta-titol', T('Novetat: el temps a la pantalla d’inici')),
-    element('p', null, T('Mantén el dit sobre un espai buit de la pantalla d’inici, tria «Ginys» (o «Widgets») i busca Montflorit al dia.')),
-    botons);
-  entesos.addEventListener('click', () => {
+  const treu = () => {
     try { localStorage.setItem(CLAU_OFERTA_GINY, 'vist'); } catch (_) {}
     sec.remove();
     OFERTA_GINY = null;
-  });
+  };
+  const botons = element('p', 'oferta-botons');
+  const boto = (text, principal) => {
+    const b = element('button', principal ? 'boto' : 'boto secundari', text);
+    b.type = 'button';
+    botons.append(b);
+    return b;
+  };
+  let explica;
+  if (dUnToc) {
+    explica = T('Posa el temps del barri a la pantalla d’inici del mòbil, sense haver d’obrir l’app.');
+    boto(T('Afegeix-lo'), true).addEventListener('click', () => {
+      treu();
+      location.href = POSA_GINY;
+    });
+    boto(T('Ara no')).addEventListener('click', treu);
+  } else {
+    explica = T('Mantén el dit sobre un espai buit de la pantalla d’inici, tria «Ginys» (o «Widgets») i busca Montflorit al dia.');
+    boto(T('Entesos')).addEventListener('click', treu);
+  }
+  sec.append(element('p', 'oferta-titol', T('Novetat: el temps a la pantalla d’inici')), element('p', null, explica), botons);
   return sec;
 }
 

@@ -15,6 +15,12 @@
  */
 package io.github.meteo_montflorit;
 
+// La de Bubblewrap, amb un canvi (ADR 0131, 28-11-2026): si el mòbil deixa
+// posar ginys des de l'app, la web s'obre amb «?giny=1» i ofereix el botó
+// que el posa d'un toc (PosaGiny). «bubblewrap update» la torna a escriure a
+// app/src; construeix.sh hi copia aquesta.
+
+import android.appwidget.AppWidgetManager;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Build;
@@ -46,9 +52,17 @@ public class LauncherActivity
     protected Uri getLaunchingUrl() {
         // Get the original launch Url.
         Uri uri = super.getLaunchingUrl();
+        if (uri == null || uri.getQueryParameter("giny") != null || !potPosarGiny()) return uri;
+        return uri.buildUpon().appendQueryParameter("giny", "1").build();
+    }
 
-        
-
-        return uri;
+    // Android 8 o més i un llançador que ho admeti (no tots ho fan).
+    private boolean potPosarGiny() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false;
+        try {
+            return AppWidgetManager.getInstance(this).isRequestPinAppWidgetSupported();
+        } catch (RuntimeException e) {
+            return false;
+        }
     }
 }

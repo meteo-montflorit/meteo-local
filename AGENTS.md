@@ -142,7 +142,9 @@ Al cambiar algo:
   `montflorit/.well-known/assetlinks.json`. El widget de la pantalla de
   inicio (ADR 0131) sí es código propio: está en `android/giny/main/`, porque
   `bubblewrap update` borra `app/src` entero, y `construeix.sh` lo copia a la
-  app. Sus textos salen de `giny.js` (la tarjeta de «Ara» con el código de la
+  app; también la `LauncherActivity`, que añade `?giny=1` si el móvil deja
+  poner el widget de un toque, y `PosaGiny`, que lo pone (cambio del
+  28-11-2026 en el ADR). Sus textos salen de `giny.js` (la tarjeta de «Ara» con el código de la
   web, en `giny.json`); si cambia el aspecto de la tarjeta (`.heroi.cel-*` o
   los dibujos), `python3 android/giny/recursos.py` rehace sus fondos y colores.
 - Los automatismos de este proyecto figuran en el inventario del NAS

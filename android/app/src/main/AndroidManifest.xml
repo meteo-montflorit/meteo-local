@@ -210,5 +210,20 @@
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/giny_info" />
         </receiver>
+    
+        <!-- Posa el giny d'un toc des de la web (ADR 0131): el posa android/giny/manifest.py. -->
+        <activity android:name="PosaGiny"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="montflorit" android:host="posa-giny" />
+            </intent-filter>
+        </activity>
     </application>
 </manifest>

@@ -165,6 +165,29 @@ la puede instalar (versión 3.241.0 de la web):
   larga y una captura del widget en una pantalla de inicio
   (`android/fitxa/`).
 
+## Cambio del 28-11-2026 (segunda parte): ponerlo de un toque
+
+Juanjo aprobó también el botón que añade el widget de un toque (app 1.1.3,
+código 5; web 3.242.0):
+
+- **La app dice si se puede.** `android/giny/main/.../LauncherActivity.java`
+  es la de Bubblewrap con un cambio: si el móvil tiene Android 8 o más y su
+  lanzador admite poner widgets desde una app
+  (`AppWidgetManager.isRequestPinAppWidgetSupported`), abre la web con
+  `?giny=1`. `construeix.sh` la copia encima de la que genera Bubblewrap.
+- **La web lo recuerda y lo quita de la dirección** (`appPosaGiny` en
+  `comu.js`, en `sessionStorage`, como `dinsApp`). Con él, la tarjeta dice
+  «Posa el temps del barri a la pantalla d'inici del mòbil, sense haver
+  d'obrir l'app.», con «Afegeix-lo» y «Ara no»; sin él (la app 1.1.2 o un
+  lanzador que no lo admite), las instrucciones de antes con «Entesos».
+- **«Afegeix-lo» abre `intent://posa-giny#Intent;scheme=montflorit;…`**, que
+  Chrome pasa a `PosaGiny`, una actividad sin pantalla que llama a
+  `requestPinAppWidget`: Android enseña su cuadro con el widget («Añadir a
+  pantalla de inicio») y lo pone donde haya sitio. La tarjeta no vuelve a
+  salir, se acepte o no el cuadro.
+- **La ficha de Google Play** (descripción y captura del primer cambio) se
+  envió a revisión el 28-11-2026.
+
 ## Alternativas descartadas
 
 - **Rehacer en Java la lógica de la tarjeta**: dos programas que dirían cosas

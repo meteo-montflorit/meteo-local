@@ -71,6 +71,8 @@ var IDIOMA = {
     "Novetat: el temps a la pantalla d’inici": "Novedad: el tiempo en la pantalla de inicio",
     "Mantén el dit sobre un espai buit de la pantalla d’inici, tria «Ginys» (o «Widgets») i busca Montflorit al dia.": "Mantén el dedo sobre un espacio vacío de la pantalla de inicio, elige «Widgets» y busca Montflorit al dia.",
     "Entesos": "Entendido",
+    "Posa el temps del barri a la pantalla d’inici del mòbil, sense haver d’obrir l’app.": "Pon el tiempo del barrio en la pantalla de inicio del móvil, sin tener que abrir la app.",
+    "Afegeix-lo": "Añádelo",
     "Fet: t’arribaran els avisos de perill i de la riera. Per triar-ne més, toca la campana.": "Hecho: te llegarán los avisos de peligro y de la riera. Para elegir más, toca la campana.",
     "1 tren ha passat amb retard a la darrera mitja hora.": "1 tren ha pasado con retraso en la última media hora.",
     "{0} trens han passat amb retard a la darrera mitja hora.": "{0} trenes han pasado con retraso en la última media hora.",

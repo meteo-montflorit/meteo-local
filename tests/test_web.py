@@ -1769,6 +1769,15 @@ espera.then(() => console.log(JSON.stringify([mostrades, enviats])));
         self.assertTrue(cal())
         self.assertFalse(cal(app=False))
         self.assertFalse(cal(vist=True))
+        # L'app que pot posar el giny d'un toc s'obre amb «?giny=1»: es recorda i
+        # es treu de l'adreça, sense tocar la resta.
+        expr = ("const desat = {}; sessionStorage = { getItem: (k) => desat[k] || null, setItem: (k, v) => { desat[k] = v; } };"
+                "let nova = null; history.replaceState = (s, t, u) => { nova = u; };"
+                "location.href = 'https://meteo-montflorit.github.io/perill.html?a=2&giny=1#riera';"
+                "[appPosaGiny(), nova, (location.href = 'https://meteo-montflorit.github.io/', appPosaGiny())]")
+        self.assertEqual(self.avalua("2026-11-28T10:00:00+01:00", expr), [True, "/perill.html?a=2#riera", True])
+        self.assertFalse(self.avalua("2026-11-28T10:00:00+01:00",
+                                     "sessionStorage = { getItem: () => null, setItem() {} }; location.href = 'https://x/'; appPosaGiny()"))
 
     def test_la_franja_del_radar_nomes_si_diu_alguna_cosa(self):
         # «No s'acosta pluja» només surt si la previsió en dona en les dues
