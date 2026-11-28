@@ -1757,6 +1757,19 @@ espera.then(() => console.log(JSON.stringify([mostrades, enviats])));
         self.assertFalse(cal(no=True))
         self.assertFalse(cal(permis="denied"))
 
+    def test_oferta_del_giny_nomes_dins_de_l_app(self):
+        # ADR 0131 (28-11-2026): la targeta del giny surt només dins de l'app de Play
+        # (referrer android-app://) i fins que es toca «Entesos».
+        def cal(app=True, vist=False):
+            expr = ("document.referrer = '';"
+                    f"sessionStorage = {{ getItem: (k) => ({json.dumps(app)} && k === 'meteo.app' ? '1' : null), setItem() {{}} }};"
+                    f"localStorage.getItem = (k) => ({json.dumps(vist)} && k === 'meteo.oferta-giny' ? 'vist' : null);"
+                    "calOfertaGiny()")
+            return self.avalua("2026-11-28T10:00:00+01:00", expr)
+        self.assertTrue(cal())
+        self.assertFalse(cal(app=False))
+        self.assertFalse(cal(vist=True))
+
     def test_la_franja_del_radar_nomes_si_diu_alguna_cosa(self):
         # «No s'acosta pluja» només surt si la previsió en dona en les dues
         # hores que venen (Juanjo, 10-10-2026; ADR 0019).

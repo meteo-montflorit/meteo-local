@@ -210,8 +210,9 @@ Antes de aplicarlo se comprobó y se descartó:
   visitante: no se puso.
 
 Lo decidido (Juanjo: «hazlo»): un enlace al pie de todas las páginas públicas,
-debajo del aviso de web no oficial, «📱 Descarrega l'app per a Android (Google
-Play)» («Descarga la app para Android (Google Play)» en castellano), que abre la
+debajo del aviso de web no oficial, «📱 Descarrega l'app per a Android, amb giny per a la pantalla d'inici
+(Google Play)» («Descarga la app para Android, con widget para la pantalla de
+inicio (Google Play)» en castellano; lo del widget, desde el 28-11-2026, ADR 0131), que abre la
 ficha de la tienda en otra pestaña. Lo pone `montflorit.py` (la web de casa no
 lo lleva) y sale oculto; `comu.js` lo enseña solo si el navegador es de Android
 y no está dentro de la app ni de la web instalada. Dentro de la app se reconoce

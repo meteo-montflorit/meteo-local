@@ -143,6 +143,28 @@ un margen de seguridad en el ancho. Sin probar: el móvil de Juanjo y Android
 11 o anterior. Caso límite que queda como antes: el 4×2 bajo con letra al
 130 % recorta un poco la parte de arriba de la temperatura.
 
+## Cambio del 28-11-2026: que la gente sepa que hay widget
+
+Juanjo: «la gente que usa android no sabe que la app tiene un widget». Se
+aceptó dar el aviso donde lo ve quien ya tiene la app y donde lo ve quien
+la puede instalar (versión 3.241.0 de la web):
+
+- **Dentro de la app**, una tarjeta bajo «Ara»: «Novetat: el temps a la
+  pantalla d'inici. Mantén el dit sobre un espai buit de la pantalla d'inici,
+  tria «Ginys» (o «Widgets») i busca Montflorit al dia.», con un botón
+  «Entesos» que la quita para siempre en ese dispositivo
+  (`meteo.oferta-giny`). Sale solo si la web se abre desde la app
+  (`dinsApp`, el referrer `android-app://`): en iPhone o con la web
+  instalada no hay widget. Mientras sale, la oferta de avisos (ADR 0080)
+  espera a otra visita, para que no haya dos tarjetas bajo «Ara»; esto lo
+  decidió el agente. En castellano dice «elige «Widgets»», que es como lo
+  llama Android en castellano.
+- **El enlace del pie** a Google Play (ADR 0082) dice ahora «amb giny per a
+  la pantalla d'inici» («con widget para la pantalla de inicio»).
+- **La ficha de Google Play**, con un apartado del widget en la descripción
+  larga y una captura del widget en una pantalla de inicio
+  (`android/fitxa/`).
+
 ## Alternativas descartadas
 
 - **Rehacer en Java la lógica de la tarjeta**: dos programas que dirían cosas

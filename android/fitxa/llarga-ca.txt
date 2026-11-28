@@ -7,6 +7,9 @@ EL TEMPS
 • Si arriba la pluja en les pròximes dues hores, amb el radar portat endavant.
 • Previsió hora a hora fins a les 21 h de demà, corregida amb el que ha passat de veritat al barri.
 
+GINY
+• El temps del barri a la pantalla d'inici: la temperatura, la màxima i la mínima, el cel i la pluja prevista, en cinc mides.
+
 PERILL
 • Avisos de l'AEMET i de Meteocat, plans de Protecció Civil, incendis de Collserola i de Cerdanyola i temps extrem.
 • Avís propi del risc de desbordament de la riera de Sant Cugat (en proves, no oficial).

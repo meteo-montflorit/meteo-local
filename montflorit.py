@@ -555,7 +555,7 @@ def escriu_fitxer(ruta, text):
 PLAY = "https://play.google.com/store/apps/details?id=io.github.meteo_montflorit"
 AVIS_PEU = "<p>No és una web oficial ni representa cap organisme públic.</p>"
 APP_ANDROID = (f'{AVIS_PEU}\n    <p id="app-android" hidden><a href="{PLAY}" target="_blank" rel="noopener">'
-               "📱 Descarrega l'app per a Android (Google Play)</a></p>")
+               "📱 Descarrega l'app per a Android, amb giny per a la pantalla d'inici (Google Play)</a></p>")
 
 
 def app_android(html, nom):

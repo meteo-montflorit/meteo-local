@@ -7,6 +7,9 @@ EL TIEMPO
 • Si llega la lluvia en las próximas dos horas, con el radar llevado hacia delante.
 • Previsión hora a hora hasta las 21 h de mañana, corregida con lo que ha pasado de verdad en el barrio.
 
+WIDGET
+• El tiempo del barrio en la pantalla de inicio: la temperatura, la máxima y la mínima, el cielo y la lluvia prevista, en cinco tamaños.
+
 PELIGRO
 • Avisos de la AEMET y de Meteocat, planes de Protección Civil, incendios de Collserola y de Cerdanyola y tiempo extremo.
 • Aviso propio del riesgo de desbordamiento de la riera de Sant Cugat (en pruebas, no oficial).

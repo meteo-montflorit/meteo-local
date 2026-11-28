@@ -66,6 +66,11 @@ var IDIOMA = {
     "Avisos de perill": "Avisos de peligro",
     "Riera, incendis, avisos oficials i temps extrem a Montflorit, al moment.": "Riera, incendios, avisos oficiales y tiempo extremo en Montflorit, al momento.",
     "Activa-ho": "Actívalo", "Tria quins": "Elige cuáles", "Ara no": "Ahora no",
+    // El giny de la pantalla d'inici, dins de l'app (ADR 0131).
+    "El temps a la pantalla d’inici": "El tiempo en la pantalla de inicio",
+    "Novetat: el temps a la pantalla d’inici": "Novedad: el tiempo en la pantalla de inicio",
+    "Mantén el dit sobre un espai buit de la pantalla d’inici, tria «Ginys» (o «Widgets») i busca Montflorit al dia.": "Mantén el dedo sobre un espacio vacío de la pantalla de inicio, elige «Widgets» y busca Montflorit al dia.",
+    "Entesos": "Entendido",
     "Fet: t’arribaran els avisos de perill i de la riera. Per triar-ne més, toca la campana.": "Hecho: te llegarán los avisos de peligro y de la riera. Para elegir más, toca la campana.",
     "1 tren ha passat amb retard a la darrera mitja hora.": "1 tren ha pasado con retraso en la última media hora.",
     "{0} trens han passat amb retard a la darrera mitja hora.": "{0} trenes han pasado con retraso en la última media hora.",

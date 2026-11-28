@@ -141,7 +141,7 @@ class Web(unittest.TestCase):
                 "index.html", "sortir.html", "perill.html", "riera.html", "consultes.html", "avisos.html",
                 "telegram.html", "fonts.html", "com-funciona.html", "privacitat.html"):
             self.assertIn(f'<p id="app-android" hidden><a href="{M.PLAY}"', self.llegeix(nom), nom)
-            self.assertIn("Descarga la app para Android (Google Play)", self.llegeix("es/" + nom), nom)
+            self.assertIn("Descarga la app para Android, con widget para la pantalla de inicio (Google Play)", self.llegeix("es/" + nom), nom)
 
     def test_app_android_on_s_ofereix(self):
         # A Android i a l'ordinador sí; a l'iPhone i a l'iPad (que es presenta

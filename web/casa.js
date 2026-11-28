@@ -1824,6 +1824,7 @@ function pinta(dades) {
   const ara = dades.ara_casa && blocAra(dades.ara_casa, radarAmbPluja, dades.vent, dades.veines, dades.hores,
     mesuradaZona(dades), dades.sol, dades.lluna);
   if (ara) cont.append(ara);
+  if (OFERTA_GINY) cont.append(OFERTA_GINY);
   const estat = estatPortada(dades);
   if (estat) cont.append(estat);
   const previsio = dades.hores && taula(dades.hores, mesuradaZona(dades), dades.riscos, dades.sol);
@@ -1916,8 +1917,41 @@ function targetaOfertaAvisos() {
   return sec;
 }
 
+// El giny de la pantalla d'inici (ADR 0131), que qui fa servir l'app no sap que
+// existeix (Juanjo, 28-11-2026): dins de l'app, una targeta sota «Ara» que diu
+// com posar-lo, fins que es toca «Entesos». Només a l'app de Play: a l'iPhone o
+// amb la web instal·lada no hi ha giny. Mentre surt, l'oferta d'avisos espera
+// a una altra visita, perquè no se'n posin dues sota «Ara».
+const CLAU_OFERTA_GINY = 'meteo.oferta-giny';
+let OFERTA_GINY = null;
+
+function calOfertaGiny() {
+  if (!dinsApp()) return false;
+  try { return localStorage.getItem(CLAU_OFERTA_GINY) !== 'vist'; } catch (_) { return false; }
+}
+
+function targetaOfertaGiny() {
+  const sec = element('section', 'targeta oferta-avisos oferta-giny');
+  sec.setAttribute('aria-label', T('El temps a la pantalla d’inici'));
+  const entesos = element('button', 'boto secundari', T('Entesos'));
+  entesos.type = 'button';
+  const botons = element('p', 'oferta-botons');
+  botons.append(entesos);
+  sec.append(element('p', 'oferta-titol', T('Novetat: el temps a la pantalla d’inici')),
+    element('p', null, T('Mantén el dit sobre un espai buit de la pantalla d’inici, tria «Ginys» (o «Widgets») i busca Montflorit al dia.')),
+    botons);
+  entesos.addEventListener('click', () => {
+    try { localStorage.setItem(CLAU_OFERTA_GINY, 'vist'); } catch (_) {}
+    sec.remove();
+    OFERTA_GINY = null;
+  });
+  return sec;
+}
+
+if (calOfertaGiny()) OFERTA_GINY = targetaOfertaGiny();
+
 calOfertaAvisos().then((cal) => {
-  if (!cal) return;
+  if (!cal || OFERTA_GINY) return;
   OFERTA_AVISOS = targetaOfertaAvisos();
   const ara = document.querySelector('#casa .targeta.ara');
   if (ara) ara.after(OFERTA_AVISOS);
