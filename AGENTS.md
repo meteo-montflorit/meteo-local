@@ -185,6 +185,8 @@ Antes de tocar las fuentes (pasado aquí desde la memoria de Claude el
   Sant Cugat, porque Centre no la publica. Una petición por estación y
   pasada (`meteocerdanyola.py`). Si su responsable pide quitarlas, se quitan
   sus entradas de `config.VEINES` y `C.VENT_ARA`.
-- **La app de Android** (ADR 0082): en Play Console, crear la app, preparar
-  la versión de producción y enviarla a revisión lo pulsa Juanjo. Los avisos
+- **La app de Android** (ADR 0082): en Play Console, preparar la versión de
+  producción, subir el paquete, cambiar la ficha y enviarlo a revisión lo hace
+  el agente desde el Chrome de Juanjo, donde tiene la sesión abierta (28-11-2026:
+  «hazlo tu con chrome»). Los avisos
   en iPhone no se pueden probar aquí (ADR 0048).
